@@ -6,6 +6,7 @@ Literate benchmark sources for the specifications in [`docs/spec`](../docs/spec)
 | --- | --- | --- |
 | [`exact-bench`](exact-bench) | [Exact Number System v0.1](../docs/spec/number-system-v0.1.md); its harness, data generators and solver chain are reused by `q-bench` | `exact-bench/results/` |
 | [`q-bench`](q-bench) | [Q v0.3](../docs/spec/q-v0.3.md) | `q-bench/results/q.md` (the run reported in the spec) |
+| [`q-research`](q-research) | the research findings in [Q v0.3](../docs/spec/q-v0.3.md) | `q-research/results/research.md` |
 
 ## Running
 

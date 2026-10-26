@@ -319,7 +319,62 @@ The benchmark code is in [`bench/`](../../bench/) as literate sources that gener
 
 These are explorations that might improve implementations or add features without changing the formats.
 
-- **Ordered keys from LCF.** An order-preserving bit string derived from a Q value, so that sorting and database indexes compare plain integers.
-- **More from quote notation.** Fixed-width truncated 2-adic arithmetic ("Hensel codes", Krishnamurthy and Gregory) computes exactly within a range and recovers $p/q$ by rational reconstruction at the end. Whether chains of vector operations could stay in this form, deferring reduction, is open.
+- **Ordered keys from LCF.** Measured; see Research findings below.
+- **Deferred reduction for unrelated denominators.** Measured as part of the quote-notation research; see Research findings below. Fixed-width numerator and denominator pairs with the gcd deferred to the end are the open lead: an array form for the data the vector form handles worst.
 - **Mixed-axis vectors.** The vector form keeps one axis per vector, so an array mixing real and imaginary elements is two vectors. A bitmap of imaginary bits, one per element, would let one vector hold both. Packing turns four to a byte was measured and did not pay: it was slower than two's complement at every operation except one tie. Whether a bitmap pays for mixed data is open.
 - **A plane variant.** $(a + bi)/c$ with three integers sharing one word covers the whole complex plane and is closed under all four operations (the Gaussian rationals, $\mathbb{Q}(i)$). Two slashes are needed, so each part gets about 20 bits of a 64-bit word; it becomes plausible at 144 bits. The vector form already holds complex arrays as a real and an imaginary vector over one denominator, which is this idea for arrays. The comparison would be against FLINT's exact Gaussian and number-field types.
+
+## Research findings
+
+These measurements explore two of the directions above without changing the formats. The plane variant is being evaluated separately. The code is in [`bench/q-research`](../../bench/q-research/), and every result was checked against an exact computation.
+
+### LCF: order-preserving keys
+
+**Question.** Can every Q value have a fixed-width key whose order as a plain unsigned integer (or as bytes, compared most significant first) is the numeric order, so that systems that only compare bytes, such as database indexes, radix and external sorts, and storage engines, can order Q values without understanding the format?
+
+**Construction.** Following Kornerup and Matula's LCF, the key of a magnitude $p/q$ is its continued fraction $[a_0; a_1, \ldots, a_n]$:
+- each quotient is written in an order-preserving, self-delimiting code;
+- the codes at odd positions are complemented;
+- the expansion ends with an infinite quotient, written as all ones (complemented at odd positions);
+- a sign bit leads, and a negative value takes the complement of its magnitude's key.
+
+LCF's own quotient code (a unary length prefix, $2\,\mathrm{bits}(a) - 1$ bits) needs up to 131 bits for Q72, just too long for 128. A delta code (the bit length in LCF's code, then the remaining bits) needs at most 115 bits. That is a proven upper bound, from continuant growth over all Q72 magnitudes; the longest found by search is 101 bits. So every Q72 value has a 128-bit key, a sign bit and 127 bits of code, with equal values getting equal keys and order preserved exactly. Brute-force tests and fuzzing of extreme values confirm this, including zero, negatives and $2^{64} - 1$.
+
+**Cost.** Encoding takes about 87 ns per value (compiled). Sorting $10^6$ mixed Q72 values:
+
+| Method | Time |
+| --- | --- |
+| keys, then NumPy's sort | 206 ms |
+| keys, then a merge sort | 261 ms |
+| the same merge sort, comparing values exactly by 128-bit cross-multiplication | 373 ms |
+| float64 sort with exact fixing of ties, correctly rounded floats given | 121 ms |
+| the same, including the conversion to correctly rounded floats | 257 ms |
+| GMP `mpq` objects, Python's sort | 1.17 s |
+
+**Finding.** Keys do not make sorting much faster: with the same sort they gain 1.4× over exact comparison. Their value is interoperability. Any system that compares bytes can index and order Q values correctly, at 16 bytes per key against 9 for the value. Within a vector the question does not arise, because values over one denominator order as integers.
+
+A standard order-key encoding derived from Q72 is a candidate addition to the spec, alongside the format rather than in it.
+
+### Quote notation: 2-adic arithmetic and deferred reduction
+
+Two of quote notation's ideas are already in v0.2: two's complement signs in the vector form, and exact division by a 2-adic inverse (2.7× faster than dividing). This research asked whether its representation of rationals could give a fast path where the vector form fails, for elementwise work on values with unrelated denominators.
+
+**Method.** Elementwise chains $x \leftarrow x b + c$ of 1 to 4 steps on $10^5$ elements, compiled, in three versions:
+1. GMP `mpq_t`, reduced every step;
+2. a 128-bit numerator and denominator per element, with the gcd deferred to the end;
+3. quote notation's representation: a residue modulo $2^{128}$ with a power-of-two exponent, so that adding and multiplying are single integer operations, then rational reconstruction at the end.
+
+Versions 2 and 3 carry exact bounds on each element's size. When a bound fails, the element is redone with GMP, so no result can be wrong.
+
+| Steps | unrelated denominators 1–1000: 2-adic | deferred pairs | decimals, 3 places: 2-adic | deferred pairs |
+| --- | --- | --- | --- | --- |
+| 1 | 0.92× | **0.26×** | 0.61× | **0.20×** |
+| 2 | 0.75× | **0.21×** | 0.57× | **0.20×** |
+| 3 | 1.08× (97% fall back) | **0.20×** | 1.02× (all fall back) | **0.23×** |
+| 4 | 1.02× (all fall back) | 0.70× (57% fall back) | 1.03× (all fall back) | 1.03× (99% fall back) |
+
+Time is relative to GMP.
+
+**Finding.** The 2-adic representation does not pay. Rational reconstruction costs more than the gcd it replaces, and a residue modulo $2^{128}$ can only be reconstructed while numerator and denominator together stay under about 127 bits, half what two separate 128-bit words hold. So it falls back sooner.
+
+The plain alternative, unreduced fixed-width pairs with one gcd at the end, was 4–5× faster than GMP for up to three steps. That is the case where the vector form is weakest: it was 78× slower than GMP on unrelated denominators. An array of fixed-width numerator–denominator pairs with deferred reduction, beside the vector form, is the lead this research leaves. Quote notation's p-adic arithmetic remains in use where it fits best, in the exact solver's Dixon lifting.

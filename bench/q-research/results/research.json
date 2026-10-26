@@ -1,0 +1,1857 @@
+{
+ "metadata": {
+  "date": "2026-10-26 16:37:12 CDT",
+  "cpu": "Intel(R) Xeon(R) Processor",
+  "cores_visible": 2,
+  "python": "3.13.17",
+  "numpy": "2.5.3",
+  "numba": "0.68.0",
+  "python-flint": "0.9.0",
+  "platform": "Linux-6.18.44-fc-v165-x86_64-with-glibc2.39",
+  "native thread pools": "openblas 1 thread(s); openblas 1 thread(s)",
+  "flint threads": 1,
+  "compiled": "gcc -O3 -march=native; GMP 6.3.0, FLINT 3.0.1"
+ },
+ "lcf_widths": {
+  "lexibinary (LCF's code)": {
+   "searched": {
+    "bits": 129,
+    "at": "18446744073709551615/1"
+   },
+   "bound": 131
+  },
+  "delta code": {
+   "searched": {
+    "bits": 101,
+    "at": "4224250756/2986996355"
+   },
+   "bound": 115
+  }
+ },
+ "R1": [
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "LCF keys (128-bit), then numpy lexsort",
+   "baseline": false,
+   "times": [
+    0.2045348050000939,
+    0.20494565400031206,
+    0.20552734300008524,
+    0.2066766570001164,
+    0.20710654699996667
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": "keys: 16 bytes per value; encoding included"
+  },
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "LCF keys (128-bit), then the same merge sort",
+   "baseline": false,
+   "times": [
+    0.25577428599990526,
+    0.25921810099998766,
+    0.26062069199997495,
+    0.2621053400002893,
+    0.2768720819999544
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": "the merge sort of the exact method, on keys"
+  },
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "exact merge sort, cross-multiplied comparisons",
+   "baseline": true,
+   "times": [
+    0.3265764049997415,
+    0.3284983859998647,
+    0.37310082400017563,
+    0.37507656899970243,
+    0.3769958439997936
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "float64 sort, then exact sort of equal floats (floats given)",
+   "baseline": false,
+   "times": [
+    0.12065378600027543,
+    0.12074066200011657,
+    0.12118089700015844,
+    0.1262723630002256,
+    0.13563889400029439
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": "correctly rounded floats computed before timing; float(p)/float(q) would not be monotonic"
+  },
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "float64 sort, then exact sort of equal floats (including conversion)",
+   "baseline": false,
+   "times": [
+    0.2538630340000054,
+    0.25425530799975604,
+    0.257142006000322,
+    0.2596354549996249,
+    0.290141174999917
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": "conversion by Python's exact Fraction-to-float"
+  },
+  {
+   "bench": "R1 sort Q72 values",
+   "size": 1000000,
+   "name": "GMP mpq, Python sort",
+   "baseline": false,
+   "times": [
+    1.1541984509999565,
+    1.1705048419999002,
+    1.1716118999997889,
+    1.183893786000226,
+    1.1946370089999618
+   ],
+   "loops": 1,
+   "error": "0 (exact order)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R1 encode keys",
+   "size": 1000000,
+   "name": "LCF keys, encoding only",
+   "baseline": false,
+   "times": [
+    0.08688279499983764,
+    0.0869874869999876,
+    0.0870004059997882,
+    0.08703924200017354,
+    0.08704410600012125,
+    0.08709976199997982,
+    0.08716308199973355,
+    0.08723610800007009,
+    0.08726723500012668,
+    0.08729078699980164,
+    0.08729727699983414,
+    0.08730680999997276,
+    0.08731399499993131,
+    0.08735286899991479,
+    0.08748798900023758,
+    0.0875711290000254,
+    0.0876113119998081,
+    0.08782700500023566,
+    0.08790501600014977,
+    0.08797162400014713,
+    0.08800356300025669,
+    0.08813580100013496,
+    0.0882088860003023,
+    0.08839534699973228,
+    0.09144446100026471
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  }
+ ],
+ "R2": [
+  {
+   "bench": "R2 x <- x*b + c, 1 step, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.034306404
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 1 step, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.008797316
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 1 step, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.03151712
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.054563241
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.011652731
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.041113539
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "5365 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.077720932
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.015449242
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.084275794
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "97278 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.09876653
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.068769785
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "57110 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, unrelated denominators 1..1000",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.101101456
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "99954 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 1 step, decimals, 3 places",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.03763861
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 1 step, decimals, 3 places",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.007629014
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 1 step, decimals, 3 places",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.02297931
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.055718673
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.010941173
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 2 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.031623566
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.07482188
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.017027292
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "0 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 3 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.07631433
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "99985 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "GMP mpq_t, reduced every step (C)",
+   "baseline": true,
+   "times": [
+    0.093142692
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "128-bit numerator and denominator, gcd at the end (C)",
+   "baseline": false,
+   "times": [
+    0.096391766
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "99126 of 100000 elements redone with GMP"
+  },
+  {
+   "bench": "R2 x <- x*b + c, 4 steps, decimals, 3 places",
+   "size": 100000,
+   "name": "2-adic residues mod 2^128, reconstructed at the end (C)",
+   "baseline": false,
+   "times": [
+    0.095662077
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "100000 of 100000 elements redone with GMP"
+  }
+ ],
+ "R3": [
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.010537972000292939,
+    0.010628560999975889,
+    0.010681656000087969,
+    0.010820021999734308,
+    0.010948487000405294,
+    0.010956550000173593,
+    0.011010105999957887,
+    0.011217915000088396,
+    0.011228329999994457,
+    0.011276814000211743,
+    0.011281590000180586,
+    0.011512096999922505,
+    0.011587750999751734,
+    0.011596404999636434,
+    0.011726968999937526,
+    0.011820552999779466,
+    0.01183056999980181,
+    0.011862002999805554,
+    0.011959550000028685,
+    0.012090759000329854,
+    0.01215954999997848,
+    0.012197476999972423,
+    0.012441169999874546,
+    0.013203607999912492,
+    0.013558013000420033
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": 16,
+   "note": "tier s64"
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.010325734000161901,
+    0.010843260000001465,
+    0.010913547000200197,
+    0.010936719999790512,
+    0.011374890999832132,
+    0.011379823999959626,
+    0.011399298000014824,
+    0.011444623999977921,
+    0.011509122000006755,
+    0.01151051400029246,
+    0.011659713999961241,
+    0.011901117999968847,
+    0.012542498000129854,
+    0.012588410999796906,
+    0.012613719000000856,
+    0.012649838000015734,
+    0.012650340000163851,
+    0.012685236999914196,
+    0.012695486999746208,
+    0.012782363000042096,
+    0.012881903999641509,
+    0.012970613000106823,
+    0.013010394000048109,
+    0.013090775999899051,
+    0.01309579799999483
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": 16,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.011358579999978247,
+    0.01141787199958344,
+    0.011423500000091735,
+    0.01144086399972366,
+    0.011526996999691619,
+    0.011778081000102247,
+    0.012016022999887355,
+    0.01206722400002036,
+    0.012189433000003191,
+    0.012374630000067555,
+    0.012433593999958248,
+    0.012457971000003454,
+    0.012696254999809753,
+    0.012925716000154353,
+    0.013605680999717151,
+    0.013729162999879918,
+    0.013847593999798846,
+    0.01386495900032969,
+    0.013903860000027635,
+    0.013906034000228829,
+    0.013945662999958586,
+    0.014232774999982212,
+    0.01426883700014514,
+    0.014537849999669561,
+    0.014682672000162711
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step; tiers s64, s64"
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.608684288
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.423260311
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.013786652
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.004925566
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.014635434000410896,
+    0.015936884000439022,
+    0.01601581700015231,
+    0.016041267000218795,
+    0.016059515999586438,
+    0.016102458000204933,
+    0.016143183000167483,
+    0.016154091999851516,
+    0.016161491999810096,
+    0.01618401999985508,
+    0.016225561999817728,
+    0.01625154100020154,
+    0.016263743999843427,
+    0.01633873099945049,
+    0.016339924999556388,
+    0.01637786799983587,
+    0.016459481999845593,
+    0.01659025700064376,
+    0.016608148999694095,
+    0.016669255000124394,
+    0.01667765199999849,
+    0.017088626999793632,
+    0.01715271200009738,
+    0.01804962999995041,
+    0.018262266000419913
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": 16,
+   "note": "tier s64"
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.01471868499993434,
+    0.016151409000485728,
+    0.01626433699948393,
+    0.016409952000685735,
+    0.016495120999934443,
+    0.016503571000612283,
+    0.016508007000084035,
+    0.016513301000486535,
+    0.016519054000127653,
+    0.016680988999723922,
+    0.016706530000192288,
+    0.016734120000364783,
+    0.016776439999375725,
+    0.016799437000372563,
+    0.01680935399963346,
+    0.01682813199931843,
+    0.016930111999499786,
+    0.01701643599972158,
+    0.017126950000601937,
+    0.017493360999651486,
+    0.01757021400044323,
+    0.017583885000021837,
+    0.017617413999687415,
+    0.017953564999515947,
+    0.01939814999968803
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": 16,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.015443719000359124,
+    0.015763184999741497,
+    0.01873411999986274,
+    0.018744875000265893,
+    0.018746212999758427,
+    0.018756909999865456,
+    0.01876067100056389,
+    0.018778181000016048,
+    0.018835113999557507,
+    0.018882669000049646,
+    0.018884864000028756,
+    0.018937574999654316,
+    0.019039400999645295,
+    0.019089043000349193,
+    0.01922557499983668,
+    0.019234035000408767,
+    0.019311451999783458,
+    0.019372649000615638,
+    0.01941119200000685,
+    0.019414872000197647,
+    0.01944269399973564,
+    0.019644940000034694,
+    0.01969232600004034,
+    0.019951951000621193,
+    0.01995585199983907
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step; tiers s64, s64"
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.798111844
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.587415214
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.019565622
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.005269991
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.011177422000400838,
+    0.011190523000550456,
+    0.011241033999795036,
+    0.011290566000752733,
+    0.011305007999908412,
+    0.011326959000143688,
+    0.011386684000171954,
+    0.011513734000800468,
+    0.011516567999933613,
+    0.011533539000083692,
+    0.01155718399968464,
+    0.011655845999484882,
+    0.01177658300002804,
+    0.011845723000078578,
+    0.011877601999913168,
+    0.011949955999625672,
+    0.012001863000477897,
+    0.012018483000247215,
+    0.012050203999933728,
+    0.012312689000282262,
+    0.012876846999461122,
+    0.012938216999828,
+    0.013949088000117627,
+    0.014286368999819388,
+    0.014440031000049203
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.011674962000142841,
+    0.01183701399986603,
+    0.011920988000383659,
+    0.012122453000301903,
+    0.012142186000346555,
+    0.012246164999851317,
+    0.01233092900019983,
+    0.012354741000308422,
+    0.012369955999929516,
+    0.012416739000400412,
+    0.01241893299993535,
+    0.012460179000299831,
+    0.012494296999648213,
+    0.012520102000053157,
+    0.012529581999842776,
+    0.012551691000226128,
+    0.012553194000247458,
+    0.01259743199989316,
+    0.012717004000478482,
+    0.012753696000800119,
+    0.012772201000188943,
+    0.012933310000335041,
+    0.013046805999692879,
+    0.013149999000233947,
+    0.013868164000086836
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.01291483499971946,
+    0.01300781299960363,
+    0.013014537000344717,
+    0.013022893000197655,
+    0.013040138000178558,
+    0.01320793099966977,
+    0.013229029999820341,
+    0.013267296999401879,
+    0.013410843000201567,
+    0.013452170999698865,
+    0.01346620099957363,
+    0.013537492000068596,
+    0.013595473999885144,
+    0.013668159000189917,
+    0.013704031000088435,
+    0.01374300299994502,
+    0.013829159999659169,
+    0.013933434000136913,
+    0.013966030000119645,
+    0.014032884000698687,
+    0.014287115000115591,
+    0.014435277000302449,
+    0.015108119000615261,
+    0.01571043700005248,
+    0.01587887499954377
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step"
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.83156365
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.594533141
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.017109028
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.002179159
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.005024651999519847,
+    0.005168916000002355,
+    0.005255488000329933,
+    0.005296925000038755,
+    0.0053097970003364026,
+    0.005339958999684313,
+    0.005362102999242779,
+    0.00536304600063886,
+    0.005365090999475797,
+    0.005385454999668582,
+    0.005438768999738386,
+    0.005464527000185626,
+    0.005547552999814798,
+    0.006489047000286519,
+    0.00652909299969906,
+    0.006531805000122404,
+    0.0066368219995638356,
+    0.006640026999775728,
+    0.006657455999629747,
+    0.006661802000053285,
+    0.006684707000204071,
+    0.006692711000141571,
+    0.0067230360000394285,
+    0.006736822000675602,
+    0.0069700670001111575
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.00471799299975828,
+    0.00483646900011081,
+    0.004857836999690335,
+    0.0049987190004685544,
+    0.0050540140000521205,
+    0.0056775140001263935,
+    0.005762327999946137,
+    0.005794063999928767,
+    0.005852964000041538,
+    0.005856349000168848,
+    0.006044732999725966,
+    0.006044890000339365,
+    0.006101916999796231,
+    0.006132988999524969,
+    0.00616013600028964,
+    0.00616887000069255,
+    0.006188044999362319,
+    0.006212059000063164,
+    0.0062381019997701515,
+    0.0062421909997283365,
+    0.0062805769994156435,
+    0.006285455000579532,
+    0.006371573999786051,
+    0.006410433000382909,
+    0.006536377999509568
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.004796747000000323,
+    0.004799981999894953,
+    0.004802448999726039,
+    0.004813497999748506,
+    0.004834004000258574,
+    0.004887600000074599,
+    0.005324456000380451,
+    0.005769641999904707,
+    0.005796680999992532,
+    0.005856944999322877,
+    0.005864735000614019,
+    0.005939105999459571,
+    0.005951310000455123,
+    0.005959973000244645,
+    0.005966675999843574,
+    0.005967345000499336,
+    0.005995661000270047,
+    0.00600086300073599,
+    0.006037004000063462,
+    0.006049160000657139,
+    0.006050937000509293,
+    0.006071576999602257,
+    0.006102473000282771,
+    0.0061944290000610636,
+    0.007295528999748058
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step"
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.221011393
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.211255466
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.006326992
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 3 places, parts below 1000",
+   "size": 1000000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.002842757
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.0043049340001743985,
+    0.004352087000370375,
+    0.004365861999758636,
+    0.004366625000329805,
+    0.004381979999379837,
+    0.004384229000606865,
+    0.004386558000078367,
+    0.004387204000522615,
+    0.004416073999891523,
+    0.0044171919998916565,
+    0.00445195500014961,
+    0.004468889000236231,
+    0.004473932000109926,
+    0.004485120999561332,
+    0.004490352000175335,
+    0.0045163089998823125,
+    0.004525931999523891,
+    0.004544045000329788,
+    0.004625134999514557,
+    0.004723592999653192,
+    0.004758418000164966,
+    0.004761426999721152,
+    0.004830648000279325,
+    0.004836614999476296,
+    0.004859438000494265
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "tier s128"
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.004504722000092443,
+    0.004606336000506417,
+    0.004637156000171672,
+    0.004662928000470856,
+    0.004667778000111866,
+    0.004686706999564194,
+    0.004688678000093205,
+    0.004695797000749735,
+    0.004697547000432678,
+    0.004711440000392031,
+    0.004712984000434517,
+    0.00472805299978063,
+    0.004728672000055667,
+    0.004729575999590452,
+    0.004729755999505869,
+    0.004741131000628229,
+    0.004766889999700652,
+    0.004779840999617591,
+    0.004784431999723893,
+    0.004803392999747302,
+    0.004834483000195178,
+    0.00484196300021722,
+    0.004850025999985519,
+    0.004894599999715865,
+    0.004908404000161681
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.004392795999592636,
+    0.004524988000412122,
+    0.00492588999986765,
+    0.004969985000570887,
+    0.0049929400001929025,
+    0.005002527000215196,
+    0.005006916000638739,
+    0.005019037000238313,
+    0.005030291999901237,
+    0.005035592000240285,
+    0.00505652599986206,
+    0.005070518999673368,
+    0.005104832000142778,
+    0.005106413000248722,
+    0.0051171009999961825,
+    0.005125677999785694,
+    0.005131040000378562,
+    0.005136456999935035,
+    0.005140059999575897,
+    0.005148904999259685,
+    0.005161662999853434,
+    0.005163892999917152,
+    0.005165726999621256,
+    0.005183901000236801,
+    0.005262587999823154
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step; tiers s128, s128"
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.172365942
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.175007002
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.003870037
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex mul, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000773864
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.006004043999382702,
+    0.0060375839993866975,
+    0.006068179000067175,
+    0.006086620000132825,
+    0.006135542000265559,
+    0.0061545190001197625,
+    0.006248855000194453,
+    0.006346100999508053,
+    0.006402662999789754,
+    0.006422771999496035,
+    0.00643982000019605,
+    0.0064408240004922845,
+    0.006474900999819511,
+    0.006478481000158354,
+    0.00647939300051803,
+    0.006520790000649868,
+    0.006632094999986293,
+    0.00674202400023205,
+    0.006896855999912077,
+    0.006935300000805,
+    0.007057417999931204,
+    0.00712630900034128,
+    0.007231709999359737,
+    0.007380119000117702,
+    0.007399135000014212
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "tier s128"
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.006641447000220069,
+    0.00672100399970077,
+    0.0067480300003808225,
+    0.006762119000086386,
+    0.006762662000255659,
+    0.006775332999495731,
+    0.006778924000172992,
+    0.006819666999945184,
+    0.006822539000495453,
+    0.006845060999694397,
+    0.006876176000332634,
+    0.006902101000378025,
+    0.006937481000022672,
+    0.00699439700019866,
+    0.007064766999974381,
+    0.007067320999340154,
+    0.007247759000165388,
+    0.00724980199993297,
+    0.0072499140005675144,
+    0.007453047000126389,
+    0.007471212999917043,
+    0.007514629000070272,
+    0.00753665699994599,
+    0.007613734000187833,
+    0.007766257000184851
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.006593612999495235,
+    0.006631041000218829,
+    0.0066428199997972115,
+    0.006709928999953263,
+    0.006710849999763013,
+    0.0067685690000871546,
+    0.00682147099996655,
+    0.006821603999924264,
+    0.006824631000199588,
+    0.0068530479993569315,
+    0.006875531999867235,
+    0.006897224000567803,
+    0.006934717000149249,
+    0.006977269000344677,
+    0.007008974999735074,
+    0.007036003999928653,
+    0.007051849000163202,
+    0.007124241999918013,
+    0.007158863000768179,
+    0.007229318999634415,
+    0.007370207000349183,
+    0.007764201000100002,
+    0.0080138960001932,
+    0.008025107999856118,
+    0.008160702000168385
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step; tiers s128, s128"
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.232063107
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.232923261
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.010891021
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex fma, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.001112305
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.0044741119991158484,
+    0.0044972719997531385,
+    0.004534175999651779,
+    0.004582381999171048,
+    0.004599398000209476,
+    0.004627235000043584,
+    0.004627255999366753,
+    0.004658126999856904,
+    0.0047279280006478075,
+    0.00474545399993076,
+    0.00478536599985091,
+    0.004811834999600251,
+    0.004850713999985601,
+    0.004884572000264598,
+    0.004948693000187632,
+    0.00498770699960005,
+    0.0049945739992836025,
+    0.004995778000193241,
+    0.005001016999813146,
+    0.005006206999496499,
+    0.005027897000218218,
+    0.00504031299988128,
+    0.005074421999779588,
+    0.005174058000193327,
+    0.00517662900074356
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.004702405999523762,
+    0.0047537030004605185,
+    0.0047923989995979355,
+    0.004794958999809751,
+    0.00482295200072258,
+    0.004831541999919864,
+    0.00484086100004788,
+    0.0049002280002241605,
+    0.004935330000080285,
+    0.004953837000357453,
+    0.005008193000321626,
+    0.005011305999687465,
+    0.005106235000312154,
+    0.005249460000413819,
+    0.005267784000352549,
+    0.005281082999317732,
+    0.005339520999768865,
+    0.0053528759999608155,
+    0.005386279000049399,
+    0.00539375599964842,
+    0.005398474999310565,
+    0.005421715000011318,
+    0.0054715070000384,
+    0.005767105999439082,
+    0.00603483199938637
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.004631426000742067,
+    0.004689753000093333,
+    0.004724791999251465,
+    0.004743538000184344,
+    0.004780348000167578,
+    0.00478408000071795,
+    0.004787199999555014,
+    0.004798103999746672,
+    0.00494329100001778,
+    0.005051336000178708,
+    0.0051210460005677305,
+    0.005144824999661068,
+    0.005185678000088956,
+    0.005198399000619247,
+    0.005343471999367466,
+    0.005543316000512277,
+    0.005551340999772947,
+    0.005578674000389583,
+    0.0055815690002418705,
+    0.005603035000603995,
+    0.005605272999673616,
+    0.005637073999423592,
+    0.005654604000483232,
+    0.005710757999622729,
+    0.005712209999728657
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step"
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.244023742
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.242750663
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.008276756
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex dot, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000561407
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "plane vector (A + Bi)/D",
+   "baseline": false,
+   "times": [
+    0.002175311000428337,
+    0.0022240090002014767,
+    0.0022278939995885594,
+    0.002234411000245018,
+    0.0022656129995084484,
+    0.0022656579994873027,
+    0.002288892000251508,
+    0.0022997070000201347,
+    0.0023061950005285325,
+    0.002306907000274805,
+    0.0023487440003009397,
+    0.002364883000154805,
+    0.0024264439998660237,
+    0.0025562869996065274,
+    0.002565429999776825,
+    0.002593871000499348,
+    0.0026156969997828128,
+    0.0026232370000798255,
+    0.00268423299985443,
+    0.0026849229998333612,
+    0.0027048559995819232,
+    0.0027142170001752675,
+    0.0027632860001176596,
+    0.0027709389996743994,
+    0.002869621999707306
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "axis pair, written like the plane vector",
+   "baseline": false,
+   "times": [
+    0.0022011920000295504,
+    0.002214310000454134,
+    0.0023160340006143088,
+    0.0023461089995180373,
+    0.0023477069998989464,
+    0.0023571069996251026,
+    0.0023658780000914703,
+    0.002378848999796901,
+    0.002415549000033934,
+    0.002442742000312137,
+    0.002444736000143166,
+    0.002464123999743606,
+    0.0024702849996174336,
+    0.0024860260000423295,
+    0.002518221999707748,
+    0.0025278459997934988,
+    0.002688331999706861,
+    0.002695029999813414,
+    0.002699566999581293,
+    0.002722340000218537,
+    0.002758118000201648,
+    0.0027740940004150616,
+    0.0027816319998237304,
+    0.002792098999634618,
+    0.0028449290002754424
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "same code as the plane vector; each part keeps its own denominator"
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "pair of axis vectors (CxCol)",
+   "baseline": false,
+   "times": [
+    0.0021852859999853536,
+    0.002187013000366278,
+    0.002205211999353196,
+    0.002206610999564873,
+    0.002289371999722789,
+    0.002304872999957297,
+    0.0023186769994936185,
+    0.0023619900002813665,
+    0.0023722789992461912,
+    0.0023806279996279045,
+    0.002405874999567459,
+    0.0024077600000964594,
+    0.002416025999991689,
+    0.0024306870000145864,
+    0.002450723000038124,
+    0.0024532110001018737,
+    0.0024675760005266056,
+    0.002479449000020395,
+    0.0026850469994315063,
+    0.0027322189998812973,
+    0.0027869539999301196,
+    0.002796482999656291,
+    0.002821295999638096,
+    0.0028401399995345855,
+    0.002851620999535953
+   ],
+   "loops": 1,
+   "error": "0 (verified)",
+   "bytes_per_value": null,
+   "note": "the benchmark's complex columns, which reduce after every step"
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "GMP mpq_t pairs (C)",
+   "baseline": true,
+   "times": [
+    0.069616264
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpq pairs (C)",
+   "baseline": false,
+   "times": [
+    0.070699349
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "FLINT fmpzi over one denominator (C)",
+   "baseline": false,
+   "times": [
+    0.004055193
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "R3 complex abs2, 6 places, parts below 1e+06",
+   "size": 250000,
+   "name": "C int64 pairs, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000279245
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  }
+ ],
+ "plane_format": [
+  {
+   "values": "complex decimals, 3 places, parts below 10^3",
+   "p80": 1.0,
+   "q40x2": 1.0,
+   "p152": 1.0,
+   "q72x2": 1.0,
+   "plane_bits": 47.0,
+   "pair_bits": 53.0
+  },
+  {
+   "values": "complex decimals, 6 places, parts below 10^6",
+   "p80": 0.0,
+   "q40x2": 0.0,
+   "p152": 1.0,
+   "q72x2": 1.0,
+   "plane_bits": 97.0,
+   "pair_bits": 113.0
+  },
+  {
+   "values": "products of two 3-place complex decimals",
+   "p80": 0.0001,
+   "q40x2": 0.0,
+   "p152": 1.0,
+   "q72x2": 1.0,
+   "plane_bits": 94.0,
+   "pair_bits": 110.0
+  },
+  {
+   "values": "quotients of two 3-place complex decimals",
+   "p80": 5e-05,
+   "q40x2": 0.0,
+   "p152": 1.0,
+   "q72x2": 0.02405,
+   "plane_bits": 113.0,
+   "pair_bits": 151.0
+  },
+  {
+   "values": "quotients of Gaussian integers below 1000",
+   "p80": 1.0,
+   "q40x2": 0.1973,
+   "p152": 1.0,
+   "q72x2": 1.0,
+   "plane_bits": 53.0,
+   "pair_bits": 72.0
+  },
+  {
+   "values": "quotients of Gaussian integers below 10^6",
+   "p80": 0.0001,
+   "q40x2": 0.0,
+   "p152": 1.0,
+   "q72x2": 0.02715,
+   "plane_bits": 113.0,
+   "pair_bits": 151.0
+  },
+  {
+   "values": "products of three Gaussian-integer quotients below 100",
+   "p80": 0.0394,
+   "q40x2": 0.0025,
+   "p152": 1.0,
+   "q72x2": 0.5919,
+   "plane_bits": 92.0,
+   "pair_bits": 123.0
+  }
+ ]
+}

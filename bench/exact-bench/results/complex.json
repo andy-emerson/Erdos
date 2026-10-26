@@ -1,0 +1,244 @@
+{
+ "metadata": {
+  "date": "2026-10-25 22:47:24 CDT",
+  "cpu": "Intel(R) Xeon(R) Processor",
+  "cores_visible": 2,
+  "python": "3.13.17",
+  "numpy": "2.5.3",
+  "numba": "0.68.0",
+  "python-flint": "0.9.0",
+  "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+  "native thread pools": "openblas 1 thread(s)",
+  "flint threads": 1
+ },
+ "rows": [
+  {
+   "bench": "W1 real data",
+   "size": 100000,
+   "name": "pairs (reference)",
+   "baseline": true,
+   "times": [
+    0.30969323699991946,
+    0.31077695099975244,
+    0.3108310360003088,
+    0.313652959999672,
+    0.3140273349999916,
+    0.31553538300067885,
+    0.31609561200002645,
+    0.3174349689998053,
+    0.3181281500001205,
+    0.3332720230000632,
+    0.3665741249997154
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": 32,
+   "note": "2 words per value"
+  },
+  {
+   "bench": "W1 real data",
+   "size": 100000,
+   "name": "tagged",
+   "baseline": false,
+   "times": [
+    0.1363472749999346,
+    0.13709876999928383,
+    0.13754315099959058,
+    0.1380001159996027,
+    0.1381703679999191,
+    0.13845860099991114,
+    0.13866113699987181,
+    0.13939576899974782,
+    0.13991337700008444,
+    0.1408173589998114,
+    0.14140341700021963
+   ],
+   "loops": 1,
+   "error": "0 (matches pairs)",
+   "bytes_per_value": 16,
+   "note": "fixed-width column of width 1; 1.00 parts per value if stored variable-width"
+  },
+  {
+   "bench": "W1 real data",
+   "size": 100000,
+   "name": "NumPy complex128",
+   "baseline": false,
+   "times": [
+    0.00017403456251940952,
+    0.00017602718747866675,
+    0.0001771598750224257,
+    0.00017762562504231028,
+    0.00018532349997713027,
+    0.0001888518125383598,
+    0.00018891381250796258,
+    0.00019788681248655848,
+    0.00019912431253032992,
+    0.00020224449997385818,
+    0.00020428862501375988
+   ],
+   "loops": 16,
+   "error": 2.2622411873462343e-16,
+   "bytes_per_value": 16,
+   "note": "arithmetic only, on pre-converted arrays; error is max-norm"
+  },
+  {
+   "bench": "W2 rotation by i",
+   "size": 100000,
+   "name": "pairs (reference)",
+   "baseline": true,
+   "times": [
+    0.6060034259999156,
+    0.609159014999932,
+    0.6094074880002154,
+    0.6128559590006262,
+    0.6332696670006044,
+    0.6333820460004063
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": 32,
+   "note": "2 words per value"
+  },
+  {
+   "bench": "W2 rotation by i",
+   "size": 100000,
+   "name": "tagged",
+   "baseline": false,
+   "times": [
+    0.2869652489998771,
+    0.2876137889998063,
+    0.2881562189995748,
+    0.2885253949998514,
+    0.2887441279999621,
+    0.29084582300038164
+   ],
+   "loops": 1,
+   "error": "0 (matches pairs)",
+   "bytes_per_value": 16,
+   "note": "fixed-width column of width 1; 1.00 parts per value if stored variable-width"
+  },
+  {
+   "bench": "W2 rotation by i",
+   "size": 100000,
+   "name": "NumPy complex128",
+   "baseline": false,
+   "times": [
+    0.0002600596250204035,
+    0.0002648968750236236,
+    0.00026577675009775703,
+    0.00026906524999503745,
+    0.00027007549999780167,
+    0.0002721004999557408
+   ],
+   "loops": 8,
+   "error": 2.4212234499635265e-16,
+   "bytes_per_value": 16,
+   "note": "arithmetic only, on pre-converted arrays; error is max-norm"
+  },
+  {
+   "bench": "W3 4-point DFT of real data",
+   "size": 100000,
+   "name": "pairs (reference)",
+   "baseline": true,
+   "times": [
+    1.6888413470005617,
+    1.6962733760001356,
+    1.6969069169999784,
+    1.7813551480003298,
+    1.8087732849999156
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": 32,
+   "note": "2 words per value"
+  },
+  {
+   "bench": "W3 4-point DFT of real data",
+   "size": 100000,
+   "name": "tagged",
+   "baseline": false,
+   "times": [
+    1.0521634369997628,
+    1.0522643650001555,
+    1.0561185609994936,
+    1.0588756900006047,
+    1.0931659569996555
+   ],
+   "loops": 1,
+   "error": "0 (matches pairs)",
+   "bytes_per_value": 32,
+   "note": "fixed-width column of width 2; 1.50 parts per value if stored variable-width"
+  },
+  {
+   "bench": "W3 4-point DFT of real data",
+   "size": 100000,
+   "name": "NumPy complex128",
+   "baseline": false,
+   "times": [
+    0.00036710075005430554,
+    0.00037389549993349647,
+    0.000377616000037051,
+    0.00039742925002883567,
+    0.000445683125008145
+   ],
+   "loops": 8,
+   "error": 1.5783893247364424e-16,
+   "bytes_per_value": 16,
+   "note": "arithmetic only, on pre-converted arrays; error is max-norm"
+  },
+  {
+   "bench": "W4 general complex products",
+   "size": 100000,
+   "name": "pairs (reference)",
+   "baseline": true,
+   "times": [
+    0.39578608899955725,
+    0.3988001029993029,
+    0.40885510800035263,
+    0.4107458910002606,
+    0.41548081200016895,
+    0.42219108999961463
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": 32,
+   "note": "2 words per value"
+  },
+  {
+   "bench": "W4 general complex products",
+   "size": 100000,
+   "name": "tagged",
+   "baseline": false,
+   "times": [
+    0.4623067889997401,
+    0.4676141459995051,
+    0.46796057500068855,
+    0.4763474790006512,
+    0.4786173920001602,
+    0.4899647319998621
+   ],
+   "loops": 1,
+   "error": "0 (matches pairs)",
+   "bytes_per_value": 32,
+   "note": "fixed-width column of width 2; 2.00 parts per value if stored variable-width"
+  },
+  {
+   "bench": "W4 general complex products",
+   "size": 100000,
+   "name": "NumPy complex128",
+   "baseline": false,
+   "times": [
+    0.00017355031246779618,
+    0.00017472849998512174,
+    0.00017793462501458635,
+    0.00019172787500565391,
+    0.00020259131247257756,
+    0.00021204518753847879
+   ],
+   "loops": 16,
+   "error": 1.987601879678843e-16,
+   "bytes_per_value": 16,
+   "note": "arithmetic only, on pre-converted arrays; error is max-norm"
+  }
+ ]
+}

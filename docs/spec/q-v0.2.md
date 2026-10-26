@@ -1,0 +1,279 @@
+# Q: Gaussian-Unit Rational Formats, Specification v0.2
+
+Oct 26, 2026 · Andrew Emerson
+
+This spec defines a family of data types, not a language feature: fixed-width binary formats for exact rationals on the real or the imaginary axis, specified the way a standards body specifies a floating-point format. It revises [Q72 v0.1](q72-v0.1.md). The formats are the same; v0.2 changes how they are named and organised, makes the vector form normative, and measures them only against exact tools.
+
+Changes from v0.1:
+
+- **One family, Q.** The unit is Q2, and the widths are Q24, Q40, Q72 and Q144. The byte that holds the unit and the slash is no longer a type of its own.
+- **The vector form is normative,** in the layout the measurements favoured: two's complement integers over one denominator, with the axis stored once per vector.
+- **Evidence is against exact tools only:** GMP, FLINT, Python's `fractions` and `decimal`, and integers over a shared denominator. Floating point appears once, as context.
+- **New sections:** directions for research, separate from open decisions.
+
+## Purpose and scope
+
+The formats are for computation that must be exact. A conforming implementation never rounds, so these formats compete with exact libraries, not with floating point.
+
+In scope: the unit Q2, the use of an unmodified unsigned integer as a numerator and a denominator, the family of widths, canonical encodings, arithmetic semantics, and the vector form for arrays.
+
+Out of scope: rounding, syntax and language bindings, transcendental functions, the internal representation of arbitrary-precision values, and I/O formats.
+
+## Notation
+
+For a positive integer $n$, $\operatorname{bits}(n)$ is its length in binary, $\lfloor \log_2 n \rfloor + 1$, and $\operatorname{bits}(0) = 0$. A U$w$ is an unsigned integer of $w$ bits, numbered $w-1$ (most significant) down to 0. In a name Q$n$, $n$ counts the bits that carry meaning.
+
+## Q2: the Gaussian unit
+
+**Q2** is two bits, a sign bit and an imaginary bit. Read together as a 2-bit number they are the **turn** $t$, the number of quarter turns: $t = 0$ is $1$, $1$ is $i$, $2$ is $-1$, $3$ is $-i$. The four units form a cyclic group, so multiplying units is adding turns modulo 4: $i \cdot i$ is $01 + 01 = 10$, which is $-1$. Negation adds 2 (flips the sign bit); conjugation negates the turn; the reciprocal of $i^t$ is $i^{-t}$. The bits also read independently: the sign bit alone is $-1$, the imaginary bit alone is $i$, both are $-i$.
+
+A Q2 is never zero. Stored alone it occupies a byte, the smallest unit a machine addresses, in the byte's top two bits with the other six clear, the way a boolean occupies a byte. Arrays of Q2 may pack four to a byte.
+
+## Q72
+
+A **Q72** is a byte and a U64, written $(g, u)$. The byte's top two bits are a Q2, the turn $t$; its low six bits are the **slash** $s$. The U64 is the standard unsigned 64-bit integer, unmodified; the slash tells how to read it:
+
+$$
+p = \left\lfloor \frac{u}{2^{63-s}} \right\rfloor, \qquad q = \left(u \bmod 2^{63-s}\right) + 1, \qquad x = i^t \cdot \frac{p}{q}.
+$$
+
+| Byte bits | Field | Meaning |
+| --- | --- | --- |
+| 7 | sign | the Q2 |
+| 6 | imaginary | |
+| 5–0 | slash $s$ | the numerator is the top $s+1$ bits of the U64 |
+
+The numerator $p$ is the top $s+1$ bits of $u$. The remaining $63-s$ bits store the **denominator minus one**, so a field of zeros means $q = 1$ and no pattern has a zero denominator. At slash 63 there is no field: the whole word is the numerator, and the value is an integer.
+
+Examples: $1/2$ has $p = 1$, $q = 2$, slash 0, and $u = 2^{63} + 1$. The integer 10 has $p = 1010_2$; slash 3 puts it in the top four bits with a zero field, so $u = 10 \cdot 2^{60}$ (slash 63 with $u = 10$ is a non-canonical encoding of the same value). $-3i/4$ has turn 3, $p = 11_2$, slash 1, and $u = 3 \cdot 2^{62} + 3$.
+
+**Every pattern is a value.** All $2^{72}$ bit patterns decode; there are no reserved codes, infinities or not-a-number values.
+
+**Zero.** When the numerator bits are all zero, $p = 0$ and the value is zero, whatever the rest of the pattern holds. Zero comes from the U64, never from the Q2. Zero has no direction: $0 \cdot i = 0$, and $-0$ is $0$.
+
+**Range.** A nonzero magnitude $p/q$ in lowest terms is representable exactly when
+
+$$
+\operatorname{bits}(p) + \operatorname{bits}(q - 1) \le 64.
+$$
+
+The largest magnitude is the integer $2^{64} - 1$; the smallest positive magnitude is $1/2^{63}$.
+
+### Canonical form
+
+The canonical encoding of a nonzero value has $p$ and $q$ coprime and $s = \operatorname{bits}(p) - 1$, so the numerator's leading 1 is bit 63 of the U64. The canonical encoding of zero has every bit clear. Every value has exactly one canonical encoding, operations return canonical results, and equality of values is equality of canonical encodings. Non-canonical patterns are valid inputs and decode to their values.
+
+## Arithmetic semantics
+
+Every operation is exact, and results are canonical.
+
+- **Multiplication** adds turns and multiplies magnitudes. Division multiplies by the reciprocal $i^{-t} q/p$.
+- **Division by zero** is an error. There is no infinite or undefined result to return.
+- **Addition and subtraction** are defined between values on the same axis: two reals, or two imaginaries. A real plus an imaginary is a complex number with both parts, which is two values (see Complex values). Zero is on every axis.
+- **Comparison.** Real values are totally ordered. Imaginary values are compared for equality only.
+- **Conjugation** negates the turn and **negation** adds 2 to it; neither changes the magnitude.
+
+### Exactness
+
+A result that does not fit is promoted to the next width, and from the top of the family to arbitrary precision. A conforming implementation never rounds, and has no rounding mode or inexact flag. An approximation is a new value that a program asks for explicitly, through a function outside this spec.
+
+### Complex values
+
+A complex value with both parts nonzero is a pair, real part first: $(a, b)$ means $a + b$ where $a$ is real and $b$ imaginary. Its operations follow from the parts: $(a, b)(c, d) = (ac + bd, ad + bc)$, where every product of two imaginaries is real and lands in the first part.
+
+## The family
+
+The layout scales with the word. A Q$n$ is a unit-and-slash tag and a U$w$; the tag holds the Q2 in its top two bits and a slash of $\log_2 w$ bits in its low bits.
+
+| Format | Tag | Word | Largest integer | Smallest positive |
+| --- | --- | --- | --- | --- |
+| Q2 | — | — | the four units $\pm 1$, $\pm i$ | — |
+| Q24 | 8 bits: Q2, 2 reserved, 4-bit slash | U16 | $2^{16}-1$ | $2^{-15}$ |
+| Q40 | 8 bits: Q2, 1 reserved, 5-bit slash | U32 | $2^{32}-1$ | $2^{-31}$ |
+| Q72 | 8 bits: Q2, 6-bit slash | U64 | $2^{64}-1$ | $2^{-63}$ |
+| Q144 | 16 bits: Q2, 7 reserved, 7-bit slash | U128 | $2^{128}-1$ | $2^{-127}$ |
+
+Reserved bits are zero in canonical form and ignored on decode. Beyond Q144, values are arbitrary-precision exact rationals with the same turn, whose representation this spec does not fix. Promotion is by value: a result is stored in the narrowest format that holds it.
+
+## The vector form
+
+An array of Q values is stored for computation in the **vector form**: one shared denominator $d \ge 1$, one axis $a$ for the whole vector (0 real, 1 imaginary), and per element a **two's complement** integer $x_i$. Element $i$ is
+
+$$
+i^{a} \cdot \frac{x_i}{d}.
+$$
+
+The sign of each element is part of its integer, as in quote notation, where $-1$ is $\ldots 1111$; only the axis, one bit, is stored for the vector. Elements are 64-bit integers by default. When any element needs more, the whole vector widens to 128-bit integers, then to arbitrary precision; it narrows again when every element fits.
+
+**Canonical form.** The denominator and the elements share no common factor: $\gcd(d, x_1, \ldots, x_n) = 1$. An all-zero vector has $d = 1$ and lies on both axes.
+
+**Conversion.** An array of Q72 values on one axis converts to the vector form over the least common multiple of their denominators, the sign of each element coming from its turn. An array with both real and imaginary elements is a **complex array**: a real vector and an imaginary vector. A vector converts back by reducing each element.
+
+**Operations.** Equality, ordering and results are those of the values; the layout changes only speed.
+
+- Two vectors are aligned to a common denominator, after which addition and subtraction are integer addition and subtraction, with no gcd. A real vector plus an imaginary vector, both nonzero, is a complex array.
+- Multiplication is integer multiplication over $d \cdot d'$; the axes add, so two imaginary vectors give a negated real vector.
+- Sums, sums of squares and group sums are integer sums.
+- **Overflow is detected, never wrapped.** An implementation proves a result fits (from the operands' bit lengths, or from the sign bits after a two's complement add), and otherwise recomputes in the wider tier.
+- After arithmetic, the vector is reduced to canonical form by the common factor $g$ of $d$ and all elements. The division is exact, so it may be done as quote notation does it: shift out the power of two in $g$, then multiply by the inverse of its odd part modulo $2^{64}$. This is exact for negative elements too.
+
+This is the arithmetic of integers over a shared denominator, with overflow caught and widened rather than assumed away, and with results kept in lowest terms.
+
+**Matrix product.** A matrix in the vector form is an integer matrix over one denominator, so its product is an integer product over $d_A d_B$. When $\max|A| \cdot \max|B| \cdot n < 2^{53}$, a single float64 matrix product is exact. Otherwise each matrix splits into signed limbs of $b$ bits with $n \cdot 2^{2b} \le 2^{53}$, each pair of limbs is one exact float product, and the limbs recombine in 64-bit, 128-bit or arbitrary-precision integers, as the bound allows.
+
+**Why this layout.** Three layouts were measured on identical work:
+- a turn byte and an unsigned magnitude per element (9 bytes), the v0.1 layout;
+- turns packed four to a byte (8.25 bytes);
+- two's complement with the axis per vector (8 bytes).
+
+The two's complement layout was fastest or tied at every operation (see Evidence).
+
+Arrays may also be stored element by element as Q72 values, which is the natural form for interchange and for arrays whose elements have unrelated denominators. Q72 v0.1 measured it, and it is not recommended for computation.
+
+## Determinism and platform requirements
+
+Results are bit-identical on every platform: arithmetic is exact and canonical form is unique. Implementations need only 64-bit integer arithmetic and a 64×64→128-bit multiply.
+
+## Prior art
+
+The magnitude of a Q value is a **floating-slash rational**, the format Matula and Kornerup defined and analysed ("Finite Precision Rational Arithmetic: Slash Number Systems", *IEEE Trans. Computers*, 1985; *Finite Precision Number Systems and Arithmetic*, Cambridge, 2010). Their formats store a numerator and denominator whose boundary moves, round by best rational approximation, and are arranged in multi-tier hierarchies; the Q family is such a hierarchy. Their Integrated Rational Arithmetic Unit (1981) computes all four operations on floating-slash operands with one Euclidean-algorithm unit.
+
+Two other representations of the rationals were considered and not adopted, because the vector form depends on explicit integer numerators:
+
+- **LCF** (Kornerup and Matula, *J. Universal Computer Science*, 1995) encodes a rational as the bit string of its continued fraction. Comparing two encodings as bit strings compares the values, and adjacent strings are neighbouring fractions. Arithmetic is bit-serial, not word-parallel.
+- **Quote notation** (Hehner and Horspool, *SIAM J. Computing*, 1979) writes a rational as an eventually repeating 2-adic expansion, which generalises two's complement: $-1$ is $\ldots 1111$. Addition, subtraction and multiplication use the integer algorithms, and division needs no gcd. Its length depends on the denominator: $1/947$ needs 947 bits.
+
+Two of quote notation's ideas are used here without changing the format. The signed vector layout keeps each element's sign in two's complement. And exact division by a known factor, the step that reduces a vector after arithmetic, multiplies by the 2-adic inverse of the factor's odd part instead of dividing; this is Jebelean's exact division (1993), which GMP uses for the same purpose. The exact solver's p-adic lifting (Dixon, 1982) is the same arithmetic again.
+
+Kahan argued that pure-imaginary values deserve their own type, so that arithmetic mixing real and imaginary values does not invent a zero real part; C99's `_Imaginary` type (Annex G) follows him. The Q family puts the axis of every value into the type.
+
+For exact computation, the standards are GMP (`mpq`, `mpz`), FLINT (`fmpq`, `fmpq_mat`, `fmpz_mat`) and Python's `fractions` and `decimal` (libmpdec). Exact matrix products on floating-point hardware by error-free splitting follow Ozaki, Ogita, Rump and Oishi (2008).
+
+What this spec adds, as far as the literature reviewed shows:
+
+- a Gaussian-unit tag, the sign and imaginary bits read as a quarter-turn count, on a floating-slash rational;
+- a tag paired with an unmodified unsigned word, sized so that $2 + \log_2 64 = 8$ bits;
+- a denominator stored minus one, so no pattern has a zero denominator and every pattern is a value;
+- no rounding, with promotion along the family instead;
+- a shared-denominator vector form, with an exact float-BLAS matrix product, as part of the format's definition.
+
+## Evidence
+
+Q72 and the vector form were implemented as a prototype in Python with compiled (Numba) kernels. Two layouts of the vector form were complete implementations, signed and turn bytes; the third layout, packed turns, existed only as fused kernels for the layout comparison. Only Q72 was built; vectors widen through 128-bit integers to Python integers.
+
+Every contender is exact except NumPy float64, which appears only for context. 31 correctness tests ran first. Every reported result was checked against an independent exact computation, every element for elementwise operations. An independent review of the code, tests and fairness came before the run, and its findings were fixed. The machine was one core of an Intel Xeon, with single-threaded BLAS and FLINT; times are medians of interleaved rounds.
+
+### Speed against the exact tools
+
+**Column operations** on $10^6$ decimals, relative to GMP `mpq` object arrays (lower is faster):
+
+| Operation | FLINT `fmpq` | Python `decimal` | GMP `mpz` numerators | int64 fixed point (unchecked) | Q vector form |
+| --- | --- | --- | --- | --- | --- |
+| sum | 0.96 | 0.45 | 0.24 | 0.0036 | **0.0033** (310× faster) |
+| $a \cdot b + c$, 3 places | 0.62 | 0.52 | 0.52 | 0.0087 | **0.014** (70×) |
+| $a \cdot b + c$, 6 places | 0.77 | 0.48 | 0.50 | overflows | **0.024** (43×, 128-bit) |
+| group-by sum, 1000 groups | 0.96 | 0.66 | 0.47 | 0.012 | **0.0097** (100×) |
+| variance | 0.91 | 0.67 | 0.32 | overflows | **0.0018** (550×) |
+| variance, values near $10^6$ | 0.97 | 0.66 | 0.31 | overflows | **0.0019** (540×) |
+
+Python `fractions` takes 3.1× to 4.8× GMP's time.
+- **Python `decimal`.** It is the fastest of the object libraries for decimal data, but 20× to 370× slower than the vector form. It ran with 80 digits and every rounding trapped, so it was exact or would have failed.
+- **GMP `mpz` numerators over one shared denominator.** These get the shared denominator without the fixed-width words, and are 21× to 180× slower than the vector form.
+- **Hand-written int64 fixed point.** It is the only contender in the vector form's class. The vector form matched or beat it on sums and group sums, and took 1.6× its time on $a \cdot b + c$. But it checks nothing, and it could not run on 6-place products or either variance, where its integers overflow.
+
+**Matrix product**, relative to FLINT `fmpq_mat`:
+
+| Product | FLINT `fmpz_mat` (numerators) | NumPy int64 | exact float-BLAS product |
+| --- | --- | --- | --- |
+| 500×500, 3 places | 0.60 | 0.80 | **0.17** |
+| 1000×1000, 3 places | 0.75 | 1.67 | **0.13** |
+| 500×500, 6 places | 0.53 | overflows | **0.21** (limbs, 128-bit) |
+| 500×500, 9 places | 0.46 | overflows | **0.17** (limbs, 128-bit) |
+
+The exact product is 2.5× to 5.7× faster than FLINT's integer product and 4.8× to 7.6× faster than its rational one.
+
+A plain float64 product of the numerators is 2.5× to 3.5× faster still at 3 places, where it happens to be exact. At 6 and 9 places it was wrong, because partial sums pass $2^{53}$, and nothing in it checks. The exact product makes that check and splits into limbs when it fails.
+
+**Linear solve.** The exact solver chain from earlier work (numeric–symbolic refinement, then Dixon's p-adic lifting, then FLINT) is not specific to Q. It ran at 0.2× FLINT's time with a planted integer answer ($n = 500$, every entry fitting one Q72), and at 0.84× to 2.5× FLINT's with a random right-hand side, where no entry fits a Q72.
+
+**Pipelines**, relative to the same pipeline written over GMP `mpq` scalars:
+- a regression on 20,000 rows, at 0.0046×, or 220× faster;
+- a 100,000-row table pipeline with currency conversion and grouping, at 0.089×, or 11× faster;
+- a 100,000-point complex DFT stage, at 0.0085×, or 120× faster.
+
+The table pipeline's converted amounts need 128-bit integers.
+
+### The layout of the vector form
+
+Fused kernels doing identical work on $10^7$ elements, relative to turn bytes:
+
+| Operation | packed turns | two's complement |
+| --- | --- | --- |
+| convert from int64 numerators | 1.08 | 1.05 |
+| sum | 0.57 | **0.45** |
+| $a \cdot b + c$ | 0.97 | **0.87** |
+| group-by sum | 1.29 | **0.66** |
+| sum and sum of squares | **0.73** | **0.73** |
+| bytes per element | 8.25 | **8** |
+
+In the complete implementations, two's complement was faster than turn bytes in every benchmark above, by 1.1× to 2.3×.
+
+Exact division by a common factor was faster by multiplying with the 2-adic inverse than with the divide instruction: 3× faster at $10^7$ elements and 6.8× at $10^5$.
+
+### Precision
+
+Rounding is not part of the format. It was measured only to describe how finely Q72 covers the real line.
+
+| To match Q72's… | a float needs a significand of | so an IEEE-style format of |
+| --- | --- | --- |
+| typical precision (median relative error $6.4 \times 10^{-20}$) | 63 bits | 71 bits |
+| worst-case precision ($1.2 \times 10^{-10}$, beside the integer 1) | 33 bits | 41 bits |
+
+The format sizes assume the 8-bit exponent needed to cover Q72's range. Typical precision is about $6 \times 10^{-20}$ at every magnitude, against float64's $4 \times 10^{-17}$. The worst case is at magnitude 1 and improves toward either end of the range; at the bottom the gap is to zero, as with float underflow.
+
+### Exactness
+
+How often common values are exactly representable (20,000 samples each):
+
+| Values | binary64 | decimal64 | Q72 |
+| --- | --- | --- | --- |
+| money, 2 places, below $10^9$ | 3.9% | 100% | 100% |
+| measurements, 3 or 6 places, below $10^6$ | under 1% | 100% | 100% |
+| ratios $a/b$ of integers up to 1000 | 2.5% | 5.1% | 100% |
+| means of 7 three-place measurements | 0.12% | 14% | 100% |
+| products of two 3-place measurements | 0.05% | 16% | 10% |
+| binary64 values | 100% | 0% | 0% |
+
+Products of large decimals often need more than 64 bits and are promoted.
+
+### The cost of exactness
+
+For context only, against NumPy float64, which rounds, on $10^6$ values:
+- a sum takes the same time;
+- $a \cdot b + c$ takes 2.2× as long;
+- the variance takes 0.39×;
+- a 1000×1000 product of 6-place decimals takes 6.5×.
+
+### Summary
+
+- In the vector form, exact arithmetic on decimal data is 43× to 550× faster than GMP rationals, 33× to 520× faster than FLINT's, 20× to 370× faster than Python `decimal`, and 21× to 180× faster than GMP integers over the same shared denominator. It runs within 1.6× of hand-written int64 fixed point, which checks nothing and overflows where the vector form widens.
+- The exact matrix product is 2.5× to 7.6× faster than FLINT.
+- The two's complement layout is fastest or tied at every operation. Quote notation's exact division is 3× to 7× faster than dividing.
+- Q72 is exact for decimals and ratios of small integers. Its precision matches a 71-bit float typically and a 41-bit float in the worst case.
+
+## Open decisions
+
+- **Reserved bits.** Q24, Q40 and Q144 leave bits of the tag unused. This spec makes them zero and ignored. They could instead carry a format tag, so that a stream of mixed widths describes itself.
+- **Errors in arrays.** Division by zero is an error for a scalar. For an array operation it is open whether the whole operation fails, or the failing elements are reported while the rest complete.
+- **Ordering of imaginary values.** Imaginaries compare for equality only. Ordering them by coefficient ($2i > i$) would help sorting, at the cost of an order that does not extend to complex values.
+- **Arbitrary precision.** Above Q144 this spec fixes the semantics but not the representation; an interchange encoding is open.
+- **Approximation.** A separate, explicit best-approximation function, returning the nearest Q72 to a given rational, is natural to standardise alongside this spec. The Evidence section measures what it would give. It is not part of the format.
+
+## Directions for research
+
+These are explorations that might improve implementations or add features without changing the formats.
+
+- **Ordered keys from LCF.** An order-preserving bit string derived from a Q value, so that sorting and database indexes compare plain integers.
+- **More from quote notation.** Fixed-width truncated 2-adic arithmetic ("Hensel codes", Krishnamurthy and Gregory) computes exactly within a range and recovers $p/q$ by rational reconstruction at the end. Whether chains of vector operations could stay in this form, deferring reduction, is open.
+- **Mixed-axis vectors.** The vector form keeps one axis per vector, so an array mixing real and imaginary elements is two vectors. A bitmap of imaginary bits, one per element, would let one vector hold both. Packing turns four to a byte was measured and did not pay: it was slower than two's complement at every operation except one tie. Whether a bitmap pays for mixed data is open.
+- **A plane variant.** $(a + bi)/c$ with three integers sharing one word covers the whole complex plane and is closed under all four operations (the Gaussian rationals, $\mathbb{Q}(i)$). Two slashes are needed, so each part gets about 20 bits of a 64-bit word; it becomes plausible at 144 bits. The vector form already holds complex arrays as a real and an imaginary vector over one denominator, which is this idea for arrays. The comparison would be against FLINT's exact Gaussian and number-field types.

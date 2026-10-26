@@ -326,7 +326,7 @@ These are explorations that might improve implementations or add features withou
 
 ## Research findings
 
-These measurements explore two of the directions above without changing the formats. The plane variant is being evaluated separately. The code is in [`bench/q-research`](../../bench/q-research/), and every result was checked against an exact computation.
+These measurements explore two of the directions above without changing the formats. The plane variant is evaluated in a separate [research note](../research/plane-variant.md): it ties the axis family on speed and array memory, and its one advantage is compact storage of single complex quotients. The code is in [`bench/q-research`](../../bench/q-research/), and every result was checked against an exact computation.
 
 ### LCF: order-preserving keys
 

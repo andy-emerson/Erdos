@@ -33,3 +33,20 @@ The second round adds:
 - **Exact wide-entry matrix products:** `cbench/gemm.c`, multimodular OpenBLAS `dgemm` against FLINT.
 
 Section G needs FLINT 3.0.1 built with BLAS. `build_flint_blas.sh [DIR]` builds it, with OpenBLAS from the scipy-openblas32 wheel; set `FLINT_BLAS_ROOT` to DIR if it is not `/home/claude/flintblas`. `un.c` needs clang 18 or later for `_BitInt`.
+
+## Phase one: the variants compared with each other
+
+Code and results for the [phase one note](../../docs/research/phase1-variants.md). It covers:
+- **Value layouts (S1):** `gen_p1_layouts.py`, `cbench/p1_layout.c`.
+- **Array representations by width and growth chains (S2–S4):** `cbench/p1_arith.c`, compiled with clang for `_BitInt`.
+- **The widening rule (S5):** `cbench/p1_widen.c`.
+- **Exact matrix products (S6):** `cbench/p1_gemm.c`, built against OpenBLAS from `build_flint_blas.sh`. Its `mmi` method needs AVX-512 IFMA.
+
+```
+cd build
+python3 runtests.py test_phase1 test_p1_gemm
+python3 phase1_bench.py --quick
+python3 phase1_bench.py
+```
+
+Results are written to `results/phase1.md` and `results/phase1.json`.

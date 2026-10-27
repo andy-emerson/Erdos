@@ -8,6 +8,7 @@
 - [Q72: Gaussian-Unit Rational Format Specification v0.1](docs/spec/q72-v0.1.md): a data-type standard for exact axis-aligned complex rationals, a one-byte Gaussian unit with an unmodified 64-bit word, with its ladder of widths and vector form, measured against NumPy, GMP and FLINT. Superseded by v0.2.
 - [The plane variant: research findings](docs/research/plane-variant.md): whether a format for $(a + bi)/c$ beats the Q family's values on one axis (it ties on speed and array memory).
 - [A family over the division algebras: research findings](docs/research/division-algebra-family.md): one-byte headers for the reals, complex numbers, quaternions and octonions, fixed-width uN array tiers against GMP and FLINT, and quaternion arrays; design questions for the next specification.
+- [Phase one: the variants compared with each other](docs/research/phase1-variants.md): value layouts, array representations by width, the threshold, the widening rule and matrix-product kernels, compared only with each other; decisions for the next specification.
 
 ## Benchmarks
 

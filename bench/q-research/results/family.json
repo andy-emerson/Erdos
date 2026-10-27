@@ -1,0 +1,1247 @@
+{
+ "metadata": {
+  "date": "2026-10-26 20:24:26 CDT",
+  "cpu": "Intel(R) Xeon(R) Processor",
+  "cores_visible": 2,
+  "python": "3.13.17",
+  "numpy": "2.5.3",
+  "numba": "0.68.0",
+  "python-flint": "0.9.0",
+  "platform": "Linux-6.18.44-fc-v165-x86_64-with-glibc2.39",
+  "native thread pools": "openblas 1 thread(s)",
+  "flint threads": 1,
+  "compiled": "section B (un.c, every method in it): clang 18 -O3 -march=native, for _BitInt; section C (quat.c): gcc 13 -O3 -march=native; GMP 6.3.0, FLINT 3.0.1"
+ },
+ "B": [
+  {
+   "bench": "B (a*b)^2, none wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.000128494
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 128 bits"
+  },
+  {
+   "bench": "B (a*b)^2, none wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.000966188
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, none wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.00134587
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, none wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.011022677
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, none wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.00014506
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 128 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, none wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.001208063
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, none wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.001786469
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, none wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.024302838
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.00058849
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 128 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.005664529
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.003635673
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.05583307
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.003621168
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 256 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.020221962
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.026710817
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.191527495
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.024681532
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 512 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.059949451
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.095339651
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.523338177
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.082919583
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 1024 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.126331444
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.187935288
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.978827882
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.298335504
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 1024 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.29868822
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.392399409
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    2.71921369
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": null,
+   "loops": null,
+   "error": "exceeds the 1024-bit cap",
+   "bytes_per_value": null,
+   "note": "detected before overflow; would continue in arbitrary precision"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.446751654
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.577363269
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    3.99501133
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.000447595
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.000995782
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.001394791
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.011200465
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.00047681
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.001215249
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.00189431
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.024491285
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, all wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.000449837
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B (a*b)^2, all wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.00180331
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, all wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.00219428
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B (a*b)^2, all wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.009986062
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, all wide",
+   "size": 100000,
+   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "baseline": false,
+   "times": [
+    0.000459245
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, all wide",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.002188933
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, all wide",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.003119016
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B sum of (a*b)^2, all wide",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    0.023300639
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  }
+ ],
+ "C": [
+  {
+   "bench": "C p + q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.001129091
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": 32,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.093470147
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.044575969
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.001622593
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000676857
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.001314255
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": 32,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.577925277
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.39441877
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.026123693
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 3 places, components below 1000",
+   "size": 200000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.001475261
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 3 places, components below 1000",
+   "size": 200000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000457017
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 3 places, components below 1000",
+   "size": 200000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.095356114
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.082829247
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.002260996
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 3 places, components below 1000",
+   "size": 200000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000728451
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 3 places, components below 1000",
+   "size": 200000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.004161677
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 3 places, components below 1000",
+   "size": 200000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    1.03523112
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.850427758
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 3 places, components below 1000",
+   "size": 200000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.034182288
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 3 places, components below 1000",
+   "size": 200000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.00296641
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000545749
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": 32,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.047598956
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.033378469
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.00078691
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C p + q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000336555
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000797801
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": 64,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.334738641
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.336611732
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.020861924
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C Hamilton product p q, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000722491
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000307206
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.058248161
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.055972188
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.003202594
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C sum of squared norms, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000356323
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "quaternion vector form (four int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.002042424
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "GMP mpq_t 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.680917501
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpq 4-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.69912006
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.047621987
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "C rotation q v q*, 6 places, components below 1e+06",
+   "size": 100000,
+   "name": "C int64 4-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.001490615
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  }
+ ],
+ "D": [
+  {
+   "member": "reals",
+   "total_bits": 136,
+   "unit_bits": 1,
+   "slash_bits": 7,
+   "borrowed": 0,
+   "data_bits": 128,
+   "median": 3.4346869593920964e-39,
+   "worst": 2.710505431213761e-20,
+   "float_bits_median": 127,
+   "float_bits_worst": 65,
+   "largest": "2^128 - 1",
+   "smallest": "2^-127"
+  },
+  {
+   "member": "complex",
+   "total_bits": 72,
+   "unit_bits": 2,
+   "slash_bits": 6,
+   "borrowed": 0,
+   "data_bits": 64,
+   "median": 7.284025022735719e-20,
+   "worst": 1.1641532188114492e-10,
+   "float_bits_median": 62,
+   "float_bits_worst": 33,
+   "largest": "2^64 - 1",
+   "smallest": "2^-63"
+  },
+  {
+   "member": "quaternions",
+   "total_bits": 40,
+   "unit_bits": 3,
+   "slash_bits": 5,
+   "borrowed": 0,
+   "data_bits": 32,
+   "median": 2.594646427418796e-10,
+   "worst": 7.629627368999298e-06,
+   "float_bits_median": 31,
+   "float_bits_worst": 17,
+   "largest": "2^32 - 1",
+   "smallest": "2^-31"
+  },
+  {
+   "member": "octonions",
+   "total_bits": 24,
+   "unit_bits": 4,
+   "slash_bits": 4,
+   "borrowed": 0,
+   "data_bits": 16,
+   "median": 1.8109041320476723e-05,
+   "worst": 0.001968503937007874,
+   "float_bits_median": 15,
+   "float_bits_worst": 9,
+   "largest": "2^16 - 1",
+   "smallest": "2^-15"
+  },
+  {
+   "member": "quaternions, promoted once",
+   "total_bits": 72,
+   "unit_bits": 3,
+   "slash_bits": 6,
+   "borrowed": 1,
+   "data_bits": 63,
+   "median": 1.2610946181624522e-19,
+   "worst": 2.3283064365386963e-10,
+   "float_bits_median": 62,
+   "float_bits_worst": 32,
+   "largest": "2^63 - 1",
+   "smallest": "2^-62"
+  },
+  {
+   "member": "quaternions, promoted twice",
+   "total_bits": 136,
+   "unit_bits": 3,
+   "slash_bits": 7,
+   "borrowed": 2,
+   "data_bits": 126,
+   "median": 1.5836496223792825e-38,
+   "worst": 5.421010862427522e-20,
+   "float_bits_median": 125,
+   "float_bits_worst": 64,
+   "largest": "2^126 - 1",
+   "smallest": "2^-125"
+  }
+ ]
+}

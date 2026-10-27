@@ -87,7 +87,31 @@ def test_round_trip_full_widths():
                 assert F.decode(*enc, dim, word) == (unit, p, q)
 
 
+def test_un_other_denominators_and_start_widths():
+    """Chains with small, odd and 40-bit denominators, from every start width, against Fractions."""
+    U.build()
+    rng = np.random.default_rng(21)
+    n = 120
+    for den in (7, 1000, 2**40 + 15):
+        a = rng.integers(-10**9, 10**9, size=n); b = rng.integers(-10**4, 10**4, size=n)
+        c = rng.integers(-den, den, size=n)
+        a[0] = -(2**63); b[1] = 0; c[2] = 0
+        I = U.Inputs(a, b, c, den)
+        Fr = lambda v: Fraction(int(v), den)
+        x = [Fr(v) for v in a]
+        for K in range(1, 41):
+            x = [xi * Fr(bi) + Fr(ci) for xi, bi, ci in zip(x, b, c)]
+            if K not in (1, 6, 15, 40):
+                continue
+            for m in ("un", "fl", "un@128", "fl@256", "un@1024", "fl@2048", "flc"):
+                got = I.run(m, "chain", K, 1)[3]
+                assert got == x or got is None, (den, K, m)
+                if got is None:                                      # only past the cap
+                    assert max(abs(v.numerator) for v in x).bit_length() + 1 > 2048 - 64, (den, K, m)
+
+
 def test_un_and_quaternion_harnesses():
+    U.build()
     rng = np.random.default_rng(9)
     n, den = 300, 1000
     a = rng.integers(-10**7, 10**7, size=n); b = rng.integers(-10**4, 10**4, size=n); c = rng.integers(-10**6, 10**6, size=n)
@@ -96,15 +120,23 @@ def test_un_and_quaternion_harnesses():
     Fr = lambda v: Fraction(int(v), den)
     sq = [(Fr(x) * Fr(y)) ** 2 for x, y in zip(a, b)]
     for m in U.NAMES:
-        assert I.run(m, "sq", 0, 1)[3] == sq and I.run(m, "sumsq", 0, 1)[3] == [sum(sq)]
+        if m == "flc":                                       # the pre-built U2048 runs chains only
+            continue
+        assert I.run(m, "sq", 0, 1)[3] == sq and I.run(m, "sumsq", 0, 1)[3] == [sum(sq)], m
     x = [Fr(v) for v in a]
     for _ in range(20):
         x = [xi * Fr(bi) + Fr(ci) for xi, bi, ci in zip(x, b, c)]
     for m in U.NAMES:
         assert I.run(m, "chain", 20, 1)[3] == x, m
-    # past the cap: the uN method reports it rather than wrapping
-    x = [Fr(v) for v in a]
-    assert I.run("un", "chain", 90, 1)[3] is None
+    for K in (70, 140):                                      # through 1024 and 2048 bits
+        x = [Fr(v) for v in a]
+        for _ in range(K):
+            x = [xi * Fr(bi) + Fr(ci) for xi, bi, ci in zip(x, b, c)]
+        for m in U.FIXED:
+            assert I.run(m, "chain", K, 1)[3] == x, (m, K)
+    # past the 2048-bit cap: every fixed-width method reports it rather than wrapping
+    for m in U.FIXED:
+        assert I.run(m, "chain", 200, 1)[3] is None, m
     mk = lambda: [rng.integers(-10**6, 10**6, size=n) for _ in range(4)]
     p, q, v = mk(), mk(), mk()
     v[0][:] = 0
@@ -154,3 +186,166 @@ def test_quaternion_vector_refuses_instead_of_wrapping():
     one = [np.ones(n, np.int64)] * 4
     K = Qr.Inputs(near, one, v, den)
     assert K.run("vec", "add", 1)[2] == Qr.reference(near, one, v, den)["add"], "a wide sum goes to 128 bits"
+
+
+# ---------------------------------------------------------------- the uniform header
+def test_uniform_round_trips_every_algebra_and_word():
+    import random
+    import uniform as UN
+    rng = random.Random(5)
+    for dim in (1, 2, 4, 8):
+        for word in UN.WORDS:
+            _, _, _, D = UN.layout(word)
+            for _ in range(300):
+                s = rng.randrange(1, D)
+                p = rng.getrandbits(s) | (1 << (s - 1))
+                q = rng.randrange(1, 1 << min(D - s, 60)) if D - s > 0 else 1
+                from math import gcd
+                g = gcd(p, q); p, q = p // g, q // g
+                if not UN.FA.fits(p, q, 8, word):
+                    continue
+                unit = (rng.choice((1, -1)), rng.randrange(dim))
+                h, v = UN.encode(unit, p, q, word, dim)
+                assert h < 256 and v < (1 << word)
+                assert UN.decode(h, v, word) == (unit, p, q)
+                assert UN.valid_for(unit, dim)
+
+
+def test_uniform_one_decoder_and_nesting():
+    """A value of a smaller algebra has the same bits as that value in every larger algebra: no re-encoding."""
+    import uniform as UN
+    for word in (16, 64, 256):
+        for unit in ((1, 0), (-1, 0), (1, 1), (-1, 3)):
+            enc = [UN.encode(unit, 5, 7, word, dim) for dim in (1, 2, 4, 8) if unit[1] < dim]
+            assert len(set(enc)) == 1
+
+
+def test_uniform_exhaustive_header_at_u16():
+    """Every header byte with a fixed set of words decodes; axes past an algebra's dimension are flagged."""
+    import uniform as UN
+    for header in range(256):
+        for value in (0, 1, 0x7FFF, 0x8000, 0xFFFF, 0x1234):
+            unit, p, q = UN.decode(header, value, 16)
+            if p:
+                assert UN.decode(*UN.encode(unit, p, q, 16), 16) == (unit, p, q)
+                assert UN.valid_for(unit, 8)
+                assert UN.valid_for(unit, 4) == (unit[1] < 4)
+
+
+def test_octonion_harness():
+    """Octonion arrays against Fractions, including components whose products need 128 bits, and the refusal past
+    128 bits; the reference table also satisfies |pq| = |p||q|."""
+    import oct_run as Or
+    Or.build()
+    rng = np.random.default_rng(12)
+    for den, bound, n in ((1000, 10**3, 200), (10**6, 10**6, 100)):
+        mk = lambda: [rng.integers(-bound * den, bound * den + 1, size=n) for _ in range(8)]
+        p, q = mk(), mk()
+        p[3][0] = 2**62                                          # forces the 128-bit path
+        want = Or.reference(p, q, den)
+        nr = lambda x: sum(c * c for c in x)
+        P = [tuple(Fraction(int(c[i]), den) for c in p) for i in range(n)]
+        Qs = [tuple(Fraction(int(c[i]), den) for c in q) for i in range(n)]
+        assert all(nr(m) == nr(x) * nr(y) for m, x, y in zip(want["mul"], P, Qs))
+        J = Or.Inputs(p, q, den)
+        for m in Or.NAMES:
+            for op in ("add", "mul", "norm"):
+                got = J.run(m, op, 1)[2]
+                assert got == want[op] or (m == "i64c" and got is None) or (m == "vec" and got == "exceeds"
+                                                                                and op == "norm"), (m, op)
+    big = [np.full(4, 2**62 + 1, dtype=np.int64) for _ in range(8)]
+    assert Or.Inputs(big, big, 1).run("vec", "mul", 1)[2] == "exceeds"
+
+
+def test_gemm_exact():
+    """Exact products against Python integers on small sizes, and against FLINT on extremes (+-(2^b - 1), zeros)."""
+    import subprocess
+    import tempfile
+    import gemm_run as G
+    G.build()
+    with tempfile.TemporaryDirectory() as d:
+        out = d + "/c.txt"
+        for m in G.NAMES:
+            for n, bits in ((1, 1), (5, 300), (17, 2048), (33, 64)):
+                b, mm = G.binary_for(m)
+                subprocess.run([str(b), mm, str(n), str(bits), "1", out], check=True, capture_output=True)
+                vals = [int(x) for x in open(out + ".in").read().split()]
+                A = [vals[i * n:(i + 1) * n] for i in range(n)]
+                B = [vals[n * n + i * n:n * n + (i + 1) * n] for i in range(n)]
+                C = [sum(A[i][k] * B[k][j] for k in range(n)) for i in range(n) for j in range(n)]
+                got = open(out).read().split()
+                assert len(got) == n * n
+                if m == "fmpq":
+                    assert all(Fraction(g) == Fraction(c, 10**6) for g, c in zip(got, C))
+                else:
+                    assert all(int(g) == c for g, c in zip(got, C)), (m, n, bits)
+    for m in G.NAMES:                                          # the check catches a wrong entry, small and large n
+        for n in (20, 200):
+            b, mm = G.binary_for(m)
+            r = subprocess.run([str(b), mm, str(n), "100", "1"], capture_output=True,
+                               env=dict(__import__("os").environ, GEMM_CORRUPT="1"))
+            assert r.returncode == 4, (m, n)
+    for edge in (1, 2):
+        for n, bits in ((1, 64), (7, 65), (64, 2048), (300, 63)):
+            for m in ("mm", "mmg", "blas"):
+                G.run(m, n, bits, reps=1, edge=edge)               # raises if the result differs from FLINT
+
+
+def test_c_decoder_matches_family_decode():
+    """The decoder timed in section F (cbench/decode.c) decodes exactly as family.decode, both layouts."""
+    import subprocess
+    import gemm_run as G
+    subprocess.run(["gcc", "-O3", "-march=native", "-o", str(G.CB / "decode"), str(G.CB / "decode.c")], check=True)
+    out = subprocess.run([str(G.CB / "decode"), "check", "20000"], capture_output=True, text=True, check=True).stdout
+    for line in out.splitlines():
+        h, v, s1, a1, p1, q1, s2, a2, p2, q2 = map(int, line.split())
+        for dim, s, a, p, q in ((2, s1, a1, p1, q1), (8, s2, a2, p2, q2)):
+            unit, P, Q = F.decode(h, v, dim, 64)
+            assert (p == 0) if P == 0 else ((unit, P, Q) == ((s, a), p, q)), line
+
+
+def test_uniform_dimension_wide_denominators_and_promotion():
+    """encode refuses an axis outside the algebra; denominators far past 64 bits round-trip; a value that does not
+    fit U16 fits U32 after promotion and decodes to the same number, for every algebra."""
+    import random
+    from math import gcd
+    import uniform as UN
+    for dim in (1, 2, 4):
+        try:
+            UN.encode((1, dim), 3, 5, 16, dim)
+        except AssertionError:
+            pass
+        else:
+            raise AssertionError("axis outside the algebra was accepted")
+    rng = random.Random(8)
+    for word in (256, 1024, 2048):
+        _, _, _, D = UN.layout(word)
+        for _ in range(100):
+            sp = rng.randrange(1, D // 2)
+            p = rng.getrandbits(sp) | 1
+            q = rng.getrandbits(D - sp - 1) | (1 << (D - sp - 2)) | 1          # denominators of hundreds of bits
+            g = gcd(p, q); p, q = p // g, q // g
+            if not UN.FA.fits(p, q, 8, word):
+                continue
+            unit = (rng.choice((1, -1)), rng.randrange(8))
+            assert UN.decode(*UN.encode(unit, p, q, word), word) == (unit, p, q)
+    for dim in (1, 2, 4, 8):
+        for p, q in ((70001, 3), (3, 70001), (2**19 + 1, 2**10 + 1)):
+            unit = (-1, dim - 1)
+            assert UN.FA.encode(unit, p, q, 8, 16) is None                 # too big for U16
+            h, v = UN.encode(unit, p, q, 32, dim)
+            assert UN.decode(h, v, 32) == (unit, p, q)
+
+
+def test_octonion_128_bit_paths():
+    """Components near 2^40: products and norms take the 128-bit path without refusing."""
+    import oct_run as Or
+    rng = np.random.default_rng(13)
+    n, den = 80, 10**9
+    mk = lambda: [rng.integers(-2**40, 2**40, size=n) for _ in range(8)]
+    p, q = mk(), mk()
+    want = Or.reference(p, q, den)
+    J = Or.Inputs(p, q, den)
+    for op in ("mul", "norm"):
+        got = J.run("vec", op, 1)[2]
+        assert got == want[op], op

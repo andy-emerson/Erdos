@@ -25,3 +25,11 @@ python3 family_bench.py
 ```
 
 Results are written to `results/family.md` and `results/family.json`.
+
+The second round adds:
+- **uN tiers to 2,048 bits:** `_BitInt` and fixed limb arrays on GMP's `mpn` routines, plus ready-made 2,048-bit vectors.
+- **Octonion arrays:** `cbench/oct.c`, with the product written out by `gen_oct_table.py`.
+- **The uniform header:** `uniform.py`, and the decoder timing in `cbench/decode.c`.
+- **Exact wide-entry matrix products:** `cbench/gemm.c`, multimodular OpenBLAS `dgemm` against FLINT.
+
+Section G needs FLINT 3.0.1 built with BLAS. `build_flint_blas.sh [DIR]` builds it, with OpenBLAS from the scipy-openblas32 wheel; set `FLINT_BLAS_ROOT` to DIR if it is not `/home/claude/flintblas`. `un.c` needs clang 18 or later for `_BitInt`.

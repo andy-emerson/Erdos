@@ -1,6 +1,6 @@
 {
  "metadata": {
-  "date": "2026-10-26 20:24:26 CDT",
+  "date": "2026-10-26 21:52:53 CDT",
   "cpu": "Intel(R) Xeon(R) Processor",
   "cores_visible": 2,
   "python": "3.13.17",
@@ -10,16 +10,29 @@
   "platform": "Linux-6.18.44-fc-v165-x86_64-with-glibc2.39",
   "native thread pools": "openblas 1 thread(s)",
   "flint threads": 1,
-  "compiled": "section B (un.c, every method in it): clang 18 -O3 -march=native, for _BitInt; section C (quat.c): gcc 13 -O3 -march=native; GMP 6.3.0, FLINT 3.0.1"
+  "compiled": "section B (un.c, every method in it): clang 18 -O3 -march=native, for _BitInt; sections C, E, G (quat.c, oct.c, gemm.c): gcc 13 -O3 -march=native; GMP 6.3.0, FLINT 3.0.1; G uses OpenBLAS 0.3.34 (scipy-openblas32 wheel) under every method, one thread, and FLINT 3.0.1 configured with BLAS (build_flint_blas.sh) except the row marked without BLAS"
  },
  "B": [
   {
    "bench": "B (a*b)^2, none wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.000128494
+    0.0001956
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 128 bits"
+  },
+  {
+   "bench": "B (a*b)^2, none wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.000855432
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -32,7 +45,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.000966188
+    0.000990261
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -45,7 +58,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.00134587
+    0.00141824
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -58,7 +71,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.011022677
+    0.011986924
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -68,10 +81,23 @@
   {
    "bench": "B sum of (a*b)^2, none wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.00014506
+    0.000148787
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 128 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, none wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.000706925
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -84,7 +110,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.001208063
+    0.001308689
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -97,7 +123,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.001786469
+    0.001786163
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -110,7 +136,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.024302838
+    0.025274681
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -120,10 +146,10 @@
   {
    "bench": "B growth chain x <- x*b + c, 3 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.00058849
+    0.000551231
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -133,10 +159,62 @@
   {
    "bench": "B growth chain x <- x*b + c, 3 steps",
    "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.004277784
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 128 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    0.081784421
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    0.084553737
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    0.079217826
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 3 steps",
+   "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.005664529
+    0.005613135
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -149,7 +227,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.003635673
+    0.003629713
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -162,7 +240,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.05583307
+    0.056066009
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -172,10 +250,10 @@
   {
    "bench": "B growth chain x <- x*b + c, 10 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.003621168
+    0.003478044
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -185,10 +263,62 @@
   {
    "bench": "B growth chain x <- x*b + c, 10 steps",
    "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.015550305
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 256 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    0.263835012
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    0.259390384
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    0.250357418
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 10 steps",
+   "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.020221962
+    0.02000174
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -201,7 +331,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.026710817
+    0.026346184
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -214,7 +344,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.191527495
+    0.19026705
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -224,10 +354,10 @@
   {
    "bench": "B growth chain x <- x*b + c, 25 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.024681532
+    0.025716166
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -237,10 +367,62 @@
   {
    "bench": "B growth chain x <- x*b + c, 25 steps",
    "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.052230387
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 512 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    0.694461129
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    0.604139999
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    0.59782177
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 25 steps",
+   "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.059949451
+    0.06022526
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -253,7 +435,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.095339651
+    0.093139248
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -266,7 +448,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.523338177
+    0.538104116
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -276,10 +458,10 @@
   {
    "bench": "B growth chain x <- x*b + c, 40 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.082919583
+    0.087651218
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -289,10 +471,62 @@
   {
    "bench": "B growth chain x <- x*b + c, 40 steps",
    "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.106275154
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 1024 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    1.05989569
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    0.953401214
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    0.908520039
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 40 steps",
+   "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.126331444
+    0.124807509
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -305,7 +539,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.187935288
+    0.187961974
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -318,7 +552,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.978827882
+    1.13706915
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -328,10 +562,10 @@
   {
    "bench": "B growth chain x <- x*b + c, 70 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.298335504
+    0.323064045
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -341,10 +575,62 @@
   {
    "bench": "B growth chain x <- x*b + c, 70 steps",
    "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.258603013
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 1024 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    1.86803247
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    1.50650531
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    1.41772663
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 70 steps",
+   "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.29868822
+    0.310231772
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -357,7 +643,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.392399409
+    0.478006092
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -370,7 +656,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    2.71921369
+    3.12085686
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -378,23 +664,275 @@
    "note": ""
   },
   {
-   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "bench": "B growth chain x <- x*b + c, 100 steps",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
+   "baseline": false,
+   "times": [
+    1.0179423
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.669953842
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    2.61047499
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    1.96287057
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    1.85570299
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    0.640755029
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    0.912231474
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 100 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    5.08937839
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
+   "baseline": false,
+   "times": [
+    1.92795932
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    1.09374112
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": [
+    3.47493846
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": [
+    2.42885175
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": [
+    2.27339006
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "ends at width 2048 bits"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "GMP mpz_t numerators (C)",
+   "baseline": true,
+   "times": [
+    1.16537327
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "FLINT fmpz numerators (C)",
+   "baseline": false,
+   "times": [
+    1.39131
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 140 steps",
+   "size": 100000,
+   "name": "GMP mpq_t (C)",
+   "baseline": false,
+   "times": [
+    8.03075859
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 200 steps",
+   "size": 100000,
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": null,
    "loops": null,
-   "error": "exceeds the 1024-bit cap",
+   "error": "exceeds the 2048-bit cap",
    "bytes_per_value": null,
    "note": "detected before overflow; would continue in arbitrary precision"
   },
   {
-   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "bench": "B growth chain x <- x*b + c, 200 steps",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": null,
+   "loops": null,
+   "error": "exceeds the 2048-bit cap",
+   "bytes_per_value": null,
+   "note": "detected before overflow; would continue in arbitrary precision"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 200 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+   "baseline": false,
+   "times": null,
+   "loops": null,
+   "error": "exceeds the 2048-bit cap",
+   "bytes_per_value": null,
+   "note": "detected before overflow; would continue in arbitrary precision"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 200 steps",
+   "size": 100000,
+   "name": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+   "baseline": false,
+   "times": null,
+   "loops": null,
+   "error": "exceeds the 2048-bit cap",
+   "bytes_per_value": null,
+   "note": "detected before overflow; would continue in arbitrary precision"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 200 steps",
+   "size": 100000,
+   "name": "pre-built U2048, compile-time length, inline loops (chain only)",
+   "baseline": false,
+   "times": null,
+   "loops": null,
+   "error": "exceeds the 2048-bit cap",
+   "bytes_per_value": null,
+   "note": "detected before overflow; would continue in arbitrary precision"
+  },
+  {
+   "bench": "B growth chain x <- x*b + c, 200 steps",
    "size": 100000,
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.446751654
+    2.24885396
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -402,12 +940,12 @@
    "note": ""
   },
   {
-   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "bench": "B growth chain x <- x*b + c, 200 steps",
    "size": 100000,
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.577363269
+    3.94666304
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -415,12 +953,12 @@
    "note": ""
   },
   {
-   "bench": "B growth chain x <- x*b + c, 90 steps",
+   "bench": "B growth chain x <- x*b + c, 200 steps",
    "size": 100000,
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    3.99501133
+    13.860384
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -430,10 +968,23 @@
   {
    "bench": "B (a*b)^2, 1% wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.000447595
+    0.000529851
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.001169877
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -446,7 +997,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.000995782
+    0.001506736
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -459,7 +1010,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.001394791
+    0.00141009
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -472,7 +1023,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.011200465
+    0.011672046
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -482,10 +1033,23 @@
   {
    "bench": "B sum of (a*b)^2, 1% wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.00047681
+    0.000515401
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, 1% wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.000720022
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -498,7 +1062,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.001215249
+    0.001231998
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -511,7 +1075,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.00189431
+    0.00185946
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -524,7 +1088,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.024491285
+    0.024990625
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -534,10 +1098,23 @@
   {
    "bench": "B (a*b)^2, all wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.000449837
+    0.000618827
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B (a*b)^2, all wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.001273267
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -550,7 +1127,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.00180331
+    0.001808505
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -563,7 +1140,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.00219428
+    0.002990099
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -576,7 +1153,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.009986062
+    0.010470659
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -586,10 +1163,23 @@
   {
    "bench": "B sum of (a*b)^2, all wide",
    "size": 100000,
-   "name": "uN vector (fixed widths 64-1024, compiled)",
+   "name": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
    "baseline": false,
    "times": [
-    0.000459245
+    0.000461367
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": "vector width 256 bits"
+  },
+  {
+   "bench": "B sum of (a*b)^2, all wide",
+   "size": 100000,
+   "name": "uN vector, fixed limb arrays with GMP mpn kernels",
+   "baseline": false,
+   "times": [
+    0.00068239
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -602,7 +1192,7 @@
    "name": "GMP mpz_t numerators (C)",
    "baseline": true,
    "times": [
-    0.002188933
+    0.002396378
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -615,7 +1205,7 @@
    "name": "FLINT fmpz numerators (C)",
    "baseline": false,
    "times": [
-    0.003119016
+    0.003053361
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -628,7 +1218,7 @@
    "name": "GMP mpq_t (C)",
    "baseline": false,
    "times": [
-    0.023300639
+    0.023548569
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -643,7 +1233,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.001129091
+    0.001218635
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -656,7 +1246,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.093470147
+    0.093098535
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -669,7 +1259,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.044575969
+    0.044256226
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -682,7 +1272,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.001622593
+    0.001741961
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -695,7 +1285,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.000676857
+    0.000644761
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -708,7 +1298,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.001314255
+    0.001320988
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -721,7 +1311,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.577925277
+    0.592117107
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -734,7 +1324,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.39441877
+    0.393089826
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -747,7 +1337,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.026123693
+    0.017870909
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -760,7 +1350,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.001475261
+    0.001458338
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -773,7 +1363,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.000457017
+    0.000538429
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -786,7 +1376,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.095356114
+    0.094261382
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -799,7 +1389,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.082829247
+    0.082865371
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -812,7 +1402,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.002260996
+    0.002246804
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -825,7 +1415,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.000728451
+    0.000727953
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -838,7 +1428,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.004161677
+    0.003913656
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -851,7 +1441,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    1.03523112
+    1.06516793
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -864,7 +1454,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.850427758
+    0.857889112
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -877,7 +1467,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.034182288
+    0.037242044
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -890,7 +1480,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.00296641
+    0.004341781
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -903,7 +1493,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.000545749
+    0.000543521
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -916,7 +1506,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.047598956
+    0.048525264
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -929,7 +1519,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.033378469
+    0.033303251
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -942,7 +1532,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.00078691
+    0.001099878
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -955,7 +1545,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.000336555
+    0.000326816
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -968,7 +1558,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.000797801
+    0.00080401
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -981,7 +1571,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.334738641
+    0.328370992
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -994,7 +1584,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.336611732
+    0.342515936
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1007,7 +1597,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.020861924
+    0.020591609
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1020,7 +1610,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.000722491
+    0.001092242
    ],
    "loops": 1,
    "error": "overflow detected",
@@ -1033,7 +1623,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.000307206
+    0.000357247
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -1046,7 +1636,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.058248161
+    0.059359512
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -1059,7 +1649,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.055972188
+    0.055601492
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -1072,7 +1662,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.003202594
+    0.00318056
    ],
    "loops": 1,
    "error": "0 (exact)",
@@ -1085,7 +1675,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.000356323
+    0.000319407
    ],
    "loops": 1,
    "error": "overflow detected",
@@ -1098,7 +1688,7 @@
    "name": "quaternion vector form (four int64 vectors, compiled)",
    "baseline": false,
    "times": [
-    0.002042424
+    0.002018969
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1111,7 +1701,7 @@
    "name": "GMP mpq_t 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.680917501
+    0.665599715
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1124,7 +1714,7 @@
    "name": "FLINT fmpq 4-tuples (C)",
    "baseline": false,
    "times": [
-    0.69912006
+    0.683869315
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1137,7 +1727,7 @@
    "name": "FLINT fmpz over one denominator per value (C)",
    "baseline": true,
    "times": [
-    0.047621987
+    0.045935773
    ],
    "loops": 1,
    "error": "0 (every element)",
@@ -1150,7 +1740,7 @@
    "name": "C int64 4-tuples, overflow-checked",
    "baseline": false,
    "times": [
-    0.001490615
+    0.001522303
    ],
    "loops": 1,
    "error": "overflow detected",
@@ -1242,6 +1832,1771 @@
    "float_bits_worst": 64,
    "largest": "2^126 - 1",
    "smallest": "2^-125"
+  }
+ ],
+ "E": [
+  {
+   "bench": "E p + q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.001115001
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.089195489
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.002916011
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000675675
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.002376887
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    1.23777753
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.031568741
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 3 places, components below 1000",
+   "size": 100000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.003410129
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 3 places, components below 1000",
+   "size": 100000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000449384
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 3 places, components below 1000",
+   "size": 100000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.090068253
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 3 places, components below 1000",
+   "size": 100000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.002208946
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 3 places, components below 1000",
+   "size": 100000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000486588
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000546916
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.048469469
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.000792369
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E p + q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000351973
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.001391553
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.710765172
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.046528061
+   ],
+   "loops": 1,
+   "error": "0 (every element)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E octonion product p q, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.001859966
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "octonion vector form (eight int64 vectors, compiled)",
+   "baseline": false,
+   "times": [
+    0.000303697
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "GMP mpq_t 8-tuples (C)",
+   "baseline": false,
+   "times": [
+    0.059480104
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "FLINT fmpz over one denominator per value (C)",
+   "baseline": true,
+   "times": [
+    0.003465314
+   ],
+   "loops": 1,
+   "error": "0 (exact)",
+   "bytes_per_value": null,
+   "note": ""
+  },
+  {
+   "bench": "E sum of squared norms, 6 places, components below 1e+06",
+   "size": 50000,
+   "name": "C int64 8-tuples, overflow-checked",
+   "baseline": false,
+   "times": [
+    0.000255487
+   ],
+   "loops": 1,
+   "error": "overflow detected",
+   "bytes_per_value": null,
+   "note": ""
+  }
+ ],
+ "F": {
+  "layouts": [
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 16,
+    "size": 24,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 16,
+    "uniform_borrowed": 0,
+    "cost_bits": null,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 32,
+    "size": 40,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 31,
+    "uniform_borrowed": 1,
+    "cost_bits": null,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 64,
+    "size": 72,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 62,
+    "uniform_borrowed": 2,
+    "cost_bits": null,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 128,
+    "size": 136,
+    "fitted_data": 128,
+    "fitted_borrowed": 0,
+    "uniform_data": 125,
+    "uniform_borrowed": 3,
+    "cost_bits": 3,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 256,
+    "size": 264,
+    "fitted_data": 255,
+    "fitted_borrowed": 1,
+    "uniform_data": 252,
+    "uniform_borrowed": 4,
+    "cost_bits": 3,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 512,
+    "size": 520,
+    "fitted_data": 510,
+    "fitted_borrowed": 2,
+    "uniform_data": 507,
+    "uniform_borrowed": 5,
+    "cost_bits": 3,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 1024,
+    "size": 1032,
+    "fitted_data": 1021,
+    "fitted_borrowed": 3,
+    "uniform_data": 1018,
+    "uniform_borrowed": 6,
+    "cost_bits": 3,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "real",
+    "dim": 1,
+    "word": 2048,
+    "size": 2056,
+    "fitted_data": 2044,
+    "fitted_borrowed": 4,
+    "uniform_data": 2041,
+    "uniform_borrowed": 7,
+    "cost_bits": 3,
+    "unused_unit_codes": 14
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 16,
+    "size": 24,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 16,
+    "uniform_borrowed": 0,
+    "cost_bits": null,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 32,
+    "size": 40,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 31,
+    "uniform_borrowed": 1,
+    "cost_bits": null,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 64,
+    "size": 72,
+    "fitted_data": 64,
+    "fitted_borrowed": 0,
+    "uniform_data": 62,
+    "uniform_borrowed": 2,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 128,
+    "size": 136,
+    "fitted_data": 127,
+    "fitted_borrowed": 1,
+    "uniform_data": 125,
+    "uniform_borrowed": 3,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 256,
+    "size": 264,
+    "fitted_data": 254,
+    "fitted_borrowed": 2,
+    "uniform_data": 252,
+    "uniform_borrowed": 4,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 512,
+    "size": 520,
+    "fitted_data": 509,
+    "fitted_borrowed": 3,
+    "uniform_data": 507,
+    "uniform_borrowed": 5,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 1024,
+    "size": 1032,
+    "fitted_data": 1020,
+    "fitted_borrowed": 4,
+    "uniform_data": 1018,
+    "uniform_borrowed": 6,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "complex",
+    "dim": 2,
+    "word": 2048,
+    "size": 2056,
+    "fitted_data": 2043,
+    "fitted_borrowed": 5,
+    "uniform_data": 2041,
+    "uniform_borrowed": 7,
+    "cost_bits": 2,
+    "unused_unit_codes": 12
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 16,
+    "size": 24,
+    "fitted_data": null,
+    "fitted_borrowed": null,
+    "uniform_data": 16,
+    "uniform_borrowed": 0,
+    "cost_bits": null,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 32,
+    "size": 40,
+    "fitted_data": 32,
+    "fitted_borrowed": 0,
+    "uniform_data": 31,
+    "uniform_borrowed": 1,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 64,
+    "size": 72,
+    "fitted_data": 63,
+    "fitted_borrowed": 1,
+    "uniform_data": 62,
+    "uniform_borrowed": 2,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 128,
+    "size": 136,
+    "fitted_data": 126,
+    "fitted_borrowed": 2,
+    "uniform_data": 125,
+    "uniform_borrowed": 3,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 256,
+    "size": 264,
+    "fitted_data": 253,
+    "fitted_borrowed": 3,
+    "uniform_data": 252,
+    "uniform_borrowed": 4,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 512,
+    "size": 520,
+    "fitted_data": 508,
+    "fitted_borrowed": 4,
+    "uniform_data": 507,
+    "uniform_borrowed": 5,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 1024,
+    "size": 1032,
+    "fitted_data": 1019,
+    "fitted_borrowed": 5,
+    "uniform_data": 1018,
+    "uniform_borrowed": 6,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "quaternion",
+    "dim": 4,
+    "word": 2048,
+    "size": 2056,
+    "fitted_data": 2042,
+    "fitted_borrowed": 6,
+    "uniform_data": 2041,
+    "uniform_borrowed": 7,
+    "cost_bits": 1,
+    "unused_unit_codes": 8
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 16,
+    "size": 24,
+    "fitted_data": 16,
+    "fitted_borrowed": 0,
+    "uniform_data": 16,
+    "uniform_borrowed": 0,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 32,
+    "size": 40,
+    "fitted_data": 31,
+    "fitted_borrowed": 1,
+    "uniform_data": 31,
+    "uniform_borrowed": 1,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 64,
+    "size": 72,
+    "fitted_data": 62,
+    "fitted_borrowed": 2,
+    "uniform_data": 62,
+    "uniform_borrowed": 2,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 128,
+    "size": 136,
+    "fitted_data": 125,
+    "fitted_borrowed": 3,
+    "uniform_data": 125,
+    "uniform_borrowed": 3,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 256,
+    "size": 264,
+    "fitted_data": 252,
+    "fitted_borrowed": 4,
+    "uniform_data": 252,
+    "uniform_borrowed": 4,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 512,
+    "size": 520,
+    "fitted_data": 507,
+    "fitted_borrowed": 5,
+    "uniform_data": 507,
+    "uniform_borrowed": 5,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 1024,
+    "size": 1032,
+    "fitted_data": 1018,
+    "fitted_borrowed": 6,
+    "uniform_data": 1018,
+    "uniform_borrowed": 6,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   },
+   {
+    "algebra": "octonion",
+    "dim": 8,
+    "word": 2048,
+    "size": 2056,
+    "fitted_data": 2041,
+    "fitted_borrowed": 7,
+    "uniform_data": 2041,
+    "uniform_borrowed": 7,
+    "cost_bits": 0,
+    "unused_unit_codes": 0
+   }
+  ],
+  "decode_ns": {
+   "fitted": 3.418,
+   "uniform": 3.807,
+   "runtime": 4.007,
+   "fitted_cached": 1.201,
+   "uniform_cached": 1.43,
+   "runtime_cached": 1.818
+  }
+ },
+ "G": [
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.004387944
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +2 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.004447702
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +3 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.003897022
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +4 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.007743678
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +8 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.008421
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 3 ms, dgemm 1 ms, CRT 5 ms; peak memory +5 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.003206197
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 2 ms, dgemm 0 ms, CRT 1 ms; peak memory +9 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 64 bits",
+   "size": 128,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.004009054
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 2 ms, dgemm 0 ms, CRT 1 ms; peak memory +10 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.015686806
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +7 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.015748961
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +8 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.015404368
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +10 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.021058171
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +17 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.021779454
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "22 primes; reduce 10 ms, dgemm 2 ms, CRT 9 ms; peak memory +13 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.013493285
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "22 primes; reduce 8 ms, dgemm 2 ms, CRT 4 ms; peak memory +24 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 256 bits",
+   "size": 128,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.013602978
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "22 primes; reduce 7 ms, dgemm 2 ms, CRT 4 ms; peak memory +28 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.084282033
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +23 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.089498265
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +23 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.080650792
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +30 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.105544626
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +46 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.12164598
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "86 primes; reduce 66 ms, dgemm 8 ms, CRT 47 ms; peak memory +43 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.064383866
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "86 primes; reduce 36 ms, dgemm 8 ms, CRT 21 ms; peak memory +86 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 1024 bits",
+   "size": 128,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.065894162
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "86 primes; reduce 35 ms, dgemm 8 ms, CRT 21 ms; peak memory +102 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.222481546
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +45 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.233572263
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +45 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.20342914
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +56 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.244744067
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +86 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.300342947
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "172 primes; reduce 164 ms, dgemm 16 ms, CRT 120 ms; peak memory +83 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.152007746
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "172 primes; reduce 77 ms, dgemm 16 ms, CRT 58 ms; peak memory +184 MB"
+  },
+  {
+   "bench": "G 128 x 128 product, entries of 2048 bits",
+   "size": 128,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.154834409
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "172 primes; reduce 77 ms, dgemm 17 ms, CRT 57 ms; peak memory +216 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.028055019
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +9 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.017418193
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +12 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.017439606
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +12 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.058776371
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +34 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.024510308
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 8 ms, dgemm 4 ms, CRT 13 ms; peak memory +14 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.014806043
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 8 ms, dgemm 3 ms, CRT 4 ms; peak memory +27 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 64 bits",
+   "size": 256,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.017831461
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "6 primes; reduce 8 ms, dgemm 3 ms, CRT 4 ms; peak memory +32 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.092966249
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +21 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.095305911
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +21 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.062749926
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +30 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.122489005
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +58 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.095363801
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 43 ms, dgemm 13 ms, CRT 39 ms; peak memory +43 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.067032671
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 35 ms, dgemm 14 ms, CRT 19 ms; peak memory +89 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 256 bits",
+   "size": 256,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.068596384
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 34 ms, dgemm 13 ms, CRT 18 ms; peak memory +106 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.451311333
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +72 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.478879235
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +72 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.331894587
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +97 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.522367296
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +164 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.524839816
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "88 primes; reduce 272 ms, dgemm 54 ms, CRT 197 ms; peak memory +152 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.283482315
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "88 primes; reduce 148 ms, dgemm 55 ms, CRT 80 ms; peak memory +327 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 1024 bits",
+   "size": 256,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.33393249
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "88 primes; reduce 157 ms, dgemm 54 ms, CRT 110 ms; peak memory +371 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    1.18140165
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +141 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    1.18725445
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +141 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.849529288
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +187 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    1.30800026
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "175 primes; reduce 690 ms, dgemm 105 ms, CRT 500 ms; peak memory +299 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.648103685
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "175 primes; reduce 311 ms, dgemm 99 ms, CRT 238 ms; peak memory +660 MB"
+  },
+  {
+   "bench": "G 256 x 256 product, entries of 2048 bits",
+   "size": 256,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.841442213
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "175 primes; reduce 379 ms, dgemm 127 ms, CRT 300 ms; peak memory +660 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.185183981
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +35 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.088436717
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +45 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.093041948
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +45 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.190782064
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +135 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.126883693
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "7 primes; reduce 39 ms, dgemm 27 ms, CRT 62 ms; peak memory +58 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.089720715
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "7 primes; reduce 41 ms, dgemm 26 ms, CRT 22 ms; peak memory +117 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 64 bits",
+   "size": 512,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.099607599
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "7 primes; reduce 40 ms, dgemm 26 ms, CRT 22 ms; peak memory +141 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    0.595292538
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +83 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    0.300116658
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +114 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    0.295861082
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +114 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "FLINT fmpq_mat_mul (reduced rationals)",
+   "baseline": false,
+   "times": [
+    0.411933393
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +261 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    0.415591382
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 175 ms, dgemm 86 ms, CRT 153 ms; peak memory +167 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    0.304607218
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 141 ms, dgemm 86 ms, CRT 78 ms; peak memory +351 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 256 bits",
+   "size": 512,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    0.351054408
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "23 primes; reduce 143 ms, dgemm 95 ms, CRT 87 ms; peak memory +397 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    2.65846245
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +287 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    1.54835375
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +384 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    1.54778797
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +384 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    2.24558679
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "90 primes; reduce 1112 ms, dgemm 338 ms, CRT 796 ms; peak memory +617 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    1.28104532
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "90 primes; reduce 618 ms, dgemm 327 ms, CRT 329 ms; peak memory +1320 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 1024 bits",
+   "size": 512,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    3.55078336
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "90 primes; reduce 756 ms, dgemm 381 ms, CRT 2338 ms; peak memory +1320 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built without BLAS (the system's)",
+   "baseline": false,
+   "times": [
+    6.32325268
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +562 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul, FLINT built with BLAS",
+   "baseline": true,
+   "times": [
+    3.80690115
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +745 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "FLINT fmpz_mat_mul_blas (FLINT's multimodular BLAS method)",
+   "baseline": false,
+   "times": [
+    3.80651741
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "peak memory +746 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, FLINT reduction and CRT",
+   "baseline": false,
+   "times": [
+    5.48976153
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "179 primes; reduce 2781 ms, dgemm 711 ms, CRT 2019 ms; peak memory +1216 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "multimodular OpenBLAS dgemm, reduction and CRT as dgemms (uN limb layout)",
+   "baseline": false,
+   "times": [
+    2.90355789
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "179 primes; reduce 1275 ms, dgemm 659 ms, CRT 948 ms; peak memory +2622 MB"
+  },
+  {
+   "bench": "G 512 x 512 product, entries of 2048 bits",
+   "size": 512,
+   "name": "the same, everything timed: setup, fmpz to limbs and back, freeing",
+   "baseline": false,
+   "times": [
+    4.92821808
+   ],
+   "loops": 1,
+   "error": "0 (every entry)",
+   "bytes_per_value": null,
+   "note": "179 primes; reduce 1560 ms, dgemm 964 ms, CRT 2387 ms; peak memory +2622 MB"
   }
  ]
 }

@@ -9,8 +9,14 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 BIN = HERE.parent / "cbench" / "un"
 SRC = HERE.parent / "cbench" / "un.c"
-NAMES = {"un": "uN vector (fixed widths 64-1024, compiled)", "mpz": "GMP mpz_t numerators (C)",
+NAMES = {"un": "uN vector, _BitInt (fixed widths 64-2048, compiled)",
+         "fl": "uN vector, fixed limb arrays with GMP mpn kernels",
+         "un@2048": "pre-built 2048-bit _BitInt vector (starts at 2048, never widens)",
+         "fl@2048": "pre-built 2048-bit limb vector, GMP mpn (starts at 2048)",
+         "flc": "pre-built U2048, compile-time length, inline loops (chain only)", "mpz": "GMP mpz_t numerators (C)",
          "fmpz": "FLINT fmpz numerators (C)", "mpq": "GMP mpq_t (C)"}
+
+FIXED = ("un", "fl", "un@2048", "fl@2048", "flc")     # methods that stop at the 2048-bit cap
 
 
 def build():

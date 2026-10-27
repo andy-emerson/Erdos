@@ -82,6 +82,10 @@ class WidthInputs:
             return [max(abs(x).bit_length() for x in a)]
         if op == "widen":
             return list(ha)
+        if op == "pipe":                              # t1 = ha hb; t2 = t1 + a; t3 = e2/1000 = a; v = t2 + t3
+            v = [x * y + 2 * z for x, y, z in zip(ha, hb, a)]
+            d = sum(x * y for x, y in zip(ha, hb))
+            return v + [d, max(abs(x).bit_length() for x in v)] + sorted(range(self.n), key=lambda i: v[i])
 
     def run(self, rep, op, reps=5):
         out = Path(self.dir.name) / f"{rep}-{op}.txt"

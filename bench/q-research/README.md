@@ -50,3 +50,18 @@ python3 phase1_bench.py
 ```
 
 Results are written to `results/phase1.md` and `results/phase1.json`.
+
+## The threshold, storage granularity and the library comparison
+
+Code and results for the [note](../../docs/research/threshold-storage-libraries.md):
+- **The threshold test at 1024 bits:** `threshold_bench.py`, `cbench/p1_thresh.c`.
+- **Storage granularity:** `storage_bench.py`, `cbench/p1_storage.c`.
+- **The format against GMP and FLINT:** `p2_bench.py`, `cbench/p2_elem.c`, `cbench/p2_scalar.c`, `cbench/p2_linalg.c`. These need FLINT 3.0.1 built with BLAS and native flags. `build_flint_blas.sh` builds it with BLAS; the results here used `CFLAGS="-O3 -march=native"` and installed to `inst-native`. Set `FLINT_ROOT` to point elsewhere.
+
+```
+cd build
+python3 runtests.py test_phase1 test_p1_storage test_p2_linalg
+python3 threshold_bench.py --quick && python3 threshold_bench.py
+python3 storage_bench.py --quick && python3 storage_bench.py
+python3 p2_bench.py --quick && python3 p2_bench.py
+```

@@ -19,6 +19,9 @@
            div1  e1 / 999 (exact)    div2  e2 / 1000 (exact)  sort  order a (stable merge sort of indices)
            scan  largest bit length of |a| (what narrowing needs)
            widen ha moved from width W/2 to W (zero or sign extension; base extension for residues)
+           pipe  the operations in sequence, each result feeding the next, as whole passes over the vectors:
+                 t1 = ha hb; t2 = t1 + a; d = dot(ha, hb); t3 = e2 / 1000; v = t2 + t3; sort v; scan v
+                 (bi, lc, lr only: one complete set of routines each); outputs v, d, the scan and the order
            chain x <- x * b + c * DEN^(k+1), K steps from int64 values, widening as the proven bound requires;
                  every representation uses the same bound rule (no scans), so they widen at the same steps
    Every vector fills its width, as the vector form's narrowest-width rule makes it: a, b have W - 12 bits and
@@ -39,7 +42,8 @@
 
 typedef unsigned __int128 u128;
 static long N, K, DEN; static int W, L, LH, OP;
-enum { ADD, MUL, DOT, DIV1, DIV2, SORT, SCAN, WIDEN, CHAIN };
+enum { ADD, MUL, DOT, DIV1, DIV2, SORT, SCAN, WIDEN, CHAIN, PIPE };
+static int PIPEMAX;                 /* the pipeline's scan result */
 static uint64_t *MAG[6]; static unsigned char *SG[6];        /* a, b, e1, e2 (width W); ha, hb (width W/2) */
 static int64_t *X0, *CB, *CC;
 static int final_width;
@@ -96,7 +100,7 @@ static mpz_t *ZOUT; static mpz_t ZONE; static int out_kind;   /* 0 vector, 1 one
 WIDTHS(BIT)
 #define BI(WW, WH) \
 static bi##WW *bia##WW, *bib##WW, *bie1##WW, *bie2##WW, *bio##WW; static bi##WH *biha##WW, *bihb##WW; \
-static bi##WW bisum##WW; static int bimax##WW; \
+static bi##WW bisum##WW; static int bimax##WW; static bi##WW *bip2##WW, *bip3##WW, *biv##WW; \
 static bi##WW *bi_conv##WW(int which) { \
     bi##WW *x = malloc(sizeof(bi##WW) * N); \
     for (long i = 0; i < N; i++) { bu##WW v = 0; memcpy(&v, MAG[which] + i * (WW / 64), WW / 8); \
@@ -105,8 +109,9 @@ static bi##WW *bi_conv##WW(int which) { \
 static bu##WW bi_inv##WW(bu##WW d) { bu##WW x = d; for (int i = 0; i < 12; i++) x *= 2 - d * x; return x; } \
 static int bi_bits##WW(bu##WW acc) { int b = 0; while (acc) { acc >>= 1; b++; } return b; } \
 static void bi_setup##WW(void) { bia##WW = bi_conv##WW(0); bib##WW = bi_conv##WW(1); bie1##WW = bi_conv##WW(2); \
-    bie2##WW = bi_conv##WW(3); biha##WW = bi_conv##WH(4); bihb##WW = bi_conv##WH(5); bio##WW = malloc(sizeof(bi##WW) * N); } \
-static void bi_sortk##WW(void); \
+    bie2##WW = bi_conv##WW(3); biha##WW = bi_conv##WH(4); bihb##WW = bi_conv##WH(5); bio##WW = malloc(sizeof(bi##WW) * N); \
+    bip2##WW = malloc(sizeof(bi##WW) * N); bip3##WW = malloc(sizeof(bi##WW) * N); biv##WW = malloc(sizeof(bi##WW) * N); } \
+static void bi_sortk##WW(void); static void bi_sortv##WW(void); \
 static void bi_run##WW(void) { \
     bi##WW *a = bia##WW, *b = bib##WW, *o = bio##WW; bi##WH *ha = biha##WW, *hb = bihb##WW; \
     switch (OP) { \
@@ -121,13 +126,24 @@ static void bi_run##WW(void) { \
     case SORT: bi_sortk##WW(); break; \
     case SCAN: { bu##WW acc = 0; for (long i = 0; i < N; i++) { bi##WW v = a[i]; acc |= (bu##WW)(v < 0 ? -v : v); } \
         bimax##WW = bi_bits##WW(acc); break; } \
+    case PIPE: { bi##WW *t2 = bip2##WW, *t3 = bip3##WW, *v = biv##WW; \
+        for (long i = 0; i < N; i++) o[i] = (bi##WW)ha[i] * (bi##WW)hb[i]; \
+        for (long i = 0; i < N; i++) t2[i] = o[i] + a[i]; \
+        { bi##WW s = 0; for (long i = 0; i < N; i++) s += (bi##WW)ha[i] * (bi##WW)hb[i]; bisum##WW = s; } \
+        { bu##WW inv = bi_inv##WW(125); bi##WW *e = bie2##WW; for (long i = 0; i < N; i++) t3[i] = (bi##WW)((bu##WW)(e[i] >> 3) * inv); } \
+        for (long i = 0; i < N; i++) v[i] = t2[i] + t3[i]; \
+        bi_sortv##WW(); \
+        { bu##WW acc = 0; for (long i = 0; i < N; i++) { bi##WW x = v[i]; acc |= (bu##WW)(x < 0 ? -x : x); } PIPEMAX = bi_bits##WW(acc); } \
+        break; } \
     } } \
 static void bi_out##WW(void) { \
     if (OP == DOT) { bu##WW v = (bu##WW)bisum##WW; int neg = bisum##WW < 0; if (neg) v = -v; \
         mpz_import(ZONE, WW / 64, -1, 8, 0, 0, &v); if (neg) mpz_neg(ZONE, ZONE); out_kind = 1; return; } \
     if (OP == SCAN) { mpz_set_ui(ZONE, (unsigned long)bimax##WW); out_kind = 1; return; } \
     if (OP == SORT) { out_kind = 2; return; } \
-    for (long i = 0; i < N; i++) { bi##WW s = bio##WW[i]; bu##WW v = (bu##WW)(s < 0 ? -s : s); \
+    if (OP == PIPE) { bu##WW v = (bu##WW)bisum##WW; int neg = bisum##WW < 0; if (neg) v = -v; \
+        mpz_import(ZONE, WW / 64, -1, 8, 0, 0, &v); if (neg) mpz_neg(ZONE, ZONE); } \
+    for (long i = 0; i < N; i++) { bi##WW s = OP == PIPE ? biv##WW[i] : bio##WW[i]; bu##WW v = (bu##WW)(s < 0 ? -s : s); \
         mpz_import(ZOUT[i], WW / 64, -1, 8, 0, 0, &v); if (s < 0) mpz_neg(ZOUT[i], ZOUT[i]); } \
     out_kind = 0; }
 /* the conversion of a WH-wide input needs bi_conv at width WH, defined by the narrower instance first */
@@ -140,6 +156,14 @@ BI(64, 64) BI(128, 64) BI(256, 128) BI(512, 256) BI(1024, 512) BI(2048, 1024)
 #define BILESS2048(x, y) (bia2048[x] < bia2048[y])
 MSORT(bi_sortk64, BILESS64) MSORT(bi_sortk128, BILESS128) MSORT(bi_sortk256, BILESS256)
 MSORT(bi_sortk512, BILESS512) MSORT(bi_sortk1024, BILESS1024) MSORT(bi_sortk2048, BILESS2048)
+#define BIVLESS64(x, y) (biv64[x] < biv64[y])
+#define BIVLESS128(x, y) (biv128[x] < biv128[y])
+#define BIVLESS256(x, y) (biv256[x] < biv256[y])
+#define BIVLESS512(x, y) (biv512[x] < biv512[y])
+#define BIVLESS1024(x, y) (biv1024[x] < biv1024[y])
+#define BIVLESS2048(x, y) (biv2048[x] < biv2048[y])
+MSORT(bi_sortv64, BIVLESS64) MSORT(bi_sortv128, BIVLESS128) MSORT(bi_sortv256, BIVLESS256)
+MSORT(bi_sortv512, BIVLESS512) MSORT(bi_sortv1024, BIVLESS1024) MSORT(bi_sortv2048, BIVLESS2048)
 
 /* bi chain: the whole vector moves to twice the width when the bound requires */
 static void *bix[6];
@@ -186,6 +210,7 @@ LCS(LCT)
 static lc##LHH *lcha##LL, *lchb##LL; \
 static lc##LL *lca##LL, *lcb##LL, *lce1##LL, *lce2##LL, *lco##LL; static unsigned char *lcsa##LL, *lcsb##LL, *lcs1##LL, *lcs2##LL, *lcso##LL; \
 static lc##LL lcsum##LL; static unsigned char lcsums##LL; static int lcmax##LL; \
+static lc##LL *lcp2##LL, *lcp3##LL, *lcv##LL; static unsigned char *lcsp2##LL, *lcsp3##LL, *lcsv##LL; \
 static inline int lc_cmp##LL(const uint64_t *a, const uint64_t *b) { \
     for (int j = LL - 1; j >= 0; j--) if (a[j] != b[j]) return a[j] > b[j] ? 1 : -1; return 0; } \
 static inline void lc_addm##LL(uint64_t *r, const uint64_t *a, const uint64_t *b) { \
@@ -214,7 +239,12 @@ static unsigned char *lcsha##LL, *lcshb##LL; \
 static void lc_setup##LL(void) { lca##LL = lc_conv##LL(0, &lcsa##LL, sizeof(lc##LL)); lcb##LL = lc_conv##LL(1, &lcsb##LL, sizeof(lc##LL)); \
     lce1##LL = lc_conv##LL(2, &lcs1##LL, sizeof(lc##LL)); lce2##LL = lc_conv##LL(3, &lcs2##LL, sizeof(lc##LL)); \
     lcha##LL = lc_conv##LL(4, &lcsha##LL, sizeof(lc##LHH)); lchb##LL = lc_conv##LL(5, &lcshb##LL, sizeof(lc##LHH)); \
-    lco##LL = malloc(sizeof(lc##LL) * N); lcso##LL = malloc(N); } \
+    lco##LL = malloc(sizeof(lc##LL) * N); lcso##LL = malloc(N); \
+    lcp2##LL = malloc(sizeof(lc##LL) * N); lcp3##LL = malloc(sizeof(lc##LL) * N); lcv##LL = malloc(sizeof(lc##LL) * N); \
+    lcsp2##LL = malloc(N); lcsp3##LL = malloc(N); lcsv##LL = malloc(N); } \
+static inline int lc_lessv##LL(int x, int y) { int sx = lcsv##LL[x], sy = lcsv##LL[y]; \
+    if (sx != sy) return sx > sy; int c = lc_cmp##LL(lcv##LL[x].l, lcv##LL[y].l); return sx ? c > 0 : c < 0; } \
+MSORT(lc_sortv##LL, lc_lessv##LL) \
 static inline int lc_less##LL(int x, int y) { int sx = lcsa##LL[x], sy = lcsa##LL[y]; \
     if (sx != sy) return sx > sy; int c = lc_cmp##LL(lca##LL[x].l, lca##LL[y].l); return sx ? c > 0 : c < 0; } \
 MSORT(lc_sortk##LL, lc_less##LL) \
@@ -234,11 +264,27 @@ static void lc_run##LL(void) { \
     case SCAN: { int m = 0; for (int j = LL - 1; j >= 0 && !m; j--) { uint64_t acc = 0; \
             for (long i = 0; i < N; i++) acc |= a[i].l[j]; if (acc) m = 64 * j + 64 - __builtin_clzll(acc); } \
         lcmax##LL = m; break; } \
+    case PIPE: { lc##LL *t2 = lcp2##LL, *t3 = lcp3##LL, *v = lcv##LL; unsigned char *s2 = lcsp2##LL, *s3 = lcsp3##LL, *sv = lcsv##LL; \
+        for (long i = 0; i < N; i++) { lc_mulm##LL(o[i].l, lcha##LL[i].l, lchb##LL[i].l); so[i] = lcsha##LL[i] ^ lcshb##LL[i]; } \
+        for (long i = 0; i < N; i++) lc_sadd##LL(t2[i].l, s2 + i, o[i].l, so[i], a[i].l, sa[i]); \
+        { lc##LL s, t; unsigned char ss = 0; memset(&s, 0, sizeof s); \
+          for (long i = 0; i < N; i++) { lc_mulm##LL(t.l, lcha##LL[i].l, lchb##LL[i].l); lc_sadd##LL(s.l, &ss, s.l, ss, t.l, lcsha##LL[i] ^ lcshb##LL[i]); } \
+          lcsum##LL = s; lcsums##LL = ss; } \
+        { uint64_t inv = binv64(125); lc##LL t; \
+          for (long i = 0; i < N; i++) { lc_shr##LL(t.l, lce2##LL[i].l, 3); lc_divx##LL(t3[i].l, t.l, 125, inv); s3[i] = lcs2##LL[i]; } } \
+        for (long i = 0; i < N; i++) lc_sadd##LL(v[i].l, sv + i, t2[i].l, s2[i], t3[i].l, s3[i]); \
+        lc_sortv##LL(); \
+        { int m = 0; for (int j = LL - 1; j >= 0 && !m; j--) { uint64_t acc = 0; \
+            for (long i = 0; i < N; i++) acc |= v[i].l[j]; if (acc) m = 64 * j + 64 - __builtin_clzll(acc); } PIPEMAX = m; } \
+        break; } \
     } } \
 static void lc_out##LL(void) { \
     if (OP == DOT) { mpz_import(ZONE, LL, -1, 8, 0, 0, lcsum##LL.l); if (lcsums##LL) mpz_neg(ZONE, ZONE); out_kind = 1; return; } \
     if (OP == SCAN) { mpz_set_ui(ZONE, (unsigned long)lcmax##LL); out_kind = 1; return; } \
     if (OP == SORT) { out_kind = 2; return; } \
+    if (OP == PIPE) { mpz_import(ZONE, LL, -1, 8, 0, 0, lcsum##LL.l); if (lcsums##LL) mpz_neg(ZONE, ZONE); \
+        for (long i = 0; i < N; i++) { mpz_import(ZOUT[i], LL, -1, 8, 0, 0, lcv##LL[i].l); if (lcsv##LL[i]) mpz_neg(ZOUT[i], ZOUT[i]); } \
+        out_kind = 0; return; } \
     for (long i = 0; i < N; i++) { mpz_import(ZOUT[i], LL, -1, 8, 0, 0, lco##LL[i].l); if (lcso##LL[i]) mpz_neg(ZOUT[i], ZOUT[i]); } \
     out_kind = 0; } \
 /* chain step at this length: x <- x b + c cs, magnitudes with signs */ \
@@ -292,6 +338,10 @@ static void lr_divx(uint64_t *q, const uint64_t *x, long l, uint64_t d, uint64_t
 static int lr_less(int x, int y) { int sx = lrsa[x], sy = lrsa[y]; if (sx != sy) return sx > sy;
     int c = mpn_cmp(lra + (long)x * L, lra + (long)y * L, L); return sx ? c > 0 : c < 0; }
 MSORT(lr_sortk, lr_less)
+static uint64_t *lrp2, *lrp3, *lrv; static unsigned char *lrsp2, *lrsp3, *lrsv;
+static int lr_lessv(int x, int y) { int sx = lrsv[x], sy = lrsv[y]; if (sx != sy) return sx > sy;
+    int c = mpn_cmp(lrv + (long)x * L, lrv + (long)y * L, L); return sx ? c > 0 : c < 0; }
+MSORT(lr_sortv, lr_lessv)
 static void lr_setup(void) {
     size_t bytes = sizeof(uint64_t) * N * L;
     lra = malloc(bytes); memcpy(lra, MAG[0], bytes); lrb = malloc(bytes); memcpy(lrb, MAG[1], bytes);
@@ -299,6 +349,7 @@ static void lr_setup(void) {
     lrsa = SG[0]; lrsb = SG[1]; lrs1 = SG[2]; lrs2 = SG[3]; lrsha = SG[4]; lrshb = SG[5];
     size_t hbytes = sizeof(uint64_t) * N * LH; lrha = malloc(hbytes); memcpy(lrha, MAG[4], hbytes); lrhb = malloc(hbytes); memcpy(lrhb, MAG[5], hbytes);
     lro = malloc(bytes); lrso = malloc(N); lrsum = malloc(8 * (L + 1)); lrt = malloc(8 * (2 * L + 2));
+    lrp2 = malloc(bytes); lrp3 = malloc(bytes); lrv = malloc(bytes); lrsp2 = malloc(N); lrsp3 = malloc(N); lrsv = malloc(N);
 }
 static void lr_run(void) {
     long h = LH;
@@ -310,18 +361,32 @@ static void lr_run(void) {
         break; }
     case WIDEN: for (long i = 0; i < N; i++) { memcpy(lro + i * L, lrha + i * h, 8 * h); if (L > h) memset(lro + i * L + h, 0, 8 * (L - h)); lrso[i] = lrsha[i]; } break;
     case DIV1: { uint64_t inv = binv64(999); for (long i = 0; i < N; i++) { lr_divx(lro + i * L, lre1 + i * L, L, 999, inv); lrso[i] = lrs1[i]; } break; }
-    case DIV2: { uint64_t inv = binv64(125);
-        for (long i = 0; i < N; i++) { mpn_rshift(lrt, lre2 + i * L, L, 3); lr_divx(lro + i * L, lrt, L, 125, inv); lrso[i] = lrs2[i]; } break; }
+    case DIV2: for (long i = 0; i < N; i++) { mpn_divexact_1(lro + i * L, lre2 + i * L, L, 1000); lrso[i] = lrs2[i]; } break;   /* GMP's kernel, as the large set uses */
     case SORT: lr_sortk(); break;
     case SCAN: { int m = 0; for (long j = L - 1; j >= 0 && !m; j--) { uint64_t acc = 0;
             for (long i = 0; i < N; i++) acc |= lra[i * L + j]; if (acc) m = (int)(64 * j + 64 - __builtin_clzll(acc)); }
         lrmax = m; break; }
+    case PIPE: {
+        for (long i = 0; i < N; i++) { mpn_mul_n(lrt, lrha + i * h, lrhb + i * h, h); memcpy(lro + i * L, lrt, 8 * L); lrso[i] = lrsha[i] ^ lrshb[i]; }
+        for (long i = 0; i < N; i++) lr_sadd(lrp2 + i * L, lrsp2 + i, lro + i * L, lrso[i], lra + i * L, lrsa[i], L);
+        memset(lrsum, 0, 8 * L); lrsums = 0;
+        for (long i = 0; i < N; i++) { mpn_mul_n(lrt, lrha + i * h, lrhb + i * h, h); lr_sadd(lrsum, &lrsums, lrsum, lrsums, lrt, lrsha[i] ^ lrshb[i], L); }
+        { uint64_t inv = binv64(125);
+          for (long i = 0; i < N; i++) { mpn_rshift(lrt, lre2 + i * L, L, 3); lr_divx(lrp3 + i * L, lrt, L, 125, inv); lrsp3[i] = lrs2[i]; } }
+        for (long i = 0; i < N; i++) lr_sadd(lrv + i * L, lrsv + i, lrp2 + i * L, lrsp2[i], lrp3 + i * L, lrsp3[i], L);
+        lr_sortv();
+        { int m = 0; for (long j = L - 1; j >= 0 && !m; j--) { uint64_t acc = 0;
+            for (long i = 0; i < N; i++) acc |= lrv[i * L + j]; if (acc) m = (int)(64 * j + 64 - __builtin_clzll(acc)); } PIPEMAX = m; }
+        break; }
     }
 }
 static void lr_out(void) {
     if (OP == DOT) { mpz_import(ZONE, L, -1, 8, 0, 0, lrsum); if (lrsums) mpz_neg(ZONE, ZONE); out_kind = 1; return; }
     if (OP == SCAN) { mpz_set_ui(ZONE, (unsigned long)lrmax); out_kind = 1; return; }
     if (OP == SORT) { out_kind = 2; return; }
+    if (OP == PIPE) { mpz_import(ZONE, L, -1, 8, 0, 0, lrsum); if (lrsums) mpz_neg(ZONE, ZONE);
+        for (long i = 0; i < N; i++) { mpz_import(ZOUT[i], L, -1, 8, 0, 0, lrv + i * L); if (lrsv[i]) mpz_neg(ZOUT[i], ZOUT[i]); }
+        out_kind = 0; return; }
     for (long i = 0; i < N; i++) { mpz_import(ZOUT[i], L, -1, 8, 0, 0, lro + i * L); if (lrso[i]) mpz_neg(ZOUT[i], ZOUT[i]); }
     out_kind = 0;
 }
@@ -340,11 +405,12 @@ static int lr_chain(void) {
         }
         uint64_t c = mpn_mul_1(cs, cs, lcs, (uint64_t)DEN); if (c) cs[lcs++] = c;
         memset(lrcs, 0, 8 * (LX + 1)); memcpy(lrcs, cs, 8 * lcs);
-        for (long i = 0; i < N; i++) {
-            uint64_t *x = lrx + i * LX;
-            mpn_mul_1(lrt1, x, LX, uabs64(CB[i])); mpn_mul_1(lrt2, lrcs, LX, uabs64(CC[i]));
-            lr_sadd(x, lrxs + i, lrt1, (lrxs[i] ^ (CB[i] < 0)) & 1, lrt2, CC[i] < 0, LX);
-            if (mpn_zero_p(x, LX)) lrxs[i] = 0;
+        for (long i = 0; i < N; i++) {                   /* one-limb multiply, then a fused multiply-add or -subtract */
+            uint64_t *x = lrx + i * LX; int s1 = (lrxs[i] ^ (CB[i] < 0)) & 1, sc = CC[i] < 0;
+            mpn_mul_1(x, x, LX, uabs64(CB[i]));
+            if (s1 == sc) mpn_addmul_1(x, lrcs, LX, uabs64(CC[i]));
+            else if (mpn_submul_1(x, lrcs, LX, uabs64(CC[i]))) { mpn_neg(x, x, LX); s1 = sc; }
+            lrxs[i] = mpn_zero_p(x, LX) ? 0 : (unsigned char)s1;
         }
     }
     final_width = w; return 1;
@@ -588,7 +654,8 @@ static int z_chain(void) {
     for (long k = 0; k < K; k++) {
         bx = chain_next(bx); if (bx + 1 > CAP) { mpz_clear(cs); mpz_clear(t); return 0; }   /* the same cap as the others */
         mpz_mul_ui(cs, cs, (unsigned long)DEN);
-        for (long i = 0; i < N; i++) { mpz_mul_si(zx[i], zx[i], CB[i]); mpz_mul_si(t, cs, CC[i]); mpz_add(zx[i], zx[i], t); }
+        for (long i = 0; i < N; i++) { mpz_mul_si(zx[i], zx[i], CB[i]);
+            if (CC[i] >= 0) mpz_addmul_ui(zx[i], cs, (unsigned long)CC[i]); else mpz_submul_ui(zx[i], cs, (unsigned long)-CC[i]); }
     }
     mpz_clear(cs); mpz_clear(t); final_width = 0; return 1;
 }
@@ -598,11 +665,12 @@ int main(int argc, char **argv) {
     if (argc < 8) { fprintf(stderr, "usage: p1_arith REP OP W N REPS INDIR OUTFILE [K DEN]\n"); return 2; }
     const char *rep = argv[1], *op = argv[2]; W = atoi(argv[3]); N = atol(argv[4]); int reps = atoi(argv[5]);
     const char *dir = argv[6]; L = W / 64; LH = L > 1 ? L / 2 : 1;
-    const char *ops[] = {"add", "mul", "dot", "div1", "div2", "sort", "scan", "widen", "chain"};
-    OP = -1; for (int i = 0; i < 9; i++) if (is(op, ops[i])) OP = i;
+    const char *ops[] = {"add", "mul", "dot", "div1", "div2", "sort", "scan", "widen", "chain", "pipe"};
+    OP = -1; for (int i = 0; i < 10; i++) if (is(op, ops[i])) OP = i;
     if (OP < 0 || (OP != CHAIN && (W < 64 || W > CAP || (W & (W - 1))))) { fprintf(stderr, "bad op or width\n"); return 2; }
     int bi = is(rep, "bi"), lc = is(rep, "lc"), lr = is(rep, "lr"), rn = is(rep, "rns"), mz = is(rep, "mpz");
     if (!(bi || lc || lr || rn || mz)) { fprintf(stderr, "bad rep\n"); return 2; }
+    if (OP == PIPE && (rn || mz)) { fprintf(stderr, "pipe: bi, lc, lr only\n"); return 2; }
     mpz_init(PW); mpz_init(ZONE);
     rns_primes();
     for (int k = 1; k <= MAXM; k++) {
@@ -666,6 +734,7 @@ int main(int argc, char **argv) {
     if (out_kind == 1) gmp_fprintf(f, "%Zd\n", ZONE);
     else if (out_kind == 2) for (long i = 0; i < N; i++) fprintf(f, "%d\n", perm[i]);
     else for (long i = 0; i < N; i++) gmp_fprintf(f, "%Zd\n", ZOUT[i]);
+    if (OP == PIPE) { gmp_fprintf(f, "%Zd\n%d\n", ZONE, PIPEMAX); for (long i = 0; i < N; i++) fprintf(f, "%d\n", perm[i]); }
     fclose(f);
     return 0;
 }

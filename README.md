@@ -9,6 +9,7 @@
 - [The plane variant: research findings](docs/research/plane-variant.md): whether a format for $(a + bi)/c$ beats the Q family's values on one axis (it ties on speed and array memory).
 - [A family over the division algebras: research findings](docs/research/division-algebra-family.md): one-byte headers for the reals, complex numbers, quaternions and octonions, fixed-width uN array tiers against GMP and FLINT, and quaternion arrays; design questions for the next specification.
 - [Phase one: the variants compared with each other](docs/research/phase1-variants.md): value layouts, array representations by width, the threshold, the widening rule and matrix-product kernels, compared only with each other; decisions for the next specification.
+- [The threshold, storage granularity, and the format against GMP and FLINT](docs/research/threshold-storage-libraries.md): 1024 bits as the last compile-time width, storage in 64-bit multiples with growth slack, and the library comparison by operation and width.
 
 ## Benchmarks
 

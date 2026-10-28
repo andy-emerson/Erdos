@@ -150,7 +150,7 @@ struct pg_graph {
 
 /* ------------------------------------------------------------------------------------------------- mem.c */
 
-void pgi_die(const char *msg);
+__attribute__((noreturn)) void pgi_die(const char *msg);
 void *pgi_alloc(pg_graph *g, size_t n);
 void *pgi_calloc(pg_graph *g, size_t n);
 void *pgi_realloc(pg_graph *g, void *p, size_t n);

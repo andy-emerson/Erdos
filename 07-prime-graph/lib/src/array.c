@@ -370,7 +370,11 @@ static inline view dview(const pg_graph *g, const pg_array *A) {  /* D as an ope
 
 /* dense element i: as its own reduced value (red), or as n / D unreduced */
 static inline int dense_view(pg_graph *g, const pg_array *A, size_t i, int red, raw *t, view *v) {
-    if (!A->dh) { *v = (view){A->num[i], 1, 0, NULL}; return R_OK; }
+    if (!A->dh) {
+        *v = (view){A->num[i], 1, 0, NULL};
+        if (red) setzero(t), t->num = A->num[i];
+        return R_OK;
+    }
     view d = hview(g, A->dh);
     if (!red) { *v = (view){A->num[i], A->D, d.ne, d.e}; return R_OK; }
     int rc = fin(g, A->num[i], A->D, d.e, d.ne, t);

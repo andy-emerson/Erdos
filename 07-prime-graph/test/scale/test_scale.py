@@ -339,7 +339,13 @@ class TestChecksCatch(unittest.TestCase):
         self.assertEqual(sb.check_line("o * 2 3 3 4 2 4"), "not_lowest_terms")
         self.assertEqual(sb.check_line("o * 2 3 3 4 1 3"), "wrong_result")
         self.assertEqual(sb.check_line("o + 0 1 0 5 0 5"), "not_lowest_terms")
-        self.assertEqual(sb.check_line("o + 1 2 1 3 0 0"), "ovf_false")
+        self.assertEqual(sb.check_line("o + 1 2 1 3 0 0"), "ovf_false")  # a false overflow: fails
+        d1, d2 = 2**40 * 3, 2**40 * 5  # lcm 15 * 2^40 < 2^63 but d1 * d2 > 2^63: not explained
+        self.assertEqual(sb.check_line(f"o + 1 {d1} 1 {d2} 0 0"), "ovf_false")
+        g, q1, q2 = 2**31 + 11, 4194301, 4194319  # lcm g*q1*q2 above 2^63; y cancels g, so the sum fits: explained
+        y = (-q2 * pow(q1, -1, g)) % g
+        self.assertEqual(sb.check_line(f"o + 1 {g * q1} {y} {g * q2} 0 0"), "ovf_lcm")
+        self.assertEqual(sb.check_line("o * 1 2 1 3 0 0"), "ovf_false")
         big = 2 ** 62 + 1
         self.assertEqual(sb.check_line(f"o * {big} 1 4 1 0 0"), "ovf_true")
         self.assertIsNone(sb.check_line("v 2 4 1 2"))
@@ -347,15 +353,29 @@ class TestChecksCatch(unittest.TestCase):
         self.assertEqual(sb.check_line("v 2 4 1 3"), "stored_wrong")
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "x.chk"
-            p.write_text("o + 1 2 1 3 5 6\nv 1 2 1 2\no * 1 2 1 3 1 5\n")
+            p.write_text("o + 1 2 1 3 5 6\nv 1 2 1 2\no * 1 2 1 3 1 5\no + 1 2 1 3 0 0\n")
             c = sb.check_file(p)
-            self.assertEqual((c["ops"], c["values"], c["fail"]), (2, 1, 1))
+            self.assertEqual((c["ops"], c["values"], c["fail"]), (3, 1, 2))
+            self.assertEqual(c["reasons"], {"wrong_result": 1, "ovf_false": 1})
 
     def test_verdicts_catch(self):
-        g = {"steps": [{"fixed_ns": 100.0, "op_ns": 100.0}, {"fixed_ns": 250.0, "op_ns": 120.0}]}
-        self.assertFalse(sb.growth_verdict(g)["pass"])
-        g["steps"][1]["fixed_ns"] = 150.0
+        mk = lambda i, **k: dict({"step": i, "fixed_ns": 100.0, "fixed_first_ns": 100.0, "op_ns": 100.0,
+                                  "entry_ns_per_value": 1000.0, "idle_ns": 0, "batch_values": 1000}, **k)
+        g = {"steps": [mk(0), mk(1, fixed_ns=250.0)]}
+        self.assertEqual(sb.growth_verdict(g)["failed"], ["fixed_ratio"])
+        g = {"steps": [mk(0), mk(1, fixed_ns=150.0)]}
         self.assertTrue(sb.growth_verdict(g)["pass"])
+        g = {"steps": [mk(0), mk(1, entry_ns_per_value=2500.0)]}  # an entry that grows (C's scan) fails
+        self.assertEqual(sb.growth_verdict(g)["failed"], ["entry_ratio"])
+        g = {"steps": [mk(0), mk(1, idle_ns=200 * 1000)]}  # idle 200 ns/value against the 50 ns floor
+        self.assertEqual(sb.growth_verdict(g)["failed"], ["idle_ratio"])
+        g = {"steps": [mk(0), mk(1), mk(2), mk(3, fixed_first_ns=300.0)]}
+        self.assertEqual(sb.growth_verdict(g)["failed"], ["cold_ratio"])
+        g = {"steps": [mk(0), mk(1, op_ns=300.0)]}  # all-values growth: graded against the control's
+        c = {"steps": [mk(0), mk(1, op_ns=200.0)]}
+        self.assertTrue(sb.growth_verdict(g, c)["pass"])
+        c = {"steps": [mk(0), mk(1, op_ns=120.0)]}
+        self.assertEqual(sb.growth_verdict(g, c)["failed"], ["vs_control"])
         base = {"ns_per_event": 1.0, "values": 100, "mem": 1000}
         ch = {"steps": [dict(base, nodes_live=10), dict(base, nodes_live=15),
                         {"final": 1, "blocks_over_baseline": 0, "nodes_live": 0, "holders": 0, "pool_used": 0,
@@ -366,6 +386,9 @@ class TestChecksCatch(unittest.TestCase):
         ch["steps"][-1]["nodes_live"] = 0
         ch["steps"][1]["nodes_live"] = 25  # nodes not bounded
         self.assertFalse(sb.churn_verdict(ch)["pass"])
+        ch["steps"][1]["nodes_live"] = 15
+        ch["steps"][1]["ns_per_event"] = 3.0  # events that slow down
+        self.assertEqual(sb.churn_verdict(ch)["failed"], ["event_ratio"])
 
     def test_batch_gcd_matches_pairwise(self):
         rng = random.Random(5)
@@ -406,6 +429,7 @@ class TestWorkloadsSmall(unittest.TestCase):
         self.assertEqual([s["splits"] for s in sp], [1, 1])
         self.assertEqual(sp[0]["numerators"], 3000)  # the loop visits every numerator of 30030 once
         self.assertEqual(sp[1]["numerators"], 3000)  # 4290's list: the 3000 (1/7 went to node 7 only)
+        self.assertEqual([s["audit"] for s in sp], ["ok", "ok"])
         st = self.wl(C, "heavy", deg=3000, B=1000, nchk=300, nval=300)
         self.assertEqual([s.get("numerators") for s in st if s.get("split", 0) >= 1], [0, 0])
 
@@ -415,6 +439,7 @@ class TestWorkloadsSmall(unittest.TestCase):
         self.assertEqual(len(sp), 14)
         self.assertTrue(all(s["splits"] == 1 for s in sp))
         self.assertEqual([s["numerators"] for s in sp], [500] * 14)
+        self.assertEqual([s["audit"] for s in sp], ["ok"] * 14)  # audited after every split
         self.assertEqual(sp[-1]["nodes_live"], 15)
 
     def test_growth(self):
@@ -439,14 +464,16 @@ class TestWorkloadsSmall(unittest.TestCase):
         for b, kw in ((S, {}), (S, {"lazy": 1}), (C, {})):
             st = self.wl(b, "distinct", ND=500, per=3, B=1000, M=2000, nchk=300, nval=300, **kw)
             self.assertEqual(st[-1]["ND"], 500)
+            self.assertGreaterEqual(st[-1]["distinct_entered"], 500)  # per batch, summed: >= ND (2 batches here)
+            self.assertAlmostEqual(st[-1]["entry_ns_per_distinct"], st[-1]["entry_ns"] / st[-1]["distinct_entered"], delta=1)
 
 
 class TestReport(unittest.TestCase):
     def test_report_renders(self):
         res = {"growth": [{"row": "S", "params": {}, "wall_s": 1.0, "rc": 0,
-                           "check": {"ops": 1, "values": 1, "fail": 0, "ovf_true": 0, "ovf_false": 0, "reasons": {}},
+                           "check": {"ops": 1, "values": 1, "fail": 0, "ovf_true": 0, "ovf_lcm": 0, "reasons": {}},
                            "steps": [{"step": 0, "values": 10, "nodes_live": 3, "entry_ns_per_value": 1.0, "idle_ns": 0,
-                                      "fixed_ns": 1.0, "fixed_add_ns": 1.0, "fixed_mul_ns": 1.0, "fixed_first_ns": 1.0,
+                                      "fixed_ns": 1.0, "fixed_add_ns": 1.0, "fixed_mul_ns": 1.0, "fixed_first_ns": 1.0, "batch_values": 10, "ops": 2,
                                       "op_ns": 1.0, "op_first_ns": 1.0, "fixed_ovf": 0, "op_ovf": 0, "mem": 1,
                                       "audit": "ok"}]}]}
         md = sb.report_md(res, {"date": "x", "cpu": "y", "quick": True}, {})

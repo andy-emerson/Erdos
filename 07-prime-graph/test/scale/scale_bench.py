@@ -24,10 +24,13 @@ Sweeps (each step is one row of a table; every step's sampled results are checke
   1 growth    batches of 10^5 values up to 10^7, live nodes rising to about 10^5; per batch: entry, idle pass, and
               10^5 ops twice: a FIXED sample (the same operand pairs, from the first batch, every step) and a sample
               over ALL live values; each sample runs 3 times on the same pairs and the minimum is kept (the first,
-              cold repetition is reported too).  Pass: the fixed sample's time per op stays within 2x of batch 1.
+              cold repetition is reported too).  Pass: fixed-sample op time, its cold repetition, entry ns per
+              value and idle ns per value each within 2x of batch 1, and S's all-values op time relative to C's at
+              matched steps within 2x of batch 1's ratio.
   2 heavy     one node (30030) shared by 10^6..10^7 numerators, then 1/7 and 1/6 force two splits: time vs degree
-  3 churn     10^6 live values, 10^7 events (delete a random value / insert); nodes and memory over time; at the
-              end everything is deleted and the allocations are counted (the leak check)
+  3 churn     10^6 live values, two unreported turnovers of them (so the counts settle), then 10^7 events (delete
+              a random value / insert); pass: nodes, memory per value and ns per event within 2x of the first step;
+              at the end everything is deleted and the allocations are counted (the leak check)
   4 distinct  10^3, 10^4, 10^5 distinct denominators (10 values each): entry per distinct denominator, ops
   5 chain     a node over the first 15 primes shared by 10^4..10^6 numerators, split 14 times in a row
 
@@ -76,7 +79,9 @@ def build(force=False):
 # ---------------------------------------------------------------- checks
 
 def check_line(line):
-    """One chk line -> None if right, else a reason.  'ovf_true' / 'ovf_false' classify detected overflows."""
+    """One chk line -> None if right, else a reason.  A detected overflow is 'ovf_true' (the exact result does not
+    fit), 'ovf_lcm' (an add whose operands' lcm reaches 2^63: the op code tests the unreduced common denominator), or
+    'ovf_false' (neither: a failure)."""
     p = line.split()
     if p[0] == "o":
         op = p[1]
@@ -85,7 +90,11 @@ def check_line(line):
         x = a + b if op == "+" else a * b
         if rd == 0:
             fits = -LIM <= x.numerator < LIM and x.denominator < LIM
-            return "ovf_false" if fits else "ovf_true"
+            if not fits:
+                return "ovf_true"
+            if op == "+" and math.lcm(a.denominator, b.denominator) >= LIM:
+                return "ovf_lcm"
+            return "ovf_false"
         if rd < 0:
             return "negative_den"
         if math.gcd(abs(rn), rd) != 1 or (rn == 0 and rd != 1):
@@ -106,8 +115,8 @@ def check_line(line):
 
 
 def check_file(path):
-    """counts: checked, failures (by reason, wrong values only), ovf_true, ovf_false, first failures"""
-    c = {"ops": 0, "values": 0, "fail": 0, "ovf_true": 0, "ovf_false": 0, "reasons": {}, "examples": []}
+    """counts: checked, failures (by reason; a false overflow is one), ovf_true, ovf_lcm, first failures"""
+    c = {"ops": 0, "values": 0, "fail": 0, "ovf_true": 0, "ovf_lcm": 0, "reasons": {}, "examples": []}
     if not Path(path).exists():
         return c
     with open(path) as f:
@@ -116,7 +125,7 @@ def check_file(path):
                 continue
             c["ops" if line[0] == "o" else "values"] += 1
             r = check_line(line)
-            if r in ("ovf_true", "ovf_false"):
+            if r in ("ovf_true", "ovf_lcm"):
                 c[r] += 1
             elif r:
                 c["fail"] += 1
@@ -188,35 +197,63 @@ def audits(res):
     return f"{len(a) - len(bad)}/{len(a)} ok" + (f" ({bad[0]})" if bad else "")
 
 
-def growth_verdict(res):
+IDLE_FLOOR = 50.0  # ns per value: idle ratios are taken against max(step 1, this), since S's idle is ~0
+
+
+def growth_verdict(res, control=None):
+    """Pass: fixed-sample op time, its cold repetition, entry ns/value and idle ns/value each within 2x of step 1
+    (the cold repetition against the smallest of the first three steps: step 1's includes first touches); with the
+    control's run, S's all-values op time relative to C's at matched steps within 2x of step 1's."""
     st = [s for s in res["steps"] if "fixed_ns" in s]
     if not st:
         return None
-    f0, a0 = st[0]["fixed_ns"], st[0]["op_ns"]
-    fmax = max(s["fixed_ns"] for s in st)
-    amax = max(s["op_ns"] for s in st)
-    tail = st[len(st) // 2:]
-    fmed_tail = sorted(s["fixed_ns"] for s in tail)[len(tail) // 2]
-    return {"fixed_first": f0, "fixed_max": fmax, "fixed_ratio": fmax / f0, "fixed_tail_median_ratio": fmed_tail / f0,
-            "all_first": a0, "all_max": amax, "all_ratio": amax / a0, "pass": fmax / f0 <= 2.0,
-            "steps": len(st), "stopped": any("stopped" in s for s in res["steps"])}
+    r = lambda k, base=None: max(s[k] for s in st) / (base if base is not None else st[0][k])
+    idle = [s["idle_ns"] / s["batch_values"] for s in st]
+    v = {"fixed_first": st[0]["fixed_ns"], "fixed_max": max(s["fixed_ns"] for s in st), "fixed_ratio": r("fixed_ns"),
+         "cold_ratio": r("fixed_first_ns", min(s["fixed_first_ns"] for s in st[:3])),
+         "entry_ratio": r("entry_ns_per_value"), "idle_ratio": max(idle) / max(idle[0], IDLE_FLOOR),
+         "all_first": st[0]["op_ns"], "all_max": max(s["op_ns"] for s in st), "all_ratio": r("op_ns"),
+         "steps": len(st), "stopped": any("stopped" in s for s in res["steps"]), "vs_control": None}
+    crit = ["fixed_ratio", "cold_ratio", "entry_ratio", "idle_ratio"]
+    if control is not None and control is not res:
+        cs = {s["step"]: s for s in control["steps"] if "fixed_ns" in s}
+        rel = [(s["step"], s["op_ns"] / cs[s["step"]]["op_ns"]) for s in st if s["step"] in cs]
+        if rel:
+            v["vs_control"] = max(x for _, x in rel) / rel[0][1]
+            v["vs_control_steps"] = len(rel)
+            crit.append("vs_control")
+    v["failed"] = [k for k in crit if v[k] > 2.0]
+    v["pass"] = not v["failed"]
+    return v
 
 
 def churn_verdict(res):
+    """Pass: live nodes, memory per live value and ns per event each within 2x of the first measured step (taken
+    after the warm-up turnovers, so the counts have settled), and nothing left after deleting everything."""
     st = [s for s in res["steps"] if "ns_per_event" in s]
     fin = [s for s in res["steps"] if s.get("final")]
     if not st:
         return None
-    n0, m0 = st[0]["nodes_live"], st[0]["mem"] / max(1, st[0]["values"])
+    n0, m0, e0 = st[0]["nodes_live"], st[0]["mem"] / max(1, st[0]["values"]), st[0]["ns_per_event"]
     nmax = max(s["nodes_live"] for s in st)
     mmax = max(s["mem"] / max(1, s["values"]) for s in st)
+    emax = max(s["ns_per_event"] for s in st)
     f = fin[0] if fin else {}
     leak = {k: f.get(k) for k in ("blocks_over_baseline", "nodes_live", "holders", "pool_used", "handles_live", "arrays")}
     no_leak = bool(fin) and all(v == 0 for v in leak.values())
-    return {"nodes_first": n0, "nodes_max": nmax, "nodes_ratio": nmax / max(1, n0), "mem_per_value_first": m0,
-            "mem_per_value_max": mmax, "mem_ratio": mmax / m0, "leak": leak, "no_leak": no_leak,
-            "pass": nmax / max(1, n0) <= 2.0 and mmax / m0 <= 2.0 and no_leak,
-            "stopped": any("stopped" in s for s in res["steps"])}
+    v = {"nodes_first": n0, "nodes_max": nmax, "nodes_ratio": nmax / max(1, n0), "mem_per_value_first": m0,
+         "mem_per_value_max": mmax, "mem_ratio": mmax / m0, "event_ratio": emax / e0, "leak": leak, "no_leak": no_leak,
+         "stopped": any("stopped" in s for s in res["steps"])}
+    v["failed"] = [k for k in ("nodes_ratio", "mem_ratio", "event_ratio") if v[k] > 2.0] + ([] if no_leak else ["leak"])
+    v["pass"] = not v["failed"]
+    return v
+
+
+def overflow_share(res):
+    """the share of timed ops that overflowed (they exit early, so they are cheaper than the others)"""
+    st = [s for s in res["steps"] if "op_ovf" in s and s.get("ops")]
+    n = sum(2 * s["ops"] for s in st)
+    return sum(s["op_ovf"] + s.get("fixed_ovf", 0) for s in st) / n if n else 0.0
 
 
 # ---------------------------------------------------------------- plots
@@ -309,8 +346,8 @@ def fmt(x, d=1):
 def chk_cell(r):
     c = r["check"]
     s = f"{c['ops']:,} ops, {c['values']:,} values: " + ("all right" if c["fail"] == 0 else f"**{c['fail']} wrong** {c['reasons']}")
-    if c["ovf_true"] or c["ovf_false"]:
-        s += f"; overflows {c['ovf_true']} true, {c['ovf_false']} false"
+    if c["ovf_true"] or c["ovf_lcm"]:
+        s += f"; overflows {c['ovf_true']} true, {c['ovf_lcm']} explained by the lcm"
     return s
 
 
@@ -324,20 +361,26 @@ def report_md(res, cfg, files):
     L.append("## Verdicts\n")
     L.append("| Sweep | Row | Criterion | Result | Checks |")
     L.append("| --- | --- | --- | --- | --- |")
+    ctrl = next((r for r in res.get("growth", []) if r["row"] == "C"), None)
     for r in res.get("growth", []):
-        v = growth_verdict(r)
+        v = growth_verdict(r, ctrl)
         if v:
-            L.append(f"| growth | {r['row']} | fixed-sample op time within 2x of batch 1 | "
-                     f"{'**pass**' if v['pass'] else '**fail**'}: max {v['fixed_ratio']:.2f}x "
-                     f"({fmt(v['fixed_first'])} -> max {fmt(v['fixed_max'])} ns); all-values sample "
-                     f"{v['all_ratio']:.2f}x{' (stopped by budget)' if v['stopped'] else ''} | "
-                     f"{'ok' if ok_checks(r) else 'FAIL'}, audits {audits(r)} |")
+            vc = f"{v['vs_control']:.2f}x over {v['vs_control_steps']} matched steps" if v["vs_control"] else "—"
+            L.append(f"| growth | {r['row']} | each within 2x of batch 1: fixed-sample op time, its cold repetition, "
+                     f"entry ns/value, idle ns/value; all-values op time relative to C | "
+                     f"{'**pass**' if v['pass'] else '**fail** (' + ', '.join(v['failed']) + ')'}: fixed "
+                     f"{v['fixed_ratio']:.2f}x, cold {v['cold_ratio']:.2f}x, entry {v['entry_ratio']:.2f}x, idle "
+                     f"{v['idle_ratio']:.2f}x, all-values vs C {vc} (all-values alone {v['all_ratio']:.2f}x)"
+                     f"{' (stopped by budget)' if v['stopped'] else ''}; {overflow_share(r):.0%} of timed ops "
+                     f"overflowed | {'ok' if ok_checks(r) else 'FAIL'}, audits {audits(r)} |")
     for r in res.get("churn", []):
         v = churn_verdict(r)
         if v:
-            L.append(f"| churn | {r['row']} | nodes and memory per value within 2x of step 1; no leak | "
-                     f"{'**pass**' if v['pass'] else '**fail**'}: nodes {v['nodes_ratio']:.2f}x, memory per value "
-                     f"{v['mem_ratio']:.2f}x, leak check {'clean' if v['no_leak'] else v['leak']}"
+            L.append(f"| churn | {r['row']} | nodes, memory per value, ns per event within 2x of step 1 (after "
+                     f"the warm-up); no leak | "
+                     f"{'**pass**' if v['pass'] else '**fail** (' + ', '.join(v['failed']) + ')'}: nodes "
+                     f"{v['nodes_ratio']:.2f}x, memory per value {v['mem_ratio']:.2f}x, ns/event {v['event_ratio']:.2f}x, "
+                     f"leak check {'clean' if v['no_leak'] else v['leak']}"
                      f"{' (stopped by budget)' if v['stopped'] else ''} | "
                      f"{'ok' if ok_checks(r) else 'FAIL'}, audits {audits(r)} |")
     for wl in ("heavy", "chain", "distinct"):
@@ -468,8 +511,17 @@ def report_md(res, cfg, files):
     L.append("- S-lazy's coprime invariant holds after the idle pass, which the workloads run right after every entry. "
              "Between an entry and the idle pass, values are exact but an op on two pending leftovers that share a "
              "factor may give a false overflow or a result not in lowest terms.")
-    L.append("- \"False\" overflows come from the shared V0' op code, which tests the unreduced common denominator "
-             "of an add against 2^63; S and C behave alike there.")
+    L.append("- Overflows: an add whose operands' lcm reaches 2^63 overflows even if the reduced sum would fit (the "
+             "shared V0' op code tests the unreduced common denominator; S and C alike); any other overflow whose "
+             "exact result fits fails the check.  About 17% of the timed ops (the share is in the verdicts) are true "
+             "overflows that exit early, so they cost less than a completed op and lower the mean.")
+    L.append("- The hot list of 16 recent large primes is bounded and rarely hits on these workloads; coprimality does "
+             "not depend on it (every leftover is factored, or checked in the idle pass, before it is trusted).")
+    L.append("- S-lazy's idle pass compares the pending atoms against every settled large atom (the product Z_K and the "
+             "descents, g_s.c's K scan): that comparison grows with the graph, and its idle time rises with it; the "
+             "idle criterion grades it.")
+    L.append("- The idle-time criterion is taken against max(step 1, 50 ns per value), since S's idle pass is "
+             "nearly free.  The cold-repetition criterion is taken against the smallest of the first three steps.")
     L.append("- Op time includes S's hook for nodes with several atoms (first sightings): one exact-division test per "
              "atom when a node keeps a power; a hit splits the node during the op (counted as op splits).")
     return "\n".join(L) + "\n"
@@ -524,7 +576,8 @@ def main(argv=None):
     files = plots(res, outdir)
     md = report_md(res, cfg, files)
     (outdir / "scale.md").write_text(md)
-    verdicts = {"growth": {r["row"]: growth_verdict(r) for r in res.get("growth", [])},
+    ctrl = next((r for r in res.get("growth", []) if r["row"] == "C"), None)
+    verdicts = {"growth": {r["row"]: growth_verdict(r, ctrl) for r in res.get("growth", [])},
                 "churn": {r["row"]: churn_verdict(r) for r in res.get("churn", [])}}
     (outdir / "scale.json").write_text(json.dumps({"config": cfg, "verdicts": verdicts, "results": res}, indent=1))
     print(f"wrote {outdir / 'scale.md'}")

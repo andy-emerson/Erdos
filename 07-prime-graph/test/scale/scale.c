@@ -11,7 +11,8 @@
  *             live values) timed with the batch's entry and the idle pass
  *   heavy     deg values 1/30030 (singles: each its own numerator), then 1/7 and 1/6 force two splits of that node
  *   chain     deg values over the product of the first 15 primes, then 1/2, 1/3, ..., 1/43: 14 splits in a row
- *   churn     L live values, then E events alternating delete-random and insert (inserts entered in batches of b)
+ *   churn     L live values, `warm` turnovers of L unreported, then E events alternating delete-random and insert
+ *             (inserts entered in batches of b; the budget is checked per batch)
  *   distinct  ND distinct denominators, `per` values each, entered in batches, then M random ops
  * Common keys: seed, chk (file for sampled checks), nchk (op results checked per step), nval (stored values checked
  * per step), audit_every, lazy (S: 1 = no Miller-Rabin or rho at entry, leftovers refined in the idle pass),
@@ -306,10 +307,9 @@ static void wl_heavy(void) {
     uint64_t dens[2] = {7, 6};
     for (int k = 0; k < 2; k++) {
         splitres s = force_split(dens[k]);
-        int last = k == 1;
-        if (last) { op_sample(20000, nchk); val_sample(nval); }
-        const char *m2 = last ? full_audit(&ans) : NULL;
-        emit_split("heavy", deg, k + 1, dens[k], s, m2, ans, last);
+        if (k == 1) { op_sample(20000, nchk); val_sample(nval); }
+        const char *m2 = full_audit(&ans);  /* after every split, outside the timer */
+        emit_split("heavy", deg, k + 1, dens[k], s, m2, ans, 1);
     }
 }
 static void wl_chain(void) {
@@ -324,10 +324,9 @@ static void wl_chain(void) {
     printf("}\n");
     for (int k = 0; k < 14; k++) {
         splitres s = force_split(SMALLP[k]);
-        int last = k == 13;
-        if (last) { op_sample(20000, nchk); val_sample(nval); }
-        const char *m = last ? full_audit(&ans) : NULL;
-        emit_split("chain", deg, k + 1, SMALLP[k], s, m, ans, last);
+        if (k == 13) { op_sample(20000, nchk); val_sample(nval); }
+        const char *m = full_audit(&ans);  /* after every split, outside the timer */
+        emit_split("chain", deg, k + 1, SMALLP[k], s, m, ans, 1);
     }
 }
 
@@ -376,9 +375,16 @@ static void wl_churn(void) {
         g_idle();
         done += n;
     }
-    uint64_t nbuf = 0, ev = 0;
-    int k = 0;
-    while (ev < E) {
+    uint64_t nbuf = 0, ev = 0, warm = arg_u("warm", 2) * 2 * L;  /* warm-up: `warm` turnovers of L, not reported */
+    int k = 0, stopped = 0;
+    for (uint64_t w = 0; w < warm && !stopped; w++) {
+        if (w & 1) { if (nlv) delete_value(LV[rndn(nlv)]); }
+        else {
+            num[nbuf] = rnum(); den[nbuf] = churn_den(rate, W); nbuf++; ins_count++;
+            if (nbuf == b) { enter_batch(num, den, (uint32_t)b, 0); nbuf = 0; g_idle(); stopped = over_budget(); }
+        }
+    }
+    while (ev < E && !stopped) {
         uint64_t t0 = now_ns(), tidle = 0, n_ins = 0, n_del = 0, ev0 = ev;
         uint64_t stop = ev + step < E ? ev + step : E;
         for (; ev < stop; ev++) {
@@ -386,7 +392,10 @@ static void wl_churn(void) {
                 if (nlv) { delete_value(LV[rndn(nlv)]); n_del++; }
             } else {
                 num[nbuf] = rnum(); den[nbuf] = churn_den(rate, W); nbuf++; ins_count++; n_ins++;
-                if (nbuf == b) { enter_batch(num, den, (uint32_t)b, 0); nbuf = 0; uint64_t ti = g_idle(); tidle += ti; }
+                if (nbuf == b) {
+                    enter_batch(num, den, (uint32_t)b, 0); nbuf = 0; uint64_t ti = g_idle(); tidle += ti;
+                    if (over_budget()) { stopped = 1; ev++; break; }  /* checked per batch */
+                }
             }
         }
         uint64_t dt = now_ns() - t0;
@@ -398,15 +407,16 @@ static void wl_churn(void) {
         printf("{\"wl\": \"churn\", \"step\": %d, \"events\": %llu, \"inserts\": %llu, \"deletes\": %llu, "
                "\"ns_per_event\": %.2f, \"idle_ns\": %llu, \"window_start_prime\": %llu, \"blocks_over_baseline\": %lld, "
                "\"mem_over_baseline\": %lld, ",
-               k++, (unsigned long long)ev, (unsigned long long)n_ins, (unsigned long long)n_del, (double)dt / (double)(stop - ev0),
+               k++, (unsigned long long)ev, (unsigned long long)n_ins, (unsigned long long)n_del, (double)dt / (double)(ev > ev0 ? ev - ev0 : 1),
                (unsigned long long)tidle, (unsigned long long)(ins_count / rate), (long long)(blk_cur - blk0),
                (long long)mem_cur - (long long)mem0);
         emit_common(stdout);
         emit_audit(stdout, m, ans, 1);
         printf("}\n");
         fflush(stdout);
-        if (over_budget()) { printf("{\"wl\": \"churn\", \"stopped\": \"budget\", \"events\": %llu}\n", (unsigned long long)ev); break; }
+        if (stopped || over_budget()) { stopped = 1; break; }
     }
+    if (stopped) printf("{\"wl\": \"churn\", \"stopped\": \"budget\", \"events\": %llu}\n", (unsigned long long)ev);
     /* the end: everything deleted; the leak check */
     if (nbuf) { enter_batch(num, den, (uint32_t)nbuf, 0); nbuf = 0; }
     delete_all();
@@ -448,13 +458,14 @@ static void wl_distinct(void) {
     for (uint64_t i = 0; i < NV; i++) vd[i] = dl[i % ND];
     for (uint64_t i = NV - 1; i > 0; i--) { uint64_t j = rndn(i + 1), t = vd[i]; vd[i] = vd[j]; vd[j] = t; }
     int64_t *num = malloc(B * 8);
-    uint64_t tent = 0, tidle = 0, nb = 0;
+    uint64_t tent = 0, tidle = 0, nb = 0, ndist = 0;  /* ndist: distinct denominators summed over the batches */
     for (uint64_t done = 0; done < NV; nb++) {
         uint64_t n = NV - done < B ? NV - done : B;
         for (uint64_t i = 0; i < n; i++) num[i] = rnum();
         uint64_t t0 = now_ns();
         enter_batch(num, vd + done, (uint32_t)n, 0);
         tent += now_ns() - t0;
+        ndist += dhcnt;
         tidle += g_idle();
         done += n;
         if (over_budget()) { printf("{\"wl\": \"distinct\", \"ND\": %llu, \"stopped\": \"budget\"}\n", (unsigned long long)ND); return; }
@@ -464,10 +475,10 @@ static void wl_distinct(void) {
     uint64_t ans = 0;
     const char *m = full_audit(&ans);
     printf("{\"wl\": \"distinct\", \"ND\": %llu, \"per\": %llu, \"batches\": %llu, \"entry_ns\": %llu, "
-           "\"entry_ns_per_value\": %.2f, \"entry_ns_per_distinct\": %.2f, \"idle_ns\": %llu, \"op_add_ns\": %.2f, "
+           "\"entry_ns_per_value\": %.2f, \"entry_ns_per_distinct\": %.2f, \"distinct_entered\": %llu, \"idle_ns\": %llu, \"op_add_ns\": %.2f, "
            "\"op_mul_ns\": %.2f, \"op_ns\": %.2f, \"op_ovf\": %llu, ",
            (unsigned long long)ND, (unsigned long long)per, (unsigned long long)nb, (unsigned long long)tent,
-           (double)tent / NV, (double)tent / ND, (unsigned long long)tidle, (double)o.ns_add / (M / 2),
+           (double)tent / NV, (double)tent / (double)(ndist ? ndist : 1), (unsigned long long)ndist, (unsigned long long)tidle, (double)o.ns_add / (M / 2),
            (double)o.ns_mul / (M - M / 2), (double)(o.ns_add + o.ns_mul) / M, (unsigned long long)o.ovf);
     emit_common(stdout);
     emit_audit(stdout, m, ans, 1);

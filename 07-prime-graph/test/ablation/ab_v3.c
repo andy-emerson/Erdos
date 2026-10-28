@@ -25,6 +25,12 @@
  * V4's ops: unreduced, and on an overflow both operands are reduced and the op is retried with the reducing form;
  * results are stored unreduced (dense if their denominator divides the result's D); ab_final reduces the dense
  * elements and the exceptions once (timed).  Everything else, including the choice of D, is V3's code.
+ *
+ * D0..D3 (round 3, VARIANT >= VAR_D0) = this file (V3, not V34) with V6's dictionary entry (ab_v6.c, ab_d.c).  Its
+ * nodes need not be prime, and a split kills a node, so an array's D edges and its exceptions' edges may name a dead
+ * node after one: each array records the split count (v6_epoch) at which its edges were last known live, and every
+ * op re-expands its operands' edges onto live nodes first if a split happened since (d_fresh, ab_d.c).  The hooks
+ * below are D_FRESH / D_STAMP and a few #if blocks; V3 and V34 compile to the same code as before.
  */
 typedef struct { int64_t num; uint64_t den; uint8_t ne; uint32_t e[AB_MAXE]; } xval;  /* den 0: bad */
 typedef struct ab_arr {
@@ -40,7 +46,26 @@ typedef struct ab_arr {
     int64_t *on;   /* the final reduction's output */
     uint64_t *od;
     int fin;
+#if VARIANT >= VAR_D0
+    uint32_t ep;   /* D0-D3: v6_epoch when this array's edges were last known to name live nodes only */
+#endif
 } ab_arr;
+
+#if VARIANT >= VAR_D0  /* D0-D3: the dictionary's hooks for this layout (ab_v6.c, ab_d.c) */
+static void v6_reset(void);
+static void v6_stats(FILE *f);
+static const char *v6_audit(ab_arr **L, int nl, const char *corrupt);
+static void d_reset(void);
+static void d_fresh(ab_arr *a);
+static void d_fresh_edges(uint32_t *e, int *ne);
+static void d_fill_end(void);
+static void d_stats(FILE *f);
+#define D_FRESH(a) d_fresh((ab_arr *)(a))
+#define D_STAMP(a) ((a)->ep = v6_epoch)
+#else
+#define D_FRESH(a) ((void)0)
+#define D_STAMP(a) ((void)0)
+#endif
 
 static ab_arr *arrs[16];
 static int narrs;
@@ -87,7 +112,11 @@ static ab_arr *ab_new(size_t n) {
     arrs[narrs++] = a;
     return a;
 }
+#if VARIANT >= VAR_D0
+static void layout_reset(void) { st_exc_in = 0; st_dense_ovf = 0; st_allslow = 0; st_early = 0; v6_reset(); d_reset(); }
+#else
 static void layout_reset(void) { st_exc_in = 0; st_dense_ovf = 0; st_allslow = 0; st_early = 0; }
+#endif
 static void ab_init(void) {
     const char *p = getenv("AB_V3_POLICY");
     v3_freq = p && !strcmp(p, "freq");
@@ -119,9 +148,14 @@ static inline view aview(const ab_arr *a) { return (view){0, a->D, a->dne, a->de
 /* ---------------------------------------------------------------- entry */
 
 static void fill_begin(void) {}
+#if VARIANT >= VAR_D0
+static void fill_end(void) { d_fill_end(); }  /* edges named before a fill-time split are re-expanded (timed) */
+#else
 static void fill_end(void) {}
+#endif
 static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) {
     a->nx = 0; a->fin = 0;
+    D_STAMP(a);
     raw r;
     if (single) {
         a->plain = 1; a->D = 1; a->dne = 0;
@@ -248,7 +282,7 @@ static void slow(ab_arr *R, int op, const ab_arr *A, const ab_arr *B, const ab_a
     }
 }
 
-static void begin_op(ab_arr *R) { R->nx = 0; R->fin = 0; novl = 0; }
+static void begin_op(ab_arr *R) { R->nx = 0; R->fin = 0; novl = 0; D_STAMP(R); }
 static void set_D(ab_arr *R, const raw *P) {
     R->plain = 0; R->D = P->den; R->dne = P->ne;
     memcpy(R->de, P->e, sizeof(uint32_t) * P->ne);
@@ -257,6 +291,7 @@ static void no_plan(ab_arr *R, int plain) { R->plain = plain; R->D = 1; R->dne =
 
 static void ab_add(ab_arr *R, const ab_arr *A, const ab_arr *B) {
     begin_op(R);
+    D_FRESH(A); D_FRESH(B);
     raw P;
     uint64_t ca, cb;
     view a = aview(A), b = aview(B);
@@ -291,6 +326,7 @@ static int prod_plan(const view *a, const view *b, raw *r) {  /* the product of 
 
 static void ab_mul(ab_arr *R, const ab_arr *A, const ab_arr *B) {
     begin_op(R);
+    D_FRESH(A); D_FRESH(B);
     raw P;
     view a = aview(A), b = aview(B);
     if (A->plain || B->plain || !prod_plan(&a, &b, &P)) {
@@ -311,6 +347,7 @@ static void ab_mul(ab_arr *R, const ab_arr *A, const ab_arr *B) {
 
 static void ab_fma(ab_arr *R, const ab_arr *A, const ab_arr *B, const ab_arr *C) {
     begin_op(R);
+    D_FRESH(A); D_FRESH(B); D_FRESH(C);
     raw T, P;
     uint64_t ct, cc;
     view a = aview(A), b = aview(B), c = aview(C);
@@ -340,6 +377,7 @@ static void ab_fma(ab_arr *R, const ab_arr *A, const ab_arr *B, const ab_arr *C)
 
 static void ab_sum(ab_arr *S, const ab_arr *A) {
     begin_op(S);
+    D_FRESH(A);
     S->plain = 1; S->D = 1; S->dne = 0;
     raw128 acc = {0, 1, 0, {0}};
     int bad = 0;
@@ -358,6 +396,9 @@ static void ab_sum(ab_arr *S, const ab_arr *A) {
         if (!buf[cur].den) bad = 1;
     }
     raw r;
+#if VARIANT >= VAR_D0
+    if (A->ep != v6_epoch) d_fresh_edges(acc.e, &acc.ne);  /* a split during the exceptions' adds */
+#endif
     if (!bad && buf[cur].num && !add128(&acc, buf[cur].num, vraw(&buf[cur]))) { ovf(); bad = 1; }
     if (bad) setbad(&r);
     else if (!fin(acc.num, acc.den, acc.e, acc.ne, 1, &r)) { ovf(); setbad(&r); }
@@ -367,6 +408,7 @@ static void ab_sum(ab_arr *S, const ab_arr *A) {
 
 static void ab_final(ab_arr *R) {  /* lowest terms for every element: dense ones reduced against D's nodes */
     if (!R->on) { R->on = xmalloc(R->n * 8 + 8); R->od = xmalloc(R->n * 8 + 8); }
+    D_FRESH(R);
     size_t k = 0;
     raw t;
     for (size_t i = 0; i < R->n; i++) {
@@ -381,6 +423,9 @@ static void ab_final(ab_arr *R) {  /* lowest terms for every element: dense ones
 #else
         if (k < R->nx && R->xi[k] == i) { R->on[i] = R->xv[k].num; R->od[i] = R->xv[k].den; k++; continue; }
 #endif
+#if VARIANT >= VAR_D0
+        if (R->ep != v6_epoch) d_fresh(R);  /* a reduction split a node of D */
+#endif
         fin((i128)R->num[i], R->D, R->de, R->dne, 1, &t);
         R->on[i] = t.num; R->od[i] = t.den;
     }
@@ -394,6 +439,10 @@ static inline void ab_get(const ab_arr *a, size_t i, int64_t *num, uint64_t *den
 /* Audit: D matches its edges; exception indices strictly ascending and in range; their dense slots hold 0; each
  * exception value's denominator matches its edges and it is in lowest terms. */
 static const char *ab_audit(ab_arr **L, int nl, const char *corrupt) {
+#if VARIANT >= VAR_D0  /* the dictionary's audit first: edges re-expanded, nodes pairwise coprime, dictionary */
+    const char *md = v6_audit(L, nl, corrupt);
+    if (md) return md;
+#endif
 #if VARIANT == VAR_V34  /* the node invariant: live nodes pairwise coprime (AB_CORRUPT=coprime breaks it first) */
     if (corrupt && !strcmp(corrupt, "coprime")) {
         uint32_t a = UINT32_MAX;
@@ -436,5 +485,9 @@ static void ab_stats(FILE *f) {
             (unsigned long long)st_dense_ovf, (unsigned long long)st_allslow, v3_freq ? "freq" : "lcm");
 #if VARIANT == VAR_V34
     fprintf(f, " early=%llu", (unsigned long long)st_early);
+#endif
+#if VARIANT >= VAR_D0
+    v6_stats(f);
+    d_stats(f);
 #endif
 }

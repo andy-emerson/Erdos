@@ -1,6 +1,11 @@
 /* ab_v6.c: V6 = V0' + the seen-prime dictionary as the entry procedure (round 2).  #included after ab_l1.c when
  * VARIANT == VAR_V6; the layout and every op are V0' (ab_l1.c, ab_core.c).
  *
+ * Round 3 also #includes this file after ab_v3.c for D0..D3 (V3's layout with this entry).  The parts written for
+ * ab_l1.c's layout (the fill hooks, the prefix rewrite, the edge dump) are compiled for V6 only; ab_d.c supplies the
+ * V3-layout versions.  D0 compiles v6_enter_den and v6_den_edges below unchanged; D1-D3 take their own
+ * v6_enter_den (and D2 its own v6_den_edges) from ab_d.c.  V6 compiles to the same code as in round 2.
+ *
  * Entry, pass 1 (each distinct input denominator once, as in V0'), in place of V0' gcd scan of every live node:
  *   1. trial division: 2, then the odd primes below 2^16 with the adaptive stop (pg_factor's stage 2, on a copy of
  *      pg.c's table: pg.c keeps it static and is left unchanged); a leftover below 2^32, or one left when the stop
@@ -72,6 +77,13 @@ static int v6_cur;          /* the entered array being filled */
 
 static inline void v6_upd(void) { v6_slow = v6_nonprime || v6_dirty; }
 
+#if VARIANT == VAR_D3
+static void d3_leaf(uint64_t p);  /* ab_d.c: a new large prime joins the product forest */
+#endif
+#if VARIANT >= VAR_D0
+static size_t d_snap_edges(size_t o);  /* ab_d.c: the edge dump for V3's layout */
+#endif
+
 static void v6_reset(void) {  /* per rep, untimed (with ab_reset; the memsets are outside the timer) */
     if (!dsm) {
         v6_sieve();
@@ -130,6 +142,9 @@ static void dict_set(uint64_t p, uint32_t id) {
         bigp = xrealloc(bigp, bigcap * 8); bigi = xrealloc(bigi, bigcap * 8); bigl = xrealloc(bigl, bigcap * 8);
     }
     bigp[nbig] = p; bigi[nbig] = inv64(p); bigl[nbig] = UINT64_MAX / p; nbig++;
+#if VARIANT == VAR_D3
+    d3_leaf(p);
+#endif
 }
 
 /* ---------------------------------------------------------------- nodes, splits, forwarding */
@@ -398,6 +413,7 @@ static int core_mul_v6(view a, view b, int cancel, raw *r) {
 
 /* ---------------------------------------------------------------- entry */
 
+#if VARIANT == VAR_V6 || VARIANT == VAR_D0  /* D1-D3: ab_d.c */
 static void v6_enter_den(uint32_t k, uint64_t den) {
     if (k >= dd6cap) {
         while (k >= dd6cap) dd6cap = dd6cap ? 2 * dd6cap : 256;
@@ -455,9 +471,11 @@ static void v6_enter_den(uint32_t k, uint64_t den) {
     }
     if (nn) { uint32_t e1; v6_part_node(nv, newp, nn, &e1); }
 }
+#endif
 
 static int cmp_u32(const void *a, const void *b) { uint32_t x = *(const uint32_t *)a, y = *(const uint32_t *)b; return (x > y) - (x < y); }
 
+#if VARIANT != VAR_D2  /* D2: ab_d.c */
 static void v6_den_edges(uint32_t k) {  /* pass 2: a distinct denominator's edges, by dictionary lookups */
     v6_handed = 1;
     dden *D = &dd[k];
@@ -484,7 +502,9 @@ static void v6_den_edges(uint32_t k) {  /* pass 2: a distinct denominator's edge
     if (left != 1) die("v6: unresolved denominator");
     D->ne = (uint8_t)ne;
 }
+#endif
 
+#if VARIANT == VAR_V6  /* ab_l1.c's layout: D0-D3 use ab_d.c's d_fill_end and d_fresh instead */
 /* The fill: the array being filled, and a split while filling its element i (written after the split): only the
  * elements filled before a split can name a dead node, so only those are rewritten at the end of the entry. */
 static void v6_fill_arr(const ab_arr *a) {
@@ -523,6 +543,7 @@ static void v6_fill_end(void) {
     v6_phase = 1;
     if (getenv("AB_V6_DUMP")) v6_snapshot();
 }
+#endif
 
 /* ---------------------------------------------------------------- reporting and audit */
 
@@ -540,6 +561,9 @@ static void v6_snapshot(void) {  /* AB_V6_DUMP: the live nodes after entry, and 
     size_t o = 0;
     o += snprintf(v6dump + o, sizeof v6dump - o, " v6nodes=");
     for (uint32_t i = 0; i < n && o < sizeof v6dump - 64; i++) o += snprintf(v6dump + o, sizeof v6dump - o, "%s%llu", i ? "," : "", (unsigned long long)v[i]);
+#if VARIANT >= VAR_D0
+    d_snap_edges(o);
+#else
     if (!npend) return;
     const ab_arr *A = pending[0].a;
     o += snprintf(v6dump + o, sizeof v6dump - o, " v6edges=");
@@ -550,6 +574,7 @@ static void v6_snapshot(void) {  /* AB_V6_DUMP: the live nodes after entry, and 
             o += snprintf(v6dump + o, sizeof v6dump - o, "%s%llu^%u", k ? "*" : "", (unsigned long long)nodes[EN(e)].v, EW(e));
         }
     }
+#endif
 }
 static void v6_stats(FILE *f) {
     fprintf(f, " v6_entry_splits=%llu v6_op_splits=%llu v6_nodes=%u v6_multi=%u v6_rechecked=%llu v6_hooked=%llu%s",
@@ -561,7 +586,11 @@ static void v6_stats(FILE *f) {
  * each node equals the product of its primes' powers and each of them points back to it in the dictionary; a
  * single-prime node is that prime, flagged prime; every dictionary entry names a live node its prime divides; the
  * count of non-prime nodes is right.  AB_CORRUPT=coprime / dict breaks the invariant / the dictionary first. */
+#if VARIANT == VAR_V6
 static void v6_rewrite_all(ab_arr *a) { v6_rewrite_prefix(a, a->n); }
+#else
+#define v6_rewrite_all(a) d_fresh(a)  /* D0-D3: V3's layout */
+#endif
 static const char *v6_audit(ab_arr **L, int nl, const char *corrupt) {
     for (int k = 0; k < nl; k++) v6_rewrite_all(L[k]);
     uint32_t *live = xmalloc((nnodes + 1) * sizeof *live), nl2 = 0, np = 0;

@@ -516,8 +516,8 @@ static uint32_t split_out(pg_graph *g, uint32_t Nid, const uint8_t *mv, int caus
             if (w * gR > 255) pgi_die("split: weight above 255");
             g->ER[r].w = w * gR;
         }
-        uint32_t nr = h_insert_edge(g, h, P, w * gQ, i);
-        g->nc[P].list[i] = nr;
+        uint32_t rn = h_insert_edge(g, h, P, w * gQ, i);
+        g->nc[P].list[i] = rn;
         g->nc[P].len = i + 1;
         g->nc[P].rc = i + 1;
     }

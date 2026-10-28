@@ -38,7 +38,7 @@ void pgf_on_die(const char *msg) {
 }
 
 __attribute__((noreturn)) static void pgf_halt(const char *what, const char *msg) {
-    char b[200];
+    char b[440];
     snprintf(b, sizeof b, "%s: %s", what, msg);
     if (pgf_rec && !pgf_rec->halt_kind) {
         pgf_rec->halt_kind = 1;
@@ -202,7 +202,7 @@ static void pgf_verify(pg_graph *g, int midop) {
     pgf_rebuild(g);
     const char *m2 = pgi_audit_opt(g, 1, midop);
     if (m2) {
-        char b[200];
+        char b[440];
         snprintf(b, sizeof b, "%s (after rebuild: %s)", first, m2);
         pgf_halt("verify: unrepairable", b);
     }

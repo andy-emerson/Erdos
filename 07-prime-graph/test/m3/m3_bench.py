@@ -642,7 +642,7 @@ def report_md(res, cfg, an):
           f"{cfg['rounds']} rounds, {cfg['reps']} warm reps per invocation, seed {cfg['seed']}, {cfg['boot']:,} "
           f"bootstrap resamples.", ""]
     if cfg.get("quick"):
-        L += [f"**Smoke run (scale {cfg['scale']}, {cfg['rounds']} rounds): not a measurement; verdicts are "
+        L += [f"**Smoke run (scale {cfg['scale']}, {cfg['rounds']} round{'s' if cfg['rounds'] != 1 else ''}): not a measurement; verdicts are "
               "illustrative only.**", ""]
     L += ["## Rows", ""] + [f"- **{r}**: {d}" for r, d in ROW_DESC.items()] + [
         "", "FLINT's fmpq_mat / fmpz_mat (optional contender 5) are not used: no workload is matrix-shaped.", ""]
@@ -756,6 +756,15 @@ BIASES = [
     "The machine has 2 CPUs and other work may run on it (another agent tests in test/fault/); the 1-minute load "
     "average is recorded at the start of each round.  Rows of a round are paired and interleaved, so slow-downs "
     "that last several invocations hit all rows of a job alike, but short bursts do not.",
+    "Exit is part of the job: every contender delivers each result in lowest terms as two int64.  GMP and FLINT "
+    "keep their values reduced, so their exit is a copy; M1 keeps an array's dense numerators over the shared D, so "
+    "its exit (pg_array_to_fracs) reduces each element, a gcd each, and fz reduces each result over D^2 (or D^(K+1)).  "
+    "A caller that kept M1's array form without reading it out would pay less; the totals here include the read-out.",
+    "Two large primes: M1 factors every new denominator at entry; a p*q whose primes are above 2^16 and not among "
+    "the 16 most recently seen large primes goes to Pollard rho, whose cost grows with the smaller prime (here up to "
+    "2^30 for P-sh/P-ind and 2^31 for Rpq, about 100 us per denominator in the smoke runs, against the README's ~25 us "
+    "for primes below 2^24).  This is M1 as accepted (the spec bounds that shortcut), not a harness choice, but the "
+    "prime range drives those jobs' verdicts.",
     "Workloads are synthetic: uniform random numerators and denominators from the stated sets.  Reuse jobs pair "
     "values at random (R1k) or within a denominator (Rpq); operations of R1k alternate add and mul.  U counts operand "
     "uses, so U = 1 enters two values per operation.",

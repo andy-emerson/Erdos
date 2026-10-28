@@ -1,0 +1,3484 @@
+{
+ "workloads": {
+  "W1": {
+   "desc": "decimal column: sum of three-place decimals in (-10^4, 10^4)",
+   "n": 1000000,
+   "K": null,
+   "jobs": {
+    "sum": {
+     "pg": {
+      "median": {
+       "conv": 23035384,
+       "decomp": 710,
+       "op": 1031405,
+       "red": 0,
+       "total": 24169413
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 23561007,
+        "decomp": 963,
+        "op": 1031405,
+        "red": 0,
+        "total": 24602119,
+        "ovf": 0,
+        "groups": 16,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 23035384,
+        "decomp": 710,
+        "op": 1056736,
+        "red": 0,
+        "total": 24169413,
+        "ovf": 0,
+        "groups": 16,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 22960288,
+        "decomp": 639,
+        "op": 1024775,
+        "red": 0,
+        "total": 23985702,
+        "ovf": 0,
+        "groups": 16,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 22934281,
+        "decomp": 538,
+        "op": 1025287,
+        "red": 0,
+        "total": 24002122,
+        "ovf": 0,
+        "groups": 16,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 23095494,
+        "decomp": 949,
+        "op": 1152908,
+        "red": 0,
+        "total": 24249351,
+        "ovf": 0,
+        "groups": 16,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 23095494,
+       "decomp": 949,
+       "op": 1152908,
+       "red": 0,
+       "total": 24249351,
+       "ovf": 0,
+       "groups": 16,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "pgu": {
+      "median": {
+       "conv": 980703,
+       "decomp": 400,
+       "op": 550798,
+       "red": 0,
+       "total": 1544988
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 1023156,
+        "decomp": 687,
+        "op": 601198,
+        "red": 0,
+        "total": 1628358,
+        "ovf": 0,
+        "groups": 5,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 1188820,
+        "decomp": 1040,
+        "op": 588527,
+        "red": 0,
+        "total": 1778625,
+        "ovf": 0,
+        "groups": 5,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 961506,
+        "decomp": 348,
+        "op": 550798,
+        "red": 0,
+        "total": 1544988,
+        "ovf": 0,
+        "groups": 5,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 980703,
+        "decomp": 323,
+        "op": 545734,
+        "red": 0,
+        "total": 1542813,
+        "ovf": 0,
+        "groups": 5,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 977319,
+        "decomp": 400,
+        "op": 547862,
+        "red": 0,
+        "total": 1525581,
+        "ovf": 0,
+        "groups": 5,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 977319,
+       "decomp": 400,
+       "op": 547862,
+       "red": 0,
+       "total": 1525581,
+       "ovf": 0,
+       "groups": 5,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "median": {
+       "conv": 1478435,
+       "decomp": 0,
+       "op": 685661,
+       "red": 0,
+       "total": 2121076
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 100.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 1478435,
+        "decomp": 0,
+        "op": 695390,
+        "red": 0,
+        "total": 2204415,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 1537835,
+        "decomp": 0,
+        "op": 738983,
+        "red": 0,
+        "total": 2347907,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 1456537,
+        "decomp": 0,
+        "op": 625775,
+        "red": 0,
+        "total": 2082312,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 1411458,
+        "decomp": 0,
+        "op": 685661,
+        "red": 0,
+        "total": 2097119,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 1479167,
+        "decomp": 0,
+        "op": 641909,
+        "red": 0,
+        "total": 2121076,
+        "ovf": 0,
+        "D": 1000
+       }
+      ],
+      "last": {
+       "conv": 1479167,
+       "decomp": 0,
+       "op": 641909,
+       "red": 0,
+       "total": 2121076,
+       "ovf": 0,
+       "D": 1000
+      }
+     },
+     "mpq": {
+      "median": {
+       "conv": 57762626,
+       "decomp": 0,
+       "op": 91085388,
+       "red": 0,
+       "total": 149402442
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 57594459,
+        "decomp": 0,
+        "op": 91807983,
+        "red": 0,
+        "total": 149402442,
+        "ovf": 0
+       },
+       {
+        "conv": 57890389,
+        "decomp": 0,
+        "op": 91066300,
+        "red": 0,
+        "total": 149866632,
+        "ovf": 0
+       },
+       {
+        "conv": 57762626,
+        "decomp": 0,
+        "op": 91085388,
+        "red": 0,
+        "total": 149090947,
+        "ovf": 0
+       },
+       {
+        "conv": 57672170,
+        "decomp": 0,
+        "op": 90895006,
+        "red": 0,
+        "total": 148567176,
+        "ovf": 0
+       },
+       {
+        "conv": 57825002,
+        "decomp": 0,
+        "op": 91893801,
+        "red": 0,
+        "total": 149738044,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 57825002,
+       "decomp": 0,
+       "op": 91893801,
+       "red": 0,
+       "total": 149738044,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 42688449,
+       "decomp": 0,
+       "op": 63851530,
+       "red": 0,
+       "total": 106548063
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 42696533,
+        "decomp": 0,
+        "op": 63851530,
+        "red": 0,
+        "total": 106548063,
+        "ovf": 0
+       },
+       {
+        "conv": 43241741,
+        "decomp": 0,
+        "op": 63980580,
+        "red": 0,
+        "total": 107303045,
+        "ovf": 0
+       },
+       {
+        "conv": 42530223,
+        "decomp": 0,
+        "op": 63520051,
+        "red": 0,
+        "total": 106171922,
+        "ovf": 0
+       },
+       {
+        "conv": 42640329,
+        "decomp": 0,
+        "op": 63413664,
+        "red": 0,
+        "total": 106053993,
+        "ovf": 0
+       },
+       {
+        "conv": 42688449,
+        "decomp": 0,
+        "op": 64245985,
+        "red": 0,
+        "total": 107084199,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 42688449,
+       "decomp": 0,
+       "op": 64245985,
+       "red": 0,
+       "total": 107084199,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 9291921,
+       "decomp": 0,
+       "op": 1719800,
+       "red": 2221,
+       "total": 11017282
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 10247781,
+        "decomp": 0,
+        "op": 3440524,
+        "red": 4131,
+        "total": 13688305,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 9250145,
+        "decomp": 0,
+        "op": 1719800,
+        "red": 2221,
+        "total": 10969945,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 9291921,
+        "decomp": 0,
+        "op": 1703031,
+        "red": 2111,
+        "total": 10994952,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 9387445,
+        "decomp": 0,
+        "op": 1703939,
+        "red": 1910,
+        "total": 11091384,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 9271897,
+        "decomp": 0,
+        "op": 1734181,
+        "red": 2280,
+        "total": 11017282,
+        "ovf": 0,
+        "Dbits": 10
+       }
+      ],
+      "last": {
+       "conv": 9271897,
+       "decomp": 0,
+       "op": 1734181,
+       "red": 2280,
+       "total": 11017282,
+       "ovf": 0,
+       "Dbits": 10
+      }
+     }
+    }
+   }
+  },
+  "W2": {
+   "desc": "decimals elementwise: a*b + c, three-place decimals in (-10^4, 10^4)",
+   "n": 1000000,
+   "K": null,
+   "jobs": {
+    "fma": {
+     "pg": {
+      "median": {
+       "conv": 71960714,
+       "decomp": 1480,
+       "op": 26405524,
+       "red": 0,
+       "total": 98367572
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 71839196,
+        "decomp": 2580,
+        "op": 26353617,
+        "red": 0,
+        "total": 98195393,
+        "ovf": 0,
+        "groups": 49,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71960714,
+        "decomp": 1334,
+        "op": 26405524,
+        "red": 0,
+        "total": 98367572,
+        "ovf": 0,
+        "groups": 49,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71985661,
+        "decomp": 1710,
+        "op": 27739065,
+        "red": 0,
+        "total": 101583010,
+        "ovf": 0,
+        "groups": 49,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 80059484,
+        "decomp": 1346,
+        "op": 29303552,
+        "red": 0,
+        "total": 110224751,
+        "ovf": 0,
+        "groups": 49,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70527225,
+        "decomp": 1480,
+        "op": 26340044,
+        "red": 0,
+        "total": 96874415,
+        "ovf": 0,
+        "groups": 49,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 70527225,
+       "decomp": 1480,
+       "op": 26340044,
+       "red": 0,
+       "total": 96874415,
+       "ovf": 0,
+       "groups": 49,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "pgu": {
+      "median": {
+       "conv": 4011061,
+       "decomp": 1126,
+       "op": 1317558,
+       "red": 0,
+       "total": 5221928
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 83.9782,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 4678403,
+        "decomp": 1281,
+        "op": 1977517,
+        "red": 0,
+        "total": 6657201,
+        "ovf": 0,
+        "groups": 3,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 3368385,
+        "decomp": 1126,
+        "op": 1222368,
+        "red": 0,
+        "total": 4591879,
+        "ovf": 0,
+        "groups": 3,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 4782631,
+        "decomp": 1051,
+        "op": 1646084,
+        "red": 0,
+        "total": 6429817,
+        "ovf": 0,
+        "groups": 3,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 4011061,
+        "decomp": 882,
+        "op": 1209985,
+        "red": 0,
+        "total": 5221928,
+        "ovf": 0,
+        "groups": 3,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 3686344,
+        "decomp": 1527,
+        "op": 1317558,
+        "red": 0,
+        "total": 5005429,
+        "ovf": 0,
+        "groups": 3,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 3686344,
+       "decomp": 1527,
+       "op": 1317558,
+       "red": 0,
+       "total": 5005429,
+       "ovf": 0,
+       "groups": 3,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "median": {
+       "conv": 5293583,
+       "decomp": 0,
+       "op": 1763981,
+       "red": 0,
+       "total": 6908650
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 83.9782,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 7028071,
+        "decomp": 0,
+        "op": 2095554,
+        "red": 0,
+        "total": 9123625,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 4705819,
+        "decomp": 0,
+        "op": 1453831,
+        "red": 0,
+        "total": 6159650,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 4654618,
+        "decomp": 0,
+        "op": 1763981,
+        "red": 0,
+        "total": 6424321,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 6394219,
+        "decomp": 0,
+        "op": 2027311,
+        "red": 0,
+        "total": 8471780,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 5293583,
+        "decomp": 0,
+        "op": 1615067,
+        "red": 0,
+        "total": 6908650,
+        "ovf": 0,
+        "D": 1000
+       }
+      ],
+      "last": {
+       "conv": 5293583,
+       "decomp": 0,
+       "op": 1615067,
+       "red": 0,
+       "total": 6908650,
+       "ovf": 0,
+       "D": 1000
+      }
+     },
+     "mpq": {
+      "median": {
+       "conv": 172988272,
+       "decomp": 0,
+       "op": 196485031,
+       "red": 0,
+       "total": 370606977
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 172840023,
+        "decomp": 0,
+        "op": 197187029,
+        "red": 0,
+        "total": 371016543,
+        "ovf": 0
+       },
+       {
+        "conv": 172907215,
+        "decomp": 0,
+        "op": 195788933,
+        "red": 0,
+        "total": 369342178,
+        "ovf": 0
+       },
+       {
+        "conv": 173703431,
+        "decomp": 0,
+        "op": 197289863,
+        "red": 0,
+        "total": 371300208,
+        "ovf": 0
+       },
+       {
+        "conv": 173632867,
+        "decomp": 0,
+        "op": 196485031,
+        "red": 0,
+        "total": 370606977,
+        "ovf": 0
+       },
+       {
+        "conv": 172988272,
+        "decomp": 0,
+        "op": 195989823,
+        "red": 0,
+        "total": 369097101,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 172988272,
+       "decomp": 0,
+       "op": 195989823,
+       "red": 0,
+       "total": 369097101,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 128105951,
+       "decomp": 0,
+       "op": 155171841,
+       "red": 0,
+       "total": 283714953
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 128105951,
+        "decomp": 0,
+        "op": 154846028,
+        "red": 0,
+        "total": 283389784,
+        "ovf": 0
+       },
+       {
+        "conv": 128808023,
+        "decomp": 0,
+        "op": 155627634,
+        "red": 0,
+        "total": 284627966,
+        "ovf": 0
+       },
+       {
+        "conv": 127742395,
+        "decomp": 0,
+        "op": 155171841,
+        "red": 0,
+        "total": 283714953,
+        "ovf": 0
+       },
+       {
+        "conv": 128298153,
+        "decomp": 0,
+        "op": 155718778,
+        "red": 0,
+        "total": 284016931,
+        "ovf": 0
+       },
+       {
+        "conv": 128039299,
+        "decomp": 0,
+        "op": 155017186,
+        "red": 0,
+        "total": 283238066,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 128039299,
+       "decomp": 0,
+       "op": 155017186,
+       "red": 0,
+       "total": 283238066,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 31382173,
+       "decomp": 0,
+       "op": 9857194,
+       "red": 42574697,
+       "total": 41246943
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 31363040,
+        "decomp": 0,
+        "op": 9520035,
+        "red": 42467473,
+        "total": 40883075,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 32635405,
+        "decomp": 0,
+        "op": 9899908,
+        "red": 42433764,
+        "total": 42535313,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 31082127,
+        "decomp": 0,
+        "op": 9857194,
+        "red": 43118506,
+        "total": 40939321,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 31382173,
+        "decomp": 0,
+        "op": 9961209,
+        "red": 43700987,
+        "total": 41741414,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 31613153,
+        "decomp": 0,
+        "op": 9633790,
+        "red": 42574697,
+        "total": 41246943,
+        "ovf": 0,
+        "Dbits": 10
+       }
+      ],
+      "last": {
+       "conv": 31613153,
+       "decomp": 0,
+       "op": 9633790,
+       "red": 42574697,
+       "total": 41246943,
+       "ovf": 0,
+       "Dbits": 10
+      }
+     }
+    }
+   }
+  },
+  "W3": {
+   "desc": "mixed small denominators 1..12, numerators |n| < 10^6",
+   "n": 1000000,
+   "K": null,
+   "jobs": {
+    "sum": {
+     "pg": {
+      "median": {
+       "conv": 22874140,
+       "decomp": 523,
+       "op": 1029237,
+       "red": 0,
+       "total": 23953564
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 22972798,
+        "decomp": 814,
+        "op": 1447198,
+        "red": 0,
+        "total": 24420810,
+        "ovf": 0,
+        "groups": 20,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 22687754,
+        "decomp": 419,
+        "op": 1029237,
+        "red": 0,
+        "total": 23717410,
+        "ovf": 0,
+        "groups": 20,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 23939742,
+        "decomp": 523,
+        "op": 1008403,
+        "red": 0,
+        "total": 24948668,
+        "ovf": 0,
+        "groups": 20,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 22874140,
+        "decomp": 605,
+        "op": 1052373,
+        "red": 0,
+        "total": 23953564,
+        "ovf": 0,
+        "groups": 20,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 22680277,
+        "decomp": 397,
+        "op": 1019281,
+        "red": 0,
+        "total": 23699961,
+        "ovf": 0,
+        "groups": 20,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 22680277,
+       "decomp": 397,
+       "op": 1019281,
+       "red": 0,
+       "total": 23699961,
+       "ovf": 0,
+       "groups": 20,
+       "nodes": 5,
+       "splits": 0,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "median": {
+       "conv": 1451170,
+       "decomp": 0,
+       "op": 662116,
+       "red": 0,
+       "total": 2123146
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 100.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 1505834,
+        "decomp": 0,
+        "op": 765366,
+        "red": 0,
+        "total": 2271200,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 1518760,
+        "decomp": 0,
+        "op": 660477,
+        "red": 0,
+        "total": 2179237,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 1436641,
+        "decomp": 0,
+        "op": 662116,
+        "red": 0,
+        "total": 2098757,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 1451170,
+        "decomp": 0,
+        "op": 671976,
+        "red": 0,
+        "total": 2123146,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 1420381,
+        "decomp": 0,
+        "op": 619932,
+        "red": 0,
+        "total": 2040313,
+        "ovf": 0,
+        "D": 27720
+       }
+      ],
+      "last": {
+       "conv": 1420381,
+       "decomp": 0,
+       "op": 619932,
+       "red": 0,
+       "total": 2040313,
+       "ovf": 0,
+       "D": 27720
+      }
+     },
+     "mpq": {
+      "median": {
+       "conv": 46333596,
+       "decomp": 0,
+       "op": 73301698,
+       "red": 0,
+       "total": 119653731
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 46322166,
+        "decomp": 0,
+        "op": 72988504,
+        "red": 0,
+        "total": 119589683,
+        "ovf": 0
+       },
+       {
+        "conv": 46316366,
+        "decomp": 0,
+        "op": 73301698,
+        "red": 0,
+        "total": 119653731,
+        "ovf": 0
+       },
+       {
+        "conv": 46989378,
+        "decomp": 0,
+        "op": 73342771,
+        "red": 0,
+        "total": 121771904,
+        "ovf": 0
+       },
+       {
+        "conv": 47035349,
+        "decomp": 0,
+        "op": 73379365,
+        "red": 0,
+        "total": 120414714,
+        "ovf": 0
+       },
+       {
+        "conv": 46333596,
+        "decomp": 0,
+        "op": 73058285,
+        "red": 0,
+        "total": 119539332,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 46333596,
+       "decomp": 0,
+       "op": 73058285,
+       "red": 0,
+       "total": 119539332,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 30507318,
+       "decomp": 0,
+       "op": 50157900,
+       "red": 0,
+       "total": 80853612
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 30399604,
+        "decomp": 0,
+        "op": 50001142,
+        "red": 0,
+        "total": 80502084,
+        "ovf": 0
+       },
+       {
+        "conv": 30559660,
+        "decomp": 0,
+        "op": 50661993,
+        "red": 0,
+        "total": 81353353,
+        "ovf": 0
+       },
+       {
+        "conv": 30507318,
+        "decomp": 0,
+        "op": 50157900,
+        "red": 0,
+        "total": 80853612,
+        "ovf": 0
+       },
+       {
+        "conv": 31407785,
+        "decomp": 0,
+        "op": 51556184,
+        "red": 0,
+        "total": 83218619,
+        "ovf": 0
+       },
+       {
+        "conv": 30427459,
+        "decomp": 0,
+        "op": 49984697,
+        "red": 0,
+        "total": 80631256,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 30427459,
+       "decomp": 0,
+       "op": 49984697,
+       "red": 0,
+       "total": 80631256,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 9368443,
+       "decomp": 0,
+       "op": 1787693,
+       "red": 2238,
+       "total": 11156136
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 9991869,
+        "decomp": 0,
+        "op": 3401892,
+        "red": 4239,
+        "total": 13393761,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 9260493,
+        "decomp": 0,
+        "op": 1767488,
+        "red": 2134,
+        "total": 11027981,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 9323292,
+        "decomp": 0,
+        "op": 1682702,
+        "red": 2213,
+        "total": 11005994,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 9441030,
+        "decomp": 0,
+        "op": 1799918,
+        "red": 2238,
+        "total": 11240948,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 9368443,
+        "decomp": 0,
+        "op": 1787693,
+        "red": 2527,
+        "total": 11156136,
+        "ovf": 0,
+        "Dbits": 15
+       }
+      ],
+      "last": {
+       "conv": 9368443,
+       "decomp": 0,
+       "op": 1787693,
+       "red": 2527,
+       "total": 11156136,
+       "ovf": 0,
+       "Dbits": 15
+      }
+     }
+    },
+    "fma": {
+     "pg": {
+      "median": {
+       "conv": 69896511,
+       "decomp": 873,
+       "op": 53170933,
+       "red": 0,
+       "total": 123288254
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 70348567,
+        "decomp": 1107,
+        "op": 52938510,
+        "red": 0,
+        "total": 123288254,
+        "ovf": 0,
+        "groups": 166,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 68936854,
+        "decomp": 873,
+        "op": 52678483,
+        "red": 0,
+        "total": 121616368,
+        "ovf": 0,
+        "groups": 166,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 69534715,
+        "decomp": 1013,
+        "op": 54116682,
+        "red": 0,
+        "total": 124302698,
+        "ovf": 0,
+        "groups": 166,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 69896511,
+        "decomp": 771,
+        "op": 53170933,
+        "red": 0,
+        "total": 123068569,
+        "ovf": 0,
+        "groups": 166,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70646596,
+        "decomp": 690,
+        "op": 54272103,
+        "red": 0,
+        "total": 124919506,
+        "ovf": 0,
+        "groups": 166,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 70646596,
+       "decomp": 690,
+       "op": 54272103,
+       "red": 0,
+       "total": 124919506,
+       "ovf": 0,
+       "groups": 166,
+       "nodes": 5,
+       "splits": 0,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "unable": "numerator overflows int64"
+     },
+     "mpq": {
+      "median": {
+       "conv": 138698871,
+       "decomp": 0,
+       "op": 151037551,
+       "red": 0,
+       "total": 289789016
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 141020844,
+        "decomp": 0,
+        "op": 152875945,
+        "red": 0,
+        "total": 294954249,
+        "ovf": 0
+       },
+       {
+        "conv": 138751465,
+        "decomp": 0,
+        "op": 151037551,
+        "red": 0,
+        "total": 289789016,
+        "ovf": 0
+       },
+       {
+        "conv": 138698871,
+        "decomp": 0,
+        "op": 151253519,
+        "red": 0,
+        "total": 290124665,
+        "ovf": 0
+       },
+       {
+        "conv": 138491370,
+        "decomp": 0,
+        "op": 150380743,
+        "red": 0,
+        "total": 288872113,
+        "ovf": 0
+       },
+       {
+        "conv": 138457419,
+        "decomp": 0,
+        "op": 149856806,
+        "red": 0,
+        "total": 288314225,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 138457419,
+       "decomp": 0,
+       "op": 149856806,
+       "red": 0,
+       "total": 288314225,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 91630992,
+       "decomp": 0,
+       "op": 74385039,
+       "red": 0,
+       "total": 167051028
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 92279064,
+        "decomp": 0,
+        "op": 74944567,
+        "red": 0,
+        "total": 167422183,
+        "ovf": 0
+       },
+       {
+        "conv": 91464788,
+        "decomp": 0,
+        "op": 74385039,
+        "red": 0,
+        "total": 166274259,
+        "ovf": 0
+       },
+       {
+        "conv": 91403590,
+        "decomp": 0,
+        "op": 74087768,
+        "red": 0,
+        "total": 165491358,
+        "ovf": 0
+       },
+       {
+        "conv": 92774485,
+        "decomp": 0,
+        "op": 74828940,
+        "red": 0,
+        "total": 168172695,
+        "ovf": 0
+       },
+       {
+        "conv": 91630992,
+        "decomp": 0,
+        "op": 74339685,
+        "red": 0,
+        "total": 167051028,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 91630992,
+       "decomp": 0,
+       "op": 74339685,
+       "red": 0,
+       "total": 167051028,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 31561506,
+       "decomp": 0,
+       "op": 20212181,
+       "red": 44511402,
+       "total": 51702322
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 32054217,
+        "decomp": 0,
+        "op": 20008609,
+        "red": 44489328,
+        "total": 52116916,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 30486796,
+        "decomp": 0,
+        "op": 20248122,
+        "red": 44688324,
+        "total": 50734918,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 31561506,
+        "decomp": 0,
+        "op": 20127406,
+        "red": 44608241,
+        "total": 51702322,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 30885971,
+        "decomp": 0,
+        "op": 20341802,
+        "red": 44511402,
+        "total": 51227773,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 32382807,
+        "decomp": 0,
+        "op": 20212181,
+        "red": 44502469,
+        "total": 52759052,
+        "ovf": 0,
+        "Dbits": 15
+       }
+      ],
+      "last": {
+       "conv": 32382807,
+       "decomp": 0,
+       "op": 20212181,
+       "red": 44502469,
+       "total": 52759052,
+       "ovf": 0,
+       "Dbits": 15
+      }
+     }
+    }
+   }
+  },
+  "W4": {
+   "desc": "unrelated denominators 1..1000, numerators |n| < 10^6",
+   "n": 200000,
+   "K": null,
+   "jobs": {
+    "sum": {
+     "pg": {
+      "unable": "common denominator overflows 64 bits (1 overflows detected)"
+     },
+     "vec": {
+      "unable": "shared denominator overflows 64 bits"
+     },
+     "mpq": {
+      "median": {
+       "conv": 10802431,
+       "decomp": 0,
+       "op": 46517269,
+       "red": 0,
+       "total": 57414734
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 10897465,
+        "decomp": 0,
+        "op": 46517269,
+        "red": 0,
+        "total": 57414734,
+        "ovf": 0
+       },
+       {
+        "conv": 10636174,
+        "decomp": 0,
+        "op": 46297398,
+        "red": 0,
+        "total": 57237002,
+        "ovf": 0
+       },
+       {
+        "conv": 10802431,
+        "decomp": 0,
+        "op": 47886303,
+        "red": 0,
+        "total": 59826467,
+        "ovf": 0
+       },
+       {
+        "conv": 10762358,
+        "decomp": 0,
+        "op": 46583085,
+        "red": 0,
+        "total": 57378793,
+        "ovf": 0
+       },
+       {
+        "conv": 10970772,
+        "decomp": 0,
+        "op": 46211525,
+        "red": 0,
+        "total": 57745124,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 10970772,
+       "decomp": 0,
+       "op": 46211525,
+       "red": 0,
+       "total": 57745124,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 7712424,
+       "decomp": 0,
+       "op": 49976741,
+       "red": 0,
+       "total": 57752937
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 7672925,
+        "decomp": 0,
+        "op": 49455927,
+        "red": 0,
+        "total": 57128852,
+        "ovf": 0
+       },
+       {
+        "conv": 7712424,
+        "decomp": 0,
+        "op": 50008588,
+        "red": 0,
+        "total": 57761817,
+        "ovf": 0
+       },
+       {
+        "conv": 7617592,
+        "decomp": 0,
+        "op": 51354853,
+        "red": 0,
+        "total": 58972445,
+        "ovf": 0
+       },
+       {
+        "conv": 7752731,
+        "decomp": 0,
+        "op": 49976741,
+        "red": 0,
+        "total": 57752937,
+        "ovf": 0
+       },
+       {
+        "conv": 7759500,
+        "decomp": 0,
+        "op": 49882778,
+        "red": 0,
+        "total": 57662239,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 7759500,
+       "decomp": 0,
+       "op": 49882778,
+       "red": 0,
+       "total": 57662239,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 5086136,
+       "decomp": 0,
+       "op": 5111689,
+       "red": 12132,
+       "total": 10197825
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 5086136,
+        "decomp": 0,
+        "op": 5111689,
+        "red": 12877,
+        "total": 10197825,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 4710629,
+        "decomp": 0,
+        "op": 4604445,
+        "red": 10768,
+        "total": 9315074,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 4917461,
+        "decomp": 0,
+        "op": 5080161,
+        "red": 10900,
+        "total": 10020111,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 6372352,
+        "decomp": 0,
+        "op": 6621847,
+        "red": 13654,
+        "total": 12994199,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 5118945,
+        "decomp": 0,
+        "op": 5247091,
+        "red": 12132,
+        "total": 10375781,
+        "ovf": 0,
+        "Dbits": 1438
+       }
+      ],
+      "last": {
+       "conv": 5118945,
+       "decomp": 0,
+       "op": 5247091,
+       "red": 12132,
+       "total": 10375781,
+       "ovf": 0,
+       "Dbits": 1438
+      }
+     }
+    },
+    "fma": {
+     "pg": {
+      "median": {
+       "conv": 16930720,
+       "decomp": 8011,
+       "op": 68345269,
+       "red": 0,
+       "total": 85328707
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 16974887,
+        "decomp": 8551,
+        "op": 68345269,
+        "red": 0,
+        "total": 85328707,
+        "ovf": 0,
+        "groups": 274488,
+        "nodes": 168,
+        "splits": 0,
+        "table_bytes": 96477184
+       },
+       {
+        "conv": 16816244,
+        "decomp": 7365,
+        "op": 63644346,
+        "red": 0,
+        "total": 80468443,
+        "ovf": 0,
+        "groups": 274488,
+        "nodes": 168,
+        "splits": 0,
+        "table_bytes": 96477184
+       },
+       {
+        "conv": 16930720,
+        "decomp": 8011,
+        "op": 69319122,
+        "red": 0,
+        "total": 86257853,
+        "ovf": 0,
+        "groups": 274488,
+        "nodes": 168,
+        "splits": 0,
+        "table_bytes": 96477184
+       },
+       {
+        "conv": 16899796,
+        "decomp": 8184,
+        "op": 67427267,
+        "red": 0,
+        "total": 84425977,
+        "ovf": 0,
+        "groups": 274488,
+        "nodes": 168,
+        "splits": 0,
+        "table_bytes": 96477184
+       },
+       {
+        "conv": 17050394,
+        "decomp": 7269,
+        "op": 69113754,
+        "red": 0,
+        "total": 86171417,
+        "ovf": 0,
+        "groups": 274488,
+        "nodes": 168,
+        "splits": 0,
+        "table_bytes": 96477184
+       }
+      ],
+      "last": {
+       "conv": 17050394,
+       "decomp": 7269,
+       "op": 69113754,
+       "red": 0,
+       "total": 86171417,
+       "ovf": 0,
+       "groups": 274488,
+       "nodes": 168,
+       "splits": 0,
+       "table_bytes": 96477184
+      }
+     },
+     "vec": {
+      "unable": "shared denominator overflows 64 bits"
+     },
+     "mpq": {
+      "median": {
+       "conv": 32601265,
+       "decomp": 0,
+       "op": 36930063,
+       "red": 0,
+       "total": 69463227
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 32533164,
+        "decomp": 0,
+        "op": 36930063,
+        "red": 0,
+        "total": 69463227,
+        "ovf": 0
+       },
+       {
+        "conv": 32601265,
+        "decomp": 0,
+        "op": 36560290,
+        "red": 0,
+        "total": 69182317,
+        "ovf": 0
+       },
+       {
+        "conv": 33979332,
+        "decomp": 0,
+        "op": 37277669,
+        "red": 0,
+        "total": 71257001,
+        "ovf": 0
+       },
+       {
+        "conv": 32187584,
+        "decomp": 0,
+        "op": 36871263,
+        "red": 0,
+        "total": 69058847,
+        "ovf": 0
+       },
+       {
+        "conv": 33385038,
+        "decomp": 0,
+        "op": 37802122,
+        "red": 0,
+        "total": 71187160,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 33385038,
+       "decomp": 0,
+       "op": 37802122,
+       "red": 0,
+       "total": 71187160,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 23247038,
+       "decomp": 0,
+       "op": 24541532,
+       "red": 0,
+       "total": 47948057
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 23117770,
+        "decomp": 0,
+        "op": 24534130,
+        "red": 0,
+        "total": 47675529,
+        "ovf": 0
+       },
+       {
+        "conv": 22962329,
+        "decomp": 0,
+        "op": 24383393,
+        "red": 0,
+        "total": 47450303,
+        "ovf": 0
+       },
+       {
+        "conv": 23860914,
+        "decomp": 0,
+        "op": 25411411,
+        "red": 0,
+        "total": 49272325,
+        "ovf": 0
+       },
+       {
+        "conv": 23329914,
+        "decomp": 0,
+        "op": 24596998,
+        "red": 0,
+        "total": 48042394,
+        "ovf": 0
+       },
+       {
+        "conv": 23247038,
+        "decomp": 0,
+        "op": 24541532,
+        "red": 0,
+        "total": 47948057,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 23247038,
+       "decomp": 0,
+       "op": 24541532,
+       "red": 0,
+       "total": 47948057,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 17017805,
+       "decomp": 0,
+       "op": 119264249,
+       "red": 108682209,
+       "total": 135882593
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 17185345,
+        "decomp": 0,
+        "op": 122535034,
+        "red": 107935605,
+        "total": 139720379,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 16252285,
+        "decomp": 0,
+        "op": 119264249,
+        "red": 108615858,
+        "total": 135801289,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 17249638,
+        "decomp": 0,
+        "op": 118443539,
+        "red": 108682209,
+        "total": 135693177,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 17017805,
+        "decomp": 0,
+        "op": 117861744,
+        "red": 109350763,
+        "total": 135882593,
+        "ovf": 0,
+        "Dbits": 1438
+       },
+       {
+        "conv": 16404787,
+        "decomp": 0,
+        "op": 122973601,
+        "red": 108739591,
+        "total": 139435135,
+        "ovf": 0,
+        "Dbits": 1438
+       }
+      ],
+      "last": {
+       "conv": 16404787,
+       "decomp": 0,
+       "op": 122973601,
+       "red": 108739591,
+       "total": 139435135,
+       "ovf": 0,
+       "Dbits": 1438
+      }
+     }
+    }
+   }
+  },
+  "W5": {
+   "desc": "single values: independent pairs, denominators 1..12, numerators |n| < 10^6",
+   "n": 1000000,
+   "K": null,
+   "jobs": {
+    "add": {
+     "pg": {
+      "median": {
+       "conv": 71014505,
+       "decomp": 14033421,
+       "op": 34671649,
+       "red": 0,
+       "total": 120168039
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 71051721,
+        "decomp": 15487796,
+        "op": 34763532,
+        "red": 0,
+        "total": 121303049,
+        "ovf": 0,
+        "groups": 42,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71014505,
+        "decomp": 14033421,
+        "op": 34289497,
+        "red": 0,
+        "total": 119337423,
+        "ovf": 0,
+        "groups": 42,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 69536510,
+        "decomp": 13647008,
+        "op": 34753379,
+        "red": 0,
+        "total": 118066541,
+        "ovf": 0,
+        "groups": 42,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70860274,
+        "decomp": 14252370,
+        "op": 34559645,
+        "red": 0,
+        "total": 120168039,
+        "ovf": 0,
+        "groups": 42,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71623301,
+        "decomp": 13808640,
+        "op": 34671649,
+        "red": 0,
+        "total": 122206088,
+        "ovf": 0,
+        "groups": 42,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 71623301,
+       "decomp": 13808640,
+       "op": 34671649,
+       "red": 0,
+       "total": 122206088,
+       "ovf": 0,
+       "groups": 42,
+       "nodes": 5,
+       "splits": 0,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "median": {
+       "conv": 3236944,
+       "decomp": 0,
+       "op": 970055,
+       "red": 0,
+       "total": 4206999
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 100.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 3452633,
+        "decomp": 0,
+        "op": 1157346,
+        "red": 0,
+        "total": 4609979,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 2962851,
+        "decomp": 0,
+        "op": 850706,
+        "red": 0,
+        "total": 3813557,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 3236944,
+        "decomp": 0,
+        "op": 970055,
+        "red": 0,
+        "total": 4206999,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 5181054,
+        "decomp": 0,
+        "op": 1310916,
+        "red": 0,
+        "total": 6491970,
+        "ovf": 0,
+        "D": 27720
+       },
+       {
+        "conv": 3099941,
+        "decomp": 0,
+        "op": 871701,
+        "red": 0,
+        "total": 3971642,
+        "ovf": 0,
+        "D": 27720
+       }
+      ],
+      "last": {
+       "conv": 3099941,
+       "decomp": 0,
+       "op": 871701,
+       "red": 0,
+       "total": 3971642,
+       "ovf": 0,
+       "D": 27720
+      }
+     },
+     "mpq": {
+      "median": {
+       "conv": 93159748,
+       "decomp": 0,
+       "op": 60857473,
+       "red": 0,
+       "total": 154748859
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 91988005,
+        "decomp": 0,
+        "op": 60622861,
+        "red": 0,
+        "total": 152610866,
+        "ovf": 0
+       },
+       {
+        "conv": 93546547,
+        "decomp": 0,
+        "op": 60857473,
+        "red": 0,
+        "total": 155701242,
+        "ovf": 0
+       },
+       {
+        "conv": 92631097,
+        "decomp": 0,
+        "op": 60756969,
+        "red": 0,
+        "total": 153388066,
+        "ovf": 0
+       },
+       {
+        "conv": 93414342,
+        "decomp": 0,
+        "op": 61334517,
+        "red": 0,
+        "total": 154748859,
+        "ovf": 0
+       },
+       {
+        "conv": 93159748,
+        "decomp": 0,
+        "op": 62235950,
+        "red": 0,
+        "total": 155395698,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 93159748,
+       "decomp": 0,
+       "op": 62235950,
+       "red": 0,
+       "total": 155395698,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 60871300,
+       "decomp": 0,
+       "op": 26488991,
+       "red": 0,
+       "total": 87239792
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 60660211,
+        "decomp": 0,
+        "op": 26505807,
+        "red": 0,
+        "total": 87239792,
+        "ovf": 0
+       },
+       {
+        "conv": 61076876,
+        "decomp": 0,
+        "op": 26488991,
+        "red": 0,
+        "total": 87752556,
+        "ovf": 0
+       },
+       {
+        "conv": 60837264,
+        "decomp": 0,
+        "op": 25981083,
+        "red": 0,
+        "total": 86827128,
+        "ovf": 0
+       },
+       {
+        "conv": 60871300,
+        "decomp": 0,
+        "op": 26270384,
+        "red": 0,
+        "total": 87222312,
+        "ovf": 0
+       },
+       {
+        "conv": 60881190,
+        "decomp": 0,
+        "op": 26563901,
+        "red": 0,
+        "total": 87445091,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 60881190,
+       "decomp": 0,
+       "op": 26563901,
+       "red": 0,
+       "total": 87445091,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 20049522,
+       "decomp": 0,
+       "op": 3273567,
+       "red": 30349589,
+       "total": 23874227
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 21164481,
+        "decomp": 0,
+        "op": 3449348,
+        "red": 30296645,
+        "total": 24758043,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 20041642,
+        "decomp": 0,
+        "op": 3832585,
+        "red": 30462606,
+        "total": 23874227,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 19584094,
+        "decomp": 0,
+        "op": 2096622,
+        "red": 30198969,
+        "total": 21680716,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 20049522,
+        "decomp": 0,
+        "op": 3273567,
+        "red": 30349589,
+        "total": 23323089,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 21399649,
+        "decomp": 0,
+        "op": 3092830,
+        "red": 30573180,
+        "total": 24492479,
+        "ovf": 0,
+        "Dbits": 15
+       }
+      ],
+      "last": {
+       "conv": 21399649,
+       "decomp": 0,
+       "op": 3092830,
+       "red": 30573180,
+       "total": 24492479,
+       "ovf": 0,
+       "Dbits": 15
+      }
+     }
+    },
+    "mul": {
+     "pg": {
+      "median": {
+       "conv": 70626506,
+       "decomp": 14307939,
+       "op": 43577975,
+       "red": 0,
+       "total": 128308309
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 69779063,
+        "decomp": 14478160,
+        "op": 41302205,
+        "red": 0,
+        "total": 125559428,
+        "ovf": 0,
+        "groups": 59,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70626506,
+        "decomp": 14307939,
+        "op": 41670298,
+        "red": 0,
+        "total": 126749744,
+        "ovf": 0,
+        "groups": 59,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71198455,
+        "decomp": 13654725,
+        "op": 43577975,
+        "red": 0,
+        "total": 128431155,
+        "ovf": 0,
+        "groups": 59,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 72013002,
+        "decomp": 14907511,
+        "op": 44731613,
+        "red": 0,
+        "total": 132490852,
+        "ovf": 0,
+        "groups": 59,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70561497,
+        "decomp": 12821648,
+        "op": 44108611,
+        "red": 0,
+        "total": 128308309,
+        "ovf": 0,
+        "groups": 59,
+        "nodes": 5,
+        "splits": 0,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 70561497,
+       "decomp": 12821648,
+       "op": 44108611,
+       "red": 0,
+       "total": 128308309,
+       "ovf": 0,
+       "groups": 59,
+       "nodes": 5,
+       "splits": 0,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "unable": "numerator overflows int64"
+     },
+     "mpq": {
+      "median": {
+       "conv": 93519259,
+       "decomp": 0,
+       "op": 92040495,
+       "red": 0,
+       "total": 185184810
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 93519259,
+        "decomp": 0,
+        "op": 91022717,
+        "red": 0,
+        "total": 184541976,
+        "ovf": 0
+       },
+       {
+        "conv": 94091610,
+        "decomp": 0,
+        "op": 90422473,
+        "red": 0,
+        "total": 184514083,
+        "ovf": 0
+       },
+       {
+        "conv": 93144315,
+        "decomp": 0,
+        "op": 92040495,
+        "red": 0,
+        "total": 185184810,
+        "ovf": 0
+       },
+       {
+        "conv": 93762289,
+        "decomp": 0,
+        "op": 96534174,
+        "red": 0,
+        "total": 190296463,
+        "ovf": 0
+       },
+       {
+        "conv": 93507293,
+        "decomp": 0,
+        "op": 92629043,
+        "red": 0,
+        "total": 186425638,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 93507293,
+       "decomp": 0,
+       "op": 92629043,
+       "red": 0,
+       "total": 186425638,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 60963337,
+       "decomp": 0,
+       "op": 47025347,
+       "red": 0,
+       "total": 108016084
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 60963337,
+        "decomp": 0,
+        "op": 47025347,
+        "red": 0,
+        "total": 107988684,
+        "ovf": 0
+       },
+       {
+        "conv": 60765317,
+        "decomp": 0,
+        "op": 46798289,
+        "red": 0,
+        "total": 108016084,
+        "ovf": 0
+       },
+       {
+        "conv": 61300126,
+        "decomp": 0,
+        "op": 46908502,
+        "red": 0,
+        "total": 108208628,
+        "ovf": 0
+       },
+       {
+        "conv": 60924275,
+        "decomp": 0,
+        "op": 47031453,
+        "red": 0,
+        "total": 107955728,
+        "ovf": 0
+       },
+       {
+        "conv": 61169474,
+        "decomp": 0,
+        "op": 47501660,
+        "red": 0,
+        "total": 110254918,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 61169474,
+       "decomp": 0,
+       "op": 47501660,
+       "red": 0,
+       "total": 110254918,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 21253227,
+       "decomp": 0,
+       "op": 12299919,
+       "red": 42070086,
+       "total": 33596412
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 21542900,
+        "decomp": 0,
+        "op": 12347762,
+        "red": 41747656,
+        "total": 33947204,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 20990109,
+        "decomp": 0,
+        "op": 12061155,
+        "red": 42070086,
+        "total": 33051264,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 21020957,
+        "decomp": 0,
+        "op": 12299919,
+        "red": 41931061,
+        "total": 33320876,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 21932347,
+        "decomp": 0,
+        "op": 12332513,
+        "red": 42388494,
+        "total": 34264860,
+        "ovf": 0,
+        "Dbits": 15
+       },
+       {
+        "conv": 21253227,
+        "decomp": 0,
+        "op": 12227755,
+        "red": 42420689,
+        "total": 33596412,
+        "ovf": 0,
+        "Dbits": 15
+       }
+      ],
+      "last": {
+       "conv": 21253227,
+       "decomp": 0,
+       "op": 12227755,
+       "red": 42420689,
+       "total": 33596412,
+       "ovf": 0,
+       "Dbits": 15
+      }
+     }
+    }
+   }
+  },
+  "W6": {
+   "desc": "growth chain x <- x*b + c, K=4; x0, c decimals in (-10, 10), b decimals in (-2, 2)",
+   "n": 1000000,
+   "K": 4,
+   "jobs": {
+    "chain": {
+     "pg": {
+      "median": {
+       "conv": 71213158,
+       "decomp": 1741,
+       "op": 98215365,
+       "red": 0,
+       "total": 169344751
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 71621081,
+        "decomp": 2232,
+        "op": 97721438,
+        "red": 0,
+        "total": 169344751,
+        "ovf": 0,
+        "groups": 256,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71213158,
+        "decomp": 1489,
+        "op": 99414711,
+        "red": 0,
+        "total": 170629380,
+        "ovf": 0,
+        "groups": 256,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71259357,
+        "decomp": 1741,
+        "op": 98834098,
+        "red": 0,
+        "total": 170095196,
+        "ovf": 0,
+        "groups": 256,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 70846442,
+        "decomp": 1435,
+        "op": 98215365,
+        "red": 0,
+        "total": 169289986,
+        "ovf": 0,
+        "groups": 256,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 71058257,
+        "decomp": 2036,
+        "op": 97974962,
+        "red": 0,
+        "total": 169328878,
+        "ovf": 0,
+        "groups": 256,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 71058257,
+       "decomp": 2036,
+       "op": 97974962,
+       "red": 0,
+       "total": 169328878,
+       "ovf": 0,
+       "groups": 256,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "pgu": {
+      "median": {
+       "conv": 3968388,
+       "decomp": 853,
+       "op": 4929131,
+       "red": 0,
+       "total": 9045365
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 84.0023,
+      "ovf_elems": {},
+      "rounds": [
+       {
+        "conv": 4340455,
+        "decomp": 991,
+        "op": 4920667,
+        "red": 0,
+        "total": 9262113,
+        "ovf": 0,
+        "groups": 6,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 3856749,
+        "decomp": 853,
+        "op": 4934745,
+        "red": 0,
+        "total": 8792347,
+        "ovf": 0,
+        "groups": 6,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 3968388,
+        "decomp": 1129,
+        "op": 5075848,
+        "red": 0,
+        "total": 9045365,
+        "ovf": 0,
+        "groups": 6,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 4239356,
+        "decomp": 837,
+        "op": 4929131,
+        "red": 0,
+        "total": 9276408,
+        "ovf": 0,
+        "groups": 6,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       },
+       {
+        "conv": 3789846,
+        "decomp": 850,
+        "op": 4855825,
+        "red": 0,
+        "total": 8646521,
+        "ovf": 0,
+        "groups": 6,
+        "nodes": 2,
+        "splits": 1,
+        "table_bytes": 61440
+       }
+      ],
+      "last": {
+       "conv": 3789846,
+       "decomp": 850,
+       "op": 4855825,
+       "red": 0,
+       "total": 8646521,
+       "ovf": 0,
+       "groups": 6,
+       "nodes": 2,
+       "splits": 1,
+       "table_bytes": 61440
+      }
+     },
+     "vec": {
+      "median": {
+       "conv": 6403793,
+       "decomp": 0,
+       "op": 4623591,
+       "red": 0,
+       "total": 11093662
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 84.0023,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 5914437,
+        "decomp": 0,
+        "op": 4615214,
+        "red": 0,
+        "total": 10529651,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 11498737,
+        "decomp": 0,
+        "op": 6092853,
+        "red": 0,
+        "total": 17810861,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 5578388,
+        "decomp": 0,
+        "op": 4451265,
+        "red": 0,
+        "total": 10029653,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 6403793,
+        "decomp": 0,
+        "op": 4648071,
+        "red": 0,
+        "total": 11093662,
+        "ovf": 0,
+        "D": 1000
+       },
+       {
+        "conv": 6416078,
+        "decomp": 0,
+        "op": 4623591,
+        "red": 0,
+        "total": 11193375,
+        "ovf": 0,
+        "D": 1000
+       }
+      ],
+      "last": {
+       "conv": 6416078,
+       "decomp": 0,
+       "op": 4623591,
+       "red": 0,
+       "total": 11193375,
+       "ovf": 0,
+       "D": 1000
+      }
+     },
+     "mpq": {
+      "median": {
+       "conv": 138713650,
+       "decomp": 0,
+       "op": 726610151,
+       "red": 0,
+       "total": 865786852
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 138504969,
+        "decomp": 0,
+        "op": 719324012,
+        "red": 0,
+        "total": 857828981,
+        "ovf": 0
+       },
+       {
+        "conv": 138449890,
+        "decomp": 0,
+        "op": 737702136,
+        "red": 0,
+        "total": 876600133,
+        "ovf": 0
+       },
+       {
+        "conv": 139176701,
+        "decomp": 0,
+        "op": 726610151,
+        "red": 0,
+        "total": 865786852,
+        "ovf": 0
+       },
+       {
+        "conv": 138713650,
+        "decomp": 0,
+        "op": 715680016,
+        "red": 0,
+        "total": 855103679,
+        "ovf": 0
+       },
+       {
+        "conv": 138992838,
+        "decomp": 0,
+        "op": 727677031,
+        "red": 0,
+        "total": 866669869,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 138992838,
+       "decomp": 0,
+       "op": 727677031,
+       "red": 0,
+       "total": 866669869,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 89958903,
+       "decomp": 0,
+       "op": 670243883,
+       "red": 0,
+       "total": 763975156
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 89705269,
+        "decomp": 0,
+        "op": 670243883,
+        "red": 0,
+        "total": 759949152,
+        "ovf": 0
+       },
+       {
+        "conv": 90064888,
+        "decomp": 0,
+        "op": 682234615,
+        "red": 0,
+        "total": 772299503,
+        "ovf": 0
+       },
+       {
+        "conv": 89958903,
+        "decomp": 0,
+        "op": 674016253,
+        "red": 0,
+        "total": 763975156,
+        "ovf": 0
+       },
+       {
+        "conv": 89568696,
+        "decomp": 0,
+        "op": 668415623,
+        "red": 0,
+        "total": 768110732,
+        "ovf": 0
+       },
+       {
+        "conv": 90732325,
+        "decomp": 0,
+        "op": 669384312,
+        "red": 0,
+        "total": 760116637,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 90732325,
+       "decomp": 0,
+       "op": 669384312,
+       "red": 0,
+       "total": 760116637,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 32703690,
+       "decomp": 0,
+       "op": 46685072,
+       "red": 82187269,
+       "total": 79398535
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 30760409,
+        "decomp": 0,
+        "op": 46255759,
+        "red": 82402116,
+        "total": 77066989,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 32713463,
+        "decomp": 0,
+        "op": 46685072,
+        "red": 82634875,
+        "total": 79398535,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 32682604,
+        "decomp": 0,
+        "op": 47650305,
+        "red": 82187269,
+        "total": 81611772,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 33006003,
+        "decomp": 0,
+        "op": 46742884,
+        "red": 81826532,
+        "total": 79920328,
+        "ovf": 0,
+        "Dbits": 10
+       },
+       {
+        "conv": 32703690,
+        "decomp": 0,
+        "op": 46500715,
+        "red": 81742414,
+        "total": 79204405,
+        "ovf": 0,
+        "Dbits": 10
+       }
+      ],
+      "last": {
+       "conv": 32703690,
+       "decomp": 0,
+       "op": 46500715,
+       "red": 81742414,
+       "total": 79204405,
+       "ovf": 0,
+       "Dbits": 10
+      }
+     }
+    }
+   }
+  },
+  "W7": {
+   "desc": "32-62-bit denominators (products of shared 16-20-bit primes, 24 semiprimes of two 24-29-bit primes, 8 primes of 40-58 bits): a*b + c, b with denominators 1..12",
+   "n": 200000,
+   "K": null,
+   "jobs": {
+    "fma": {
+     "pg": {
+      "median": {
+       "conv": 17379066,
+       "decomp": 6462568,
+       "op": 24227671,
+       "red": 0,
+       "total": 48102532
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": {
+       "n": 61,
+       "fit": 0
+      },
+      "rounds": [
+       {
+        "conv": 17432658,
+        "decomp": 6515474,
+        "op": 24107329,
+        "red": 0,
+        "total": 48060572,
+        "ovf": 61,
+        "groups": 75800,
+        "nodes": 125,
+        "splits": 24,
+        "table_bytes": 24125440
+       },
+       {
+        "conv": 17514310,
+        "decomp": 6423984,
+        "op": 24704073,
+        "red": 0,
+        "total": 48642367,
+        "ovf": 61,
+        "groups": 75800,
+        "nodes": 125,
+        "splits": 24,
+        "table_bytes": 24125440
+       },
+       {
+        "conv": 17203955,
+        "decomp": 6462568,
+        "op": 23682009,
+        "red": 0,
+        "total": 47348532,
+        "ovf": 61,
+        "groups": 75800,
+        "nodes": 125,
+        "splits": 24,
+        "table_bytes": 24125440
+       },
+       {
+        "conv": 17379066,
+        "decomp": 6457048,
+        "op": 24859511,
+        "red": 0,
+        "total": 48710743,
+        "ovf": 61,
+        "groups": 75800,
+        "nodes": 125,
+        "splits": 24,
+        "table_bytes": 24125440
+       },
+       {
+        "conv": 17259529,
+        "decomp": 6469161,
+        "op": 24227671,
+        "red": 0,
+        "total": 48102532,
+        "ovf": 61,
+        "groups": 75800,
+        "nodes": 125,
+        "splits": 24,
+        "table_bytes": 24125440
+       }
+      ],
+      "last": {
+       "conv": 17259529,
+       "decomp": 6469161,
+       "op": 24227671,
+       "red": 0,
+       "total": 48102532,
+       "ovf": 61,
+       "groups": 75800,
+       "nodes": 125,
+       "splits": 24,
+       "table_bytes": 24125440
+      }
+     },
+     "vec": {
+      "unable": "shared denominator overflows 64 bits"
+     },
+     "mpq": {
+      "median": {
+       "conv": 28808827,
+       "decomp": 0,
+       "op": 41179995,
+       "red": 0,
+       "total": 70023532
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 28843537,
+        "decomp": 0,
+        "op": 41179995,
+        "red": 0,
+        "total": 70023532,
+        "ovf": 0
+       },
+       {
+        "conv": 28808827,
+        "decomp": 0,
+        "op": 41373653,
+        "red": 0,
+        "total": 70368778,
+        "ovf": 0
+       },
+       {
+        "conv": 28752688,
+        "decomp": 0,
+        "op": 41133553,
+        "red": 0,
+        "total": 69886241,
+        "ovf": 0
+       },
+       {
+        "conv": 29169040,
+        "decomp": 0,
+        "op": 41985464,
+        "red": 0,
+        "total": 71154504,
+        "ovf": 0
+       },
+       {
+        "conv": 28568309,
+        "decomp": 0,
+        "op": 40863467,
+        "red": 0,
+        "total": 69466096,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 28568309,
+       "decomp": 0,
+       "op": 40863467,
+       "red": 0,
+       "total": 69466096,
+       "ovf": 0
+      }
+     },
+     "fmpq": {
+      "median": {
+       "conv": 34878772,
+       "decomp": 0,
+       "op": 37850770,
+       "red": 0,
+       "total": 72705134
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 34878772,
+        "decomp": 0,
+        "op": 37632946,
+        "red": 0,
+        "total": 72511718,
+        "ovf": 0
+       },
+       {
+        "conv": 34863609,
+        "decomp": 0,
+        "op": 37850770,
+        "red": 0,
+        "total": 72868387,
+        "ovf": 0
+       },
+       {
+        "conv": 35441455,
+        "decomp": 0,
+        "op": 38195135,
+        "red": 0,
+        "total": 73817048,
+        "ovf": 0
+       },
+       {
+        "conv": 35120595,
+        "decomp": 0,
+        "op": 37584539,
+        "red": 0,
+        "total": 72705134,
+        "ovf": 0
+       },
+       {
+        "conv": 34818715,
+        "decomp": 0,
+        "op": 37866120,
+        "red": 0,
+        "total": 72684835,
+        "ovf": 0
+       }
+      ],
+      "last": {
+       "conv": 34818715,
+       "decomp": 0,
+       "op": 37866120,
+       "red": 0,
+       "total": 72684835,
+       "ovf": 0
+      }
+     },
+     "fz": {
+      "median": {
+       "conv": 197802337,
+       "decomp": 0,
+       "op": 540332879,
+       "red": 229083688,
+       "total": 737964281
+      },
+      "ok": true,
+      "msg": "",
+      "unreduced": 0.0,
+      "ovf_elems": null,
+      "rounds": [
+       {
+        "conv": 197631402,
+        "decomp": 0,
+        "op": 540332879,
+        "red": 232842798,
+        "total": 737964281,
+        "ovf": 0,
+        "Dbits": 4202
+       },
+       {
+        "conv": 199542891,
+        "decomp": 0,
+        "op": 543920552,
+        "red": 230320879,
+        "total": 743463443,
+        "ovf": 0,
+        "Dbits": 4202
+       },
+       {
+        "conv": 197802337,
+        "decomp": 0,
+        "op": 532687044,
+        "red": 228418556,
+        "total": 733529066,
+        "ovf": 0,
+        "Dbits": 4202
+       },
+       {
+        "conv": 203099129,
+        "decomp": 0,
+        "op": 541885623,
+        "red": 229083688,
+        "total": 744984752,
+        "ovf": 0,
+        "Dbits": 4202
+       },
+       {
+        "conv": 197498240,
+        "decomp": 0,
+        "op": 533191343,
+        "red": 227438291,
+        "total": 730689583,
+        "ovf": 0,
+        "Dbits": 4202
+       }
+      ],
+      "last": {
+       "conv": 197498240,
+       "decomp": 0,
+       "op": 533191343,
+       "red": 227438291,
+       "total": 730689583,
+       "ovf": 0,
+       "Dbits": 4202
+      }
+     }
+    }
+   }
+  }
+ },
+ "calibration": {
+  "W2 fma": {
+   "fmpq": 155639204,
+   "fmpq-am": 158534801,
+   "chosen": "mul+add"
+  },
+  "W3 fma": {
+   "fmpq": 74180475,
+   "fmpq-am": 77231063,
+   "chosen": "mul+add"
+  },
+  "W4 fma": {
+   "fmpq": 24469652,
+   "fmpq-am": 25213994,
+   "chosen": "mul+add"
+  },
+  "W7 fma": {
+   "fmpq": 38043364,
+   "fmpq-am": 38615846,
+   "chosen": "mul+add"
+  }
+ },
+ "config": {
+  "date": "2026-10-27 20:07",
+  "cpu": "Intel(R) Xeon(R) Processor",
+  "flint": "18.0.1",
+  "rounds": 5,
+  "reps": 3,
+  "seed": 20261027,
+  "quick": false,
+  "cflags": [
+   "-std=c2x",
+   "-O3",
+   "-march=native",
+   "-Wall",
+   "-Wno-invalid-feature-combination"
+  ],
+  "flint_root": "/home/claude/flintblas/inst-native"
+ },
+ "biases": [
+  "Reduction: pg reduces every value at entry (after decomposition, inside its timed entry), and its add, sub, same-group add and mul cancel by divisibility tests on prime nodes, so its outputs are in lowest terms; the harness's unreduced % column verifies this per output.  Column sums add integers within each group without reducing, then reduce once while combining the group sums.  pgu and vec are unreduced by design (\u2020), and fz's reduction is timed separately as 'red'.",
+  "Pair cache: pg caches a plan per pair of group ids (common-denominator group, scale factors, merged edges) in a 2^16-entry direct-mapped cache, and caches 'weight lowered by one' transitions per group.  Few distinct groups (W1-W3, W5, W6) favour pg; W4 and W7 have many and miss often.",
+  "pg's group table only grows (no collection); its memory (reported per job) is not charged to any op.",
+  "Array layout: pg arrays are one numerator array plus one group id per element, not physically separate per-group vectors; only an array whose elements all share one group takes the vector-form loops (pgu).",
+  "One missing speed-up: add tests every node of the result for cancellation, not only nodes where both weights are equal (the only ones that can cancel when the inputs are reduced).  This makes pg slower, not faster.",
+  "vec and fz are given the common denominator of all inputs; vec reports 'unable' rather than widening, and pg reports 'unable' when a column sum's common denominator overflows 64 bits.",
+  "Entry for pg merges equal denominators through a hash and gcd-refines each new one against every live node (a linear scan); inputs with few distinct denominators make that cheap.  For small denominators the refinement already splits nodes into primes, so that cost lands in entry and decomposition looks almost free.",
+  "Inline edge lists of single values are rewritten after a split in one sync pass at the end of decomposition (ops read edges through the group id, so they are never stale where used).",
+  "Warm processes: every rep re-enters the values from the raw inputs, but the reps run in one process, so allocator state and CPU caches are warm for every contender alike, and the minimum over reps is reported.",
+  "An overflow inside a one-group (pgu) array loop poisons the whole result array."
+ ]
+}

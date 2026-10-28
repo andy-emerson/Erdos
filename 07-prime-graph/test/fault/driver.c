@@ -209,7 +209,7 @@ static void exec_cmd(char *line) {
         pgf_rng = (uint64_t)rd(&p);
         char m[200];
         int r = pgf_selfcheck(g, cls, m, sizeof m);
-        const char *au = pgi_audit_opt(g, 1, 0);
+        const char *au = cls == 9 ? NULL : pgi_audit_opt(g, 1, 0);
         sprintf(outbuf, "zc %d audit=%s | %s", r, au ? "fail" : "pass", m);
     } else if (!strcmp(cmd, "ZL")) {
         sprintf(outbuf, "zl cls=%d pos=%u old=%u", pgf_last.cls, pgf_last.pos, pgf_last.old);

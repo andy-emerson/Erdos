@@ -607,6 +607,7 @@ int pgf_selfcheck(pg_graph *g, int cls, char *msg, size_t cap) {
     int ok = 1;
     char why[160] = "";
     if (rc != 1) { ok = rc; snprintf(why, sizeof why, "inject returned %d", rc); goto out; }
+    if (cls == 9) goto f9;  /* a flipped bit may break any pointer: only the byte itself is checked */
     if (g->nnodes != nn || g->hn != hn) { ok = 0; snprintf(why, sizeof why, "node or holder table changed"); goto out; }
     int dn = 0, dl = 0, dh = 0, dd = 0;  /* nodes whose len/rc changed, lists changed, holders changed, dict changed */
     uint32_t cn = NONE, ch = NONE;
@@ -674,6 +675,9 @@ int pgf_selfcheck(pg_graph *g, int cls, char *msg, size_t cap) {
         snprintf(why, sizeof why, "atom %llu -> node %u (was %u); %d/%d/%d/%d", (unsigned long long)pgf_last.atom,
                  pgf_last.node2, pgf_last.node, dn, dl, dh, dd);
         break;
+    }
+f9:
+    switch (cls) {
     case 9: {
         uint8_t x = pgf_last.ob ^ pgf_last.nb;
         ok = x && !(x & (x - 1)) && *(uint8_t *)pgf_last.addr == pgf_last.nb;

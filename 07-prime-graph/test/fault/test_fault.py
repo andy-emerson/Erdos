@@ -74,16 +74,26 @@ class Injectors(unittest.TestCase):
     def test_f8_stops_a_refinement_halfway(self):
         for v in VARIANTS:
             # one holder on node 30: the split of 30 by 45 stops before it (0 of 1)
-            rc, out = script(v, ["V 0 1 30", "Z8 1", "V 1 1 45", "ZL", "AU"])
+            # (N, O3: the graph is left inconsistent; O1, O2: the next refinement in the same entry verifies first
+            # and rebuilds, so the record shows a repair)
+            rc, out = script(v, ["V 0 1 30", "Z8 1", "V 1 1 45", "ZL", "AU", "REC"])
             self.assertEqual(out[3], "zl cls=8 pos=0 old=1", (v, out))
-            self.assertNotEqual(out[4], "au ok", (v, out))
+            self.check_f8_effect(v, out[4], out[5])
             # four holders: it stops after 2 of 4
-            rc, out = script(v, ["V 0 1 30", "V 1 7 30", "V 2 11 30", "V 3 13 30", "Z8 1", "V 4 1 45", "ZL", "AU"])
+            rc, out = script(v, ["V 0 1 30", "V 1 7 30", "V 2 11 30", "V 3 13 30", "Z8 1", "V 4 1 45", "ZL", "AU",
+                                 "REC"])
             self.assertEqual(out[6], "zl cls=8 pos=2 old=4", (v, out))
-            self.assertNotEqual(out[7], "au ok", (v, out))
+            self.check_f8_effect(v, out[7], out[8])
             # not armed: the same refinement completes and the graph is consistent
             rc, out = script(v, ["V 0 1 30", "V 1 7 30", "V 2 11 30", "V 3 13 30", "V 4 1 45", "AU"])
             self.assertEqual(out[-1], "au ok", (v, out))
+
+    def check_f8_effect(self, v, au, rec):
+        if v in ("O1", "O2"):
+            self.assertIn("nrepair=1", rec, (v, rec))
+        else:
+            self.assertNotEqual(au, "au ok", (v, au))
+            self.assertIn("nrepair=0", rec, (v, rec))
 
     def test_no_injection_leaves_graph_consistent(self):
         for v in VARIANTS:

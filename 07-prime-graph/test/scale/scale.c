@@ -374,9 +374,10 @@ static void wl_churn(void) {
         enter_batch(num, den, (uint32_t)n, 0);
         g_idle();
         done += n;
+        if (over_budget()) break;  /* the budget applies to the initial fill too */
     }
     uint64_t nbuf = 0, ev = 0, warm = arg_u("warm", 2) * 2 * L;  /* warm-up: `warm` turnovers of L, not reported */
-    int k = 0, stopped = 0;
+    int k = 0, stopped = over_budget();
     for (uint64_t w = 0; w < warm && !stopped; w++) {
         if (w & 1) { if (nlv) delete_value(LV[rndn(nlv)]); }
         else {

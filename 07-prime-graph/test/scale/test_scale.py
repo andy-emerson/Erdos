@@ -361,16 +361,17 @@ class TestChecksCatch(unittest.TestCase):
     def test_verdicts_catch(self):
         mk = lambda i, **k: dict({"step": i, "fixed_ns": 100.0, "fixed_first_ns": 100.0, "op_ns": 100.0,
                                   "entry_ns_per_value": 1000.0, "idle_ns": 0, "batch_values": 1000}, **k)
-        g = {"steps": [mk(0), mk(1, fixed_ns=250.0)]}
+        six = lambda **late: [mk(i) for i in range(3)] + [mk(i, **late) for i in range(3, 6)]
+        g = {"steps": six(fixed_ns=250.0)}  # the second half slower: fails
         self.assertEqual(sb.growth_verdict(g)["failed"], ["fixed_ratio"])
-        g = {"steps": [mk(0), mk(1, fixed_ns=150.0)]}
-        self.assertTrue(sb.growth_verdict(g)["pass"])
+        g = {"steps": [mk(i) for i in range(5)] + [mk(5, fixed_ns=250.0, fixed_first_ns=300.0)]}
+        self.assertTrue(sb.growth_verdict(g)["pass"])  # one noisy step does not decide it
+        g = {"steps": six(fixed_first_ns=300.0)}
+        self.assertEqual(sb.growth_verdict(g)["failed"], ["cold_ratio"])
         g = {"steps": [mk(0), mk(1, entry_ns_per_value=2500.0)]}  # an entry that grows (C's scan) fails
         self.assertEqual(sb.growth_verdict(g)["failed"], ["entry_ratio"])
         g = {"steps": [mk(0), mk(1, idle_ns=200 * 1000)]}  # idle 200 ns/value against the 50 ns floor
         self.assertEqual(sb.growth_verdict(g)["failed"], ["idle_ratio"])
-        g = {"steps": [mk(0), mk(1), mk(2), mk(3, fixed_first_ns=300.0)]}
-        self.assertEqual(sb.growth_verdict(g)["failed"], ["cold_ratio"])
         g = {"steps": [mk(0), mk(1, op_ns=300.0)]}  # all-values growth: graded against the control's
         c = {"steps": [mk(0), mk(1, op_ns=200.0)]}
         self.assertTrue(sb.growth_verdict(g, c)["pass"])

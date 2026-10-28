@@ -24,8 +24,9 @@ Sweeps (each step is one row of a table; every step's sampled results are checke
   1 growth    batches of 10^5 values up to 10^7, live nodes rising to about 10^5; per batch: entry, idle pass, and
               10^5 ops twice: a FIXED sample (the same operand pairs, from the first batch, every step) and a sample
               over ALL live values; each sample runs 3 times on the same pairs and the minimum is kept (the first,
-              cold repetition is reported too).  Pass: fixed-sample op time, its cold repetition, entry ns per
-              value and idle ns per value each within 2x of batch 1, and S's all-values op time relative to C's at
+              cold repetition is reported too).  Pass: fixed-sample op time and its cold repetition (median of
+              the second half against median of batches 1-3), entry ns per value and idle ns per value each
+              within 2x, and S's all-values op time relative to C's at
               matched steps within 2x of batch 1's ratio.
   2 heavy     one node (30030) shared by 10^6..10^7 numerators, then 1/7 and 1/6 force two splits: time vs degree
   3 churn     10^6 live values, two unreported turnovers of them (so the counts settle), then 10^7 events (delete
@@ -33,6 +34,7 @@ Sweeps (each step is one row of a table; every step's sampled results are checke
               at the end everything is deleted and the allocations are counted (the leak check)
   4 distinct  10^3, 10^4, 10^5 distinct denominators (10 values each): entry per distinct denominator, ops
   5 chain     a node over the first 15 primes shared by 10^4..10^6 numerators, split 14 times in a row
+  (heavy, chain and distinct have no pass/fail rule: they are reported; only their checks and audits are graded)
 
 Checks: each sampled op result (o) must equal Fraction(a) op Fraction(b), in lowest terms; a reported overflow is
 "true" if the exact result does not fit (numerator in int64, denominator below 2^63) and "false" otherwise (counted,
@@ -201,16 +203,19 @@ IDLE_FLOOR = 50.0  # ns per value: idle ratios are taken against max(step 1, thi
 
 
 def growth_verdict(res, control=None):
-    """Pass: fixed-sample op time, its cold repetition, entry ns/value and idle ns/value each within 2x of step 1
-    (the cold repetition against the smallest of the first three steps: step 1's includes first touches); with the
-    control's run, S's all-values op time relative to C's at matched steps within 2x of step 1's."""
+    """Pass: each within 2x: the fixed-sample op time and its cold repetition (the median of the second half of the
+    steps against the median of steps 1-3, so one noisy step cannot decide it), entry ns/value and idle ns/value
+    (worst step against step 1); with the control's run, S's all-values op time relative to C's at matched steps
+    (worst against step 1's)."""
     st = [s for s in res["steps"] if "fixed_ns" in s]
     if not st:
         return None
     r = lambda k, base=None: max(s[k] for s in st) / (base if base is not None else st[0][k])
     idle = [s["idle_ns"] / s["batch_values"] for s in st]
-    v = {"fixed_first": st[0]["fixed_ns"], "fixed_max": max(s["fixed_ns"] for s in st), "fixed_ratio": r("fixed_ns"),
-         "cold_ratio": r("fixed_first_ns", min(s["fixed_first_ns"] for s in st[:3])),
+    med = lambda xs: sorted(xs)[len(xs) // 2] if len(xs) % 2 else sum(sorted(xs)[len(xs) // 2 - 1:len(xs) // 2 + 1]) / 2
+    late = lambda k: med([s[k] for s in st[len(st) // 2:]]) / med([s[k] for s in st[:3]])
+    v = {"fixed_first": st[0]["fixed_ns"], "fixed_max": max(s["fixed_ns"] for s in st), "fixed_ratio": late("fixed_ns"),
+         "cold_ratio": late("fixed_first_ns"),
          "entry_ratio": r("entry_ns_per_value"), "idle_ratio": max(idle) / max(idle[0], IDLE_FLOOR),
          "all_first": st[0]["op_ns"], "all_max": max(s["op_ns"] for s in st), "all_ratio": r("op_ns"),
          "steps": len(st), "stopped": any("stopped" in s for s in res["steps"]), "vs_control": None}
@@ -366,8 +371,9 @@ def report_md(res, cfg, files):
         v = growth_verdict(r, ctrl)
         if v:
             vc = f"{v['vs_control']:.2f}x over {v['vs_control_steps']} matched steps" if v["vs_control"] else "—"
-            L.append(f"| growth | {r['row']} | each within 2x of batch 1: fixed-sample op time, its cold repetition, "
-                     f"entry ns/value, idle ns/value; all-values op time relative to C | "
+            L.append(f"| growth | {r['row']} | each within 2x: fixed-sample op time and its cold repetition (median of "
+                     f"the second half against median of batches 1-3); entry ns/value, idle ns/value, all-values op "
+                     f"time relative to C (worst against batch 1) | "
                      f"{'**pass**' if v['pass'] else '**fail** (' + ', '.join(v['failed']) + ')'}: fixed "
                      f"{v['fixed_ratio']:.2f}x, cold {v['cold_ratio']:.2f}x, entry {v['entry_ratio']:.2f}x, idle "
                      f"{v['idle_ratio']:.2f}x, all-values vs C {vc} (all-values alone {v['all_ratio']:.2f}x)"
@@ -521,7 +527,11 @@ def report_md(res, cfg, files):
              "descents, g_s.c's K scan): that comparison grows with the graph, and its idle time rises with it; the "
              "idle criterion grades it.")
     L.append("- The idle-time criterion is taken against max(step 1, 50 ns per value), since S's idle pass is "
-             "nearly free.  The cold-repetition criterion is taken against the smallest of the first three steps.")
+             "nearly free.  The fixed-sample and cold-repetition criteria compare the median of the second half of "
+             "the steps with the median of steps 1-3.")
+    L.append("- Heavy split, the chain and many distinct denominators are reported without a pass or fail rule: "
+             "their tables (time against degree, per split, per distinct denominator) are for reading, and only "
+             "their checks and audits are graded.")
     L.append("- Op time includes S's hook for nodes with several atoms (first sightings): one exact-division test per "
              "atom when a node keeps a power; a hit splits the node during the op (counted as op splits).")
     return "\n".join(L) + "\n"

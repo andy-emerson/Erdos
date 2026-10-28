@@ -191,7 +191,11 @@ const char *pgi_audit_opt(pg_graph *g, int light, int midop) {
         } else if (A->D != 1) return "an array's D without a holder";
         if (A->deferred) {
             npend++;
-            if (!g->expr_depth || A->ppos >= g->npend || g->pend[A->ppos] != A) return "a deferred array outside an expression";
+            /* mid-operation, the outermost pg_expr_end has already closed the expression (depth 0) while it
+             * reduces the pending arrays one by one, and a reduction may refine: a deferred array is legitimate
+             * there, but it must still be on the pending list at its recorded position */
+            if (!g->expr_depth && !midop) return "a deferred array outside an expression";
+            if (A->ppos >= g->npend || g->pend[A->ppos] != A) return "a deferred array not on the pending list";
         }
         for (size_t j = 0; j < A->nx; j++) {
             nexc++;

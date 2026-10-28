@@ -7,3 +7,4 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
 - [v0.3](v0.3.md): sections 1–6 with the refined gcd method derived as a chain of gcds, an equal-input-size assumption, costs split into arithmetic and data-structure categories, appendices on multiplication, division and the gcd, and a bibliography of classical sources (some fields TBD).
 
 - [note-tripartite](note-tripartite.md): working note comparing two tripartite designs (common divisors; coprime base). Not part of the paper.
+- [note-coprime-base](note-coprime-base.md): explainer of coprime bases and the exponent-vector notation ($p^{\alpha}$, $\wedge$, $\vee$). Independent of our designs.

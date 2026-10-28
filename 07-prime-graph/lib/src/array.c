@@ -656,7 +656,7 @@ static pg_status elementwise(pg_graph *g, int op, const pg_array *A, const pg_ar
         if (op == OP_ADD) {
             for (size_t i = 0; i < n; i++) {
                 int64_t x, y, z;
-                int o = __builtin_mul_overflow(an[i], ka, &x) | __builtin_mul_overflow(bn[i], kb, &y);
+                int o = (int)__builtin_mul_overflow(an[i], ka, &x) | (int)__builtin_mul_overflow(bn[i], kb, &y);
                 o |= __builtin_add_overflow(x, y, &z);
                 rn[i] = z;
                 if (UNLIKELY(o)) v32_push(g, &ov, (uint32_t)i);
@@ -664,7 +664,7 @@ static pg_status elementwise(pg_graph *g, int op, const pg_array *A, const pg_ar
         } else if (op == OP_SUB) {
             for (size_t i = 0; i < n; i++) {
                 int64_t x, y, z;
-                int o = __builtin_mul_overflow(an[i], ka, &x) | __builtin_mul_overflow(bn[i], kb, &y);
+                int o = (int)__builtin_mul_overflow(an[i], ka, &x) | (int)__builtin_mul_overflow(bn[i], kb, &y);
                 o |= __builtin_sub_overflow(x, y, &z);
                 rn[i] = z;
                 if (UNLIKELY(o)) v32_push(g, &ov, (uint32_t)i);
@@ -681,7 +681,7 @@ static pg_status elementwise(pg_graph *g, int op, const pg_array *A, const pg_ar
             for (size_t i = 0; i < n; i++) {
                 int64_t t, x, y, z;
                 int o = __builtin_mul_overflow(an[i], bn[i], &t);
-                o |= __builtin_mul_overflow(t, ka, &x) | __builtin_mul_overflow(cn[i], kb, &y);
+                o |= (int)__builtin_mul_overflow(t, ka, &x) | (int)__builtin_mul_overflow(cn[i], kb, &y);
                 o |= __builtin_add_overflow(x, y, &z);
                 rn[i] = z;
                 if (UNLIKELY(o)) v32_push(g, &ov, (uint32_t)i);

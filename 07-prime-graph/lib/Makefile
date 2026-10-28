@@ -13,6 +13,7 @@ BENCHCC ?= clang
 STD      = -std=c11 -D_GNU_SOURCE
 WARN     = -Wall -Wextra -Wshadow -Wno-unused-function
 OPT      = -O3 -march=native
+BOPT     = -O3 -march=native $(if $(findstring clang,$(BENCHCC)),-Wno-invalid-feature-combination,)
 PY      ?= python3
 FUZZ_SECONDS ?= 600
 FUZZ_BUILD   ?= debug
@@ -41,7 +42,7 @@ endef
 $(eval $(call CONFIG,build,$(CC),$(OPT)))
 $(eval $(call CONFIG,build/debug,$(CC),-O1 -g -DPG_AUDIT_EVERY_OP))
 $(eval $(call CONFIG,build/asan,gcc,-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all))
-$(eval $(call CONFIG,build/bench,$(BENCHCC),$(OPT)))
+$(eval $(call CONFIG,build/bench,$(BENCHCC),$(BOPT)))
 
 debug: build/debug/unit build/debug/diff
 asan: build/asan/unit build/asan/diff
@@ -61,7 +62,7 @@ fuzz: build/unit build/diff debug asan
 		$(if $(filter release,$(FUZZ_BUILD)),,--audit)
 
 build/bench/pg_bench: bench/pg_bench.c build/bench/libprimegraph.a
-	$(BENCHCC) -std=c2x -D_GNU_SOURCE $(WARN) $(OPT) -Iinclude $< build/bench/libprimegraph.a -o $@ -lpthread
+	$(BENCHCC) -std=c2x -D_GNU_SOURCE $(WARN) $(BOPT) -Iinclude $< build/bench/libprimegraph.a -o $@ -lpthread
 
 bench: build/bench/pg_bench
 	$(PY) bench/compare.py --bin build/bench/pg_bench

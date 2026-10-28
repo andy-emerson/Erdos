@@ -82,6 +82,8 @@ class Gen:
             d = r.choice([DMAX, 2**62, 3**39, 2**31 * 3**19, 1000003**3, 999999999989 * 3])
         if r.random() < 0.1:
             d = -d
+        if r.random() < 0.02:
+            d = LO  # INT64_MIN: |den| = 2^63
         return d
 
     def num(self, d):
@@ -259,7 +261,15 @@ class Program:
         dst = r.randrange(16)
         n = r.choice(LENGTHS)
         mode = r.random()
-        if mode < 0.35:  # one scale (decimals)
+        pairs = mode < 0.12
+        if pairs:  # +-x over large unrelated denominators, shuffled, plus small values: partial sums overflow,
+            fr = []  # the sum fits (the order-free fallback of sum and dot, I5)
+            while len(fr) < n:
+                d = r.choice([p for p in LARGEP if p < 2**41] + [1000003 * 7, 2**40 + 15, 3**25])
+                a_ = r.randint(1, 2**40)
+                fr += [(a_, d), (-a_, d)] if len(fr) + 1 < n else [(r.randint(-9, 9), r.randint(1, 12))]
+            r.shuffle(fr)
+        elif mode < 0.35:  # one scale (decimals)
             d = 10 ** r.randint(1, 4)
             fr = [(r.randint(-10**7, 10**7), d) for _ in range(n)]
         elif mode < 0.6:  # mostly one denominator, some others
@@ -285,18 +295,21 @@ class Program:
             cnt, best, bc = {}, 1, 0
             for m in mags:
                 cnt[m] = cnt.get(m, 0) + 1
-            for m in dict.fromkeys(mags):  # first appearance order, strictly greater wins
-                if cnt[m] > bc:
+            for m in dict.fromkeys(mags):  # first appearance order, strictly greater wins; 2^63 never
+                if cnt[m] > bc and m < 2**63:
                     bc, best = cnt[m], m
             D0 = best
         dense = []
         for a, b in fr:
             t = -a if b < 0 else a
-            s = D0 // abs(b) if D0 % abs(b) == 0 else 0
+            s = D0 // abs(b) if D0 % abs(b) == 0 and abs(b) < 2**63 else 0
             if s and LO <= t <= HI and LO <= t * s <= HI:
                 dense.append(t * s)
         D = D0 // math.gcd(D0, *dense) if dense else 1
         self.emit(cmd, self.array_result(dst, xs, layout=(D, n - len(dense))))
+        if pairs:
+            vd = r.randrange(64)
+            self.reduction_cmd(f"AS {vd} {dst}", vd, list(xs))
 
     def array_from_values(self):
         r = self.r
@@ -364,6 +377,21 @@ class Program:
             out.append(z)
         self.emit(cmd, self.array_result(dst, out, err=err))
 
+    def reduction_cmd(self, cmd, dst, terms):
+        """Sum and dot are exact unless the common denominator of the nonzero per-denominator groups of their terms
+        passes 16,384 bits; then either the exact value or an overflow is accepted."""
+        x = sum(terms, F(0))
+        groups = {}
+        for t in terms:
+            groups[t.denominator] = groups.get(t.denominator, F(0)) + t
+        L = lcm_all([d for d, v in groups.items() if v != 0])
+        if fits(x) and L.bit_length() > 16384:
+            self.emit(cmd, ("=?", x.numerator, x.denominator))
+            self.vals.pop(dst, None)  # unknown: forget the slot
+            self.emit(f"R {dst}", ("any",))
+            return
+        self.value_cmd(cmd, dst, x)
+
     def array_reduce(self):
         r = self.r
         dst = r.randrange(64)
@@ -372,13 +400,13 @@ class Program:
             if not ss:
                 return
             xs = self.arrs[ss[0]]
-            self.value_cmd(f"AS {dst} {ss[0]}", dst, sum(xs, F(0)))
+            self.reduction_cmd(f"AS {dst} {ss[0]}", dst, list(xs))
         else:
             ss = self.pick_arrays(2)
             if not ss:
                 return
             a, b = self.arrs[ss[0]], self.arrs[ss[1]]
-            self.value_cmd(f"AD {dst} {ss[0]} {ss[1]}", dst, sum((x * y for x, y in zip(a, b)), F(0)))
+            self.reduction_cmd(f"AD {dst} {ss[0]} {ss[1]}", dst, [x * y for x, y in zip(a, b)])
 
     def array_read(self):
         r = self.r
@@ -423,6 +451,10 @@ def check_line(want, got):
         return None if f == ["E", str(want[1])] else f"want error {want[1]}"
     if kind == "=":
         return None if f == ["=", str(want[1]), str(want[2])] else f"want = {want[1]} {want[2]}"
+    if kind == "=?":
+        return None if f in (["=", str(want[1]), str(want[2])], ["E", "1"]) else f"want = {want[1]} {want[2]} or E 1"
+    if kind == "any":
+        return None
     if kind == "ok":
         return None if f == ["ok"] else "want ok"
     if kind == "c":

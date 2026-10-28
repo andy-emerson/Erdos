@@ -440,6 +440,118 @@ static void test_churn(void) {
     pg_graph_destroy(g);
 }
 
+/* ---------------------------------------------------------------- review fixes */
+
+/* 1/INT64_MIN: |den| = 2^63 is never D and never dense; it fails exactly when it does not reduce to fit */
+static void test_den_2_63(void) {
+    pg_graph *g = pg_graph_create();
+    pg_array *a = NULL;
+    int64_t n1[] = {1}, d1[] = {INT64_MIN};
+    CHECK(pg_array_from_fracs(g, n1, d1, 1, &a) == PG_OVERFLOW && a == NULL);
+    int64_t n2[] = {2, 1, 6}, d2[] = {INT64_MIN, INT64_MIN, INT64_MIN};
+    CHECK(pg_array_from_fracs(g, n2, d2, 3, &a) == PG_OVERFLOW && a == NULL);
+    int64_t n3[] = {2, 6, -4, 3}, d3[] = {INT64_MIN, INT64_MIN, INT64_MIN, 5};
+    CHECK(pg_array_from_fracs(g, n3, d3, 4, &a) == PG_OK);  /* -1/2^62, -3/2^62, 1/2^61, 3/5 */
+    pg_array_info inf;
+    pg_array_info_get(a, &inf);
+    CHECK(inf.D > 0 && (uint64_t)inf.D < (UINT64_C(1) << 63));
+    int64_t n, d;
+    pg_array_get_frac(g, a, 1, &n, &d);
+    CHECK(n == -3 && d == INT64_C(1) << 62);
+    AUDIT(g);
+    pg_array_release(g, a);
+    pg_graph_destroy(g);
+}
+
+/* a common denominator above 2^64 that cancels to a fitting result (the wide reduction, fin_w) */
+static void test_wide_cancel(void) {
+    pg_graph *g = pg_graph_create();
+    int64_t E = INT64_C(1844674407370955143);  /* prime; 5 E < 2^63 and 15 E > 2^64 */
+    CHECK((unsigned __int128)15 * (uint64_t)E > ((unsigned __int128)1 << 64));
+    pg_value *a = V(g, 2, 3 * E), *b = V(g, INT64_C(614891469123651711), 5 * E), *r = NULL;
+    CHECK(pg_add(g, a, b, &r) == PG_OK && is(g, r, 1, 15)); pg_value_release(g, r);
+    pg_value *c = V(g, -INT64_C(614891469123651711), 5 * E);
+    CHECK(pg_sub(g, a, c, &r) == PG_OK && is(g, r, 1, 15)); pg_value_release(g, r);
+    pg_value *x = V(g, 1, 3 * E), *y = V(g, 1, 5 * E);
+    CHECK(pg_add(g, x, y, &r) == PG_OVERFLOW && r == NULL);  /* 8 / (15 E): genuinely too wide */
+    AUDIT(g);
+    pg_graph_destroy(g);
+}
+
+/* the accumulator's reduce-and-retry (wadd), and sums whose partial sums overflow in one order only (I5) */
+static void test_sum_retry_and_order(void) {
+    pg_graph *g = pg_graph_create();
+    int64_t q1 = INT64_C(4611686018427387847), q2 = INT64_C(4611686018427387817), p62 = INT64_C(1) << 62;
+    /* dense 1/2^62 + (2^62 - 1)/2^62 = 1 (unreduced over 2^62), then 1/q1, 1/q2, -1/q1, -1/q2: the second add
+     * overflows 128 bits until the accumulator is reduced; the sum is 1 */
+    int64_t n1[] = {1, p62 - 1, 1, 1, -1, -1}, d1[] = {p62, p62, q1, q2, q1, q2};
+    pg_array *a = NULL;
+    CHECK(pg_array_from_fracs(g, n1, d1, 6, &a) == PG_OK);
+    size_t r0 = S(g).v4_retries;
+    pg_value *s = NULL;
+    CHECK(pg_array_sum(g, a, &s) == PG_OK && is(g, s, 1, 1));
+    CHECK(S(g).v4_retries > r0);
+    pg_value_release(g, s);
+    pg_array_release(g, a);
+    /* twelve values +-1/p (p near 2^40, six primes): 0 in every order */
+    int64_t P[6] = {INT64_C(1099511627791), INT64_C(1099511627803), INT64_C(1099511627831),
+                    INT64_C(1099511627873), INT64_C(1099511627891), INT64_C(1099511627917)};
+    int64_t na[12], da[12], nb[12], db[12];
+    for (int i = 0; i < 6; i++) {
+        na[2 * i] = 1; da[2 * i] = P[i]; na[2 * i + 1] = -1; da[2 * i + 1] = P[i];  /* paired */
+        nb[i] = 1; db[i] = P[i]; nb[6 + i] = -1; db[6 + i] = P[i];                  /* all + first */
+    }
+    pg_array *x = NULL, *y = NULL;
+    CHECK(pg_array_from_fracs(g, na, da, 12, &x) == PG_OK && pg_array_from_fracs(g, nb, db, 12, &y) == PG_OK);
+    CHECK(pg_array_sum(g, x, &s) == PG_OK && is(g, s, 0, 1)); pg_value_release(g, s);
+    CHECK(pg_array_sum(g, y, &s) == PG_OK && is(g, s, 0, 1)); pg_value_release(g, s);
+    /* dot: x . ones and y . ones; and a sum that really overflows still does */
+    int64_t on[12], od[12];
+    for (int i = 0; i < 12; i++) { on[i] = 1; od[i] = 1; }
+    pg_array *ones = NULL;
+    pg_array_from_fracs(g, on, od, 12, &ones);
+    CHECK(pg_array_dot(g, y, ones, &s) == PG_OK && is(g, s, 0, 1)); pg_value_release(g, s);
+    int64_t nc[6], dc[6];
+    for (int i = 0; i < 6; i++) { nc[i] = 1; dc[i] = P[i]; }
+    pg_array *z = NULL;
+    pg_array_from_fracs(g, nc, dc, 6, &z);
+    CHECK(pg_array_sum(g, z, &s) == PG_OVERFLOW && s == NULL);
+    pg_array_release(g, x); pg_array_release(g, y); pg_array_release(g, z); pg_array_release(g, ones);
+    AUDIT(g);
+    CHECK(S(g).holders_live == 0);
+    pg_graph_destroy(g);
+}
+
+/* released handles: PG_INVALID while the holder is not reused; outputs NULL on every failure */
+static void test_released(void) {
+    pg_graph *g = pg_graph_create();
+    pg_value *a = V(g, 1, 3), *b = V(g, 2, 5), *r = (pg_value *)1;
+    pg_value_release(g, a);
+    CHECK(pg_add(g, a, b, &r) == PG_INVALID && r == NULL);
+    r = (pg_value *)1;
+    CHECK(pg_mul(g, b, a, &r) == PG_INVALID && r == NULL);
+    CHECK(pg_div(g, b, a, &r) == PG_INVALID && r == NULL);
+    CHECK(pg_neg(g, a, &r) == PG_INVALID && r == NULL);
+    CHECK(pg_value_clone(g, a, &r) == PG_INVALID && r == NULL);
+    CHECK(pg_cmp(g, a, b) == PG_CMP_INVALID);
+    int64_t n = 7, d = 7;
+    CHECK(pg_value_get(g, a, &n, &d) == PG_INVALID && n == 7);
+    char buf[PG_STRING_MAX];
+    CHECK(pg_value_to_string(g, a, buf, sizeof buf) == PG_INVALID);
+    r = (pg_value *)1;
+    CHECK(pg_value_new(g, 1, 0, &r) == PG_DIVZERO && r == NULL);
+    r = (pg_value *)1;
+    CHECK(pg_value_from_string(g, "x", &r) == PG_INVALID && r == NULL);
+    pg_value *z = V(g, 0, 1);
+    r = (pg_value *)1;
+    CHECK(pg_div(g, b, z, &r) == PG_DIVZERO && r == NULL);
+    pg_array *x = (pg_array *)1;
+    int64_t nn[] = {1}, dd[] = {0};
+    CHECK(pg_array_from_fracs(g, nn, dd, 1, &x) == PG_DIVZERO && x == NULL);
+    AUDIT(g);
+    pg_graph_destroy(g);
+}
+
 int main(void) {
     test_entry_examples();
     test_reduction();
@@ -450,6 +562,10 @@ int main(void) {
     test_array_overflow();
     test_expr();
     test_churn();
+    test_den_2_63();
+    test_wide_cancel();
+    test_sum_retry_and_order();
+    test_released();
     printf("unit: %d checks, %d failed\n", checks, fails);
     return fails != 0;
 }

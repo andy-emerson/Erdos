@@ -21,6 +21,8 @@ void pgi_debug_audit(pg_graph *g) {
     }
 }
 
+static inline int live(const pg_value *v) { return v && v->kind == HK_VALUE; }  /* a released handle is not */
+
 static inline pg_value *value_from_raw(pg_graph *g, const raw *r) { return pgi_holder_from_raw(g, r, HK_VALUE); }
 
 /* Enter t / d (d >= 1, d <= 2^63): enter d (steps 1-4) as a linked transient holder, then reduce t against its
@@ -56,6 +58,7 @@ static pg_status enter_value(pg_graph *g, i128 t, uint64_t d, pg_value **out) {
 }
 
 pg_status pg_value_new(pg_graph *g, int64_t num, int64_t den, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !out) return PG_INVALID;
     if (den == 0) return PG_DIVZERO;
     i128 t = num;
@@ -67,26 +70,29 @@ pg_status pg_value_new(pg_graph *g, int64_t num, int64_t den, pg_value **out) {
 }
 
 pg_status pg_value_from_int(pg_graph *g, int64_t n, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !out) return PG_INVALID;
     *out = pgi_holder_new(g, n, 1, NULL, 0, HK_VALUE);
     return PG_OK;
 }
 
-void pg_value_get(const pg_graph *g, const pg_value *v, int64_t *num, int64_t *den) {
-    (void)g;
+pg_status pg_value_get(const pg_graph *g, const pg_value *v, int64_t *num, int64_t *den) {
+    if (!g || !live(v)) return PG_INVALID;
     if (num) *num = v->num;
     if (den) *den = (int64_t)v->den;
+    return PG_OK;
 }
 
 void pg_value_release(pg_graph *g, pg_value *v) {
     if (!v) return;
-    if (v->kind != HK_VALUE) pgi_die("pg_value_release: not a live value");
+    if (v->kind != HK_VALUE) pgi_die("pg_value_release: not a live value (released twice?)");
     pgi_holder_release(g, v);
     DEBUG_AUDIT(g);
 }
 
 pg_status pg_value_clone(pg_graph *g, const pg_value *v, pg_value **out) {
-    if (!g || !v || !out) return PG_INVALID;
+    if (out) *out = NULL;
+    if (!g || !live(v) || !out) return PG_INVALID;
     *out = pgi_holder_new(g, v->num, v->den, v->ne ? g->EPL + v->eo : NULL, v->ne, HK_VALUE);
     return PG_OK;
 }
@@ -96,7 +102,8 @@ pg_status pg_value_clone(pg_graph *g, const pg_value *v, pg_value **out) {
 enum { B_ADD, B_SUB, B_MUL };
 
 static pg_status binop(pg_graph *g, const pg_value *a, const pg_value *b, int op, pg_value **out) {
-    if (!g || !a || !b || !out) return PG_INVALID;
+    if (out) *out = NULL;
+    if (!g || !live(a) || !live(b) || !out) return PG_INVALID;
     raw r;
     int rc;
     for (;;) {
@@ -119,7 +126,8 @@ pg_status pg_mul(pg_graph *g, const pg_value *a, const pg_value *b, pg_value **o
  * node powers multiply into the numerator (overflow checked), and the result is reduced (cross-cancellation of
  * lowest-terms operands gives lowest terms). */
 pg_status pg_div(pg_graph *g, const pg_value *a, const pg_value *b, pg_value **out) {
-    if (!g || !a || !b || !out) return PG_INVALID;
+    if (out) *out = NULL;
+    if (!g || !live(a) || !live(b) || !out) return PG_INVALID;
     if (b->num == 0) return PG_DIVZERO;
     uint64_t mb = mag64(b->num);
     pg_value *t = pgi_den_enter(g, mb);
@@ -141,7 +149,8 @@ pg_status pg_div(pg_graph *g, const pg_value *a, const pg_value *b, pg_value **o
 }
 
 pg_status pg_neg(pg_graph *g, const pg_value *a, pg_value **out) {
-    if (!g || !a || !out) return PG_INVALID;
+    if (out) *out = NULL;
+    if (!g || !live(a) || !out) return PG_INVALID;
     if (a->num == INT64_MIN) return PG_OVERFLOW;
     *out = pgi_holder_new(g, -a->num, a->den, a->ne ? g->EPL + a->eo : NULL, a->ne, HK_VALUE);
     DEBUG_AUDIT(g);
@@ -149,6 +158,7 @@ pg_status pg_neg(pg_graph *g, const pg_value *a, pg_value **out) {
 }
 
 int pg_cmp(const pg_graph *g, const pg_value *a, const pg_value *b) {
+    if (!g || !live(a) || !live(b)) return PG_CMP_INVALID;
     view va = hview(g, a), vb = hview(g, b);
     uint64_t ca, cb;
     uint32_t e[AW];
@@ -158,14 +168,14 @@ int pg_cmp(const pg_graph *g, const pg_value *a, const pg_value *b) {
     return (x > y) - (x < y);
 }
 
-int pg_sign(const pg_value *v) { return (v->num > 0) - (v->num < 0); }
-int pg_is_zero(const pg_value *v) { return v->num == 0; }
+int pg_sign(const pg_value *v) { return live(v) ? (v->num > 0) - (v->num < 0) : 0; }
+int pg_is_zero(const pg_value *v) { return live(v) && v->num == 0; }
 
 /* ------------------------------------------------------------------------------------------------- text */
 
 pg_status pg_value_to_string(const pg_graph *g, const pg_value *v, char *buf, size_t cap) {
     (void)g;
-    if (!v || !buf) return PG_INVALID;
+    if (!live(v) || !buf) return PG_INVALID;
     char tmp[64];
     int n = v->den == 1 ? snprintf(tmp, sizeof tmp, "%lld", (long long)v->num)
                         : snprintf(tmp, sizeof tmp, "%lld/%llu", (long long)v->num, (unsigned long long)v->den);
@@ -190,6 +200,7 @@ static const char *parse_part(const char *s, int *neg, u128 *mag) {  /* [+-]digi
 }
 
 pg_status pg_value_from_string(pg_graph *g, const char *s, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !s || !out) return PG_INVALID;
     int n1, n2 = 0;
     u128 a, b = 1;

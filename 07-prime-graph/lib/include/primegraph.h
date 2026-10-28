@@ -1,4 +1,4 @@
-/* primegraph.h: exact rational arithmetic with shared, lazily refined denominators (spec 07, v0.1, milestone M1).
+/* primegraph.h: exact rational arithmetic with shared, lazily refined denominators (spec 07, v0.2, milestone M1).
  *
  * Every value lives in one weighted bipartite graph owned by a context (pg_graph).  A value's numerator is a signed
  * 64-bit integer; its denominator is a product of shared, pairwise coprime NODES, each stored once and used by every
@@ -36,15 +36,17 @@ typedef struct pg_graph pg_graph;  /* the context: the graph, its dictionary and
 typedef struct pg_value pg_value;  /* a handle to one exact rational (opaque) */
 typedef struct pg_array pg_array;  /* an array of exact rationals in the array form (opaque) */
 
-/* Errors.  Every function that can fail returns a pg_status; on failure its output is left unset (NULL for
- * objects) and the graph is unchanged apart from internal refinement that never changes a value.
+/* Errors.  Every function that can fail returns a pg_status; on failure its object output is set to NULL and the
+ * graph is unchanged apart from internal refinement that never changes a value.  Handles are checked: passing a
+ * released value (whose holder has not yet been reused by a new value) gives PG_INVALID; releasing one twice aborts.
  *
  * PG_OVERFLOW: the exact result cannot be represented under the M1 bounds.  For one operation (add, sub, mul, div,
  *   neg, entry) and for each element of an elementwise array operation, this is reported exactly when the exact,
- *   reduced result does not fit.  Two operations are composed of steps, and each step must fit: pg_array_fma checks
- *   the product a*b and then the sum; pg_array_sum and pg_array_dot accumulate with 128-bit numerators and
- *   denominators, reducing the accumulator and retrying when it overflows, so they fail only if a reduced partial sum
- *   needs more than 127 bits or the final reduced result does not fit.
+ *   reduced result does not fit.  pg_array_fma is two steps and each must fit: the product a*b, then the sum.
+ *   pg_array_sum and pg_array_dot are exact and independent of the order of the elements (I5): they accumulate in
+ *   128 bits and, if that overflows, sum the terms grouped by denominator and combine the groups exactly in
+ *   multiprecision; they report overflow when the result does not fit, or when the common denominator of the
+ *   nonzero groups passes 16,384 bits.
  * PG_DIVZERO: division by zero, or a zero denominator at entry.
  * PG_INVALID: a malformed argument (a NULL pointer where an object is required, a malformed string, an index out of
  *   range, arrays of different lengths, an output buffer too small, pg_expr_end without pg_expr_begin). */
@@ -76,8 +78,9 @@ pg_status pg_value_new(pg_graph *g, int64_t num, int64_t den, pg_value **out);
 /* The integer n (no denominator). */
 pg_status pg_value_from_int(pg_graph *g, int64_t n, pg_value **out);
 
-/* The value in lowest terms: *num carries the sign, *den >= 1.  Either pointer may be NULL. */
-void pg_value_get(const pg_graph *g, const pg_value *v, int64_t *num, int64_t *den);
+/* The value in lowest terms: *num carries the sign, *den >= 1.  Either pointer may be NULL.  PG_INVALID for a
+ * released handle (one whose holder has not been reused). */
+pg_status pg_value_get(const pg_graph *g, const pg_value *v, int64_t *num, int64_t *den);
 
 /* Releases v: its holder leaves its nodes' lists, and nodes no longer used are freed.  NULL is ignored. */
 void pg_value_release(pg_graph *g, pg_value *v);
@@ -93,10 +96,12 @@ pg_status pg_mul(pg_graph *g, const pg_value *a, const pg_value *b, pg_value **o
 pg_status pg_div(pg_graph *g, const pg_value *a, const pg_value *b, pg_value **out);  /* a / b; PG_DIVZERO if b = 0 */
 pg_status pg_neg(pg_graph *g, const pg_value *a, pg_value **out);  /* -a; PG_OVERFLOW for a numerator of -2^63 */
 
-/* -1, 0 or 1 as a < b, a = b, a > b.  Never overflows (128-bit cross-scaling). */
+/* -1, 0 or 1 as a < b, a = b, a > b.  Never overflows (128-bit cross-scaling).  PG_CMP_INVALID for a NULL or
+ * released handle. */
+#define PG_CMP_INVALID 2
 int pg_cmp(const pg_graph *g, const pg_value *a, const pg_value *b);
-int pg_sign(const pg_value *v);     /* -1, 0 or 1 */
-int pg_is_zero(const pg_value *v);  /* 1 if v = 0 */
+int pg_sign(const pg_value *v);     /* -1, 0 or 1 (0 for a released handle) */
+int pg_is_zero(const pg_value *v);  /* 1 if v = 0 (0 for a released handle) */
 
 /* ------------------------------------------------------------------------------------------------- text */
 

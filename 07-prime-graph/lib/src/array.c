@@ -142,8 +142,8 @@ static void choose_D(pg_graph *g, pg_value *const *hs, const uint32_t *cnt, size
     size_t best = SIZE_MAX;
     uint64_t bestc = nint;  /* denominator 1 (D = 1) wins unless another is strictly more frequent */
     if (cnt) {
-        for (size_t k = 0; k < m; k++)
-            if (cnt[k] > bestc) { bestc = cnt[k]; best = k; }
+        for (size_t k = 0; k < m; k++)  /* a denominator of 2^63 (from INT64_MIN) can never be D */
+            if (cnt[k] > bestc && hs[k]->den < DEN_LIM) { bestc = cnt[k]; best = k; }
     } else {
         size_t cap = 16;
         while (cap < 2 * m) cap *= 2;
@@ -151,6 +151,7 @@ static void choose_D(pg_graph *g, pg_value *const *hs, const uint32_t *cnt, size
         uint32_t *hv = pgi_alloc(g, cap * 4), *hc = pgi_alloc(g, cap * 4);
         for (size_t k = 0; k < m; k++) {
             uint64_t d = hs[k]->den;
+            if (d >= DEN_LIM) continue;
             size_t i = hsh64(d) & (cap - 1);
             while (hk[i] && hk[i] != d) i = (i + 1) & (cap - 1);
             if (!hk[i]) { hk[i] = d; hv[i] = (uint32_t)k; hc[i] = 0; }
@@ -237,6 +238,7 @@ static void arr_finish(pg_graph *g, pg_array *R, int defer) {
 /* ------------------------------------------------------------------------------------------------- entry */
 
 pg_status pg_array_from_fracs(pg_graph *g, const int64_t *num, const int64_t *den, size_t n, pg_array **out) {
+    if (out) *out = NULL;
     if (!g || !out || (n && (!num || !den)) || n >= UINT32_MAX) return PG_INVALID;
     for (size_t i = 0; i < n; i++)
         if (den[i] == 0) return PG_DIVZERO;
@@ -299,7 +301,8 @@ pg_status pg_array_from_fracs(pg_graph *g, const int64_t *num, const int64_t *de
     A->D = P.D;
     A->dh = P.D > 1 ? pgi_holder_new(g, 0, P.D, P.e, P.ne, HK_DEN) : NULL;
     int64_t *sc = pgi_alloc(g, nd * 8 + 8);
-    for (size_t k = 0; k < nd; k++) sc[k] = P.D % dm[k] == 0 ? (int64_t)(P.D / dm[k]) : 0;
+    for (size_t k = 0; k < nd; k++)  /* |den| = 2^63 is never dense: fin decides whether it reduces to fit */
+        sc[k] = dm[k] < DEN_LIM && P.D % dm[k] == 0 ? (int64_t)(P.D / dm[k]) : 0;
     /* pass 2: dense where the denominator divides D and the scaled numerator fits; else an exception, reduced */
     pg_status st = PG_OK;
     for (size_t i = 0; i < n; i++) {
@@ -335,6 +338,7 @@ pg_status pg_array_from_fracs(pg_graph *g, const int64_t *num, const int64_t *de
 }
 
 pg_status pg_array_from_values(pg_graph *g, pg_value *const *vals, size_t n, pg_array **out) {
+    if (out) *out = NULL;
     if (!g || !out || (n && !vals) || n >= UINT32_MAX) return PG_INVALID;
     for (size_t i = 0; i < n; i++)
         if (!vals[i] || vals[i]->kind != HK_VALUE) return PG_INVALID;
@@ -415,6 +419,7 @@ static void elem_reduced(pg_graph *g, const pg_array *A, size_t i, pg_value *x, 
 }
 
 pg_status pg_array_get(pg_graph *g, const pg_array *a, size_t i, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !a || !out || i >= a->n) return PG_INVALID;
     ptrdiff_t j = xfind(a, i);
     raw r;
@@ -612,6 +617,7 @@ static int prod_plan(const view *a, const view *b, dplan *P) {  /* Da * Db with 
 
 static pg_status elementwise(pg_graph *g, int op, const pg_array *A, const pg_array *B, const pg_array *C,
                              pg_array **out) {
+    if (out) *out = NULL;
     if (!g || !A || !B || !out || (op == OP_FMA && !C)) return PG_INVALID;
     if (A->n != B->n || (C && C->n != A->n)) return PG_INVALID;
     int defer = g->expr_depth > 0;
@@ -808,7 +814,229 @@ static pg_status wfinish(pg_graph *g, wacc *W, pg_value **out) {
     return PG_OK;
 }
 
+/* ------------------------------------------------------------------------------------------------- the exact fallback */
+
+/* Multiprecision magnitudes for the fallback below: little-endian 64-bit limbs, at most BIG_LIMBS. */
+#define BIG_LIMBS 260  /* 16,384 bits for a common denominator, plus a group sum's 3 limbs, plus slack */
+typedef struct { int n; uint64_t l[BIG_LIMBS]; } big;
+
+static int big_mul_small(big *a, uint64_t m) {  /* a *= m; 0 if it passes the cap */
+    u128 c = 0;
+    for (int i = 0; i < a->n; i++) {
+        c += (u128)a->l[i] * m;
+        a->l[i] = (uint64_t)c;
+        c >>= 64;
+    }
+    if (c) {
+        if (a->n == BIG_LIMBS) return 0;
+        a->l[a->n++] = (uint64_t)c;
+    }
+    return 1;
+}
+static int big_addmul(big *acc, const big *a, const uint64_t *x, int xn) {  /* acc += a * x; 0 past the cap */
+    for (int j = 0; j < xn; j++) {
+        if (!x[j]) continue;
+        u128 c = 0;
+        int i;
+        for (i = 0; i < a->n || c; i++) {
+            if (i + j >= BIG_LIMBS) return 0;
+            while (acc->n <= i + j) acc->l[acc->n++] = 0;
+            c += (u128)acc->l[i + j] + (i < a->n ? (u128)a->l[i] * x[j] : 0);
+            acc->l[i + j] = (uint64_t)c;
+            c >>= 64;
+        }
+    }
+    while (acc->n && !acc->l[acc->n - 1]) acc->n--;
+    return 1;
+}
+static int big_cmp(const big *a, const big *b) {
+    if (a->n != b->n) return a->n < b->n ? -1 : 1;
+    for (int i = a->n; i-- > 0;)
+        if (a->l[i] != b->l[i]) return a->l[i] < b->l[i] ? -1 : 1;
+    return 0;
+}
+static void big_sub(big *a, const big *b) {  /* a -= b, a >= b */
+    uint64_t br = 0;
+    for (int i = 0; i < a->n; i++) {
+        uint64_t y = i < b->n ? b->l[i] : 0, t = a->l[i] - y - br;
+        br = (a->l[i] < y) || (a->l[i] - y < br);
+        a->l[i] = t;
+    }
+    while (a->n && !a->l[a->n - 1]) a->n--;
+}
+static uint64_t big_mod(const big *a, uint64_t d) {
+    u128 r = 0;
+    for (int i = a->n; i-- > 0;) r = ((r << 64) | a->l[i]) % d;
+    return (uint64_t)r;
+}
+static void big_div(big *a, uint64_t d) {  /* a /= d, exact or not */
+    u128 r = 0;
+    for (int i = a->n; i-- > 0;) {
+        r = (r << 64) | a->l[i];
+        a->l[i] = (uint64_t)(r / d);
+        r %= d;
+    }
+    while (a->n && !a->l[a->n - 1]) a->n--;
+}
+
+/* The fallback of sum and dot when the fast 128-bit accumulation overflows.  Every term (an element, or a product
+ * a[i] b[i]) is taken in lowest terms and the terms are grouped by denominator, each group summed exactly (one
+ * denominator: integer additions, in 192 bits).  The nonzero groups are then combined exactly, in multiprecision,
+ * over their common denominator L (each node at its largest weight), and the sum reduced against L's nodes (a
+ * several-atom node sharing part of it is split, and the pass restarts).  So the outcome depends only on the multiset
+ * of terms (I5), never on their order or the dense/exception split, and it is exact whenever L has at most 16,384
+ * bits; beyond that it is PG_OVERFLOW.  Group edge lists are not pinned: any split restarts the whole pass. */
+typedef struct { u128 den; uint64_t pos[3], neg[3]; int ne; uint32_t e[AW]; } grp;
+
+static void add3(uint64_t *x, u128 v) {
+    u128 c = (u128)x[0] + (uint64_t)v;
+    x[0] = (uint64_t)c;
+    c = (c >> 64) + x[1] + (uint64_t)(v >> 64);
+    x[1] = (uint64_t)c;
+    x[2] += (uint64_t)(c >> 64);
+}
+
+static pg_status grouped(pg_graph *g, const pg_array *a, const pg_array *b, pg_value **out) {
+    for (;;) {
+        size_t splits = g->st_split_entry + g->st_split_reduce;
+        size_t cap = 64, ng = 0, gcap = 16;
+        while (cap < 2 * a->n) cap *= 2;
+        u128 *hk = pgi_calloc(g, cap * sizeof(u128));
+        uint32_t *hv = pgi_alloc(g, cap * 4);
+        grp *G = pgi_alloc(g, gcap * sizeof *G);
+        int again = 0;
+        size_t ia = 0, ib = 0;
+        for (size_t i = 0; i < a->n && !again; i++) {  /* pass 1: each term in lowest terms, into its group */
+            pg_value *xa = ia < a->nx && a->xi[ia] == i ? a->xh[ia++] : NULL;
+            raw ta, tb;
+            elem_reduced(g, a, i, xa, &ta);
+            i128 num = ta.num;
+            u128 den = ta.den;
+            uint32_t e[AW];
+            int ne = ta.ne;
+            if (ne) memcpy(e, ta.e, (size_t)ne * 4);
+            if (b) {
+                pg_value *xb = ib < b->nx && b->xi[ib] == i ? b->xh[ib++] : NULL;
+                elem_reduced(g, b, i, xb, &tb);
+                uint32_t n[AW];
+                uint8_t wa[AW], wb[AW];
+                ne = merge(ta.e, ta.ne, tb.e, tb.ne, n, wa, wb);
+                for (int q = 0; q < ne; q++) e[q] = EP(n[q], wa[q] + wb[q]);
+                num = (i128)ta.num * tb.num;
+                den = (u128)ta.den * tb.den;
+                if (num && reduce_w(g, &num, &den, e, &ne) == R_RESTART) { again = 1; break; }
+            }
+            if (num == 0) continue;
+            size_t j = hsh64((uint64_t)den ^ (uint64_t)(den >> 64)) & (cap - 1);
+            while (hk[j] && hk[j] != den) j = (j + 1) & (cap - 1);
+            if (!hk[j]) {
+                if (ng == gcap) { gcap *= 2; G = pgi_realloc(g, G, gcap * sizeof *G); }
+                hk[j] = den;
+                hv[j] = (uint32_t)ng;
+                memset(&G[ng], 0, sizeof G[ng]);
+                G[ng].den = den;
+                G[ng].ne = ne;
+                if (ne) memcpy(G[ng].e, e, (size_t)ne * 4);
+                ng++;
+            }
+            grp *q = &G[hv[j]];
+            if (num > 0) add3(q->pos, (u128)num);
+            else add3(q->neg, (u128)0 - (u128)num);
+        }
+        pgi_free(g, hk);
+        pgi_free(g, hv);
+        if (!again && g->st_split_entry + g->st_split_reduce != splits) again = 1;  /* a group's edges went stale */
+        if (again) { pgi_free(g, G); g->st_restarts++; continue; }
+        /* pass 2: L = each node at its largest weight over the nonzero groups (the scratch weights) */
+        vec32 t = {0};
+        size_t nz = 0;
+        for (size_t k = 0; k < ng; k++) {
+            if (!memcmp(G[k].pos, G[k].neg, sizeof G[k].pos)) continue;  /* the group sums to 0 */
+            G[nz++] = G[k];
+        }
+        for (size_t k = 0; k < nz; k++)
+            for (int q = 0; q < G[k].ne; q++) {
+                uint32_t id = EN(G[k].e[q]), w = EW(G[k].e[q]);
+                if (!g->wsa[id]) v32_push(g, &t, id);
+                if (w > g->wsa[id]) g->wsa[id] = (uint8_t)w;
+            }
+        if (t.n > 1) qsort(t.p, t.n, 4, cmp_u32);
+        /* pass 3: N = sum of each group times L / its denominator, exactly */
+        big *P = pgi_alloc(g, 3 * sizeof(big)), *M = P + 1, *C = P + 2;
+        P->n = M->n = 0;
+        int ovf = 0;
+        for (size_t k = 0; k < nz && !ovf; k++) {
+            uint64_t mag[3];
+            int neg = 0;
+            big x = {3, {G[k].pos[0], G[k].pos[1], G[k].pos[2]}}, y = {3, {G[k].neg[0], G[k].neg[1], G[k].neg[2]}};
+            while (x.n && !x.l[x.n - 1]) x.n--;
+            while (y.n && !y.l[y.n - 1]) y.n--;
+            if (big_cmp(&x, &y) < 0) { big z = y; big_sub(&z, &x); x = z; neg = 1; }
+            else big_sub(&x, &y);
+            for (int q = 0; q < 3; q++) mag[q] = q < x.n ? x.l[q] : 0;
+            C->n = 1;
+            C->l[0] = 1;
+            for (size_t u = 0; u < t.n && !ovf; u++) {  /* the cofactor L / den */
+                uint32_t id = t.p[u], wg = 0;
+                for (int q = 0; q < G[k].ne; q++)
+                    if (EN(G[k].e[q]) == id) wg = EW(G[k].e[q]);
+                for (uint32_t w = wg; w < g->wsa[id] && !ovf; w++) ovf = !big_mul_small(C, g->nh[id].v);
+            }
+            if (!ovf) ovf = !big_addmul(neg ? M : P, C, mag, 3);
+        }
+        int neg = 0;
+        if (!ovf) {
+            if (big_cmp(P, M) < 0) { big_sub(M, P); *P = *M; neg = 1; }
+            else big_sub(P, M);
+        }
+        /* pass 4: reduce N / L against L's nodes */
+        uint32_t re[AW];
+        int rne = 0;
+        for (size_t u = 0; u < t.n && !ovf && !again && P->n; u++) {
+            uint32_t id = t.p[u], w = g->wsa[id], c = 0;
+            const node_hot *N = &g->nh[id];
+            while (c < w && big_mod(P, N->v) == 0) { big_div(P, N->v); c++; }
+            if (c < w && N->multi) {  /* the g < N case: the atoms that divide N, by how much */
+                const node_cold *Cn = &g->nc[id];
+                uint64_t ap[MAXE];
+                uint32_t amt[MAXE], any = 0;
+                for (int q = 0; q < Cn->na; q++) {
+                    big z = *P;
+                    uint32_t tq = 0, capq = (w - c) * Cn->at[q].e;
+                    while (tq < capq && big_mod(&z, Cn->at[q].p) == 0) { big_div(&z, Cn->at[q].p); tq++; }
+                    ap[q] = Cn->at[q].p;
+                    amt[q] = tq;
+                    any |= tq;
+                }
+                if (any) { pgi_split_amounts(g, id, ap, amt, Cn->na); again = 1; break; }
+            }
+            if (c < w) {
+                if (rne == AW) ovf = 1;
+                else re[rne++] = EP(id, w - c);
+            }
+        }
+        for (size_t u = 0; u < t.n; u++) g->wsa[t.p[u]] = 0;
+        pgi_free(g, t.p);
+        pgi_free(g, G);
+        if (again) { pgi_free(g, P); g->st_restarts++; continue; }
+        pg_status st = PG_OK;
+        uint64_t den = 1;
+        if (!ovf && !P->n) {
+            *out = pgi_holder_new(g, 0, 1, NULL, 0, HK_VALUE);
+        } else {
+            if (ovf || P->n > 1 || P->l[0] > NUM_LIM - (neg ? 0 : 1)) st = PG_OVERFLOW;
+            for (int q = 0; q < rne && st == PG_OK; q++)
+                if (!mulpow(&den, g->nh[EN(re[q])].v, (int)EW(re[q])) || den >= DEN_LIM) st = PG_OVERFLOW;
+            if (st == PG_OK)
+                *out = pgi_holder_new(g, neg ? (int64_t)(0 - P->l[0]) : (int64_t)P->l[0], den, re, rne, HK_VALUE);
+        }
+        pgi_free(g, P);
+        return st;
+    }
+}
+
 pg_status pg_array_sum(pg_graph *g, const pg_array *a, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !a || !out) return PG_INVALID;
     wacc W;
     i128 s = 0;
@@ -831,11 +1059,13 @@ pg_status pg_array_sum(pg_graph *g, const pg_array *a, pg_value **out) {
     }
     if (st == PG_OK) st = wfinish(g, &W, out);
     pgi_unpin(g, W.e);
+    if (st == PG_OVERFLOW) st = grouped(g, a, NULL, out);  /* decide by the multiset of terms alone (I5) */
     DEBUG_AUDIT(g);
     return st;
 }
 
 pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_value **out) {
+    if (out) *out = NULL;
     if (!g || !a || !b || !out || a->n != b->n) return PG_INVALID;
     wacc W = {0, 1, 0, {0}};
     uint32_t pe[AW];
@@ -902,6 +1132,7 @@ pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_val
     if (st == PG_OK) st = wfinish(g, &W, out);
     pgi_unpin(g, pe);
     pgi_unpin(g, W.e);
+    if (st == PG_OVERFLOW) st = grouped(g, a, b, out);  /* decide by the multiset of terms alone (I5) */
     DEBUG_AUDIT(g);
     return st;
 }

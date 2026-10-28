@@ -83,13 +83,13 @@ typedef struct { int64_t num; uint64_t den; int ne; uint32_t e[AW]; } raw;      
 
 typedef struct { uint32_t *e; int *ne; } pin_t;
 
-typedef struct {       /* the factor cache: one denominator's primes (direct mapped by a hash of d; at most 7) */
+typedef struct {       /* the factor cache: one denominator's primes (at most 7) */
     uint64_t d;
     uint8_t na;
     uint8_t e[7];
     uint64_t p[7];
 } dcache_t;
-#define DCACHE_SIZE 4096  /* 288 KiB, allocated with the first denominator that has an odd part above 2^16 */
+#define DCACHE_SETS 4096  /* 2-way sets: 8,192 slots, 576 KiB, allocated with the first odd part above 2^16 */
 
 struct pg_array {
     size_t n;
@@ -126,7 +126,8 @@ struct pg_graph {
     uint64_t *dbk;
     uint32_t *dbv;
     size_t dbcap, dbcnt;
-    uint64_t hot[16];              /* the 16 most recently seen large primes (a shortcut only) */
+    uint64_t hot[16], hinv[16], hlim[16];  /* the 16 most recently seen large primes, most recent first (a shortcut
+                                             * only), with their exact-division constants */
     int nhot, hotpos;
     dcache_t *dc;                  /* factor cache (allocated on first use) */
     /* pins: local edge lists patched by every split */
@@ -183,6 +184,8 @@ pg_value *pgi_den_enter(pg_graph *g, uint64_t d);
  * cancellation and returns 1 (the caller restarts); 0 if no atom of id divides m. */
 int pgi_partial(pg_graph *g, uint32_t id, u128 m, uint32_t wr);
 /* pgi_partial for every node with several atoms among the edges e (weight: the power left), against m */
+/* split node id by the ratio classes of the amounts (ap[j], amt[j]) cancelled from its atoms (a reduction's split) */
+void pgi_split_amounts(pg_graph *g, uint32_t id, const uint64_t *ap, const uint32_t *amt, int na);
 int pgi_partial_edges(pg_graph *g, const uint32_t *e, int ne, u128 m);
 /* a product's form: nodes n[0..k) with the powers left of a (wa, against ub) and of b (wb, against ua) */
 int pgi_partial_mul(pg_graph *g, const uint32_t *n, int k, const uint8_t *wa, const uint8_t *wb, uint64_t ua,

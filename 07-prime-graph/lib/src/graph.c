@@ -466,6 +466,10 @@ static void split_classes(pg_graph *g, uint32_t id, const uint64_t *ap, const ui
     }
 }
 
+void pgi_split_amounts(pg_graph *g, uint32_t id, const uint64_t *ap, const uint32_t *amt, int na) {
+    split_classes(g, id, ap, amt, na, 1);
+}
+
 int pgi_partial(pg_graph *g, uint32_t id, u128 m, uint32_t wr) {
     const node_cold *C = &g->nc[id];
     uint64_t r = (m >> 64) ? (uint64_t)(m % g->nh[id].v) : (uint64_t)m;  /* p | m iff p | m mod N, for p | N */
@@ -508,12 +512,19 @@ __attribute__((noinline)) int pgi_partial_mul(pg_graph *g, const uint32_t *n, in
 
 /* ------------------------------------------------------------------------------------------------- entry */
 
-static void hot_add(pg_graph *g, uint64_t p) {
-    for (int j = 0; j < g->nhot; j++)
-        if (g->hot[j] == p) return;
-    g->hot[g->hotpos] = p;
-    g->hotpos = (g->hotpos + 1) & 15;
-    if (g->nhot < 16) g->nhot++;
+/* the bounded list of the 16 most recently seen large primes (most recent first): p moves to the front */
+static void hot_see(pg_graph *g, uint64_t p) {
+    if (p < 65536) return;
+    int j = 0;
+    while (j < g->nhot && g->hot[j] != p) j++;
+    if (j == g->nhot && g->nhot < 16) g->nhot++;
+    if (j == 16) j = 15;  /* not present and full: the least recent drops out */
+    memmove(g->hot + 1, g->hot, (size_t)j * sizeof *g->hot);
+    memmove(g->hinv + 1, g->hinv, (size_t)j * sizeof *g->hinv);
+    memmove(g->hlim + 1, g->hlim, (size_t)j * sizeof *g->hlim);
+    g->hot[0] = p;
+    g->hinv[0] = pgi_inv64(p);  /* p is odd */
+    g->hlim[0] = UINT64_MAX / p;
 }
 
 /* steps 1 and 2: d's atoms (primes and exponents) */
@@ -523,49 +534,48 @@ static int den_atoms(pg_graph *g, uint64_t d, uint64_t *P, uint32_t *E) {
     if (s) { P[k] = 2; E[k++] = (uint32_t)s; }
     uint64_t n = d >> s;
     if (n == 1) return k;
-    dcache_t *ce = NULL;
-    if (n >= 65536) {  /* the factor cache: one slot per hash, so its cost does not grow with the graph */
-        if (!g->dc) g->dc = pgi_calloc(g, DCACHE_SIZE * sizeof *g->dc);
-        ce = &g->dc[hsh(d) & (DCACHE_SIZE - 1)];
-        if (ce->d == d) {
-            g->st_dc_hit++;
-            for (int j = 0; j < ce->na; j++) { P[j] = ce->p[j]; E[j] = ce->e[j]; }
-            return ce->na;
-        }
+    dcache_t *set = NULL;
+    if (n >= 65536) {  /* the factor cache: 2-way sets, so its cost and size do not grow with the graph */
+        if (!g->dc) g->dc = pgi_calloc(g, 2 * DCACHE_SETS * sizeof *g->dc);
+        set = &g->dc[2 * (hsh(d) & (DCACHE_SETS - 1))];
+        for (int w = 0; w < 2; w++)
+            if (set[w].d == d) {
+                g->st_dc_hit++;
+                if (w) { dcache_t t = set[0]; set[0] = set[1]; set[1] = t; }  /* most recent in way 0 */
+                for (int j = 0; j < set[0].na; j++) { P[j] = set[0].p[j]; E[j] = set[0].e[j]; hot_see(g, P[j]); }
+                return set[0].na;
+            }
         g->st_dc_miss++;
     }
     n = pgi_trial(n, P, E, &k, &stopped);  /* step 1 */
     if (n > 1) {                            /* step 2: the leftover */
-        if (pgi_dict_get(g, n) != NONE) { P[k] = n; E[k++] = 1; }
-        else if (stopped || n < (1ull << 32)) {
-            P[k] = n; E[k++] = 1;
-            if (n >= 65536) hot_add(g, n);
-        } else {
+        if (pgi_dict_get(g, n) != NONE || stopped || n < (1ull << 32)) { P[k] = n; E[k++] = 1; }
+        else {
             for (int j = 0; j < g->nhot && n > 1; j++) {  /* the bounded list of recent large primes */
-                uint64_t h = g->hot[j];
-                if (n % h) continue;
+                uint64_t q = n * g->hinv[j];
+                if (q > g->hlim[j]) continue;  /* exact-division test: multiply, compare */
                 uint32_t e = 0;
-                while (n % h == 0) { n /= h; e++; }
-                P[k] = h; E[k++] = e;
+                do { n = q; e++; q = n * g->hinv[j]; } while (q <= g->hlim[j]);
+                P[k] = g->hot[j]; E[k++] = e;
             }
             if (n > 1) {
-                if (pgi_dict_get(g, n) != NONE || n < (1ull << 32) || pgi_is_prime(n)) {
-                    P[k] = n; E[k++] = 1;
-                    hot_add(g, n);
-                } else {  /* Miller-Rabin said composite: rho */
+                if (pgi_dict_get(g, n) != NONE || n < (1ull << 32) || pgi_is_prime(n)) { P[k] = n; E[k++] = 1; }
+                else {  /* Miller-Rabin said composite: rho */
                     uint64_t fp[64];
                     uint32_t fe[64];
                     g->st_rho++;
                     int nf = pgi_factor_rest(n, fp, fe);
-                    for (int j = 0; j < nf; j++) { P[k] = fp[j]; E[k++] = fe[j]; hot_add(g, fp[j]); }
+                    for (int j = 0; j < nf; j++) { P[k] = fp[j]; E[k++] = fe[j]; }
                 }
             }
         }
     }
-    if (ce && k <= 7) {
-        ce->d = d;
-        ce->na = (uint8_t)k;
-        for (int j = 0; j < k; j++) { ce->p[j] = P[j]; ce->e[j] = (uint8_t)E[j]; }
+    for (int j = 0; j < k; j++) hot_see(g, P[j]);  /* every large prime of d has now been seen */
+    if (set && k <= 7) {
+        set[1] = set[0];
+        set[0].d = d;
+        set[0].na = (uint8_t)k;
+        for (int j = 0; j < k; j++) { set[0].p[j] = P[j]; set[0].e[j] = (uint8_t)E[j]; }
     }
     return k;
 }

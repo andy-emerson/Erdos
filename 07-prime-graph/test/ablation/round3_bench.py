@@ -1,17 +1,20 @@
 """Round 3 of the prime-graph ablation: V3 + V4 against V3 (Q1), and three speed-ups of the dictionary entry (Q2).
 
-    python3 round3_bench.py --rule      # print the decision rule (fixed before any measurement) and exit
+    python3 round3_bench.py --rule      # print the decision rule and exit
+    python3 round3_bench.py --write-rule  # pre-register it: write research/round3-rule.md (dated); once, before the run
     python3 round3_bench.py --quick     # a smoke run on small sizes, written to build/quick-r3/ (not results/)
-    python3 round3_bench.py             # the measured run: writes results/round3.md and results/round3.json
+    python3 round3_bench.py             # the measured run (refuses to start unless research/round3-rule.md holds
+                                        # the same rule): writes results/round3.md and results/round3.json
 
 Rows (all on V3's array layout; each runs both rules for D, lcm and freq, on the array jobs; single-value jobs have
-no D, so one plain sub-row):
+no D, so one plain sub-row; the Q2-only workloads N* and P* run the lcm rule only and no R1):
 
     R0  V3 with the old entry (gcd refinement against every live node, then pg_factor): control for Q1, reference for Q2
     R1  V3 + V4 (V34: deferred reduction)
     D0  V3 + V6's seen-prime dictionary entry, as it stands: control for Q2
-    D1  D0 + a faster small-prime test (blocks of 8 exact-division tests, one multiply and one compare per prime)
-    D2  D0 + no Miller-Rabin or rho at entry: large leftovers stay unfactored nodes until a timed idle pass
+    D1  D0 + the small-prime table in branch-free blocks of 8 (D0 already used the multiply-by-inverse test)
+    D2  D0 + no rho at entry: composite large leftovers are appended (deduplicated) and split by a batch gcd, then
+        factored, in a timed idle pass
     D3  D0 + a product check of large leftovers against the known large primes (one remainder, one gcd)
 
 plus the null control: R0 run again as its own row (the same binary), to size the noise band.
@@ -57,17 +60,23 @@ SAMPLE = ab.SAMPLE
 BOOT = 10_000      # bootstrap resamples
 BAND = 0.05        # the fixed band: +-5%
 
-BINARIES = {"r0": "VAR_V3", "r1": "VAR_V34", "d0": "VAR_D0", "d1": "VAR_D1", "d2": "VAR_D2", "d3": "VAR_D3"}
+BINARIES = {"r0": ("VAR_V3", []), "r1": ("VAR_V34", []), "d0": ("VAR_D0", []), "d1": ("VAR_D1", []),
+            "d2": ("VAR_D2", ["-lgmp"]), "d3": ("VAR_D3", [])}  # name: (VARIANT, link flags); D2's batch gcd uses GMP
+RULE_FILE = HERE.parent.parent / "research" / "round3-rule.md"
+REPS = 2
 ROW_DESC = {
     "r0": "R0 = V3 with the old entry (V0' entry: each new denominator gcd-refined against every live node, then "
           "pg_factor on every node; no dictionary).  Control for Q1, reference for Q2",
     "r1": "R1 = V3 + V4 (round 2's V34: exceptions entered unreduced, V4's deferred ops on the graph path, one timed "
           "final reduction)",
     "d0": "D0 = V3 + V6's seen-prime dictionary as the entry (round 2's V6 entry code, unchanged).  Control for Q2",
-    "d1": "D1 = D0 + a faster small-prime test: blocks of 8 branch-free exact-division tests (one multiply, one "
-          "compare per prime; vectorised), the adaptive stop once per block; no second pass over the table before rho",
-    "d2": "D2 = D0 + no Miller-Rabin or rho at entry: a large leftover is a leftover node, gcd-refined against the "
-          "other leftover nodes; leftovers are factored in a timed idle pass (reported apart, included in total)",
+    "d1": "D1 = D0 with the small-prime table in branch-free blocks of 8: the same multiply-by-inverse test per prime "
+          "(D0 already uses it), but 8 primes per block without branches (vectorised), the adaptive stop once per "
+          "block instead of a multiply and a branch per prime; everything else (pg_factor before rho) as D0",
+    "d2": "D2 = D0 + no rho at entry: Miller-Rabin stays; a composite large leftover is only appended (deduplicated "
+          "by hash); the timed idle pass (reported apart, included in total) runs a batch gcd over the leftovers "
+          "(product and remainder tree), divides pieces still composite by the known large primes, sends only what is "
+          "still composite to rho, and merges their primes through the dictionary",
     "d3": "D3 = D0 + a product check of large leftovers: a product forest of the known large primes; one remainder "
           "of the product and one gcd per new leftover, the forest searched only on a hit (replaces D0's exact "
           "division by every known large prime)",
@@ -97,6 +106,7 @@ def row_name(base, rule, null=False):
 
 ARRAY_ROWS = rows_for("lcm") + rows_for("freq")
 SINGLE_ROWS = rows_for("plain")
+Q2_ROWS = [v for v in rows_for("lcm") if not v.startswith("r1")]  # N*, P*: the lcm rule only, no R1
 
 
 def row_env(v):
@@ -111,39 +121,66 @@ def binary(base):
 def build(force=False):
     BUILD.mkdir(parents=True, exist_ok=True)
     newest = max(d.stat().st_mtime for d in DEPS)
-    for name, macro in BINARIES.items():
+    for name, (macro, libs) in BINARIES.items():
         b = binary(name)
         if force or not b.exists() or b.stat().st_mtime < newest:
             subprocess.run(["clang", *CFLAGS, f"-DVARIANT={macro}", "-o", str(b), str(HERE / "abl_bench.c"),
-                            str(TEST / "pg.c")], check=True)
+                            str(TEST / "pg.c"), *libs], check=True)
 
 
 # ---------------------------------------------------------------------------------------------------- the rule
 
 RULE = f"""\
-**Decision rule (fixed before the run; the harness writes it into results/round3.md before the first measurement).**
+**Decision rule (pre-registered in research/round3-rule.md before the measured run; the harness refuses to start a
+measured run unless that file holds this text, and writes it into results/round3.md before the first measurement).**
 
 1. Each job runs {{rounds}} interleaved rounds.  In every round each row of the job runs once, in an order rotated per
    round, so the rows of one round are paired.  A row's time in a round is its **total** (entry, idle pass, op and
    final reduction; the minimum over the invocation's warm reps).
 2. A comparison "X against Y" is the ratio **T(Y) / T(X)**, where T is the median of the row's per-round totals.
-   Above 1, X is faster.  Its 95% interval is the 2.5th-97.5th percentile of the same ratio over {{boot}} bootstrap
-   resamples of the rounds (rounds drawn with replacement, the same draw for X and Y, so the pairing is kept; seeded).
+   Above 1, X is faster.  Its 95% interval [lo, hi] is the 2.5th-97.5th percentile of the same ratio over {{boot}}
+   bootstrap resamples of the rounds (rounds drawn with replacement, the same draw for X and Y, so the pairing is
+   kept; seeded).
 3. **Null control:** R0 against its own second copy (the same binary run as another row) on the same job and rule.
-   Its interval sizes the noise: the job's **null spread** is max(1 - lo, hi - 1) over the null interval [lo, hi].
+   Its interval sizes the noise: the job's **null spread** is max(1 - lo, hi - 1) over the null interval.
 4. **Band:** h = max({BAND:.0%}, null spread) for that job and rule; the band is [1 - h, 1 + h].
-5. **Verdict per job:** **better** if the whole interval lies above 1 + h; **worse** if it lies below 1 - h; otherwise
-   **tie** (the interval overlaps the band).  A comparison is not judged (**n/a**) if either row failed a check, was
-   unable, or the null control is missing.
-6. **Q1:** R1 against R0, per job and rule.  **Q2:** D1, D2, D3 each against D0 ("beats D0" = better), and D0-D3
-   against R0 ("parity with R0" = tie or better).  Array jobs are judged under each rule (lcm, freq) separately;
-   single-value jobs have one plain sub-row.  No other comparison carries a verdict; the tables show the rest for
-   information.
+5. **Per job and rule** (array jobs: lcm and freq separately; single-value jobs: one plain sub-row; the Q2-only
+   workloads N* and P*: lcm only):
+   - **better** if lo > 1 + h; **worse** if hi < 1 - h; otherwise **tie** (the interval overlaps the band);
+   - **parity** (X at parity with Y, or faster) if lo >= 1 - h;
+   - **n/a** (not judged) if either row failed a check or was unable, or the null control is missing.
+6. **Aims.** Each workload is aimed at Q1 (M*, K8-*, U*), at Q2 (N*, P*), or at neither (the existing W* and S*).
+7. **Q1, the overall answer** (R1 against R0, over the job-rule pairs of the Q1-aimed workloads): **better** if R1 is
+   better on at least one and worse on none; **worse** if it is worse on at least one and better on none; otherwise
+   **mixed** (including all ties).
+8. **Q2, the overall answers, for each of D1, D2, D3:**
+   (a) **against D0** (Dk against D0 over the job-rule pairs of the Q2-aimed workloads), by the rule of 7:
+       **better**, **worse** or **mixed**;
+   (b) **parity with R0**: **yes** if Dk is at parity with R0 (5) on every judged job-rule pair of the workloads not
+       aimed at Q2 (the existing ones and the Q1-aimed ones), else **no**, with the pairs that fail listed.
+   n/a pairs are left out and counted.  No other comparison carries a verdict; the tables show the rest (D0 against
+   R0, all workloads in every comparison) for information.
 """
 
 
 def rule_text(rounds, boot=BOOT):
     return RULE.replace("{rounds}", str(rounds)).replace("{boot}", f"{boot:,}")
+
+
+def rule_file_text(rounds, boot, reps, seed, date):
+    """research/round3-rule.md: the rule and the run plan, dated, written once before the measured run."""
+    W = all_workloads(False)
+    plan_lines = [f"- {wl} ({w['aim']}): {', '.join(w['jobs'])}; n = {w['n']:,}"
+                  + (f"; {w['reps']} rep" if w.get("reps") else "") for wl, w in W.items() if w["run"]]
+    return "\n".join([
+        "# Round three: pre-registered decision rule", "",
+        f"{date} · written by `test/ablation/round3_bench.py --write-rule` before any measured run of round three.  "
+        "The measured run refuses to start unless this file contains the rule below verbatim.", "",
+        rule_text(rounds, boot), "",
+        "## Run plan", "",
+        f"{rounds} rounds, {reps} reps per invocation unless noted, seed {seed}, {boot:,} bootstrap resamples.  Rows: "
+        "R0 and its null copy, R1, D0-D3, under the lcm and freq rules on array jobs (single-value jobs: one plain "
+        "sub-row; Q2-aimed workloads: lcm only, no R1).  Workloads (aim): ", ""] + plan_lines + [""])
 
 
 # ---------------------------------------------------------------------------------------------------- workloads
@@ -277,10 +314,12 @@ NEW_WORKLOADS = {  # name: (aim, description, n, generator, jobs, extra)
 
 def all_workloads(quick):
     """Every workload in generation order (the order fixes the data): ablation_bench's W1-W10 (W5 is generated, to
-    keep the generator in step with round 2, but not run), round2_bench's S8-S30d, then NEW_WORKLOADS."""
+    keep the generator in step with round 2, but not run; W4 runs fma only), round2_bench's S8-S30d,
+    then NEW_WORKLOADS."""
     W = {}
     for wl, w in ab.workloads(quick).items():
         W[wl] = dict(w, aim="existing", single=False, run=wl != "W5")
+    W["W4"]["jobs"] = ["fma"]  # W4 sum is unable for every row (its common denominator overflows 64 bits): dropped
     for wl, w in r2.sizes(quick).items():
         W[wl] = dict(w, aim="existing", single=True, run=True)
     s = (lambda n: max(n // 50, 1000)) if quick else (lambda n: n)
@@ -299,7 +338,7 @@ def plan(quick):
     for wl, w in all_workloads(quick).items():
         if not w["run"]:
             continue
-        rows = SINGLE_ROWS if w["single"] else ARRAY_ROWS
+        rows = SINGLE_ROWS if w["single"] else (Q2_ROWS if w["aim"] == "Q2" else ARRAY_ROWS)
         out.append((wl, w, {job: list(rows) for job in w["jobs"]}))
     return out
 
@@ -344,11 +383,55 @@ def ratio_ci(tx, ty, rng, boot=BOOT):
 
 
 def verdict(lo, hi, h):
+    """RULE 5: one job-rule pair: better / worse / tie."""
     if lo > 1 + h:
         return "better"
     if hi < 1 - h:
         return "worse"
     return "tie"
+
+
+def parity(lo, h):
+    """RULE 5: X at parity with Y (or faster): the interval's lower bound is at least 1 - h."""
+    return lo >= 1 - h
+
+
+def overall(verdicts):
+    """RULE 7 over a set of per-pair verdicts (n/a left out): better / worse / mixed; 'not judged' if none."""
+    v = [x for x in verdicts if x in ("better", "worse", "tie")]
+    if not v:
+        return "not judged"
+    if "better" in v and "worse" not in v:
+        return "better"
+    if "worse" in v and "better" not in v:
+        return "worse"
+    return "mixed"
+
+
+def answers(res, an):
+    """RULE 7 and 8: the overall answers to Q1 and Q2, with the pairs behind them."""
+    W = res["workloads"]
+    aim = lambda a: W[a["wl"]]["aim"]
+    pairs = lambda key, cond: [(f"{a['wl']} {a['job']} {a['rule']}", a["cmp"][key]) for a in an.values()
+                               if cond(aim(a)) and key in a["cmp"] and a["cmp"][key]["verdict"] != "not run"]
+    out = {}
+    q1 = pairs("r1/r0", lambda x: x == "Q1")
+    out["Q1"] = {"answer": overall(c["verdict"] for _, c in q1), "n": len(q1),
+                 "na": sum(c["verdict"] == "n/a" for _, c in q1),
+                 "better": [k for k, c in q1 if c["verdict"] == "better"],
+                 "worse": [k for k, c in q1 if c["verdict"] == "worse"]}
+    for d in ("d1", "d2", "d3"):
+        a2 = pairs(f"{d}/d0", lambda x: x == "Q2")
+        b2 = pairs(f"{d}/r0", lambda x: x != "Q2")
+        judged = [(k, c) for k, c in b2 if c["verdict"] != "n/a"]
+        fails = [k for k, c in judged if not c["parity"]]
+        out[d] = {"vs_d0": overall(c["verdict"] for _, c in a2), "vs_d0_n": len(a2),
+                  "vs_d0_na": sum(c["verdict"] == "n/a" for _, c in a2),
+                  "vs_d0_better": [k for k, c in a2 if c["verdict"] == "better"],
+                  "vs_d0_worse": [k for k, c in a2 if c["verdict"] == "worse"],
+                  "parity_r0": ("yes" if not fails else "no") if judged else "not judged",
+                  "parity_n": len(judged), "parity_na": len(b2) - len(judged), "parity_fails": fails}
+    return out
 
 
 def ok_row(cr):
@@ -396,6 +479,8 @@ def analyse(res, seed, boot=BOOT):
                         c["verdict"] = verdict(c["lo"], c["hi"], a["h"]) if a["h"] is not None else "n/a"
                         if a["h"] is None:
                             c["why"] = "no null control"
+                        else:
+                            c["parity"] = parity(c["lo"], a["h"])
                     a["cmp"][f"{xb}/{yb}"] = c
                 out[key] = a
     return out
@@ -425,7 +510,8 @@ def tally(an, cmpkey, parity=False):
         t[c["verdict"] if c["verdict"] in t else "n/a"] += 1
     s = f"better {t['better']}, tie {t['tie']}, worse {t['worse']}" + (f", not judged {t['n/a']}" if t["n/a"] else "")
     if parity:
-        s += f" (parity reached on {t['better'] + t['tie']} of {t['better'] + t['tie'] + t['worse']})"
+        par = sum(1 for a in an.values() if a["cmp"].get(cmpkey, {}).get("parity"))
+        s += f" (parity, lo >= 1 - h, on {par} of {t['better'] + t['tie'] + t['worse']})"
     return s
 
 
@@ -444,8 +530,8 @@ def structure(v, last):
     s += (f"; {last.get('v6_nodes', 0):,} nodes ({last.get('v6_multi', 0):,} multi-prime); splits "
           f"{last.get('v6_entry_splits', 0):,} entry / {last.get('v6_op_splits', 0):,} ops")
     if base == "d2":
-        s += (f"; {last.get('d2_leftovers', 0):,} leftovers, {last.get('d2_gcds', 0):,} gcds, "
-              f"{last.get('d2_idle_factored', 0):,} factored idle")
+        s += (f"; {last.get('d2_leftovers', 0):,} leftovers ({last.get('d2_shared', 0):,} shared), "
+              f"{last.get('d2_rho', 0):,} pieces to rho")
     if base == "d3":
         s += f"; {last.get('d3_checks', 0):,} checks, {last.get('d3_hits', 0):,} hits, {last.get('d3_leaves', 0):,} leaves"
     return s
@@ -461,8 +547,25 @@ def med_stat(cr, k):
     return statistics.median(v) if v else None
 
 
+def answers_md(ans):
+    q = ans["Q1"]
+    lst = lambda xs: ", ".join(xs) if xs else "none"
+    L = ["## Answers (rule 7 and 8)", "",
+         f"**Q1: is R1 better than R0?**  **{q['answer']}** over {q['n']} job-rule pairs of the Q1-aimed workloads"
+         + (f" ({q['na']} not judged)" if q["na"] else "") + f".  Better on: {lst(q['better'])}.  Worse on: "
+         f"{lst(q['worse'])}.", "", "**Q2:**", "",
+         "| row | (a) against D0, Q2-aimed workloads | better on | worse on | (b) parity with R0, other workloads | "
+         "pairs without parity |", "|---|---|---|---|---|---|"]
+    for d in ("d1", "d2", "d3"):
+        x = ans[d]
+        L.append(f"| {d.upper()} | **{x['vs_d0']}** ({x['vs_d0_n']} pairs" + (f", {x['vs_d0_na']} n/a" if x["vs_d0_na"] else "")
+                 + f") | {lst(x['vs_d0_better'])} | {lst(x['vs_d0_worse'])} | **{x['parity_r0']}** ({x['parity_n']} "
+                 "judged" + (f", {x['parity_na']} n/a" if x["parity_na"] else "") + f") | {lst(x['parity_fails'])} |")
+    return L + [""]
+
+
 def summary_md(res, an):
-    L = []
+    L = answers_md(answers(res, an))
     nulls = [a["null"]["point"] for a in an.values() if a.get("null")]
     spreads = [a["null"]["spread"] for a in an.values() if a.get("null")]
     L += ["## Noise", ""]
@@ -476,7 +579,8 @@ def summary_md(res, an):
     # Q1
     L += ["## Q1: is R1 (V3 + V4) better than R0 (V3)?", "",
           "R0 / R1 on total time (above 1, R1 is faster), its 95% interval, the band half-width h and the verdict.", "",
-          f"**Tally:** {tally(an, 'r1/r0')}.", "",
+          f"**Per-pair counts, all workloads (information; the answer above uses the Q1-aimed ones):** "
+          f"{tally(an, 'r1/r0')}.", "",
           "| job | rule | aim | R0 / R1 [95%] | h | verdict |", "|---|---|---|---|---:|---|"]
     W = res["workloads"]
     for k, a in an.items():
@@ -486,8 +590,9 @@ def summary_md(res, an):
     # Q2
     L += ["", "## Q2: do D1-D3 beat D0, and do they reach parity with R0?", "",
           "Left: D0 / Dk on total time (above 1, Dk is faster than D0).  Right: R0 / Dk (above 1, Dk is faster than "
-          "R0; parity = tie or better).  Each cell: the ratio [95% interval], verdict.", "",
-          f"**Beats D0:** D1 {tally(an, 'd1/d0')}; D2 {tally(an, 'd2/d0')}; D3 {tally(an, 'd3/d0')}.", "",
+          "R0; parity = lo >= 1 - h, marked when the verdict is a tie).  Each cell: the ratio [95% interval], verdict.", "",
+          "Per-pair counts over all workloads, for information (the answers above use the aimed subsets).", "",
+          f"**Against D0:** D1 {tally(an, 'd1/d0')}; D2 {tally(an, 'd2/d0')}; D3 {tally(an, 'd3/d0')}.", "",
           f"**Against R0:** D0 {tally(an, 'd0/r0', True)}; D1 {tally(an, 'd1/r0', True)}; "
           f"D2 {tally(an, 'd2/r0', True)}; D3 {tally(an, 'd3/r0', True)}.", "",
           "| job | rule | aim | h | D0 / D1 | D0 / D2 | D0 / D3 | R0 / D0 | R0 / D1 | R0 / D2 | R0 / D3 |",
@@ -496,7 +601,8 @@ def summary_md(res, an):
         cells = []
         for key in ("d1/d0", "d2/d0", "d3/d0", "d0/r0", "d1/r0", "d2/r0", "d3/r0"):
             c = a["cmp"][key]
-            cells.append(fmt_ci(c) + ("" if "point" not in c else f" {c['verdict']}"))
+            cells.append(fmt_ci(c) + ("" if "point" not in c else f" {c['verdict']}")
+                         + (" (parity)" if key.endswith("/r0") and c.get("parity") and c["verdict"] == "tie" else ""))
         L.append(f"| {a['wl']} {a['job']} | {a['rule']} | {W[a['wl']]['aim']} | "
                  f"{fmt_h(a)} | " + " | ".join(cells) + " |")
     # entry breakdown
@@ -506,7 +612,7 @@ def summary_md(res, an):
           "decomp**).  **dict** is the dictionary passes, **fill** the rest of entry (D rows).  For array jobs the lcm "
           "rule's rows are shown (entry does not depend on the rule except through V3's choice of D, in the fill).", "",
           "| job | R0 entry | R0 decomp | D0 entry | D1 entry | D2 entry | D2 idle | D3 entry | D0 dict | D1 dict | "
-          "D2 dict | D3 dict | D0 / D2 entry (no idle) | nodes R0 / D0 | D2 leftovers / gcds | D3 checks / hits |",
+          "D2 dict | D3 dict | D0 / D2 entry (no idle) | nodes R0 / D0 | D2 leftovers / shared / rho | D3 checks / hits |",
           "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|"]
     for wl, w in W.items():
         for job, jr in w["jobs"].items():
@@ -522,7 +628,7 @@ def summary_md(res, an):
                      f"{d('d1', 'entry')} | {d('d2', 'entry')} | {d('d2', 'idle')} | {d('d3', 'entry')} | {dm('d0')} | "
                      f"{dm('d1')} | {dm('d2')} | {dm('d3')} | {med(R['d0'], 'entry') / max(med(R['d2'], 'entry'), 1):.2f} | "
                      f"{R['r0']['rounds'][-1].get('nodes', 0):,} / {R['d0']['rounds'][-1].get('v6_nodes', 0):,} | "
-                     f"{l2.get('d2_leftovers', 0):,} / {l2.get('d2_gcds', 0):,} | "
+                     f"{l2.get('d2_leftovers', 0):,} / {l2.get('d2_shared', 0):,} / {l2.get('d2_rho', 0):,} | "
                      f"{l3.get('d3_checks', 0):,} / {l3.get('d3_hits', 0):,} |")
     # audits
     au = res.get("audits") or {}
@@ -550,7 +656,8 @@ def report_md(res, cfg, an):
          f"{cfg['rounds']} interleaved rounds; each invocation runs {cfg['reps']} warm reps (fewer where a workload "
          "says so: N10k and N30k run 1) and reports the minimum of each phase.  Tables give medians over rounds; "
          "times in ms.", "",
-         f"Rule fixed at {cfg.get('rule_fixed', '?')}; first measurement at {cfg.get('first_measurement', '?')}.", "",
+         f"Rule pre-registered in `research/round3-rule.md`; this run started at {cfg.get('rule_fixed', '?')} and "
+         f"measured first at {cfg.get('first_measurement', '?')}.", "",
          rule_text(cfg["rounds"], cfg["boot"]), "", "## Rows", ""] + [f"- **{b.upper()}**: {d}" for b, d in ROW_DESC.items()] + [
          "- **null**: R0 again, the same binary, as its own row (rows `r0-<rule>-null`).", "",
          "Array jobs run each row under both rules for V3's array denominator D (`-lcm`: the lcm of the array's "
@@ -600,8 +707,9 @@ def report_md(res, cfg, an):
 
 BIASES = [
     "R0 and R1 are round 2's V3 and V34 binaries' code (rebuilt from the same sources; checked with objdump to be the "
-    "same machine code, as are V0', V1, V2, V4, V5, V6 and the 32-bit builds).  The round-3 edits to shared files are "
-    "preprocessor switches (AB_DICT, AB_V3L, VARIANT >= VAR_D0) and the new file ab_d.c.",
+    "same machine code, as are V0', V1, V2, V4, V5, V6 and the 32-bit builds; test_round3.py checks it against "
+    "commit 97f4cde).  The round-3 edits to shared files are preprocessor switches (AB_DICT, AB_V3L, VARIANT >= "
+    "VAR_D0) and the new file ab_d.c.",
     "D0 is not round 2's V6: it is V6's entry on V3's layout.  V6's nodes need not be prime and splits kill nodes, so "
     "D0-D3 add one piece of glue V3 lacks: each array records the split count when its edges were last live, and an "
     "op re-expands its operands' edges (D and the exceptions) onto live nodes first if a split happened since; the "
@@ -609,26 +717,28 @@ BIASES = [
     "split, and it is in every D row alike.",
     "V3's dense elements are not reduced at entry, so V6's fill-time splits (a numerator sharing part of a multi-prime "
     "node) happen in D rows only for exceptions; dense elements meet such nodes first in the final reduction (timed).",
-    "D1's faster test is the table in blocks of 8 exact-division tests, branch-free (clang vectorises it with "
-    "-march=native), the stop checked once per block; a hit's exponent is then divided out as in D0.  D0 already "
-    "used the multiply-by-inverse test (one multiply and one compare) but added a multiply and a branch per prime "
-    "for the stop.  D1 also skips pg_factor's second pass over the table before rho (it calls a copy of pg.c's "
-    "Miller-Rabin/rho stage directly), which only matters for composite large leftovers.  GMP-style packing was "
-    "measured in isolation before this round (200,000 one-word denominators each, ns per denominator): full-table "
-    "scans of 40-bit numbers without small factors 10,793 (D0's loop), 2,583 (blocks), 2,573 (blocks + n mod "
-    "3*5*...*53 with the 15 tiny primes tested on the residue), 2,987 (32-bit lanes when n < 2^32); random 2..2^31: "
-    "1,019 / 256 / 264 / 262; random 1..1000: 17.2 / 16.4 / 18.3 / 17.4.  Packing did not help one-word "
+    "D1 changes one thing: the small-prime table is tested in branch-free blocks of 8 (clang vectorises the block "
+    "with -march=native), the adaptive stop checked once per block, one branch per block.  The per-prime test is "
+    "D0's (multiply by the inverse, compare); D0 adds a multiply and a branch per prime for the stop.  A composite "
+    "large leftover still goes to pg_factor, whose second pass over the table D1 keeps, as D0 does.  GMP-style "
+    "packing was measured in isolation before this round (200,000 one-word denominators each, ns per denominator): "
+    "full-table scans of 40-bit numbers without small factors 10,793 (D0's loop), 2,583 (blocks), 2,573 (blocks + "
+    "n mod 3*5*...*53 with the 15 tiny primes tested on the residue), 2,987 (32-bit lanes when n < 2^32); random "
+    "2..2^31: 1,019 / 256 / 264 / 262; random 1..1000: 17.2 / 16.4 / 18.3 / 17.4.  Packing did not help one-word "
     "denominators, so D1 does not pack.",
-    "D2 keeps large leftovers (2^32 or more after the table and the known large primes) as leftover nodes.  Kept "
-    "coprime without factoring, that costs one gcd against every live leftover node per new leftover, and one exact "
-    "division test against every leftover node per first-sighted large prime: linear in the leftovers, the cost "
-    "D3's product check would remove (the two are separate rows by design).  A leftover is its own node, not "
-    "grouped with the small primes first seen in the same denominator (D0 groups them), so D2's graph can be finer.",
-    "D2's idle pass runs in the driver's decomposition slot, between entry's pass 1 and pass 2: the fill and the "
-    "operations then see a factored graph, as in D0.  It factors every leftover node with Miller-Rabin, then "
-    "pg_factor (D0's step 4: the same code), so its total work is D0's plus the gcd refinement; what can move is "
-    "entry (without idle).  An idle pass deferred past the operations would need gcd-based hooked operations on "
-    "unfactored nodes, which no row has.",
+    "D2 drops only rho at entry: Miller-Rabin stays, so a prime leftover is entered as in D0, and only a composite "
+    "leftover is deferred, appended once per value (a hash), with no gcd at entry.  Its primes are unknown until "
+    "the idle pass, which runs in the driver's decomposition slot between entry's pass 1 and pass 2, so the fill and "
+    "the operations see a factored graph, as in D0.  The idle pass does a batch gcd over the deferred leftovers "
+    "(GMP: product tree, remainder tree modulo the squares; GMP's own allocations are not in the repr column), "
+    "splits each leftover that shares into gcd and cofactor, divides a piece still composite by the large primes "
+    "known so far (D0's step 1b loop; primes merged earlier in the pass count, so a leftover whose primes are all "
+    "shared, gcd = itself, is still resolved without rho once another leftover has revealed them), sends only what is "
+    "still composite to rho (pg_factor, D0's code: its table pass included), and merges each leftover's primes "
+    "through the dictionary with D0's rule, in entry order.  D2 saves rho where shared primes resolve a leftover; it "
+    "pays the batch gcd always.  "
+    "A leftover's primes are grouped among themselves, not with the small primes first seen in the same "
+    "denominator (D0 groups them), so D2's graph can be finer.",
     "D3's forest holds every large prime (2^16 or more) entered in the dictionary, the same set D0's step 1b loops "
     "over, as perfect subtrees of up to 64 leaves (roots merged as leaves arrive); the remainders use a precomputed "
     "reciprocal of the leftover (Moller-Granlund), and roots are combined by modular products.  D0's step 1b is "
@@ -637,22 +747,29 @@ BIASES = [
     "dictionary).",
     "Entry is timed from the raw inputs and includes the dictionary passes, the fill (V3's choice of D, scaling, "
     "exception entry), and for R0 the gcd scan and pg_factor.  Per-rep resets (node tables, the dictionary's 256 KB "
-    "direct-mapped array and hash, D2's leftover list, D3's forest) are outside the timer; table capacities carry "
-    "over between warm reps, and the minimum over reps is kept.",
-    "The verdict uses the median over 12 rounds of each row's per-invocation minimum.  The bootstrap resamples rounds, "
-    "so it captures round-to-round noise but not effects shared by every round (machine, compiler, data).  The null "
-    "band comes from one row (R0) per job and rule; a row much noisier than R0 could be called better or worse "
-    "where a wider band would say tie.  With 12 rounds the median moves in discrete steps, so intervals can be "
-    "lumpy; the 5% floor guards against reading those steps as effects.",
-    "N10k and N30k run one rep per invocation (R0's entry there takes seconds: it gcd-refines each new denominator "
-    "against every live node).  The sweep's denominators are half below 2^31 and half in [2^32, 2^40), so it mixes "
-    "cheap and expensive leftovers; the P workloads isolate two-large-prime denominators.  Neither is drawn from "
-    "real data.",
+    "direct-mapped array and hash, D2's leftover list and hash, D3's forest) are outside the timer; table "
+    "capacities carry over between warm reps, and the minimum over reps is kept.",
+    "Phase columns are minima over an invocation's reps taken phase by phase, possibly from different reps, and the "
+    "detail tables' entry for D2 is (minimum entry including idle) - (minimum idle): a difference of minima from "
+    "possibly different reps, so it can understate or overstate D2's entry alone, and the phases need not add up to "
+    "total (the minimum over reps of one rep's sum).  The verdicts use total only.",
+    "The band is conservative: h is at least 5% and widens to the null spread, so small real differences are called "
+    "ties.  The report makes many comparisons (8 per job-rule pair, about 90 pairs) without a multiple-comparison "
+    "correction, so some per-pair 'better' or 'worse' calls are expected by chance; the overall answers (rule 7-8) "
+    "turn one 'worse' into 'mixed' or 'no', which makes them sensitive to such a call.  The bootstrap resamples "
+    "rounds, so it captures round-to-round noise but not effects shared by every round (machine, compiler, data); "
+    "the null band comes from one row (R0) per job and rule, so a row much noisier than R0 could be called better "
+    "or worse where a wider band would say tie; with 12 rounds the median moves in discrete steps.",
+    "Run length: 12 rounds, 2 reps per invocation (1 for N10k and N30k, where R0's entry takes seconds: it "
+    "gcd-refines each new denominator against every live node).  The Q2-only workloads (N*, P*) run the lcm rule "
+    "only and no R1; W4 sum is dropped (unable for every row).  The sweep's denominators are half below 2^31 and half "
+    "in [2^32, 2^40); the P workloads isolate two-large-prime denominators.  Neither is drawn from real data.",
     "Workloads W1-W4, W6-W10 and S8-S30d are round 2's data (same seed, same generation order, W5 generated but not "
     "run).  The new workloads come after them from the same generator, so changing their order or sizes changes "
     "their data but not the old ones.",
-    "Every rule of round 2's checks applies (fractions, unreduced, overflow).  The coprime audit runs once per job and "
-    "row after the timed rounds, on the last rep's graph and arrays; it is not repeated every round.",
+    "Every rule of round 2's checks applies to the timed invocations (fractions, unreduced, overflow).  The audit "
+    "invocations (AB_AUDIT, one per job and row after the timed rounds, on the last rep's graph and arrays) check the "
+    "structure only: their outputs are not checked against fractions.",
 ]
 
 
@@ -661,7 +778,7 @@ BIASES = [
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--rounds", type=int, default=12)
-    ap.add_argument("--reps", type=int, default=3)
+    ap.add_argument("--reps", type=int, default=REPS)
     ap.add_argument("--quick", action="store_true", help="small sizes; output to build/quick-r3/ unless --out")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--only", help="comma-separated workloads, e.g. W1,S30,P64")
@@ -669,11 +786,24 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=20261027)
     ap.add_argument("--boot", type=int, default=BOOT)
     ap.add_argument("--rule", action="store_true", help="print the decision rule and exit")
+    ap.add_argument("--write-rule", action="store_true", help=f"pre-register the rule in {RULE_FILE} and exit")
     ap.add_argument("--force-build", action="store_true")
     a = ap.parse_args(argv)
     if a.rule:
         print(rule_text(a.rounds, a.boot))
         return 0
+    if a.write_rule:
+        if RULE_FILE.exists():
+            print(f"{RULE_FILE} exists; not overwritten")
+            return 0 if rule_text(a.rounds, a.boot) in RULE_FILE.read_text() else 1
+        RULE_FILE.write_text(rule_file_text(a.rounds, a.boot, a.reps, a.seed, time.strftime("%b %d, %Y")))
+        print(f"wrote {RULE_FILE}")
+        return 0
+    measured = not a.quick and a.out is None
+    if measured and (not RULE_FILE.exists() or rule_text(a.rounds, a.boot) not in RULE_FILE.read_text()):
+        print(f"refusing the measured run: {RULE_FILE} is missing or does not hold this rule (run --write-rule first, "
+              "with the same --rounds and --boot)")
+        return 2
     out = a.out or (HERE / "build" / "quick-r3" if a.quick else HERE / "results")
     out.mkdir(parents=True, exist_ok=True)
     rule_fixed = time.strftime("%Y-%m-%d %H:%M:%S")

@@ -2,17 +2,21 @@
  * VARIANT >= VAR_D0.
  *
  *   D0  V3 + V6's seen-prime dictionary entry as it stands (ab_v6.c's v6_enter_den and v6_den_edges, unchanged).
- *   D1  D0 + a faster small-prime test: the table of odd primes below 2^16 is tested in blocks of 8, each prime by
- *       one multiply and one compare (the exact-division test, branch-free, so the block vectorises), with the
- *       adaptive stop checked once per block (n below the square of the block's first prime); a composite large
- *       leftover goes to Miller-Rabin and rho without repeating the table (D0 calls pg_factor, which runs it again).
- *       GMP-style packing (n mod a product of small primes, then the tests on the residue) was tried for the primes
- *       3..53 and did not help on one-word denominators (see round3_bench.py's notes), so it is not used.
- *   D2  D0 + no Miller-Rabin or rho at entry: a large leftover (at least 2^32 after the table and the known large
- *       primes) enters as a leftover node, not factored, kept coprime to the other leftover nodes by gcd refinement
- *       (one gcd per live leftover node), and every new large prime is tested against the leftover nodes.  The
- *       leftovers are factored in the idle pass (d2_idle), run between entry's pass 1 and pass 2 in the decomposition
- *       slot of the driver: timed, reported apart from entry, included in the total.
+ *   D1  D0 with the small-prime table tested in branch-free blocks of 8.  D0 already tests each prime with the
+ *       multiply-by-inverse exact-division test, but one prime at a time, with a multiply and a branch per prime for
+ *       the adaptive stop; D1 tests 8 primes without branches (clang vectorises the block), takes the stop once per
+ *       block (n below the square of the block's first prime), and branches once per block.  Everything else is D0's
+ *       code, including pg_factor (and its second pass over the table) for a composite large leftover.  GMP-style
+ *       packing (n mod a product of small primes, the tests on the residue) did not help one-word denominators in
+ *       an isolated measurement (round3_bench.py's notes), so D1 does not pack.
+ *   D2  D0 without rho at entry.  Miller-Rabin stays: a large leftover (2^32 or more after the table and the known
+ *       large primes) that is prime is entered as D0 enters it; a composite one is only appended to a list of
+ *       leftovers (deduplicated by a hash), with no gcd and no factoring.  The idle pass (d2_idle, in the driver's
+ *       decomposition slot, between entry's pass 1 and pass 2: timed, reported apart, included in the total) runs a
+ *       batch gcd over the leftovers (GMP product tree, remainder tree modulo the squares), splits each leftover
+ *       that shares with another into gcd and cofactor, divides a piece still composite by the large primes known
+ *       so far (D0's step 1b loop), factors only what is still composite (pg_factor's rho), and merges each
+ *       leftover's primes through the dictionary with D0's rule, in entry order.
  *   D3  D0 + a product check of large leftovers: in place of D0's step 1b (exact division by every large prime in
  *       the dictionary), a product forest of those primes (perfect subtrees of at most 2^D3_HMAX leaves); a new
  *       leftover c is checked with one remainder of the product (each root's limbs mod c, combined) and one gcd,
@@ -87,7 +91,7 @@ static size_t d_snap_edges(size_t o) {  /* AB_V6_DUMP: the first 16 distinct den
     return o;
 }
 
-/* ---------------------------------------------------------------- D1: the small-prime table in blocks of 8 */
+/* ---------------------------------------------------------------- D1: the small-prime table in branch-free blocks of 8 */
 
 #if VARIANT == VAR_D1
 #define D1_NB ((V6_NSMALL + 7) / 8)
@@ -107,61 +111,6 @@ static inline unsigned d1_block(uint64_t n, int b) {  /* bit j: prime 8b+j divid
     unsigned m = 0;
     for (int j = 0; j < 8; j++) m |= (unsigned)(n * I[j] <= L[j]) << j;
     return m;
-}
-/* pg.c's Miller-Rabin / Pollard-Brent stages for a leftover with no factor below 2^16 (pg.c keeps rho static; this
- * is the same code), so D1 does not run the table a second time as pg_factor would. */
-static inline uint64_t d1_mulmod(uint64_t a, uint64_t b, uint64_t n) { return (uint64_t)((u128)a * b % n); }
-static uint64_t d1_rho(uint64_t n) {
-    for (uint64_t c = 1;; c++) {
-        uint64_t y = 2, x = 2, ys = 2, q = 1, g = 1, r = 1;
-        const uint64_t m = 128;
-#define F(z) ((uint64_t)(((u128)d1_mulmod((z), (z), n) + c) % n))
-        do {
-            x = y;
-            for (uint64_t i = 0; i < r; i++) y = F(y);
-            uint64_t k = 0;
-            do {
-                ys = y;
-                uint64_t lim = m < r - k ? m : r - k;
-                for (uint64_t i = 0; i < lim; i++) {
-                    y = F(y);
-                    q = d1_mulmod(q, x > y ? x - y : y - x, n);
-                }
-                g = gcd64(q, n);
-                k += m;
-            } while (k < r && g == 1);
-            r *= 2;
-        } while (g == 1);
-        if (g == n) {
-            do {
-                ys = F(ys);
-                g = gcd64(x > ys ? x - ys : ys - x, n);
-            } while (g == 1);
-        }
-#undef F
-        if (g != n) return g;
-    }
-}
-static void d1_factor_big(uint64_t n, uint64_t *out, int *k) {
-    if (n == 1) return;
-    if (pg_is_prime(n)) { out[(*k)++] = n; return; }
-    uint64_t d = d1_rho(n);
-    d1_factor_big(d, out, k);
-    d1_factor_big(n / d, out, k);
-}
-static int d1_factor_leftover(uint64_t n, uint64_t *P, uint32_t *E) {  /* primes ascending, as pg_factor */
-    uint64_t f[64];
-    int nf = 0, k = 0;
-    d1_factor_big(n, f, &nf);
-    for (int a = 1; a < nf; a++)
-        for (int b = a; b > 0 && f[b - 1] > f[b]; b--) { uint64_t t = f[b]; f[b] = f[b - 1]; f[b - 1] = t; }
-    for (int a = 0; a < nf;) {
-        int b = a;
-        while (b < nf && f[b] == f[a]) b++;
-        P[k] = f[a]; E[k++] = (uint32_t)(b - a);
-        a = b;
-    }
-    return k;
 }
 #endif
 
@@ -266,116 +215,192 @@ static int d3_check(uint64_t c, uint64_t *out) {
 }
 #endif
 
-/* ---------------------------------------------------------------- D2: leftover nodes and the idle pass */
+/* ---------------------------------------------------------------- D2: leftovers, batch gcd in the idle pass */
 
 #if VARIANT == VAR_D2
-#define D2_TAG (1ull << 63)  /* a ddpp entry naming a node id (a leftover or one of its parts), not a prime */
-static uint32_t *d2lo;       /* live leftover nodes (not factored), compacted lazily */
-static size_t d2nlo, d2locap;
-static uint64_t st2_left, st2_gcd, st2_idle, st2_split;
+#include <gmp.h>
+#define D2_TAG (1ull << 63)  /* a ddpp entry naming a leftover (its index), not a prime */
+static uint64_t *d2v;        /* the distinct composite leftovers of this entry, in entry order */
+static size_t d2n, d2cap;
+static uint64_t *d2hk;       /* leftover value -> index + 1 (open addressing; 0 empty) */
+static uint32_t *d2hv;
+static size_t d2hcap;
+static uint64_t *d2pp;       /* after the idle pass: each leftover's primes */
+static uint32_t *d2po;
+static uint8_t *d2pc;
+static size_t d2npp, d2ppcap, d2pocap;
+static uint64_t st2_left, st2_dup, st2_shared, st2_rho, st2_idle;
 
-static void d2_meta(uint32_t id) {  /* metadata for a node created without v6_node: no known primes yet */
-    if (id >= vmcap) {
-        while (id >= vmcap) vmcap = vmcap ? 2 * vmcap : 256;
-        vm = xrealloc(vm, vmcap * sizeof *vm);
+static uint32_t d2_add(uint64_t c) {  /* entry: append a composite leftover once (hash), return its index */
+    if (2 * (d2n + 1) > d2hcap) {
+        size_t oc = d2hcap;
+        uint64_t *ok = d2hk;
+        uint32_t *ov = d2hv;
+        d2hcap = d2hcap ? 2 * d2hcap : 1024;
+        d2hk = xcalloc(d2hcap * sizeof *d2hk);
+        d2hv = xmalloc(d2hcap * sizeof *d2hv);
+        for (size_t j = 0; j < oc; j++)
+            if (ok[j]) {
+                size_t g = hsh(ok[j]) & (d2hcap - 1);
+                while (d2hk[g]) g = (g + 1) & (d2hcap - 1);
+                d2hk[g] = ok[j]; d2hv[g] = ov[j];
+            }
+        xfree(ok); xfree(ov);
     }
-    vm[id].fc = 0; vm[id].fo = 0; vm[id].pc = 0; vm[id].po = (uint32_t)v6npp;
-}
-static uint32_t d2_leftover_node(uint64_t x) {  /* x >= 2^32 with no factor below 2^16 and no known prime */
-    uint32_t id = node_new(x, 0);
-    d2_meta(id);
-    v6_nonprime++;
-    v6_upd();
-    GROW(d2lo, d2nlo, d2locap, 1);
-    d2lo[d2nlo++] = id;
+    size_t h = hsh(c) & (d2hcap - 1);
+    while (d2hk[h]) {
+        if (d2hk[h] == c) { st2_dup++; return d2hv[h]; }
+        h = (h + 1) & (d2hcap - 1);
+    }
+    GROW(d2v, d2n, d2cap, 1);
+    d2hk[h] = c; d2hv[h] = (uint32_t)d2n;
+    d2v[d2n] = c;
     st2_left++;
-    return id;
+    return (uint32_t)d2n++;
 }
-/* A part of a leftover: below 2^32 it is prime (it has no factor below 2^16), a new prime for the dictionary; else
- * it is another leftover node. */
-static uint32_t d2_part(uint64_t x) { return x < (1ull << 32) ? v6_node(x, &x, 1) : d2_leftover_node(x); }
 
-/* A first-sighted large prime p (from this denominator) dividing a live leftover splits it: p becomes its own node
- * (so the leftover's parts are pairwise coprime nodes), the rest a part.  Leftovers are pairwise coprime, so at most
- * one leftover holds p. */
-static void d2_prime_vs_leftovers(uint64_t p) {
-    uint64_t pi = inv64(p), pl = UINT64_MAX / p;
-    for (size_t j = 0; j < d2nlo; j++) {
-        uint32_t L = d2lo[j];
-        if (!nodes[L].alive) continue;
-        uint64_t v = nodes[L].v, q = v * pi;
-        if (q > pl) continue;
-        uint32_t e = 0;
-        do { v = q; e++; q = v * pi; } while (q <= pl);
-        uint32_t parts[2];
-        int np = 0;
-        parts[np++] = EP(v6_node(p, &p, 1), e);
-        if (v > 1) parts[np++] = EP(d2_part(v), 1);
-        v6_kill(L, parts, np);
-        st2_split++;
-        return;
-    }
-}
-/* The large leftover c of a denominator: gcd-refined against every live leftover node (V0' refine, over leftovers
- * only); the node ids of c's parts are written to ids. */
-static int d2_refine(uint64_t c, uint64_t *ids) {
-    uint64_t left = c;
-    int nid = 0;
-    size_t n0 = d2nlo;
-    for (size_t j = 0; j < n0 && left > 1; j++) {
-        uint32_t L = d2lo[j];
-        if (!nodes[L].alive) continue;
-        uint64_t v = nodes[L].v;
-        st2_gcd++;
-        if (gcd64(left, v) == 1) continue;
-        uint64_t base[64], pv[64];
-        uint32_t pe[64];
-        int nb = coprime_base2(v, left, base), np = 0;
-        for (int b = 0; b < nb; b++) {
-            uint32_t e = 0;
-            for (uint64_t t = v; t % base[b] == 0; t /= base[b]) e++;
-            if (e) { pv[np] = base[b]; pe[np++] = e; }
+/* g[i] = gcd(L[i], product of the other leftovers): a product tree, then the remainder tree modulo the squares
+ * (Bernstein's batch gcd; FactHacks' form): g[i] = gcd((P mod L[i]^2) / L[i], L[i]).  The leftovers are distinct. */
+static void d2_batch_gcd(const uint64_t *L, size_t m, uint64_t *g) {
+    if (m == 1) { g[0] = 1; return; }
+    mpz_t *lev[64], *R, *Rn, sq, t;
+    size_t sz[64], nl = 1;
+    lev[0] = malloc(m * sizeof(mpz_t));
+    for (size_t i = 0; i < m; i++) mpz_init_set_ui(lev[0][i], L[i]);
+    sz[0] = m;
+    while (sz[nl - 1] > 1) {
+        size_t n = sz[nl - 1], k = (n + 1) / 2;
+        lev[nl] = malloc(k * sizeof(mpz_t));
+        for (size_t j = 0; j < k; j++) {
+            mpz_init(lev[nl][j]);
+            if (2 * j + 1 < n) mpz_mul(lev[nl][j], lev[nl - 1][2 * j], lev[nl - 1][2 * j + 1]);
+            else mpz_set(lev[nl][j], lev[nl - 1][2 * j]);
         }
-        if (np == 1 && pe[0] == 1) {  /* L itself is a common part: it divides c */
-            ids[nid++] = D2_TAG | L;
-            while (left % v == 0) left /= v;
-            continue;
+        sz[nl++] = k;
+    }
+    mpz_init(sq); mpz_init(t);
+    R = malloc(sizeof(mpz_t));
+    mpz_init_set(R[0], lev[nl - 1][0]);
+    for (size_t l = nl - 1; l-- > 0;) {
+        Rn = malloc(sz[l] * sizeof(mpz_t));
+        for (size_t i = 0; i < sz[l]; i++) {
+            mpz_init(Rn[i]);
+            mpz_mul(sq, lev[l][i], lev[l][i]);
+            mpz_mod(Rn[i], R[i / 2], sq);
         }
-        uint32_t parts[64], pid[64];
-        for (int q = 0; q < np; q++) { pid[q] = d2_part(pv[q]); parts[q] = EP(pid[q], pe[q]); }
-        v6_kill(L, parts, np);
-        st2_split++;
-        for (int q = 0; q < np; q++) {
-            if (left % pv[q]) continue;
-            ids[nid++] = D2_TAG | pid[q];
-            while (left % pv[q] == 0) left /= pv[q];
+        for (size_t i = 0; i < sz[l + 1]; i++) mpz_clear(R[i]);
+        free(R);
+        R = Rn;
+    }
+    for (size_t i = 0; i < m; i++) {
+        mpz_divexact_ui(t, R[i], L[i]);
+        g[i] = mpz_gcd_ui(NULL, t, L[i]);
+        mpz_clear(R[i]);
+    }
+    free(R);
+    for (size_t l = 0; l < nl; l++) {
+        for (size_t i = 0; i < sz[l]; i++) mpz_clear(lev[l][i]);
+        free(lev[l]);
+    }
+    mpz_clear(sq); mpz_clear(t);
+}
+
+/* D0's dictionary rule for one set of primes first seen together (ab_v6.c's v6_enter_den, its last loop). */
+static void d2_merge(const uint64_t *pr, const uint32_t *ex, int np) {
+    uint64_t nv = 1, newp[AB_MAXE];
+    int nn = 0;
+    for (int j = 0; j < np; j++) {
+        uint64_t p = pr[j];
+        uint32_t h = dict_get(p);
+        if (h == V6_NONE) {
+            newp[nn++] = p;
+            for (uint32_t e = 0; e < ex[j]; e++) nv *= p;
+        } else if (!nodes[h].prime) {
+            v6_split_prime(h, p);
         }
     }
-    if (left > 1) ids[nid++] = D2_TAG | d2_part(left);
-    return nid;
+    if (nn) { uint32_t e1; v6_part_node(nv, newp, nn, &e1); }
 }
-static void d2_collect(uint32_t x, uint32_t *cand, int *nc) {  /* a node id -> the live nodes it now consists of */
-    if (nodes[x].alive) {
-        for (int t = 0; t < *nc; t++) if (cand[t] == x) return;
-        if (*nc == AB_W) die("d2: too many candidates");
-        cand[(*nc)++] = x;
-        return;
+
+/* The idle pass: batch gcd over the leftovers; each leftover's pieces (gcd and cofactor if it shares, else itself)
+ * that are still composite are divided by the large primes known so far (D0's step 1b loop; primes merged earlier in
+ * this pass count), and only what is still composite goes to rho (pg_factor, D0's code); the leftover's primes are
+ * merged through the dictionary, in entry order.  Returns the number of leftovers. */
+static uint32_t d2_idle(void) {
+    size_t m = d2n;
+    if (!m) return 0;
+    uint64_t *g = xmalloc(m * sizeof *g);
+    d2_batch_gcd(d2v, m, g);
+    if (m > d2pocap) {
+        d2pocap = m;
+        d2po = xrealloc(d2po, m * sizeof *d2po);
+        d2pc = xrealloc(d2pc, m);
     }
-    for (uint32_t i = 0; i < vm[x].fc; i++) d2_collect(EN(v6fw[vm[x].fo + i]), cand, nc);
+    for (size_t i = 0; i < m; i++) {
+        uint64_t L = d2v[i], piece[2], pr[64];
+        uint32_t ex[64];
+        int npc = 0, np = 0;
+        if (g[i] > 1 && g[i] < L) { st2_shared++; piece[npc++] = g[i]; piece[npc++] = L / g[i]; }
+        else { st2_shared += g[i] > 1; piece[npc++] = L; }
+        for (int q = 0; q < npc; q++) {
+            uint64_t x = piece[q], fp[64];
+            uint32_t fe[64];
+            int k;
+            if (x == 1) continue;
+            k = 0;
+            if (!pg_is_prime(x)) {  /* still composite: the large primes known so far (D0's step 1b loop) */
+                for (size_t j = 0; j < nbig && x >= (1ull << 32); j++) {
+                    uint64_t q = x * bigi[j];
+                    if (q > bigl[j]) continue;
+                    do { x = q; q = x * bigi[j]; } while (q <= bigl[j]);
+                    fp[k++] = bigp[j];
+                }
+            }
+            if (x > 1) {  /* below 2^32 x is prime (no factor below 2^16) */
+                if (x < (1ull << 32) || pg_is_prime(x)) fp[k++] = x;
+                else { st2_rho++; k += pg_factor(x, fp + k, fe + k); }
+            }
+            for (int j = 0; j < k; j++) {
+                int dup = 0;
+                for (int t = 0; t < np && !dup; t++) dup = pr[t] == fp[j];
+                if (!dup) pr[np++] = fp[j];
+            }
+        }
+        for (int j = 0; j < np; j++) {  /* the exponents in L (the pieces may share primes) */
+            uint64_t x = L;
+            ex[j] = 0;
+            while (x % pr[j] == 0) { x /= pr[j]; ex[j]++; }
+        }
+        GROW(d2pp, d2npp, d2ppcap, (size_t)np);
+        d2po[i] = (uint32_t)d2npp; d2pc[i] = (uint8_t)np;
+        for (int j = 0; j < np; j++) d2pp[d2npp++] = pr[j];
+        d2_merge(pr, ex, np);
+    }
+    xfree(g);
+    st2_idle += m;
+    return (uint32_t)m;
 }
-static void v6_den_edges(uint32_t k) {  /* pass 2 (after the idle pass): primes by lookup, leftover ids expanded */
+
+static void v6_den_edges(uint32_t k) {  /* pass 2 (after the idle pass): primes by lookup, leftovers by their primes */
     v6_handed = 1;
     dden *D = &dd[k];
     uint32_t cand[AB_W];
     int nc = 0;
     for (uint32_t j = 0; j < ddpc[k]; j++) {
         uint64_t x = ddpp[ddpo[k] + j];
-        if (x & D2_TAG) { d2_collect((uint32_t)(x & ~D2_TAG), cand, &nc); continue; }
-        uint32_t id = dict_get(x);
-        if (id == V6_NONE) die("v6: prime not in the dictionary");
-        int dup = 0;
-        for (int t = 0; t < nc && !dup; t++) dup = cand[t] == id;
-        if (!dup) cand[nc++] = id;
+        uint32_t n1 = 1, li = 0;
+        const uint64_t *ps = &x;
+        if (x & D2_TAG) { li = (uint32_t)(x & ~D2_TAG); ps = d2pp + d2po[li]; n1 = d2pc[li]; }
+        for (uint32_t t = 0; t < n1; t++) {
+            uint32_t id = dict_get(ps[t]);
+            if (id == V6_NONE) die("v6: prime not in the dictionary");
+            int dup = 0;
+            for (int u = 0; u < nc && !dup; u++) dup = cand[u] == id;
+            if (!dup) {
+                if (nc == AB_W) die("d2: too many candidates");
+                cand[nc++] = id;
+            }
+        }
     }
     if (nc > 1) qsort(cand, (size_t)nc, sizeof *cand, cmp_u32);
     uint64_t left = D->den, q;
@@ -390,43 +415,6 @@ static void v6_den_edges(uint32_t k) {  /* pass 2 (after the idle pass): primes 
     }
     if (left != 1) die("v6: unresolved denominator");
     D->ne = (uint8_t)ne;
-}
-/* The idle pass: every live leftover node factored (Miller-Rabin, then pg_factor's rho, as D0 does at entry).  A prime
- * leftover becomes a prime node; p^e becomes node p (weight e); several primes stay one node holding them all (V6's
- * rule: primes first seen together stay together).  Returns the number of leftovers factored. */
-static uint32_t d2_idle(void) {
-    uint32_t n = 0;
-    for (size_t j = 0; j < d2nlo; j++) {
-        uint32_t L = d2lo[j];
-        if (!nodes[L].alive) continue;
-        n++;
-        uint64_t x = nodes[L].v, fp[64];
-        uint32_t fe[64];
-        int k;
-        if (pg_is_prime(x)) { fp[0] = x; fe[0] = 1; k = 1; }
-        else k = pg_factor(x, fp, fe);
-        if (k == 1 && fe[0] > 1) {  /* p^e: the node becomes p */
-            uint32_t part = EP(v6_node(fp[0], fp, 1), fe[0]);
-            v6_kill(L, &part, 1);
-            continue;
-        }
-        v6meta *M = &vm[L];
-        GROW(v6pp, v6npp, v6ppcap, (size_t)k);
-        GROW(v6ppi, v6npp, v6ppicap, (size_t)k);
-        GROW(v6ppl, v6npp, v6pplcap, (size_t)k);
-        M->po = (uint32_t)v6npp; M->pc = (uint8_t)k;
-        for (int i = 0; i < k; i++) {
-            v6ppi[v6npp] = inv64(fp[i]);  /* odd: no factor below 2^16 */
-            v6ppl[v6npp] = UINT64_MAX / fp[i];
-            v6pp[v6npp++] = fp[i];
-            dict_set(fp[i], L);
-        }
-        if (k == 1) { nodes[L].prime = 1; v6_nonprime--; }
-    }
-    d2nlo = 0;
-    st2_idle += n;
-    v6_upd();
-    return n;
 }
 #endif
 
@@ -446,7 +434,7 @@ static void v6_enter_den(uint32_t k, uint64_t den) {
     uint32_t ex[64];
     int np = 0, s = __builtin_ctzll(n), stopped = 0;
     if (s) { pr[np] = 2; ex[np++] = (uint32_t)s; n >>= s; }
-#if VARIANT == VAR_D1  /* step 1 in blocks of 8: one multiply and one compare per prime, the stop once per block */
+#if VARIANT == VAR_D1  /* step 1 in branch-free blocks of 8 (the same test per prime), the stop once per block */
     for (int b = 0; b < d1nb; b++) {
         if (n < d1sq[b]) { stopped = 1; break; }
         unsigned m = d1_block(n, b);
@@ -495,31 +483,21 @@ static void v6_enter_den(uint32_t k, uint64_t den) {
 #endif
     }
 #if VARIANT == VAR_D2
-    uint64_t c = 0;  /* D2: a large leftover, not factored at entry */
+    uint64_t c = 0;  /* D2: a composite large leftover, appended for the idle pass */
 #endif
     if (n > 1) {  /* no factor below 2^16 is left, so below 2^32 n is prime */
-        if (stopped || n < (1ull << 32)) { pr[np] = n; ex[np++] = 1; }
+        if (stopped || n < (1ull << 32) || pg_is_prime(n)) { pr[np] = n; ex[np++] = 1; }
 #if VARIANT == VAR_D2
-        else c = n;
+        else c = n;  /* no rho at entry */
 #else
-        else if (pg_is_prime(n)) { pr[np] = n; ex[np++] = 1; }
         else {  /* step 4: rho, only on a composite no known prime divides */
             uint64_t fp[64];
             uint32_t fe[64];
-#if VARIANT == VAR_D1
-            int nf = d1_factor_leftover(n, fp, fe);  /* without pg_factor's second pass over the table */
-#else
             int nf = pg_factor(n, fp, fe);
-#endif
             for (int j = 0; j < nf; j++) { pr[np] = fp[j]; ex[np++] = fe[j]; }
         }
 #endif
     }
-#if VARIANT == VAR_D2  /* a first-sighted large prime may divide a leftover node: split it out first */
-    if (d2nlo)
-        for (int j = 0; j < np; j++)
-            if (pr[j] >= 65536 && dict_get(pr[j]) == V6_NONE) d2_prime_vs_leftovers(pr[j]);
-#endif
     GROW(ddpp, nddpp, ddppcap, (size_t)np);
     for (int j = 0; j < np; j++) ddpp[nddpp++] = pr[j];
     ddpc[k] = (uint8_t)np;
@@ -536,13 +514,11 @@ static void v6_enter_den(uint32_t k, uint64_t den) {
         }
     }
     if (nn) { uint32_t e1; v6_part_node(nv, newp, nn, &e1); }
-#if VARIANT == VAR_D2  /* the leftover: refined against the leftover nodes; its parts' ids follow the primes */
+#if VARIANT == VAR_D2  /* the leftover's index follows the primes; its primes are known after the idle pass */
     if (c) {
-        uint64_t ids[64];
-        int ni = d2_refine(c, ids);
-        GROW(ddpp, nddpp, ddppcap, (size_t)ni);
-        for (int j = 0; j < ni; j++) ddpp[nddpp++] = ids[j];
-        ddpc[k] = (uint8_t)(np + ni);
+        GROW(ddpp, nddpp, ddppcap, 1);
+        ddpp[nddpp++] = D2_TAG | d2_add(c);
+        ddpc[k] = (uint8_t)(np + 1);
     }
 #endif
 }
@@ -556,7 +532,8 @@ static void d_reset(void) {  /* per rep, untimed (with v6_reset) */
     if (!d1nb) d1_init();
 #endif
 #if VARIANT == VAR_D2
-    d2nlo = 0; st2_left = 0; st2_gcd = 0; st2_idle = 0; st2_split = 0;
+    d2n = 0; d2npp = 0; st2_left = 0; st2_dup = 0; st2_shared = 0; st2_rho = 0; st2_idle = 0;
+    if (d2hk) memset(d2hk, 0, d2hcap * sizeof *d2hk);
 #endif
 #if VARIANT == VAR_D3
     d3nn = 0; d3nlimb = 0; d3nroot = 0; st3_check = 0; st3_hit = 0; st3_desc = 0; st3_leaves = 0;
@@ -565,9 +542,9 @@ static void d_reset(void) {  /* per rep, untimed (with v6_reset) */
 static void d_stats(FILE *f) {
     fprintf(f, " d_fresh=%llu", (unsigned long long)st_dfresh);
 #if VARIANT == VAR_D2
-    fprintf(f, " d2_leftovers=%llu d2_gcds=%llu d2_leftover_splits=%llu d2_idle_factored=%llu",
-            (unsigned long long)st2_left, (unsigned long long)st2_gcd, (unsigned long long)st2_split,
-            (unsigned long long)st2_idle);
+    fprintf(f, " d2_leftovers=%llu d2_dups=%llu d2_shared=%llu d2_rho=%llu d2_idle=%llu",
+            (unsigned long long)st2_left, (unsigned long long)st2_dup, (unsigned long long)st2_shared,
+            (unsigned long long)st2_rho, (unsigned long long)st2_idle);
 #endif
 #if VARIANT == VAR_D3
     fprintf(f, " d3_checks=%llu d3_hits=%llu d3_descents=%llu d3_leaves=%llu d3_limbs=%zu d3_roots=%zu",

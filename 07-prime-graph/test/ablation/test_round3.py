@@ -267,20 +267,27 @@ class TestD2(Base):
         return st
 
     def test_leftovers(self):
-        p, q, r, s = MID[:4]
+        p, q, r, s_ = MID[:4]
         P40 = int(sympy.nextprime(2**40 + 12345))
-        # a leftover split by a later leftover's gcd: pq, then pr (p unknown until then); the parts p, q, r are
-        # below 2^32, so they are prime nodes, not leftovers, and nothing is left for the idle pass
-        self.run_dens([p * q, p * r], {"d2_leftovers": 1, "d2_leftover_splits": 1, "d2_idle_factored": 0})
-        # a first-sighted large prime below 2^32 (7p: p is what the table leaves) splits the leftover pq
-        self.run_dens([p * q, 7 * p], {"d2_leftovers": 1, "d2_leftover_splits": 1, "d2_idle_factored": 0})
-        # p^2: the idle pass makes node p with weight 2; a 40-bit prime: a prime node; pq alone: one node of two primes
-        st = self.run_dens([p * p, P40, q * r], {"d2_leftovers": 3, "d2_idle_factored": 3})
-        self.assertEqual(st["v6_multi"], 1)
+        # Miller-Rabin stays at entry: a prime leftover is not deferred
+        self.run_dens([BIG[0], P40], {"d2_leftovers": 0, "d2_rho": 0})
+        # pq and pr share p: the batch gcd splits both into primes, so nothing goes to rho
+        st = self.run_dens([p * q, p * r], {"d2_leftovers": 2, "d2_shared": 2, "d2_rho": 0})
         self.assertGreater(st["decomp"], 0)  # the idle pass is timed in the decomposition slot
-        # c sharing with two leftovers, and three large primes in one leftover
-        self.run_dens([p * q, r * s, p * r, MID[4] * MID[5] * MID[6]], {"d2_leftover_splits": 2})
-        # small primes with a leftover: D0 groups 6pq into one node; D2 keeps {2, 3} and the leftover apart
+        # one leftover (pq) shares with no leftover, but 7p entered p (below 2^32) as a known large prime: the idle
+        # pass divides it out (no rho) and the merge splits p out of {7, p}
+        self.run_dens([p * q, 7 * p], {"d2_leftovers": 1, "d2_shared": 0, "d2_rho": 0})
+        # p^2 (node p, weight 2) and qr (one node of two primes): both to rho
+        st = self.run_dens([p * p, q * r], {"d2_leftovers": 2, "d2_shared": 0, "d2_rho": 2})
+        self.assertEqual(st["v6_multi"], 1)
+        # pr shares with both pq and rs, so its gcd is itself, but pq and rs split first and reveal p and r: no rho;
+        # three large primes in one leftover: to rho
+        self.run_dens([p * q, r * s_, p * r, MID[4] * MID[5] * MID[6]], {"d2_leftovers": 4, "d2_shared": 3, "d2_rho": 1})
+        # every prime shared twice (gcd = itself everywhere): only the first leftover goes to rho
+        self.run_dens([p * q, q * r, r * p], {"d2_leftovers": 3, "d2_shared": 3, "d2_rho": 1})
+        # the same leftover from two denominators is appended once
+        self.run_dens([p * q, 3 * p * q, 5 * p * q], {"d2_leftovers": 1, "d2_dups": 2, "d2_rho": 1})
+        # small primes with a leftover: D0 groups 6pq into one node; D2 keeps {2, 3} and the leftover's {p, q} apart
         x, y = MID[7], MID[8]
         self.run_dens([6 * x * y, 5])
         make_inputs(self.d, "ab", {"a": [(1, 6 * x * y), (1, 5)], "b": [(7, 5), (-1, 6 * x * y)]})  # no cancellation
@@ -415,6 +422,13 @@ class TestHarness(unittest.TestCase):
             self.assertEqual(r3.row_name(*r3.row_parts(v)), v)
         self.assertEqual(r3.row_env("d1-freq"), {"AB_V3_POLICY": "freq"})
         self.assertEqual(r3.row_env("d1"), {})
+        self.assertEqual(r3.Q2_ROWS, ["r0-lcm", "r0-lcm-null", "d0-lcm", "d1-lcm", "d2-lcm", "d3-lcm"])
+        P = {wl: jobs for wl, _, jobs in r3.plan(True)}
+        self.assertEqual(P["P64"]["fma"], r3.Q2_ROWS)
+        self.assertEqual(P["N1k"]["fma"], r3.Q2_ROWS)
+        self.assertEqual(P["U8"]["fma"], r3.ARRAY_ROWS)
+        self.assertEqual(list(P["W4"]), ["fma"])  # W4 sum dropped
+        self.assertEqual(r3.REPS, 2)
 
     def test_ratio_and_verdict(self):
         g = np.random.default_rng(0)
@@ -428,6 +442,14 @@ class TestHarness(unittest.TestCase):
         self.assertEqual(r3.verdict(1.04, 1.20, 0.05), "tie")   # overlaps the band
         self.assertEqual(r3.verdict(1.06, 1.20, 0.10), "tie")   # a wider null band
         self.assertEqual(r3.verdict(0.80, 0.94, 0.05), "worse")
+        self.assertTrue(r3.parity(0.95, 0.05))
+        self.assertTrue(r3.parity(0.97, 0.05))
+        self.assertFalse(r3.parity(0.949, 0.05))
+        self.assertEqual(r3.overall(["better", "tie", "n/a"]), "better")
+        self.assertEqual(r3.overall(["worse", "tie"]), "worse")
+        self.assertEqual(r3.overall(["better", "worse"]), "mixed")
+        self.assertEqual(r3.overall(["tie", "tie"]), "mixed")
+        self.assertEqual(r3.overall(["n/a"]), "not judged")
         tx = g.normal(100, 2, 12)
         p, lo, hi = r3.ratio_ci(tx, tx * 1.5, g, 500)
         self.assertAlmostEqual(p, 1.5)
@@ -464,12 +486,52 @@ class TestHarness(unittest.TestCase):
         cfg = {"date": "", "cpu": "", "rounds": 12, "reps": 3, "boot": 300}
         md = r3.report_md(res, cfg, an)
         self.assertIn("**Decision rule", md)
-        self.assertIn("over 300 bootstrap", md)
+        self.assertIn("ratio over 300\n   bootstrap resamples", md)
         self.assertIn("| W2 fma | lcm | existing | 1.25 [1.25, 1.25] | 5.0% | better |", md)
-        self.assertIn("**Tally:** better 1, tie 0, worse 0.", md)
+        self.assertIn("better 1, tie 0, worse 0.", md)
         self.assertIn("D3 better 0, tie 0, worse 0, not judged 1", md)
+        self.assertIn("## Answers (rule 7 and 8)", md)
         self.assertIn("| d3-lcm |", md)
         self.assertIn("FAIL: x", md)
+
+    def test_answers(self):
+        """Rule 7-8 over aims: Q1 from Q1-aimed pairs only; Q2 (a) from Q2-aimed pairs, (b) parity elsewhere."""
+        def job(aim, wl, r0, r1, d0, d1, d2, d3):
+            rows = {"r0-lcm": r0, "r0-lcm-null": r0, "r1-lcm": r1, "d0-lcm": d0, "d1-lcm": d1, "d2-lcm": d2, "d3-lcm": d3}
+            return wl, {"desc": "", "n": 1, "K": None, "aim": aim, "single": False,
+                        "jobs": {"fma": {v: fake_row(v, [t] * 12) for v, t in rows.items()}}}
+        W = dict([job("Q1", "M1", 100, 80, 100, 100, 100, 100),     # R1 better
+                  job("Q1", "M2", 100, 101, 100, 100, 100, 100),    # tie
+                  job("existing", "W9", 100, 150, 100, 97, 100, 120),  # R1 worse here: not Q1-aimed, ignored
+                  job("Q2", "P1", 100, 100, 100, 80, 125, 100),     # D1 better than D0, D2 worse, D3 tie
+                  job("Q2", "P2", 100, 100, 100, 90, 100, 100)])
+        res = {"workloads": W}
+        ans = r3.answers(res, r3.analyse(res, 1, 300))
+        self.assertEqual((ans["Q1"]["answer"], ans["Q1"]["n"], ans["Q1"]["better"]), ("better", 2, ["M1 fma lcm"]))
+        self.assertEqual((ans["d1"]["vs_d0"], ans["d2"]["vs_d0"], ans["d3"]["vs_d0"]), ("better", "worse", "mixed"))
+        # parity with R0 on the 3 non-Q2 pairs: D1 (97: lo >= 0.95) yes; D3 (120 on W9) no
+        self.assertEqual((ans["d1"]["parity_r0"], ans["d1"]["parity_n"]), ("yes", 3))
+        self.assertEqual((ans["d3"]["parity_r0"], ans["d3"]["parity_fails"]), ("no", ["W9 fma lcm"]))
+        md = "\n".join(r3.answers_md(ans))
+        self.assertIn("**Q1: is R1 better than R0?**  **better** over 2", md)
+        self.assertIn("| D3 | **mixed** (2 pairs) | none | none | **no** (3 judged) | W9 fma lcm |", md)
+
+    def test_rule_preregistration(self):
+        """The measured run refuses to start without the pre-registered rule; the rule file holds the rule."""
+        old = r3.RULE_FILE
+        try:
+            with tempfile.TemporaryDirectory() as t:
+                r3.RULE_FILE = Path(t) / "round3-rule.md"
+                self.assertEqual(r3.main([]), 2)                       # missing: refused before anything runs
+                r3.RULE_FILE.write_text("another rule")
+                self.assertEqual(r3.main([]), 2)
+                self.assertEqual(r3.main(["--write-rule"]), 1)        # exists and differs: not overwritten
+                r3.RULE_FILE.unlink()
+                self.assertEqual(r3.main(["--write-rule"]), 0)
+                self.assertIn(r3.rule_text(12, r3.BOOT), r3.RULE_FILE.read_text())
+        finally:
+            r3.RULE_FILE = old
+        self.assertIn(r3.rule_text(12, r3.BOOT), old.read_text())  # the real file holds the default run's rule
 
     def test_round2_data_unchanged(self):
         """W1-W10 and S8-S30d come out of the generator exactly as in round 2 (same seed, same order)."""
@@ -526,7 +588,7 @@ class TestHarness(unittest.TestCase):
     def test_end_to_end_quick(self):
         """A tiny run: the rule is written before the first measurement, verdicts and audits are reported."""
         with tempfile.TemporaryDirectory() as t:
-            rc = r3.main(["--quick", "--rounds", "2", "--reps", "1", "--only", "W3,S8", "--out", t, "--boot", "200"])
+            rc = r3.main(["--quick", "--rounds", "2", "--reps", "1", "--only", "W3,S8,P64", "--out", t, "--boot", "200"])
             self.assertEqual(rc, 0)
             md = (Path(t) / "round3.md").read_text()
             import json
@@ -534,7 +596,8 @@ class TestHarness(unittest.TestCase):
             self.assertLessEqual(res["config"]["rule_fixed"], res["config"]["first_measurement"])
             self.assertIn("**Decision rule", md)
             self.assertEqual(set(res["analysis"]), {"W3 sum lcm", "W3 sum freq", "W3 fma lcm", "W3 fma freq", "S8 add plain",
-                                                    "S8 mul plain"})
+                                                    "S8 mul plain", "P64 fma lcm"})
+            self.assertIn("## Answers (rule 7 and 8)", md)
             self.assertTrue(all(x == "pass" for j in res["audits"].values() for r in j.values() for x in r.values()))
 
 

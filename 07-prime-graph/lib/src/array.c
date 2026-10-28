@@ -119,6 +119,7 @@ static void choose_D(pg_graph *g, pg_value *const *hs, const uint32_t *cnt, size
     uint64_t L = 1;
     for (size_t k = 0; k < m; k++) {
         const pg_value *h = hs[k];
+        if (!h->ne) continue;
         const uint32_t *e = g->EPL + h->eo;
         for (int j = 0; j < h->ne; j++) {
             uint32_t id = EN(e[j]), w = EW(e[j]);
@@ -126,7 +127,7 @@ static void choose_D(pg_graph *g, pg_value *const *hs, const uint32_t *cnt, size
             if (w > g->wsa[id]) g->wsa[id] = (uint8_t)w;
         }
     }
-    qsort(t.p, t.n, 4, cmp_u32);
+    if (t.n > 1) qsort(t.p, t.n, 4, cmp_u32);
     for (size_t j = 0; j < t.n && fits; j++)
         if (!mulpow(&L, g->nh[t.p[j]].v, g->wsa[t.p[j]]) || L >= DEN_LIM) fits = 0;
     if (fits) {
@@ -166,7 +167,7 @@ static void choose_D(pg_graph *g, pg_value *const *hs, const uint32_t *cnt, size
         const pg_value *h = hs[best];
         P->D = h->den;
         P->ne = h->ne;
-        memcpy(P->e, g->EPL + h->eo, (size_t)h->ne * 4);
+        if (h->ne) memcpy(P->e, g->EPL + h->eo, (size_t)h->ne * 4);
     }
 }
 
@@ -187,10 +188,7 @@ static void arr_reduce(pg_graph *g, pg_array *A) {
                 g->st_restarts++;
             }
             if (rc != R_OK) pgi_die("reduction grew a value");
-            if (r.den != h->den) {
-                A->xh[j] = pgi_holder_from_raw(g, &r, HK_EXC);
-                pgi_holder_release(g, h);
-            }
+            if (r.den != h->den) pgi_holder_reduce(g, h, &r);
         }
         A->deferred = 0;
         pend_remove(g, A);
@@ -401,7 +399,7 @@ static void elem_reduced(pg_graph *g, const pg_array *A, size_t i, pg_value *x, 
                 r->num = x->num;
                 r->den = x->den;
                 r->ne = x->ne;
-                memcpy(r->e, g->EPL + x->eo, (size_t)x->ne * 4);
+                if (x->ne) memcpy(r->e, g->EPL + x->eo, (size_t)x->ne * 4);
                 return;
             }
             view v = hview(g, x);
@@ -440,10 +438,21 @@ pg_status pg_array_to_fracs(pg_graph *g, const pg_array *a, int64_t *num, int64_
     if (!g || !a || (a->n && (!num || !den))) return PG_INVALID;
     size_t j = 0;
     raw r;
+    view d = dview(g, a);  /* D's edges, read again after anything that may split a node */
     for (size_t i = 0; i < a->n; i++) {
-        pg_value *x = NULL;
-        if (j < a->nx && a->xi[j] == i) x = a->xh[j++];
-        elem_reduced(g, a, i, x, &r);
+        if (j < a->nx && a->xi[j] == i) {
+            elem_reduced(g, a, i, a->xh[j++], &r);
+            d = dview(g, a);
+        } else {
+            int rc = fin(g, a->num[i], a->D, d.e, d.ne, &r);
+            if (UNLIKELY(rc != R_OK)) {
+                if (rc != R_RESTART) pgi_die("reduction grew a value");
+                g->st_restarts++;
+                d = dview(g, a);
+                i--;
+                continue;
+            }
+        }
         num[i] = r.num;
         den[i] = (int64_t)r.den;
     }
@@ -786,7 +795,7 @@ static int wadd(pg_graph *g, wacc *W, i128 xn, u128 xd, const uint32_t *xe, int 
     if (rc != R_OK) return rc;
     uint32_t e[AW];
     int ne = xne;
-    memcpy(e, xe, (size_t)xne * 4);
+    if (xne) memcpy(e, xe, (size_t)xne * 4);
     if ((rc = reduce_w(g, &xn, &xd, e, &ne)) != R_OK) return rc;
     return wadd_try(g, W, xn, xd, e, ne) ? R_OK : R_OVF;
 }
@@ -808,7 +817,7 @@ pg_status pg_array_sum(pg_graph *g, const pg_array *a, pg_value **out) {
     W.num = s;
     W.den = a->D;
     W.ne = d.ne;
-    memcpy(W.e, d.e, (size_t)d.ne * 4);
+    if (d.ne) memcpy(W.e, d.e, (size_t)d.ne * 4);
     if (s == 0) { W.den = 1; W.ne = 0; }
     pgi_pin(g, W.e, &W.ne);
     pg_status st = PG_OK;
@@ -828,9 +837,7 @@ pg_status pg_array_sum(pg_graph *g, const pg_array *a, pg_value **out) {
 
 pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_value **out) {
     if (!g || !a || !b || !out || a->n != b->n) return PG_INVALID;
-    int defer = g->expr_depth > 0;
     wacc W = {0, 1, 0, {0}};
-    dplan P;
     uint32_t pe[AW];
     int pne = 0;
     view da = dview(g, a), db = dview(g, b);
@@ -842,7 +849,6 @@ pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_val
         for (int i = 0; i < k; i++) pe[i] = EP(n[i], wa[i] + wb[i]);
         pne = k;
     }
-    (void)P;
     pgi_pin(g, W.e, &W.ne);
     pgi_pin(g, pe, &pne);
     pg_status st = PG_OK;
@@ -867,8 +873,7 @@ pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_val
         while ((rc = wadd(g, &W, S, pden, pe, pne)) == R_RESTART) g->st_restarts++;
         if (rc == R_OVF) st = PG_OVERFLOW;
     }
-    /* the pairs with an exception: one graph multiplication each */
-    invtab it = {0};
+    /* the pairs with an exception: each product exactly in 128 bits (weights added), into W */
     ia = ib = 0;
     for (;;) {
         if (st != PG_OK) break;
@@ -878,17 +883,22 @@ pg_status pg_array_dot(pg_graph *g, const pg_array *a, const pg_array *b, pg_val
         if (m == SIZE_MAX) break;
         pg_value *xa = ia < a->nx && a->xi[ia] == m ? a->xh[ia++] : NULL;
         pg_value *xb = ib < b->nx && b->xi[ib] == m ? b->xh[ib++] : NULL;
-        raw r;
-        for (;;) {
-            rc = elem_compute(g, OP_MUL, defer, a, b, NULL, m, xa, xb, NULL, &it, &r);
-            if (rc != R_OK) break;
-            rc = wadd(g, &W, r.num, r.den, r.e, r.ne);
+        for (;; g->st_restarts++) {
+            raw ta, tb;
+            view va, vb;
+            if (xa) va = hview(g, xa);
+            else dense_view(g, a, m, 0, &ta, &va);
+            if (xb) vb = hview(g, xb);
+            else dense_view(g, b, m, 0, &tb, &vb);
+            uint32_t n[AW], e[AW];
+            uint8_t wa[AW], wb[AW];
+            int k = merge(va.e, va.ne, vb.e, vb.ne, n, wa, wb);
+            for (int q = 0; q < k; q++) e[q] = EP(n[q], wa[q] + wb[q]);
+            rc = wadd(g, &W, (i128)va.num * vb.num, (u128)va.den * vb.den, e, k);
             if (rc != R_RESTART) break;
-            g->st_restarts++;
         }
         if (rc != R_OK) st = PG_OVERFLOW;
     }
-    inv_free(g, &it);
     if (st == PG_OK) st = wfinish(g, &W, out);
     pgi_unpin(g, pe);
     pgi_unpin(g, W.e);

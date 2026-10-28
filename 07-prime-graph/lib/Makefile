@@ -15,6 +15,7 @@ WARN     = -Wall -Wextra -Wshadow -Wno-unused-function
 OPT      = -O3 -march=native
 BOPT     = -O3 -march=native $(if $(findstring clang,$(BENCHCC)),-Wno-invalid-feature-combination,)
 PY      ?= python3
+SAN      = -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all
 FUZZ_SECONDS ?= 600
 FUZZ_BUILD   ?= debug
 
@@ -41,7 +42,7 @@ endef
 
 $(eval $(call CONFIG,build,$(CC),$(OPT)))
 $(eval $(call CONFIG,build/debug,$(CC),-O1 -g -DPG_AUDIT_EVERY_OP))
-$(eval $(call CONFIG,build/asan,gcc,-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all))
+$(eval $(call CONFIG,build/asan,gcc,$(SAN)))
 $(eval $(call CONFIG,build/bench,$(BENCHCC),$(BOPT)))
 
 debug: build/debug/unit build/debug/diff

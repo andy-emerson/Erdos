@@ -25,38 +25,49 @@ static inline void setzero(raw *r) { r->num = 0; r->den = 1; r->ne = 0; }
 /* r := t / den over the edges e, reduced against their nodes; den < 2^64.  r->e may alias e.  strict: R_OVF unless
  * the result is within the M1 bounds; else only unless it fits a raw (an operand's reduction before a V4 retry, whose
  * denominator may be 2^63). */
-static inline int fin_k(pg_graph *g, i128 t, uint64_t den, const uint32_t *e, int ne, raw *r, int strict) {
+HOT int fin_k(pg_graph *g, i128 t, uint64_t den, const uint32_t *e, int ne, raw *r, int strict) {
     if (t == 0) { setzero(r); return R_OK; }
     int neg = t < 0, k2 = 0;
+    uint32_t pend = 0;  /* a node with several atoms kept a power: checked after the loop */
     u128 m = neg ? (u128)0 - (u128)t : (u128)t;
     for (int k = 0; k < ne; k++) {
         uint32_t ek = e[k], id = EN(ek);
         const node_hot *N = &g->nh[id];
         uint32_t w = EW(ek), c = 0;
-        while (c < w) {
-            if (LIKELY((m >> 64) == 0)) {
-                uint64_t q;
-                if (!ndiv((uint64_t)m, N, &q)) break;
-                m = q;
-            } else {
-                if (m % N->v) break;
-                m /= N->v;
+        if (N->v == 2 && LIKELY((m >> 64) == 0)) {  /* the prime 2: one count of trailing zeros (m is not 0) */
+            c = (uint32_t)__builtin_ctzll((uint64_t)m);
+            if (c > w) c = w;
+            m >>= c;
+            den >>= c;
+        } else {
+            while (c < w) {
+                if (LIKELY((m >> 64) == 0)) {
+                    uint64_t q;
+                    if (!ndiv((uint64_t)m, N, &q)) break;
+                    m = q;
+                } else {
+                    if (m % N->v) break;
+                    m /= N->v;
+                }
+                c++;
             }
-            c++;
+            for (uint32_t j = 0; j < c; j++) den = ediv(den, N);
         }
-        for (uint32_t j = 0; j < c; j++) den = ediv(den, N);
         if (c < w) {
-            if (UNLIKELY(N->multi) && pgi_partial(g, id, m, w - c)) return R_RESTART;
+            pend |= N->multi;
             r->e[k2++] = EP(id, w - c);
         }
     }
+    /* The g < N test, after the loop so that the loop stays free of calls: dividing by the other (coprime) nodes
+     * leaves gcd(m, N) unchanged, so testing the final m is the same as testing it at N. */
+    if (UNLIKELY(pend) && pgi_partial_edges(g, r->e, k2, m)) return R_RESTART;
     if (m > (u128)(NUM_LIM - (neg ? 0 : 1)) || (strict && den >= DEN_LIM)) return R_OVF;
     r->num = neg ? (int64_t)(0 - (uint64_t)m) : (int64_t)(uint64_t)m;
     r->den = den;
     r->ne = k2;
     return R_OK;
 }
-static inline int fin(pg_graph *g, i128 t, uint64_t den, const uint32_t *e, int ne, raw *r) {
+HOT int fin(pg_graph *g, i128 t, uint64_t den, const uint32_t *e, int ne, raw *r) {
     return fin_k(g, t, den, e, ne, r, 1);
 }
 
@@ -112,7 +123,7 @@ static inline int fin_w(pg_graph *g, i128 t, u128 den, const uint32_t *e, int ne
 }
 
 /* the edge lists of a and b merged by node id: n[], with each one's weight (0 if absent) */
-static inline int merge(const uint32_t *ae, int an, const uint32_t *be, int bn, uint32_t *n, uint8_t *wa, uint8_t *wb) {
+HOT int merge(const uint32_t *ae, int an, const uint32_t *be, int bn, uint32_t *n, uint8_t *wa, uint8_t *wb) {
     int i = 0, j = 0, k = 0;
     while (i < an || j < bn) {
         uint32_t x = i < an ? EN(ae[i]) : UINT32_MAX, y = j < bn ? EN(be[j]) : UINT32_MAX;
@@ -127,7 +138,7 @@ static inline int merge(const uint32_t *ae, int an, const uint32_t *be, int bn, 
 /* The common denominator of a and b (each node at its larger weight: a lookup, not a gcd): its edges into e[], its
  * value into *L (128 bits), and the two scalings.  Returns the edge count, or -1 if a scaling passes 2^64 (only
  * possible for operands above the M1 bounds). */
-static inline int lcm_plan(const pg_graph *g, const view *a, const view *b, uint64_t *ca, uint64_t *cb, uint32_t *e,
+HOT int lcm_plan(const pg_graph *g, const view *a, const view *b, uint64_t *ca, uint64_t *cb, uint32_t *e,
                            u128 *L) {
     uint32_t n[AW];
     uint8_t wa[AW], wb[AW];
@@ -146,7 +157,7 @@ static inline int lcm_plan(const pg_graph *g, const view *a, const view *b, uint
 }
 
 /* r := a + b (a - b with neg); operands below the M1 bounds.  red: reduce (exact); else V4's unreduced form. */
-static inline int core_add(pg_graph *g, view a, view b, int neg, int red, raw *r) {
+HOT int core_add(pg_graph *g, view a, view b, int neg, int red, raw *r) {
     uint64_t ca, cb;
     u128 L;
     int k = lcm_plan(g, &a, &b, &ca, &cb, r->e, &L);
@@ -168,11 +179,11 @@ static inline int core_add(pg_graph *g, view a, view b, int neg, int red, raw *r
 /* r := a * b.  cancel: each numerator is first cancelled against the other operand's nodes (lowest terms when the
  * operands are); else V4's unreduced form (the weights just add).  Denominators may be 2^63 here (a division's
  * inverse of -2^63). */
-static inline int core_mul(pg_graph *g, view a, view b, int cancel, raw *r) {
+HOT int core_mul(pg_graph *g, view a, view b, int cancel, raw *r) {
     if (a.num == 0 || b.num == 0) { setzero(r); return R_OK; }
     int neg = (a.num < 0) != (b.num < 0);
     uint64_t ua = mag64(a.num), ub = mag64(b.num), da = a.den, db = b.den, q;
-    uint32_t n[AW];
+    uint32_t n[AW], pend = 0;
     uint8_t wa[AW], wb[AW];
     int k = merge(a.e, a.ne, b.e, b.ne, n, wa, wb), ne = 0;
     for (int i = 0; i < k; i++) {
@@ -180,14 +191,26 @@ static inline int core_mul(pg_graph *g, view a, view b, int cancel, raw *r) {
         if (cancel) {
             const node_hot *N = &g->nh[n[i]];
             uint32_t c = 0, d = 0;
-            while (c < wb[i] && ndiv(ua, N, &q)) { ua = q; c++; db = ediv(db, N); }
-            if (c < wb[i] && UNLIKELY(N->multi) && pgi_partial(g, n[i], ua, wb[i] - c)) return R_RESTART;
-            while (d < wa[i] && ndiv(ub, N, &q)) { ub = q; d++; da = ediv(da, N); }
-            if (d < wa[i] && UNLIKELY(N->multi) && pgi_partial(g, n[i], ub, wa[i] - d)) return R_RESTART;
+            if (N->v == 2) {  /* the prime 2: counts of trailing zeros (ua, ub are not 0) */
+                c = (uint32_t)__builtin_ctzll(ua);
+                if (c > wb[i]) c = wb[i];
+                d = (uint32_t)__builtin_ctzll(ub);
+                if (d > wa[i]) d = wa[i];
+                ua >>= c; db >>= c;
+                ub >>= d; da >>= d;
+            } else {
+                while (c < wb[i] && ndiv(ua, N, &q)) { ua = q; c++; db = ediv(db, N); }
+                while (d < wa[i] && ndiv(ub, N, &q)) { ub = q; d++; da = ediv(da, N); }
+            }
+            pend |= N->multi & ((c < wb[i]) | (d < wa[i]));
+            wb[i] = (uint8_t)(wb[i] - c);  /* now the powers left uncancelled */
+            wa[i] = (uint8_t)(wa[i] - d);
             w -= c + d;
         }
         if (w) r->e[ne++] = EP(n[i], w);
     }
+    /* the g < N test after the loop (as in fin): ua against b's powers left, ub against a's */
+    if (UNLIKELY(pend) && pgi_partial_mul(g, n, k, wa, wb, ua, ub)) return R_RESTART;
     u128 p = (u128)ua * ub, den = (u128)da * db;
     if (p > (u128)(NUM_LIM - (neg ? 0 : 1)) || den >= DEN_LIM) return R_OVF;
     r->num = neg ? (int64_t)(0 - (uint64_t)p) : (int64_t)(uint64_t)p;

@@ -99,16 +99,6 @@ static void node_release(pg_graph *g, uint32_t id) {  /* its last holder left (I
     g->st_nodes_freed++;
 }
 
-static inline void list_push(pg_graph *g, uint32_t id, uint32_t h) {
-    node_cold *C = &g->nc[id];
-    if (C->len == C->lcap) {
-        C->lcap = C->lcap ? 2 * C->lcap : 4;
-        C->list = pgi_realloc(g, C->list, (size_t)C->lcap * 4);
-    }
-    C->list[C->len++] = h;
-    C->rc++;
-}
-
 /* ------------------------------------------------------------------------------------------------- the dictionary */
 
 static inline size_t hsh(uint64_t x) {
@@ -177,7 +167,13 @@ static void dict_del(pg_graph *g, uint64_t a) {  /* backward-shift deletion (lin
 
 /* ------------------------------------------------------------------------------------------------- the edge pool */
 
-static uint32_t pool_get(pg_graph *g, int cls) {
+static void pool_grow(pg_graph *g, uint32_t c) {
+    while (g->pool_n + c > g->pool_cap) g->pool_cap = g->pool_cap ? 2 * g->pool_cap : 1024;
+    if (g->pool_cap >= (1ull << 32)) pgi_die("edge pool too large");
+    g->EPL = pgi_realloc(g, g->EPL, g->pool_cap * 4);
+    g->PPL = pgi_realloc(g, g->PPL, g->pool_cap * 4);
+}
+static inline uint32_t pool_get(pg_graph *g, int cls) {
     uint32_t c = 1u << cls;
     g->pool_used += c;
     if (g->pfree[cls] != NONE) {
@@ -185,12 +181,7 @@ static uint32_t pool_get(pg_graph *g, int cls) {
         g->pfree[cls] = g->EPL[o];
         return o;
     }
-    if (g->pool_n + c > g->pool_cap) {
-        while (g->pool_n + c > g->pool_cap) g->pool_cap = g->pool_cap ? 2 * g->pool_cap : 1024;
-        if (g->pool_cap >= (1ull << 32)) pgi_die("edge pool too large");
-        g->EPL = pgi_realloc(g, g->EPL, g->pool_cap * 4);
-        g->PPL = pgi_realloc(g, g->PPL, g->pool_cap * 4);
-    }
+    if (UNLIKELY(g->pool_n + c > g->pool_cap)) pool_grow(g, c);
     uint32_t o = (uint32_t)g->pool_n;
     g->pool_n += c;
     return o;
@@ -200,15 +191,17 @@ static inline void pool_put(pg_graph *g, uint32_t o, int cls) {
     g->pfree[cls] = o;
     g->pool_used -= 1u << cls;
 }
-static inline int cls_for(int ne) {
-    int c = 0;
-    while ((1 << c) < ne) c++;
-    return c;
-}
+static inline int cls_for(int ne) { return ne <= 1 ? 0 : 32 - __builtin_clz((unsigned)ne - 1); }
 
 /* ------------------------------------------------------------------------------------------------- holders */
 
-static pg_value *holder_alloc(pg_graph *g) {
+static void holder_chunk(pg_graph *g) {
+    if (g->hn >= 0xFFFFF000u) pgi_die("too many holders");
+    if ((g->nhch & (g->nhch - 1)) == 0)  /* the chunk table doubles at powers of two */
+        g->hch = pgi_realloc(g, g->hch, (size_t)(g->nhch ? 2 * g->nhch : 1) * sizeof *g->hch);
+    g->hch[g->nhch++] = pgi_alloc(g, HCHUNK * sizeof(pg_value));
+}
+static inline pg_value *holder_alloc(pg_graph *g) {
     uint32_t id;
     pg_value *h;
     if (g->hfree != NONE) {
@@ -216,12 +209,7 @@ static pg_value *holder_alloc(pg_graph *g) {
         h = HP(g, id);
         g->hfree = h->eo;
     } else {
-        if (g->hn == ((uint64_t)g->nhch << HCHUNK_BITS)) {
-            if (g->hn >= 0xFFFFF000u) pgi_die("too many holders");
-            if ((g->nhch & (g->nhch - 1)) == 0)  /* the chunk table doubles at powers of two */
-                g->hch = pgi_realloc(g, g->hch, (size_t)(g->nhch ? 2 * g->nhch : 1) * sizeof *g->hch);
-            g->hch[g->nhch++] = pgi_alloc(g, HCHUNK * sizeof(pg_value));
-        }
+        if (UNLIKELY(g->hn == ((uint64_t)g->nhch << HCHUNK_BITS))) holder_chunk(g);
         id = g->hn++;
         h = HP(g, id);
     }
@@ -237,40 +225,78 @@ static inline int h_find(const pg_graph *g, const pg_value *h, uint32_t node) {
     return -1;
 }
 
-static void link_holder(pg_graph *g, pg_value *h) {
+static void list_grow(pg_graph *g, node_cold *C) {
+    C->lcap = C->lcap ? 2 * C->lcap : 4;
+    C->list = pgi_realloc(g, C->list, (size_t)C->lcap * 4);
+}
+static inline void link_holder(pg_graph *g, pg_value *h) {
+    const uint32_t *e = g->EPL + h->eo;
+    uint32_t *pp = g->PPL + h->eo, hid = h->id;
     for (int k = 0; k < h->ne; k++) {
-        uint32_t id = EN(g->EPL[h->eo + k]);
-        g->PPL[h->eo + k] = g->nc[id].len;
-        list_push(g, id, h->id);
+        node_cold *C = &g->nc[EN(e[k])];
+        uint32_t len = C->len;
+        if (UNLIKELY(len == C->lcap)) list_grow(g, C);
+        C->list[len] = hid;
+        C->len = len + 1;
+        C->rc++;
+        pp[k] = len;
     }
+}
+
+/* remove holder h's edge k from its node's list (swap with the list's last entry, whose edge learns its new
+ * position), and free the node if that was its last holder */
+static void unlink_edge(pg_graph *g, pg_value *h, int k) {
+    uint32_t id = EN(g->EPL[h->eo + k]), pos = g->PPL[h->eo + k];
+    node_cold *C = &g->nc[id];
+    uint32_t last = C->list[C->len - 1];
+    C->list[pos] = last;
+    if (pos != C->len - 1) {
+        pg_value *L = HP(g, last);
+        int kk = h_find(g, L, id);
+        if (kk < 0) pgi_die("unlink: a list names a holder without the edge");
+        g->PPL[L->eo + kk] = pos;
+    }
+    C->len--;
+    C->rc--;
+    if (C->lcap > 16 && C->len < C->lcap / 4) {
+        C->lcap /= 2;
+        C->list = pgi_realloc(g, C->list, (size_t)C->lcap * 4);
+    }
+    if (C->rc == 0) node_release(g, id);
 }
 
 static void unlink_holder(pg_graph *g, pg_value *h) {
-    for (int k = 0; k < h->ne; k++) {
-        uint32_t id = EN(g->EPL[h->eo + k]), pos = g->PPL[h->eo + k];
-        node_cold *C = &g->nc[id];
-        uint32_t last = C->list[C->len - 1];
-        C->list[pos] = last;
-        if (pos != C->len - 1) {
-            pg_value *L = HP(g, last);
-            int kk = h_find(g, L, id);
-            if (kk < 0) pgi_die("unlink: a list names a holder without the edge");
-            g->PPL[L->eo + kk] = pos;
-        }
-        C->len--;
-        C->rc--;
-        if (C->lcap > 16 && C->len < C->lcap / 4) {
-            C->lcap /= 2;
-            C->list = pgi_realloc(g, C->list, (size_t)C->lcap * 4);
-        }
-        if (C->rc == 0) node_release(g, id);
-    }
+    for (int k = 0; k < h->ne; k++) unlink_edge(g, h, k);
 }
 
-pg_value *pgi_holder_new(pg_graph *g, int64_t num, uint64_t den, const uint32_t *e, int ne, int kind) {
-    uint32_t tmp[MAXE];
-    if (ne > MAXE) pgi_die("too many edges on a holder");
-    if (ne) memcpy(tmp, e, (size_t)ne * 4);  /* e may point into the pool, which pool_get may move */
+/* h becomes r, whose edges are h's with weights lowered or removed (a reduction of h): weights change in place and
+ * only the removed edges leave their nodes' lists (a new holder would relink every edge) */
+void pgi_holder_reduce(pg_graph *g, pg_value *h, const raw *r) {
+    int j = 0, w = 0;
+    for (int k = 0; k < h->ne; k++) {
+        uint32_t ek = g->EPL[h->eo + k];
+        if (j < r->ne && EN(r->e[j]) == EN(ek)) {
+            if (EW(r->e[j]) > EW(ek)) pgi_die("holder_reduce: a weight grew");
+            g->EPL[h->eo + w] = r->e[j++];
+            g->PPL[h->eo + w] = g->PPL[h->eo + k];  /* the node lists keep their positions */
+            w++;
+        } else
+            unlink_edge(g, h, k);
+    }
+    if (j != r->ne) pgi_die("holder_reduce: a new edge");
+    h->ne = (uint8_t)w;
+    if (!w && h->cls != 0xFF) {
+        pool_put(g, h->eo, h->cls);
+        h->cls = 0xFF;
+        h->eo = NONE;
+    }
+    h->num = r->num;
+    h->den = r->den;
+}
+
+/* a new linked holder; e must not point into the edge pool (pool_get may move it) */
+static inline pg_value *holder_make(pg_graph *g, int64_t num, uint64_t den, const uint32_t *e, int ne, int kind) {
+    if (UNLIKELY(ne > MAXE)) pgi_die("too many edges on a holder");
     pg_value *h = holder_alloc(g);
     h->num = num;
     h->den = den;
@@ -281,7 +307,7 @@ pg_value *pgi_holder_new(pg_graph *g, int64_t num, uint64_t den, const uint32_t 
         h->cls = (uint8_t)cls_for(ne);
         uint32_t o = pool_get(g, h->cls);
         h->eo = o;
-        memcpy(g->EPL + o, tmp, (size_t)ne * 4);
+        for (int k = 0; k < ne; k++) g->EPL[o + k] = e[k];
         link_holder(g, h);
     } else {
         h->cls = 0xFF;
@@ -290,8 +316,15 @@ pg_value *pgi_holder_new(pg_graph *g, int64_t num, uint64_t den, const uint32_t 
     return h;
 }
 
-pg_value *pgi_holder_from_raw(pg_graph *g, const raw *r, int kind) {
-    return pgi_holder_new(g, r->num, r->den, r->e, r->ne, kind);
+pg_value *pgi_holder_new(pg_graph *g, int64_t num, uint64_t den, const uint32_t *e, int ne, int kind) {
+    uint32_t tmp[MAXE];
+    if (UNLIKELY(ne > MAXE)) pgi_die("too many edges on a holder");
+    for (int k = 0; k < ne; k++) tmp[k] = e[k];  /* e may point into the pool */
+    return holder_make(g, num, den, tmp, ne, kind);
+}
+
+pg_value *pgi_holder_from_raw(pg_graph *g, const raw *r, int kind) {  /* a raw is never in the pool */
+    return holder_make(g, r->num, r->den, r->e, r->ne, kind);
 }
 
 void pgi_holder_release(pg_graph *g, pg_value *h) {
@@ -457,6 +490,22 @@ int pgi_partial(pg_graph *g, uint32_t id, u128 m, uint32_t wr) {
     return 1;
 }
 
+__attribute__((noinline)) int pgi_partial_edges(pg_graph *g, const uint32_t *e, int ne, u128 m) {
+    for (int k = 0; k < ne; k++)
+        if (g->nh[EN(e[k])].multi && pgi_partial(g, EN(e[k]), m, EW(e[k]))) return 1;
+    return 0;
+}
+
+__attribute__((noinline)) int pgi_partial_mul(pg_graph *g, const uint32_t *n, int k, const uint8_t *wa,
+                                              const uint8_t *wb, uint64_t ua, uint64_t ub) {
+    for (int i = 0; i < k; i++) {
+        if (!g->nh[n[i]].multi) continue;
+        if (wb[i] && pgi_partial(g, n[i], ua, wb[i])) return 1;
+        if (wa[i] && pgi_partial(g, n[i], ub, wa[i])) return 1;
+    }
+    return 0;
+}
+
 /* ------------------------------------------------------------------------------------------------- entry */
 
 static void hot_add(pg_graph *g, uint64_t p) {
@@ -513,8 +562,7 @@ static int den_atoms(pg_graph *g, uint64_t d, uint64_t *P, uint32_t *E) {
             }
         }
     }
-    if (ce) {
-        if (k > 15) pgi_die("more than 15 primes");
+    if (ce && k <= 7) {
         ce->d = d;
         ce->na = (uint8_t)k;
         for (int j = 0; j < k; j++) { ce->p[j] = P[j]; ce->e[j] = (uint8_t)E[j]; }
@@ -605,4 +653,3 @@ void pg_graph_destroy(pg_graph *g) {
     free(g);
 }
 
-void pgi_scratch_fit(pg_graph *g) { (void)g; }  /* the scratch weights grow with the node table (node_alloc) */

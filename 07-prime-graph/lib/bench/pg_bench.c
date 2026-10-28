@@ -5,12 +5,12 @@
  *
  * jobs:    fma (a*b + c, one pg_array_fma), sum (column sum of a)
  * inputs:  <indir>/{a,b,c}.bin: int64 n, then n int64 numerators, then n uint64 denominators (below 2^63)
- * phases:  entry  = pg_array_from_fracs for each input.  One graph serves every rep; each rep releases everything it
- *                   made (untimed), so each starts from an empty graph, as the reference re-enters its values with its
- *                   node table reset;
+ * phases:  entry  = pg_graph_create and pg_array_from_fracs for each input: each rep starts from a new graph (no
+ *                   factor cache or dictionary carried over), as the reference re-enters its values with its node
+ *                   table reset;
  *          op     = the job (v4: inside pg_expr_begin / pg_expr_end, the end's reduction included);
  *          red    = reading every result element in lowest terms (pg_array_to_fracs), as the reference's final
- *                   reduction; releases are not timed (the reference frees nothing).
+ *                   reduction; releases and pg_graph_destroy are not timed (the reference frees nothing).
  * memory:  the reference allocates its arrays once, before the reps, so its later reps write to memory already
  *          mapped.  The library allocates its arrays per operation; malloc is told to keep freed memory (mallopt)
  *          so that later reps reuse it the same way, and the minimum over reps compares the work, not page faults.
@@ -65,10 +65,10 @@ int main(int argc, char **argv) {
     int failed = 0;
     mallopt(M_MMAP_THRESHOLD, 1 << 30);
     mallopt(M_TRIM_THRESHOLD, 1 << 30);
-    pg_graph *g = pg_graph_create();
     for (int rep = 0; rep < reps; rep++) {
         pg_array *X[3], *R = NULL;
         uint64_t t0 = now();
+        pg_graph *g = pg_graph_create();
         for (int j = 0; j < nin; j++)
             if (pg_array_from_fracs(g, IN[j].num, IN[j].den, (size_t)n, &X[j]) != PG_OK) { fprintf(stderr, "entry failed\n"); return 1; }
         uint64_t t1 = now();
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
         for (int j = nin; j-- > 0;) pg_array_release(g, X[j]);
         pg_stats_get(g, &st0);
         if (st0.nodes_live || st0.holders_live) { fprintf(stderr, "pg_bench: the graph is not empty after a rep\n"); return 1; }
+        pg_graph_destroy(g);
     }
-    pg_graph_destroy(g);
     if (failed && !fma) { printf("unable sum overflows\n"); return 3; }
     FILE *f = fopen(outp, "w");
     if (!f) { perror(outp); return 1; }

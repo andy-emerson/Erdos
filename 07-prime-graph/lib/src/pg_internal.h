@@ -42,13 +42,9 @@ typedef __int128 i128;
 #define HCHUNK_BITS 10
 #define HCHUNK (1u << HCHUNK_BITS)
 
-#if defined(__GNUC__)
 #define LIKELY(x) __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-#define LIKELY(x) (x)
-#define UNLIKELY(x) (x)
-#endif
+#define HOT static inline __attribute__((always_inline))  /* the kernels of the fast path, inlined into each loop */
 
 /* kernel results */
 enum { R_OVF = 0, R_OK = 1, R_RESTART = -1 };
@@ -87,13 +83,13 @@ typedef struct { int64_t num; uint64_t den; int ne; uint32_t e[AW]; } raw;      
 
 typedef struct { uint32_t *e; int *ne; } pin_t;
 
-typedef struct {       /* the per-denominator factor cache (direct mapped) */
+typedef struct {       /* the factor cache: one denominator's primes (direct mapped by a hash of d; at most 7) */
     uint64_t d;
     uint8_t na;
-    uint8_t e[15];
-    uint64_t p[15];
+    uint8_t e[7];
+    uint64_t p[7];
 } dcache_t;
-#define DCACHE_SIZE 512
+#define DCACHE_SIZE 4096  /* 288 KiB, allocated with the first denominator that has an odd part above 2^16 */
 
 struct pg_array {
     size_t n;
@@ -179,15 +175,20 @@ static inline view hview(const pg_graph *g, const pg_value *h) {
 pg_value *pgi_holder_new(pg_graph *g, int64_t num, uint64_t den, const uint32_t *e, int ne, int kind);  /* linked */
 void pgi_holder_release(pg_graph *g, pg_value *h);  /* unlink and free */
 pg_value *pgi_holder_from_raw(pg_graph *g, const raw *r, int kind);
+void pgi_holder_reduce(pg_graph *g, pg_value *h, const raw *r);  /* h := r, a reduction of h (edges only shrink) */
 uint32_t pgi_dict_get(const pg_graph *g, uint64_t a);
 /* Entry: enter d (1 <= d < 2^64) and return a linked transient holder (kind HK_TMP, num 0) whose edges are d's. */
 pg_value *pgi_den_enter(pg_graph *g, uint64_t d);
 /* Reduction hook: node id (several atoms) shares part of m (not all of N^wr).  Splits id by the ratio classes of the
  * cancellation and returns 1 (the caller restarts); 0 if no atom of id divides m. */
 int pgi_partial(pg_graph *g, uint32_t id, u128 m, uint32_t wr);
+/* pgi_partial for every node with several atoms among the edges e (weight: the power left), against m */
+int pgi_partial_edges(pg_graph *g, const uint32_t *e, int ne, u128 m);
+/* a product's form: nodes n[0..k) with the powers left of a (wa, against ub) and of b (wb, against ua) */
+int pgi_partial_mul(pg_graph *g, const uint32_t *n, int k, const uint8_t *wa, const uint8_t *wb, uint64_t ua,
+                    uint64_t ub);
 void pgi_pin(pg_graph *g, uint32_t *e, int *ne);
 void pgi_unpin(pg_graph *g, uint32_t *e);
-void pgi_scratch_fit(pg_graph *g);  /* wsa / wsb sized to the node table */
 
 /* ------------------------------------------------------------------------------------------------- array.c, value.c */
 

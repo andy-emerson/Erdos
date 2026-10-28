@@ -23,8 +23,9 @@ When the denominators differ, partition 3 supplies what the two denominators sha
 
 ### Structure
 
-- **Partition 3 holds common divisors found so far:** one node per distinct divisor value greater than 1.
+- **Partition 3 holds common divisors found so far:** one node per distinct divisor value, including an explicit node $1$.
 - **An edge from denominator $d$ to divisor $c$** means "$c$ divides $d$". Its weight is the residual $d / c$.
+- **Every denominator is linked to node $1$,** with residual $d$ itself. That residual need not be stored, since it is the denominator, but the edge exists conceptually. So every pair of denominators shares at least one divisor node.
 - **Each divisor value is stored once,** however many denominators it divides, and each residual once per (denominator, divisor) pair.
 
 ### Filling it
@@ -33,47 +34,100 @@ The machine compares pairs of denominators by gcd:
 - **eagerly,** in the background, whenever resources are free;
 - **lazily,** on demand, when an operation needs a pair that has not been compared yet. That pair goes first.
 
-When a comparison of $d_1$ and $d_2$ finds $g = \gcd(d_1, d_2) > 1$, node $g$ is found or created, and both denominators are linked to it with their residuals $d_1/g$ and $d_2/g$.
+When a comparison of $d_1$ and $d_2$ finds $g = \gcd(d_1, d_2)$, node $g$ is found or created, both denominators are linked to it with their residuals $d_1/g$ and $d_2/g$, and the comparison is recorded. When $g = 1$, both are already linked to node $1$, and only the comparison is recorded.
 
 **Improvement.** When a new divisor node $g$ is created, it can also be linked to every other denominator it divides. That is a cheap divisibility test per denominator, and it makes later lookups more likely to find the true gcd already recorded.
 
 ### Recording which pairs have been compared
 
-A shared divisor node shows that two denominators have *some* common divisor, but sharing no node is ambiguous: either they were compared and found coprime, or they were never compared. The design therefore records comparisons explicitly, as edges *within* partition 2. The denominator partition becomes a complete graph whose edges say whether a pair has been compared. Two variants, to be decided by testing:
+The largest divisor node two denominators share is a common divisor, but not necessarily the greatest: unless the pair has been compared, a larger one may exist. Since every pair shares node $1$, the shared nodes alone cannot tell a compared pair from one never compared. The design therefore records comparisons explicitly, as edges *within* partition 2. The denominator partition becomes a complete graph whose edges say whether a pair has been compared. Two variants:
 
-- **Variant A, Boolean edges.** Each pair's edge is one bit: compared or not. To find the gcd of a compared pair, find the *largest* divisor node the two share; keeping each denominator's divisor list sorted, largest first, makes this quick. If they share none, their gcd is 1.
+- **Variant A, Boolean edges: the clearest way to understand the design.** Each pair's edge is one bit: compared or not. To find the gcd of a compared pair, find the *largest* divisor node the two share, which is at least node $1$; keeping each denominator's divisor list sorted, largest first, makes this quick.
   - *Memory:* one bit per pair, $n(n-1)/2$ bits for $n$ denominators. If comparisons are made in a fixed order (each new denominator against all earlier ones), most of this can be replaced by one number per denominator: "compared with every denominator before position $k$". Only out-of-order comparisons forced by operations need explicit storage.
-  - *Lookup:* a search over shared divisor nodes.
-- **Variant B, pointer edges.** Each compared pair's edge holds a pointer to its gcd node, or a null meaning "coprime". The gcd and both residuals are found directly, with no search.
+  - *Lookup:* a search over shared divisor nodes, then a fetch of the divisor's value from partition 3.
+- **Variant B, pointer edges: the expected implementation.** Each compared pair's edge holds a pointer to its gcd node. A pointer to node $1$ means "compared, coprime"; no pointer means "not compared". The gcd and both residuals are found directly, with no search.
+  - *Why it is expected:* the divisor's value must be fetched from partition 3 either way. A pointer goes there in one step, while variant A first searches the shared divisor nodes. So the lookup is a sunk cost, and the pointer removes the extra steps. It is cheap but not free: one memory access.
   - *Memory:* one fixed-size pointer per compared pair: more than A, but never the divisor values themselves, which stay stored once in partition 3.
 
 A third variant, storing the gcd *value* on each pair edge and dropping partition 3, was considered and rejected. It duplicates possibly large numbers once per pair, and either stores residuals per pair or recomputes them by two divisions at every use.
 
-### Adding two values with different denominators
+### The chain of gcds when a pair has not been compared
 
-1. **The comparison edge is false:** compute $g = \gcd(d_x, d_y)$, record it (node, residual edges, comparison edge), and continue with step 2.
-2. **The comparison edge is true:** take $g$ and the residuals $r_x = d_x/g$ and $r_y = d_y/g$ from partition 3. If no divisor is shared, $g = 1$ and the residuals are the denominators themselves. Then apply the refined method without its first gcd:
+Even when a pair has never been compared, the largest divisor node the two already share, $c$ (at least $1$), is a known common divisor, though not confirmed as the greatest. The rest of the gcd lies in the residuals:
+
+$$
+\gcd(d_1, d_2) = c \cdot \gcd\!\left(\frac{d_1}{c},\ \frac{d_2}{c}\right).
+$$
+
+So the remaining gcd, $k = \gcd(d_1/c,\ d_2/c)$, runs on the smaller residuals, which are already stored on the edges to $c$. The result $g = c \cdot k$ is then recorded: node $g$ is created if new, its residual edges are added, and the pair's comparison record is set.
+
+The full chain, from cheapest to most expensive:
+1. **Same denominator:** integer addition.
+2. **Compared:** follow the record to $g$.
+3. **Not compared:** take the largest shared divisor $c$, then a gcd on the residuals.
+4. **Nothing beyond $1$ shared:** the same step with $c = 1$, which is the refined method's first gcd on the full denominators.
+
+### Adding two values
+
+```text
+function add(m_x / d_x, m_y / d_y)
+    if d_x is d_y then
+        return (m_x + m_y) / d_x
+    end if
+    if the pair d_x and d_y is compared then
+        set g to the largest divisor node shared by d_x and d_y
+    else
+        set c to the largest divisor node shared by d_x and d_y
+        set k to gcd(d_x / c, d_y / c)
+        set g to c · k
+        if node g does not exist then
+            create node g
+        end if
+        if d_x is not linked to g then
+            link d_x to g with residual d_x / g
+        end if
+        if d_y is not linked to g then
+            link d_y to g with residual d_y / g
+        end if
+        mark the pair d_x and d_y as compared
+    end if
+    set r_x to the residual of d_x at g
+    set r_y to the residual of d_y at g
+    set s to m_x · r_y + m_y · r_x
+    if g is 1 then
+        return s / (r_x · r_y)
+    end if
+    set h to gcd(s, g)
+    return (s / h) / (r_x · r_y · (g / h))
+end function
+```
+
+Variant B replaces the comparison check and, for a compared pair, the search for the largest shared divisor with one pointer lookup, and records a comparison by setting the pointer.
+
+The last steps are the refined method without its first gcd:
 
 $$
 \frac{m_x}{d_x} + \frac{m_y}{d_y} = \frac{m_x r_y + m_y r_x}{g\, r_x\, r_y},
 \qquad \text{then reduce by } h = \gcd(m_x r_y + m_y r_x,\ g).
 $$
 
-When $g = 1$, the result is already in lowest terms, and no gcd is computed at all.
+When $g = 1$, the result is already in lowest terms, and no second gcd is computed.
 
 ### Example
 
-Denominators $12$, $18$, $30$.
-- **The comparisons:** $\gcd(12, 18) = 6$ gives residuals $2$ and $3$; $\gcd(12, 30) = 6$ gives $2$ and $5$; $\gcd(18, 30) = 6$ gives $3$ and $5$.
-- **The result:** one divisor node, $6$, linked to all three, with residuals $12 \to 2$, $18 \to 3$, $30 \to 5$.
+Denominators $12$, $18$, $30$. All three are linked to node $1$, with implicit residuals $12$, $18$ and $30$.
+- **A first comparison:** $\gcd(12, 18) = 6$ creates node $6$, with residuals $12 \to 2$ and $18 \to 3$. In variant B, the pair holds a pointer to node $6$.
+- **The improvement:** $6$ divides $30$, so $30$ is linked to node $6$ with residual $5$. The pairs $(12, 30)$ and $(18, 30)$ are still not compared.
 
-To add $\tfrac{1}{12} + \tfrac{5}{18}$: the pair is compared, the shared node is $6$, and the residuals are $2$ and $3$. The sum is $(1 \cdot 3 + 5 \cdot 2) / (6 \cdot 2 \cdot 3) = 13/36$. The remaining gcd, $\gcd(13, 6) = 1$, confirms lowest terms.
+To add $\tfrac{1}{12} + \tfrac{5}{18}$: the pair is compared, $g = 6$, and the residuals are $2$ and $3$. The sum is $(1 \cdot 3 + 5 \cdot 2) / (6 \cdot 2 \cdot 3) = 13/36$. The remaining gcd, $\gcd(13, 6) = 1$, confirms lowest terms.
+
+To add $\tfrac{1}{12} + \tfrac{1}{30}$: the pair is not compared, but the two share node $6$, so $c = 6$. The gcd on the residuals is $\gcd(2, 5) = 1$, so $g = 6 \cdot 1 = 6$; the node and its edges already exist, and only the comparison is recorded. The sum is $(1 \cdot 5 + 1 \cdot 2) / (6 \cdot 2 \cdot 5) = 7/60$, and $\gcd(7, 6) = 1$ confirms lowest terms.
 
 ### Properties
 
 - **Consistency.** Every entry in partition 3, and every comparison edge, is a fact about two immutable denominators. Once true, it stays true. Nothing ever needs repair, and any entry can be checked cheaply: $g \cdot r = d$.
 - **The second gcd remains.** Design 1 knows the gcd $g$ but not its parts, so the reduction still needs $\gcd(\text{numerator}, g)$, as in the refined method.
-- **Growth.** The comparison record grows with the number of pairs, quadratic at worst. Divisor nodes and residual edges grow with what is actually shared.
+- **Growth.** The comparison record grows with the number of pairs, quadratic at worst. Divisor nodes and residual edges grow with what is actually shared; the edges to node $1$ need no storage.
 
 ## Design 2: a partition of coprime pieces (the coprime base)
 
@@ -144,10 +198,10 @@ Because numerators link to *denominators*, not to base elements, a refinement up
 
 | | Design 1: common divisors | Design 2: coprime base |
 | --- | --- | --- |
-| Partition 3 holds | gcds found between pairs | pairwise coprime pieces of all denominators |
+| Partition 3 holds | node $1$ and gcds found between pairs | pairwise coprime pieces of all denominators |
 | Denominator-to-partition-3 edge weight | residual $d/c$ | exponent of the piece in $d$ |
-| Pair record needed | yes (variant A: bits; variant B: pointers) | no |
-| Gcd of a pair | looked up: the largest shared node (A) or via the pointer (B); computed once per pair on first meeting | read off as $p^{\alpha \wedge \beta}$ for any pair, never computed per pair |
+| Pair record needed | yes (variant A: bits; variant B: pointers, expected in practice; a pointer to node $1$ means coprime, no pointer means not compared) | no |
+| Gcd of a pair | looked up: the largest shared node (A) or via the pointer (B); on first meeting, computed once as $c \cdot \gcd(d_1/c,\ d_2/c)$, $c$ the largest node already shared (at least $1$) | read off as $p^{\alpha \wedge \beta}$ for any pair, never computed per pair |
 | Second gcd (reduction) | against all of $g$ | only against pieces shared at equal power, often none |
 | What changes over time | new nodes and edges added; nothing ever modified | pieces refined; denominators' vectors updated (never values) |
 | Consistency | entries never become wrong | vectors can change but are always checkable: $p^{\alpha} = d$ |

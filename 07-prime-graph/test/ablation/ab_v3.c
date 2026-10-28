@@ -19,6 +19,12 @@
  * Single values (W5: add, mul) are entered "plain": every element an exception, so V3 is V0' there.
  *
  * Outputs: ab_final reduces each dense element n/D to lowest terms (timed, the final-reduction phase).
+ *
+ * V34 (round 2, VARIANT == VAR_V34) = this file + V4's deferred reduction everywhere else: exceptions are entered as
+ * given (not reduced); the graph path takes each operand as it stands (a dense slot as n/D, unreduced) and runs
+ * V4's ops: unreduced, and on an overflow both operands are reduced and the op is retried with the reducing form;
+ * results are stored unreduced (dense if their denominator divides the result's D); ab_final reduces the dense
+ * elements and the exceptions once (timed).  Everything else, including the choice of D, is V3's code.
  */
 typedef struct { int64_t num; uint64_t den; uint8_t ne; uint32_t e[AB_MAXE]; } xval;  /* den 0: bad */
 typedef struct ab_arr {
@@ -39,7 +45,34 @@ typedef struct ab_arr {
 static ab_arr *arrs[16];
 static int narrs;
 static int v3_freq;  /* policy */
-static uint64_t st_exc_in, st_dense_ovf, st_allslow;
+static uint64_t st_exc_in, st_dense_ovf, st_allslow, st_early;
+
+#if VARIANT == VAR_V34
+/* V4's ops (ab_l1.c): unreduced; an overflow reduces both operands and retries with the reducing op */
+static inline int v34_add(view a, view b, raw *r) {
+    if (core_add(a, b, 0, 0, r)) return 1;
+    st_early++;
+    raw ra, rb;
+    if (!fin((i128)a.num, a.den, a.e, a.ne, 1, &ra) || !fin((i128)b.num, b.den, b.e, b.ne, 1, &rb)) die("reduce grew");
+    return core_add(vraw(&ra), vraw(&rb), 0, 1, r);
+}
+static inline int v34_mul(view a, view b, raw *r) {
+    if (core_mul(a, b, 0, r)) return 1;
+    st_early++;
+    raw ra, rb;
+    if (!fin((i128)a.num, a.den, a.e, a.ne, 1, &ra) || !fin((i128)b.num, b.den, b.e, b.ne, 1, &rb)) die("reduce grew");
+    return core_mul(vraw(&ra), vraw(&rb), 1, r);
+}
+#define G_ADD(a, b, r) v34_add(a, b, r)
+#define G_MUL(a, b, r) v34_mul(a, b, r)
+/* an entered exception: as given, not reduced */
+#define X_ENTER(r, n, Dd) ((r)->num = (n), (r)->den = (Dd)->den, (r)->ne = (Dd)->ne, \
+                           memcpy((r)->e, (Dd)->e, sizeof(uint32_t) * (Dd)->ne))
+#else
+#define G_ADD(a, b, r) core_add(a, b, 0, 1, r)
+#define G_MUL(a, b, r) core_mul(a, b, 1, r)
+#define X_ENTER(r, n, Dd) fin((i128)(n), (Dd)->den, (Dd)->e, (Dd)->ne, 1, r)
+#endif
 
 static size_t arr_n(const struct ab_arr *a) { return a->n; }
 static ab_arr *ab_new(size_t n) {
@@ -54,7 +87,7 @@ static ab_arr *ab_new(size_t n) {
     arrs[narrs++] = a;
     return a;
 }
-static void layout_reset(void) { st_exc_in = 0; st_dense_ovf = 0; st_allslow = 0; }
+static void layout_reset(void) { st_exc_in = 0; st_dense_ovf = 0; st_allslow = 0; st_early = 0; }
 static void ab_init(void) {
     const char *p = getenv("AB_V3_POLICY");
     v3_freq = p && !strcmp(p, "freq");
@@ -73,8 +106,13 @@ static inline void xpush(ab_arr *a, size_t i, const raw *r) {
 }
 static inline view xview(const xval *x) { return (view){x->num, x->den, x->ne, x->e}; }
 static inline view dview(const ab_arr *a, size_t i, raw *t) {  /* a dense element as its own lowest-terms value */
+#if VARIANT == VAR_V34
+    (void)t;
+    return (view){a->num[i], a->D, a->dne, a->de};  /* V34: as it stands, n/D unreduced */
+#else
     fin((i128)a->num[i], a->D, a->de, a->dne, 1, t);
     return vraw(t);
+#endif
 }
 static inline view aview(const ab_arr *a) { return (view){0, a->D, a->dne, a->de}; }
 
@@ -90,7 +128,7 @@ static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) 
         for (size_t i = 0; i < a->n; i++) {
             const dden *D = &dd[di[i]];
             if (D->bad) setbad(&r);
-            else fin((i128)num[i], D->den, D->e, D->ne, 1, &r);
+            else X_ENTER(&r, num[i], D);
             a->num[i] = 0;
             xpush(a, i, &r);
         }
@@ -148,7 +186,7 @@ static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) 
         if (s && !__builtin_mul_overflow(num[i], s, &x)) { a->num[i] = x; continue; }
         const dden *Dd = &dd[di[i]];
         if (Dd->bad) setbad(&r);
-        else fin((i128)num[i], Dd->den, Dd->e, Dd->ne, 1, &r);
+        else X_ENTER(&r, num[i], Dd);
         a->num[i] = 0;
         xpush(a, i, &r);
     }
@@ -197,12 +235,12 @@ static void slow(ab_arr *R, int op, const ab_arr *A, const ab_arr *B, const ab_a
         if (C) vc = (c < C->nx && C->xi[c] == i) ? xview(&C->xv[c++]) : dview(C, i, &tc);
         if (o < novl && ovl[o] == i) o++;
         int ok;
-        if (op == OP_ADD) ok = core_add(va, vb, 0, 1, &r);
-        else if (op == OP_MUL) ok = core_mul(va, vb, 1, &r);
+        if (op == OP_ADD) ok = G_ADD(va, vb, &r);
+        else if (op == OP_MUL) ok = G_MUL(va, vb, &r);
         else {
-            ok = core_mul(va, vb, 1, &t);
+            ok = G_MUL(va, vb, &t);
             if (!ok) setbad(&r);
-            else ok = core_add(vraw(&t), vc, 0, 1, &r);
+            else ok = G_ADD(vraw(&t), vc, &r);
         }
         if (!ok) ovf();
         v3store(R, i, &r);
@@ -315,7 +353,7 @@ static void ab_sum(ab_arr *S, const ab_arr *A) {
     int cur = 0;
     buf[0].num = 0; buf[0].den = 1; buf[0].ne = 0;
     for (size_t k = 0; k < A->nx && !bad; k++) {  /* the exceptions: V0' graph adds */
-        if (!core_add(vraw(&buf[cur]), xview(&A->xv[k]), 0, 1, &buf[cur ^ 1])) ovf();
+        if (!G_ADD(vraw(&buf[cur]), xview(&A->xv[k]), &buf[cur ^ 1])) ovf();
         cur ^= 1;
         if (!buf[cur].den) bad = 1;
     }
@@ -332,7 +370,17 @@ static void ab_final(ab_arr *R) {  /* lowest terms for every element: dense ones
     size_t k = 0;
     raw t;
     for (size_t i = 0; i < R->n; i++) {
+#if VARIANT == VAR_V34
+        if (k < R->nx && R->xi[k] == i) {  /* V34: exceptions are reduced here too */
+            const xval *x = &R->xv[k++];
+            if (!x->den) { R->on[i] = 0; R->od[i] = 0; continue; }
+            if (!fin((i128)x->num, x->den, x->e, x->ne, 1, &t)) die("reduce grew");
+            R->on[i] = t.num; R->od[i] = t.den;
+            continue;
+        }
+#else
         if (k < R->nx && R->xi[k] == i) { R->on[i] = R->xv[k].num; R->od[i] = R->xv[k].den; k++; continue; }
+#endif
         fin((i128)R->num[i], R->D, R->de, R->dne, 1, &t);
         R->on[i] = t.num; R->od[i] = t.den;
     }
@@ -346,6 +394,20 @@ static inline void ab_get(const ab_arr *a, size_t i, int64_t *num, uint64_t *den
 /* Audit: D matches its edges; exception indices strictly ascending and in range; their dense slots hold 0; each
  * exception value's denominator matches its edges and it is in lowest terms. */
 static const char *ab_audit(ab_arr **L, int nl, const char *corrupt) {
+#if VARIANT == VAR_V34  /* the node invariant: live nodes pairwise coprime (AB_CORRUPT=coprime breaks it first) */
+    if (corrupt && !strcmp(corrupt, "coprime")) {
+        uint32_t a = UINT32_MAX;
+        for (uint32_t i = 0; i < nnodes; i++)
+            if (nodes[i].alive) {
+                uint64_t x;
+                if (a == UINT32_MAX) a = i;
+                else if (!__builtin_mul_overflow(nodes[a].v, nodes[i].v, &x)) { nodes[a].v = x; break; }
+            }
+    }
+    for (uint32_t i = 0; i < nnodes; i++)
+        for (uint32_t j = i + 1; j < nnodes && nodes[i].alive; j++)
+            if (nodes[j].alive && gcd64(nodes[i].v, nodes[j].v) != 1) return "nodes_not_coprime";
+#endif
     if (corrupt && !strcmp(corrupt, "xi")) {
         for (int k = 0; k < nl; k++)
             if (L[k]->nx >= 2) { uint32_t t = L[k]->xi[0]; L[k]->xi[0] = L[k]->xi[1]; L[k]->xi[1] = t; break; }
@@ -362,7 +424,9 @@ static const char *ab_audit(ab_arr **L, int nl, const char *corrupt) {
             const xval *x = &a->xv[j];
             if (!x->den) continue;
             if ((m = audit_edges(x->den, x->ne, x->e))) return m;
+#if VARIANT != VAR_V34  /* V34 keeps exceptions unreduced until ab_final */
             if (gcd64(mag(x->num), x->den) != 1 && x->num) return "exception_not_reduced";
+#endif
         }
     }
     return NULL;
@@ -370,4 +434,7 @@ static const char *ab_audit(ab_arr **L, int nl, const char *corrupt) {
 static void ab_stats(FILE *f) {
     fprintf(f, " exc_in=%llu dense_ovf=%llu allslow=%llu policy=%s", (unsigned long long)st_exc_in,
             (unsigned long long)st_dense_ovf, (unsigned long long)st_allslow, v3_freq ? "freq" : "lcm");
+#if VARIANT == VAR_V34
+    fprintf(f, " early=%llu", (unsigned long long)st_early);
+#endif
 }

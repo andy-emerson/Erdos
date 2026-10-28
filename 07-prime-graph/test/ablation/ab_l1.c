@@ -14,8 +14,8 @@
  */
 typedef struct ab_arr {
     size_t n;
-    int64_t *num;
-    uint64_t *den;
+    anum *num;
+    aden *den;
     uint8_t *ne;
     uint32_t *eo;
     uint32_t *e;
@@ -30,8 +30,8 @@ static size_t arr_n(const struct ab_arr *a) { return a->n; }
 static ab_arr *ab_new(size_t n) {
     ab_arr *a = xcalloc(sizeof *a);
     a->n = n;
-    a->num = xmalloc(n * 8 + 8);
-    a->den = xmalloc(n * 8 + 8);
+    a->num = xmalloc(n * sizeof(anum) + 8);
+    a->den = xmalloc(n * sizeof(aden) + 8);
     a->ne = xmalloc(n + 8);
     a->eo = xmalloc(n * 4 + 8);
     a->ecap = 2 * n + 16;
@@ -40,7 +40,17 @@ static ab_arr *ab_new(size_t n) {
     arrs[narrs++] = a;
     return a;
 }
+#if VARIANT == VAR_V6
+static void v6_reset(void);
+static void v6_fill_end(void);
+static void v6_fill_arr(const ab_arr *a);
+static void v6_fill_split(size_t i);
+static void v6_stats(FILE *f);
+static const char *v6_audit(ab_arr **L, int nl, const char *corrupt);
+static void layout_reset(void) { st_early = 0; st_buckets = 0; v6_reset(); }
+#else
 static void layout_reset(void) { st_early = 0; st_buckets = 0; }
+#endif
 static void ab_init(void) {}
 
 static inline view l1v(const ab_arr *a, size_t i) { return (view){a->num[i], a->den[i], a->ne[i], a->e + a->eo[i]}; }
@@ -55,11 +65,19 @@ static inline void l1put(ab_arr *a, size_t i, const raw *r) {
 }
 
 static void fill_begin(void) {}
+#if VARIANT == VAR_V6
+static void fill_end(void) { v6_fill_end(); }  /* the edges of nodes split during the fill are rewritten (timed) */
+#else
 static void fill_end(void) {}
+#endif
 static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) {
     (void)single;
     a->elen = 0;
     raw r;
+#if VARIANT == VAR_V6
+    uint32_t ep = v6_epoch;
+    v6_fill_arr(a);
+#endif
     for (size_t i = 0; i < a->n; i++) {
         const dden *D = &dd[di[i]];
         if (D->bad) setbad(&r);
@@ -67,11 +85,16 @@ static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) 
 #if VARIANT == VAR_V4
             r.num = num[i]; r.den = D->den; r.ne = D->ne;  /* entered as given: not reduced */
             memcpy(r.e, D->e, sizeof(uint32_t) * D->ne);
+#elif defined(AB_32)
+            if (!fin((awide)num[i], D->den, D->e, D->ne, 1, &r)) { ovf(); setbad(&r); }  /* beyond int32 */
 #else
             fin((i128)num[i], D->den, D->e, D->ne, 1, &r);  /* entry reduction, as the prototype does it */
 #endif
         }
         l1put(a, i, &r);
+#if VARIANT == VAR_V6
+        if (v6_epoch != ep) { v6_fill_split(i); ep = v6_epoch; }  /* elements before i may name a dead node */
+#endif
     }
 }
 
@@ -218,6 +241,10 @@ static inline void ab_get(const ab_arr *a, size_t i, int64_t *num, uint64_t *den
 /* Structural audit of the arrays written in the last rep: every good element's edges are ascending, on live nodes,
  * with positive weights, and multiply to its cached denominator. */
 static const char *ab_audit(ab_arr **L, int nl, const char *corrupt) {
+#if VARIANT == VAR_V6
+    const char *m6 = v6_audit(L, nl, corrupt);  /* re-expands edges after splits (untimed), checks the graph */
+    if (m6) return m6;
+#endif
     if (corrupt && !strcmp(corrupt, "den") && nl && L[0]->n && L[0]->den[0]) L[0]->den[0] += 1;
     for (int k = 0; k < nl; k++)
         for (size_t i = 0; i < L[k]->n; i++) {
@@ -232,6 +259,8 @@ static void ab_stats(FILE *f) {
     fprintf(f, " early=%llu", (unsigned long long)st_early);
 #elif VARIANT == VAR_V2
     fprintf(f, " buckets=%llu", (unsigned long long)st_buckets);
+#elif VARIANT == VAR_V6
+    v6_stats(f);
 #else
     (void)f;
 #endif

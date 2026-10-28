@@ -15,7 +15,7 @@ typedef struct dobj {
     uint8_t ne, dead;
     uint32_t e[AB_MAXE];
 } dobj;
-typedef struct ab_arr { size_t n; int64_t *num; dobj **d; } ab_arr;
+typedef struct ab_arr { size_t n; anum *num; dobj **d; } ab_arr;
 
 static ab_arr *arrs[16];
 static int narrs;
@@ -28,7 +28,7 @@ static size_t arr_n(const struct ab_arr *a) { return a->n; }
 static ab_arr *ab_new(size_t n) {
     ab_arr *a = xcalloc(sizeof *a);
     a->n = n;
-    a->num = xmalloc(n * 8 + 8);
+    a->num = xmalloc(n * sizeof(anum) + 8);
     a->d = xcalloc(n * sizeof(dobj *) + 8);
     if (narrs == 16) die("too many arrays");
     arrs[narrs++] = a;
@@ -98,13 +98,13 @@ static void obj_free(dobj *o) {
 static inline void rel(dobj *o) {
     if (o && --o->rc == 0) obj_free(o);
 }
-static inline void put(ab_arr *R, size_t i, int64_t num, dobj *o) {  /* takes over o's reference */
+static inline void put(ab_arr *R, size_t i, anum num, dobj *o) {  /* takes over o's reference */
     dobj *old = R->d[i];
     R->d[i] = o; R->num[i] = num;
     rel(old);
 }
 static inline dobj *robj(const raw *r) { return r->den ? intern(r->den, r->ne, r->e) : NULL; }
-static inline view ov(int64_t num, const dobj *o) {
+static inline view ov(anum num, const dobj *o) {
     return o ? (view){num, o->den, o->ne, o->e} : (view){0, 0, 0, NULL};
 }
 
@@ -121,7 +121,11 @@ static void fill(ab_arr *a, const int64_t *num, const uint32_t *di, int single) 
         if (D->bad) { put(a, i, 0, NULL); continue; }
         dobj *o = ddobj[k];
         if (!o) o = ddobj[k] = intern(D->den, D->ne, D->e);  /* held until fill_end */
+#ifdef AB_32
+        if (!fin((awide)num[i], D->den, D->e, D->ne, 1, &r)) { ovf(); put(a, i, 0, NULL); continue; }  /* > int32 */
+#else
         fin((i128)num[i], D->den, D->e, D->ne, 1, &r);        /* entry reduction, as the prototype does it */
+#endif
         put(a, i, r.num, r.den == D->den ? ref(o) : intern(r.den, r.ne, r.e));
     }
 }
@@ -133,11 +137,11 @@ static void fill_end(void) {
 
 /* ---------------------------------------------------------------- ops */
 
-static inline dobj *v5add(int64_t na, dobj *a, int64_t nb, dobj *b, int64_t *rn) {
+static inline dobj *v5add(anum na, dobj *a, anum nb, dobj *b, anum *rn) {
     raw r;
     if (!a || !b) { *rn = 0; return NULL; }
     if (a == b) {  /* same object: one integer add, then the reduction over its edges */
-        if (!fin((i128)na + nb, a->den, a->e, a->ne, 1, &r)) { ovf(); *rn = 0; return NULL; }
+        if (!fin((awide)na + nb, a->den, a->e, a->ne, 1, &r)) { ovf(); *rn = 0; return NULL; }
         *rn = r.num;
         return r.den == a->den ? ref(a) : intern(r.den, r.ne, r.e);
     }
@@ -145,7 +149,7 @@ static inline dobj *v5add(int64_t na, dobj *a, int64_t nb, dobj *b, int64_t *rn)
     *rn = r.num;
     return robj(&r);
 }
-static inline dobj *v5mul(int64_t na, dobj *a, int64_t nb, dobj *b, int64_t *rn) {
+static inline dobj *v5mul(anum na, dobj *a, anum nb, dobj *b, anum *rn) {
     raw r;
     if (!core_mul(ov(na, a), ov(nb, b), 1, &r)) ovf();
     *rn = r.num;
@@ -154,21 +158,21 @@ static inline dobj *v5mul(int64_t na, dobj *a, int64_t nb, dobj *b, int64_t *rn)
 
 static void ab_add(ab_arr *R, const ab_arr *A, const ab_arr *B) {
     for (size_t i = 0; i < R->n; i++) {
-        int64_t n;
+        anum n;
         dobj *o = v5add(A->num[i], A->d[i], B->num[i], B->d[i], &n);
         put(R, i, n, o);
     }
 }
 static void ab_mul(ab_arr *R, const ab_arr *A, const ab_arr *B) {
     for (size_t i = 0; i < R->n; i++) {
-        int64_t n;
+        anum n;
         dobj *o = v5mul(A->num[i], A->d[i], B->num[i], B->d[i], &n);
         put(R, i, n, o);
     }
 }
 static void ab_fma(ab_arr *R, const ab_arr *A, const ab_arr *B, const ab_arr *C) {
     for (size_t i = 0; i < R->n; i++) {
-        int64_t tn, n;
+        anum tn, n;
         dobj *t = v5mul(A->num[i], A->d[i], B->num[i], B->d[i], &tn);  /* the product is a value: interned */
         dobj *o = t ? v5add(tn, t, C->num[i], C->d[i], &n) : (n = 0, (dobj *)NULL);
         rel(t);
@@ -176,10 +180,10 @@ static void ab_fma(ab_arr *R, const ab_arr *A, const ab_arr *B, const ab_arr *C)
     }
 }
 static void ab_sum(ab_arr *S, const ab_arr *A) {
-    int64_t an = 0;
+    anum an = 0;
     dobj *ao = intern(1, 0, NULL);
     for (size_t i = 0; i < A->n && ao; i++) {
-        int64_t nn;
+        anum nn;
         dobj *no = v5add(an, ao, A->num[i], A->d[i], &nn);
         rel(ao);
         an = nn; ao = no;

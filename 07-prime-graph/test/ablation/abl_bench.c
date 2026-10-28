@@ -3,7 +3,9 @@
  *   abl_<variant> <job> <indir> <outfile> <reps> [K]
  *
  * variants:   VAR_V0 (the prototype pg.c, unchanged, with grouping), VAR_V0P (the control: grouping removed), VAR_V1 ..
- *             VAR_V5 (the control plus one idea each); see ablation_bench.py
+ *             VAR_V5 (the control plus one idea each); see ablation_bench.py.  Round 2 (round2_bench.py): VAR_V34
+ *             (V3 + V4, a deliberate combination), VAR_V6 (the seen-prime dictionary entry); -DAB_32 builds V0', V1
+ *             or V5 with int32 numerators and denominators below 2^31
  * jobs:       sum (column sum of a), fma (a*b + c), add / mul (a op b, single values), chain (x <- x*b + c, K times,
  *             x starting at a), fma2 ((a*b + c)*e + f)
  * inputs:     <indir>/{a,b,c,e,f}.bin: int64 n, then n int64 numerators, then n uint64 denominators
@@ -24,6 +26,8 @@
 #define VAR_V3 4
 #define VAR_V4 5
 #define VAR_V5 6
+#define VAR_V34 7
+#define VAR_V6 8
 #ifndef VARIANT
 #error "build with -DVARIANT=VAR_V0 .. VAR_V5"
 #endif
@@ -39,12 +43,15 @@
 
 #if VARIANT != VAR_V0
 #include "ab_core.c"
-#if VARIANT == VAR_V3
+#if VARIANT == VAR_V3 || VARIANT == VAR_V34
 #include "ab_v3.c"
 #elif VARIANT == VAR_V5
 #include "ab_v5.c"
 #else
 #include "ab_l1.c"
+#endif
+#if VARIANT == VAR_V6
+#include "ab_v6.c"
 #endif
 #endif
 
@@ -193,6 +200,9 @@ static void run_v0(void) {
 #else
 /* ------------------------------------------------------------------ V0' and V1..V5 */
 
+#if VARIANT == VAR_V6
+static uint64_t b_dict = UINT64_MAX, b_fill = UINT64_MAX;
+#endif
 static void run_ab(void) {
     pg_init();  /* the prime table used by pg_factor */
     ab_init();
@@ -213,7 +223,7 @@ static void run_ab(void) {
         uint64_t t2 = now();
         ab_enter_end();
         uint64_t t3 = now();
-#if VARIANT == VAR_V3
+#if VARIANT == VAR_V3 || VARIANT == VAR_V34
         D_entry = X[0]->D;  /* the first input's array denominator, as built at entry (untimed read) */
 #endif
         if (is("sum")) { ab_sum(R, X[0]); out = R; }
@@ -228,6 +238,10 @@ static void run_ab(void) {
         ab_final(out);
         uint64_t t5 = now();
         record(t3 - t0, t2 - t1, t4 - t3, t5 - t4);
+#if VARIANT == VAR_V6  /* the dictionary passes (pass 1, with the shared per-element hash; pass 2's edges), the fill */
+        if (t1 - t0 + v6_t_edges < b_dict) b_dict = t1 - t0 + v6_t_edges;
+        if (t3 - t2 - v6_t_edges < b_fill) b_fill = t3 - t2 - v6_t_edges;
+#endif
     }
     int64_t num;
     uint64_t den;
@@ -258,8 +272,14 @@ static void run_ab(void) {
     (void)D_entry;
     printf(" ovf=%llu splits=%llu nodes=%u rep_bytes=%zu maxrss_kb=%ld", (unsigned long long)ab_overflows,
            (unsigned long long)splits, ab_live_nodes(), mem_peak, maxrss_kb());
-#if VARIANT == VAR_V3
+#if VARIANT == VAR_V3 || VARIANT == VAR_V34
     printf(" exc_out=%zu D=%llu", is("sum") ? (size_t)0 : out->nx, (unsigned long long)D_entry);
+#endif
+#ifdef AB_32
+    printf(" width=32");
+#endif
+#if VARIANT == VAR_V6
+    printf(" v6_dict_ns=%llu v6_fill_ns=%llu", (unsigned long long)b_dict, (unsigned long long)b_fill);
 #endif
     ab_stats(stdout);
     if (audited) printf(" audit=%s%s", audit ? "FAIL:" : "ok", audit ? audit : "");

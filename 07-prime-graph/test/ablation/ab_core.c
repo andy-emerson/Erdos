@@ -30,6 +30,37 @@
 typedef unsigned __int128 u128;
 typedef __int128 i128;
 
+/* Width switch (round 2, round2_bench.py): -DAB_32 builds V0', V1 or V5 with int32 numerators, denominators below
+ * 2^31 and int64 intermediates.  Without it these are the 64-bit types the first ablation ran with (same code). */
+#ifdef AB_32
+#if !(VARIANT == VAR_V0P || VARIANT == VAR_V1 || VARIANT == VAR_V5)
+#error "AB_32 is for V0', V1 and V5 only"
+#endif
+typedef int32_t anum;
+typedef uint32_t aden;
+typedef int64_t awide;
+typedef uint64_t auwide;
+#define AB_NUM_LIM (1ull << 31)
+#define AB_DEN_BITS 31
+#else
+typedef int64_t anum;
+typedef uint64_t aden;
+typedef i128 awide;
+typedef u128 auwide;
+#define AB_NUM_LIM (1ull << 63)
+#define AB_DEN_BITS 63
+#endif
+
+#if VARIANT == VAR_V6  /* V6 (ab_v6.c): the seen-prime dictionary entry; its hooks below are declared here */
+static int v6_dirty;         /* a node was split during the ops: edge lists may name dead nodes */
+static uint32_t v6_nonprime; /* live nodes that are not prime (several primes) */
+static int v6_slow;          /* v6_nonprime || v6_dirty: only then do fin and the ops take V6's hooked copies */
+static uint32_t v6_epoch;    /* counts splits */
+static uint64_t v6_t_edges;  /* ns spent in pass 2 (the denominators' edges by dictionary lookups), this rep */
+static void v6_enter_den(uint32_t k, uint64_t den);
+static void v6_den_edges(uint32_t k);
+#endif
+
 static uint64_t ab_overflows;
 static int ab_abort_on_overflow;
 
@@ -143,7 +174,8 @@ static int coprime_base2(uint64_t a, uint64_t b, uint64_t *L) { /* as in pg.c */
 }
 
 /* Make den (1 < den < 2^63) a power product of live nodes: gcd refinement against every live node, as pg_den_gid
- * does, but a split only touches the node table (there are no groups to rewrite). */
+ * does, but a split only touches the node table (there are no groups to rewrite).  (V6 has its own entry.) */
+#if VARIANT != VAR_V6
 static void refine(uint64_t den) {
     uint64_t left = den;
     uint32_t nn = nnodes;
@@ -168,8 +200,12 @@ static void refine(uint64_t den) {
     }
     if (left > 1) node_new(left, 0);
 }
+#endif
 
 static uint32_t ab_decompose(void) { /* every live node into primes (pg_factor: the prototype's stages 1-4) */
+#if VARIANT == VAR_V6
+    return 0;  /* V6 strips small primes as each denominator enters; it never factors leftovers */
+#endif
     uint32_t nn = nnodes, splits = 0;
     for (uint32_t id = 0; id < nn; id++) {
         if (!nodes[id].alive || nodes[id].prime) continue;
@@ -186,31 +222,47 @@ static uint32_t ab_decompose(void) { /* every live node into primes (pg_factor: 
 
 /* ---------------------------------------------------------------- values: views and raw results */
 
-typedef struct { int64_t num; uint64_t den; int ne; const uint32_t *e; } view;  /* den 0: bad */
-typedef struct { int64_t num; uint64_t den; int ne; uint32_t e[AB_W]; } raw;
+typedef struct { anum num; aden den; int ne; const uint32_t *e; } view;  /* den 0: bad */
+typedef struct { anum num; aden den; int ne; uint32_t e[AB_W]; } raw;
 static inline view vraw(const raw *r) { return (view){r->num, r->den, r->ne, r->e}; }
 static inline void setbad(raw *r) { r->num = 0; r->den = 0; r->ne = 0; }
 
-/* r := t / den over edges e (reduced against its nodes when red).  Returns 0 if the numerator does not fit int64.
- * r->e may alias e.  With prime nodes and red, the result is in lowest terms. */
-static inline int fin(i128 t, uint64_t den, const uint32_t *e, int ne, int red, raw *r) {
+#if VARIANT == VAR_V6
+/* V6 nodes need not be prime.  While a live node is not prime, or an edge list may name a dead node, fin and the
+ * ops below hand over to hooked copies in ab_v6.c (gcd against non-prime nodes, splits, re-expansion); otherwise V6
+ * runs exactly the control's code. */
+static int fin_v6(awide t, aden den, const uint32_t *e, int ne, int red, raw *r);
+static int core_add_v6(view a, view b, int neg, int red, raw *r);
+static int core_mul_v6(view a, view b, int cancel, raw *r);
+#endif
+
+/* r := t / den over edges e (reduced against its nodes when red).  Returns 0 if the numerator does not fit int64
+ * (int32 with AB_32).  r->e may alias e.  With prime nodes and red, the result is in lowest terms. */
+static inline int fin(awide t, aden den, const uint32_t *e, int ne, int red, raw *r) {
+#if VARIANT == VAR_V6
+    if (__builtin_expect(v6_slow, 0)) return fin_v6(t, den, e, ne, red, r);
+#endif
     if (t == 0) { r->num = 0; r->den = 1; r->ne = 0; return 1; }
     int neg = t < 0, k2 = 0;
-    u128 m = neg ? (u128)0 - (u128)t : (u128)t;
+    auwide m = neg ? (auwide)0 - (auwide)t : (auwide)t;
     if (red) {
         for (int k = 0; k < ne; k++) {
             uint32_t ek = e[k];
             const ab_node *N = &nodes[EN(ek)];
             int w = (int)EW(ek), c = 0;
             while (c < w) {
+#ifndef AB_32
                 if ((m >> 64) == 0) {
+#endif
                     uint64_t q;
                     if (!ndiv((uint64_t)m, N, &q)) break;
                     m = q;
+#ifndef AB_32
                 } else {
                     if (m % N->v) break;
                     m /= N->v;
                 }
+#endif
                 c++;
             }
             for (int j = 0; j < c; j++) den = ediv(den, N);
@@ -220,8 +272,8 @@ static inline int fin(i128 t, uint64_t den, const uint32_t *e, int ne, int red, 
         if (e != r->e) memmove(r->e, e, sizeof(uint32_t) * ne);
         k2 = ne;
     }
-    if (m > (((u128)1 << 63) - (neg ? 0 : 1))) return 0;
-    r->num = neg ? (int64_t)(0 - (uint64_t)m) : (int64_t)(uint64_t)m;
+    if (m > (((auwide)AB_NUM_LIM) - (neg ? 0 : 1))) return 0;
+    r->num = neg ? (anum)(0 - (uint64_t)m) : (anum)(uint64_t)m;
     r->den = den;
     r->ne = k2;
     return 1;
@@ -256,7 +308,7 @@ static inline int lcm_plan(const view *a, const view *b, uint64_t *ca, uint64_t 
         else if (wa[i] > wb[i]) { if (!mulpow(&xb, v, wa[i] - wb[i])) return 0; }
         r->e[i] = EP(n[i], wa[i] > wb[i] ? wa[i] : wb[i]);
     }
-    if (__builtin_mul_overflow(a->den, xa, &d) || (d >> 63)) return 0;
+    if (__builtin_mul_overflow(a->den, xa, &d) || (d >> AB_DEN_BITS)) return 0;
     r->den = d; r->ne = k; *ca = xa; *cb = xb;
     return 1;
 }
@@ -264,25 +316,28 @@ static inline int lcm_plan(const view *a, const view *b, uint64_t *ca, uint64_t 
 /* r := a + b, or a - b (neg); reduced when red.  Returns 0 on overflow (r bad); a bad operand gives a bad r and
  * returns 1 (the overflow was counted where it happened).  r may alias a or b. */
 static inline int core_add(view a, view b, int neg, int red, raw *r) {
+#if VARIANT == VAR_V6
+    if (__builtin_expect(v6_slow, 0)) return core_add_v6(a, b, neg, red, r);
+#endif
     if (!a.den || !b.den) { setbad(r); return 1; }
 #if VARIANT == VAR_V1
     /* V1: the cached denominators identify the edge sets (coprime base), so check them before any edge work */
     if (a.den == b.den) {
-        i128 t = neg ? (i128)a.num - b.num : (i128)a.num + b.num;
+        awide t = neg ? (awide)a.num - b.num : (awide)a.num + b.num;
         if (!fin(t, a.den, a.e, a.ne, red, r)) { setbad(r); return 0; }
         return 1;
     }
     if (a.den > b.den) {
         uint64_t c = a.den / b.den;
         if (c * b.den == a.den) {
-            i128 y = (i128)b.num * c, t = neg ? (i128)a.num - y : (i128)a.num + y;
+            awide y = (awide)b.num * (awide)c, t = neg ? (awide)a.num - y : (awide)a.num + y;
             if (!fin(t, a.den, a.e, a.ne, red, r)) { setbad(r); return 0; }
             return 1;
         }
     } else {
         uint64_t c = b.den / a.den;
         if (c * a.den == b.den) {
-            i128 x = (i128)a.num * c, t = neg ? x - b.num : x + b.num;
+            awide x = (awide)a.num * (awide)c, t = neg ? x - b.num : x + b.num;
             if (!fin(t, b.den, b.e, b.ne, red, r)) { setbad(r); return 0; }
             return 1;
         }
@@ -290,7 +345,7 @@ static inline int core_add(view a, view b, int neg, int red, raw *r) {
 #endif
     uint64_t ca, cb;
     if (!lcm_plan(&a, &b, &ca, &cb, r)) { setbad(r); return 0; }
-    i128 x = (i128)a.num * ca, y = (i128)b.num * cb;
+    awide x = (awide)a.num * (awide)ca, y = (awide)b.num * (awide)cb;
     if (!fin(neg ? x - y : x + y, r->den, r->e, r->ne, red, r)) { setbad(r); return 0; }
     return 1;
 }
@@ -298,6 +353,9 @@ static inline int core_add(view a, view b, int neg, int red, raw *r) {
 /* r := a * b; with cancel, each numerator is first cancelled against the other operand's nodes (lowest terms when
  * the operands are).  Without cancel (V4's deferred form), the weights just add.  Returns as core_add. */
 static inline int core_mul(view a, view b, int cancel, raw *r) {
+#if VARIANT == VAR_V6
+    if (__builtin_expect(v6_slow, 0)) return core_mul_v6(a, b, cancel, r);
+#endif
     if (!a.den || !b.den) { setbad(r); return 1; }
     if (a.num == 0 || b.num == 0) { r->num = 0; r->den = 1; r->ne = 0; return 1; }
     int neg = (a.num < 0) != (b.num < 0);
@@ -325,9 +383,9 @@ static inline int core_mul(view a, view b, int cancel, raw *r) {
         if (w) r->e[ne++] = EP(n[i], w);
     }
     uint64_t p, den;
-    if (__builtin_mul_overflow(ua, ub, &p) || p > (1ull << 63) - (neg ? 0 : 1)) { setbad(r); return 0; }
-    if (__builtin_mul_overflow(da, db, &den) || (den >> 63)) { setbad(r); return 0; }
-    r->num = neg ? (int64_t)(0 - p) : (int64_t)p;
+    if (__builtin_mul_overflow(ua, ub, &p) || p > AB_NUM_LIM - (neg ? 0 : 1)) { setbad(r); return 0; }
+    if (__builtin_mul_overflow(da, db, &den) || (den >> AB_DEN_BITS)) { setbad(r); return 0; }
+    r->num = neg ? (anum)(0 - p) : (anum)p;
     r->den = den;
     r->ne = ne;
     return 1;
@@ -392,8 +450,12 @@ static uint32_t dd_get(uint64_t den) { /* the index of den among this entry's di
     if (ndd == ddcap) { ddcap = ddcap ? 2 * ddcap : 256; dd = xrealloc(dd, ddcap * sizeof *dd); }
     dden *D = &dd[ndd];
     D->den = den; D->ne = 0; D->bad = 0;
-    if (den >> 63) { ovf(); D->bad = 1; }
+    if (den >> AB_DEN_BITS) { ovf(); D->bad = 1; }
+#if VARIANT == VAR_V6
+    else v6_enter_den(ndd, den);  /* pg_factor + the seen-prime dictionary, in place of the gcd scan */
+#else
     else if (den > 1) refine(den);
+#endif
     dhk[i] = den; dhv[i] = ndd; dhcnt++;
     return ndd++;
 }
@@ -429,9 +491,17 @@ static void fill(struct ab_arr *a, const int64_t *num, const uint32_t *di, int s
 static void fill_end(void);
 /* After decomposition: each distinct denominator's edges over the (prime) nodes, then pass 2 per array. */
 static void ab_enter_end(void) {
+#if VARIANT == VAR_V6
+    struct timespec v6t0, v6t1;
+    clock_gettime(CLOCK_MONOTONIC, &v6t0);
+#endif
     for (uint32_t k = 0; k < ndd; k++) {
         dden *D = &dd[k];
         if (D->bad || D->den == 1) continue;
+#if VARIANT == VAR_V6
+        v6_den_edges(k);  /* lookups in the dictionary, not a scan of every node */
+        continue;
+#endif
         uint64_t left = D->den, q;
         int ne = 0;
         for (uint32_t id = 0; id < nnodes && left > 1; id++) {
@@ -446,6 +516,10 @@ static void ab_enter_end(void) {
         if (left != 1) die("unresolved denominator");
         D->ne = (uint8_t)ne;
     }
+#if VARIANT == VAR_V6
+    clock_gettime(CLOCK_MONOTONIC, &v6t1);
+    v6_t_edges = (uint64_t)(v6t1.tv_sec - v6t0.tv_sec) * 1000000000ull + (uint64_t)(v6t1.tv_nsec - v6t0.tv_nsec);
+#endif
     fill_begin();
     for (int p = 0; p < npend; p++) {
         fill(pending[p].a, pending[p].num, pending[p].di, pending[p].single);

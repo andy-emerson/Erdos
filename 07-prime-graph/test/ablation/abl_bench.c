@@ -5,7 +5,8 @@
  * variants:   VAR_V0 (the prototype pg.c, unchanged, with grouping), VAR_V0P (the control: grouping removed), VAR_V1 ..
  *             VAR_V5 (the control plus one idea each); see ablation_bench.py.  Round 2 (round2_bench.py): VAR_V34
  *             (V3 + V4, a deliberate combination), VAR_V6 (the seen-prime dictionary entry); -DAB_32 builds V0', V1
- *             or V5 with int32 numerators and denominators below 2^31
+ *             or V5 with int32 numerators and denominators below 2^31.  Round 3 (round3_bench.py): VAR_D0 .. VAR_D3,
+ *             V3's layout with V6's dictionary entry (D0) and one entry speed-up each (D1 .. D3; see ab_d.c)
  * jobs:       sum (column sum of a), fma (a*b + c), add / mul (a op b, single values), chain (x <- x*b + c, K times,
  *             x starting at a), fma2 ((a*b + c)*e + f)
  * inputs:     <indir>/{a,b,c,e,f}.bin: int64 n, then n int64 numerators, then n uint64 denominators
@@ -28,9 +29,15 @@
 #define VAR_V5 6
 #define VAR_V34 7
 #define VAR_V6 8
+#define VAR_D0 9   /* round 3: V3 + V6's dictionary entry, as it stands */
+#define VAR_D1 10  /* D0 + a faster small-prime test */
+#define VAR_D2 11  /* D0 + no Miller-Rabin / rho at entry: large leftovers factored in a timed idle pass */
+#define VAR_D3 12  /* D0 + a product check of large leftovers against the known large primes */
 #ifndef VARIANT
-#error "build with -DVARIANT=VAR_V0 .. VAR_V5"
+#error "build with -DVARIANT=VAR_V0 .. VAR_D3"
 #endif
+#define AB_DICT (VARIANT == VAR_V6 || VARIANT >= VAR_D0)  /* the seen-prime dictionary entry (ab_v6.c) */
+#define AB_V3L (VARIANT == VAR_V3 || VARIANT == VAR_V34 || VARIANT >= VAR_D0)  /* V3's array layout (ab_v3.c) */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -43,15 +50,18 @@
 
 #if VARIANT != VAR_V0
 #include "ab_core.c"
-#if VARIANT == VAR_V3 || VARIANT == VAR_V34
+#if AB_V3L
 #include "ab_v3.c"
 #elif VARIANT == VAR_V5
 #include "ab_v5.c"
 #else
 #include "ab_l1.c"
 #endif
-#if VARIANT == VAR_V6
+#if AB_DICT
 #include "ab_v6.c"
+#endif
+#if VARIANT >= VAR_D0
+#include "ab_d.c"
 #endif
 #endif
 
@@ -200,7 +210,7 @@ static void run_v0(void) {
 #else
 /* ------------------------------------------------------------------ V0' and V1..V5 */
 
-#if VARIANT == VAR_V6
+#if AB_DICT
 static uint64_t b_dict = UINT64_MAX, b_fill = UINT64_MAX;
 #endif
 static void run_ab(void) {
@@ -223,7 +233,7 @@ static void run_ab(void) {
         uint64_t t2 = now();
         ab_enter_end();
         uint64_t t3 = now();
-#if VARIANT == VAR_V3 || VARIANT == VAR_V34
+#if AB_V3L
         D_entry = X[0]->D;  /* the first input's array denominator, as built at entry (untimed read) */
 #endif
         if (is("sum")) { ab_sum(R, X[0]); out = R; }
@@ -238,7 +248,7 @@ static void run_ab(void) {
         ab_final(out);
         uint64_t t5 = now();
         record(t3 - t0, t2 - t1, t4 - t3, t5 - t4);
-#if VARIANT == VAR_V6  /* the dictionary passes (pass 1, with the shared per-element hash; pass 2's edges), the fill */
+#if AB_DICT  /* the dictionary passes (pass 1, with the shared per-element hash; pass 2's edges), the fill */
         if (t1 - t0 + v6_t_edges < b_dict) b_dict = t1 - t0 + v6_t_edges;
         if (t3 - t2 - v6_t_edges < b_fill) b_fill = t3 - t2 - v6_t_edges;
 #endif
@@ -272,13 +282,13 @@ static void run_ab(void) {
     (void)D_entry;
     printf(" ovf=%llu splits=%llu nodes=%u rep_bytes=%zu maxrss_kb=%ld", (unsigned long long)ab_overflows,
            (unsigned long long)splits, ab_live_nodes(), mem_peak, maxrss_kb());
-#if VARIANT == VAR_V3 || VARIANT == VAR_V34
+#if AB_V3L
     printf(" exc_out=%zu D=%llu", is("sum") ? (size_t)0 : out->nx, (unsigned long long)D_entry);
 #endif
 #ifdef AB_32
     printf(" width=32");
 #endif
-#if VARIANT == VAR_V6
+#if AB_DICT
     printf(" v6_dict_ns=%llu v6_fill_ns=%llu", (unsigned long long)b_dict, (unsigned long long)b_fill);
 #endif
     ab_stats(stdout);

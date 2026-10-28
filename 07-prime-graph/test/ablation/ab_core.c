@@ -51,7 +51,7 @@ typedef u128 auwide;
 #define AB_DEN_BITS 63
 #endif
 
-#if VARIANT == VAR_V6  /* V6 (ab_v6.c): the seen-prime dictionary entry; its hooks below are declared here */
+#if AB_DICT  /* V6 and round 3's D0-D3 (ab_v6.c, ab_d.c): the seen-prime dictionary entry; hooks declared here */
 static int v6_dirty;         /* a node was split during the ops: edge lists may name dead nodes */
 static uint32_t v6_nonprime; /* live nodes that are not prime (several primes) */
 static int v6_slow;          /* v6_nonprime || v6_dirty: only then do fin and the ops take V6's hooked copies */
@@ -59,6 +59,9 @@ static uint32_t v6_epoch;    /* counts splits */
 static uint64_t v6_t_edges;  /* ns spent in pass 2 (the denominators' edges by dictionary lookups), this rep */
 static void v6_enter_den(uint32_t k, uint64_t den);
 static void v6_den_edges(uint32_t k);
+#if VARIANT == VAR_D2
+static uint32_t d2_idle(void);  /* D2: the timed idle pass that factors the large leftovers (ab_d.c) */
+#endif
 #endif
 
 static uint64_t ab_overflows;
@@ -175,7 +178,7 @@ static int coprime_base2(uint64_t a, uint64_t b, uint64_t *L) { /* as in pg.c */
 
 /* Make den (1 < den < 2^63) a power product of live nodes: gcd refinement against every live node, as pg_den_gid
  * does, but a split only touches the node table (there are no groups to rewrite).  (V6 has its own entry.) */
-#if VARIANT != VAR_V6
+#if !AB_DICT
 static void refine(uint64_t den) {
     uint64_t left = den;
     uint32_t nn = nnodes;
@@ -203,7 +206,9 @@ static void refine(uint64_t den) {
 #endif
 
 static uint32_t ab_decompose(void) { /* every live node into primes (pg_factor: the prototype's stages 1-4) */
-#if VARIANT == VAR_V6
+#if VARIANT == VAR_D2
+    return d2_idle();  /* D2: the large leftovers left unfactored at entry, factored now (the idle pass) */
+#elif AB_DICT
     return 0;  /* V6 strips small primes as each denominator enters; it never factors leftovers */
 #endif
     uint32_t nn = nnodes, splits = 0;
@@ -227,7 +232,7 @@ typedef struct { anum num; aden den; int ne; uint32_t e[AB_W]; } raw;
 static inline view vraw(const raw *r) { return (view){r->num, r->den, r->ne, r->e}; }
 static inline void setbad(raw *r) { r->num = 0; r->den = 0; r->ne = 0; }
 
-#if VARIANT == VAR_V6
+#if AB_DICT
 /* V6 nodes need not be prime.  While a live node is not prime, or an edge list may name a dead node, fin and the
  * ops below hand over to hooked copies in ab_v6.c (gcd against non-prime nodes, splits, re-expansion); otherwise V6
  * runs exactly the control's code. */
@@ -239,7 +244,7 @@ static int core_mul_v6(view a, view b, int cancel, raw *r);
 /* r := t / den over edges e (reduced against its nodes when red).  Returns 0 if the numerator does not fit int64
  * (int32 with AB_32).  r->e may alias e.  With prime nodes and red, the result is in lowest terms. */
 static inline int fin(awide t, aden den, const uint32_t *e, int ne, int red, raw *r) {
-#if VARIANT == VAR_V6
+#if AB_DICT
     if (__builtin_expect(v6_slow, 0)) return fin_v6(t, den, e, ne, red, r);
 #endif
     if (t == 0) { r->num = 0; r->den = 1; r->ne = 0; return 1; }
@@ -316,7 +321,7 @@ static inline int lcm_plan(const view *a, const view *b, uint64_t *ca, uint64_t 
 /* r := a + b, or a - b (neg); reduced when red.  Returns 0 on overflow (r bad); a bad operand gives a bad r and
  * returns 1 (the overflow was counted where it happened).  r may alias a or b. */
 static inline int core_add(view a, view b, int neg, int red, raw *r) {
-#if VARIANT == VAR_V6
+#if AB_DICT
     if (__builtin_expect(v6_slow, 0)) return core_add_v6(a, b, neg, red, r);
 #endif
     if (!a.den || !b.den) { setbad(r); return 1; }
@@ -353,7 +358,7 @@ static inline int core_add(view a, view b, int neg, int red, raw *r) {
 /* r := a * b; with cancel, each numerator is first cancelled against the other operand's nodes (lowest terms when
  * the operands are).  Without cancel (V4's deferred form), the weights just add.  Returns as core_add. */
 static inline int core_mul(view a, view b, int cancel, raw *r) {
-#if VARIANT == VAR_V6
+#if AB_DICT
     if (__builtin_expect(v6_slow, 0)) return core_mul_v6(a, b, cancel, r);
 #endif
     if (!a.den || !b.den) { setbad(r); return 1; }
@@ -451,7 +456,7 @@ static uint32_t dd_get(uint64_t den) { /* the index of den among this entry's di
     dden *D = &dd[ndd];
     D->den = den; D->ne = 0; D->bad = 0;
     if (den >> AB_DEN_BITS) { ovf(); D->bad = 1; }
-#if VARIANT == VAR_V6
+#if AB_DICT
     else v6_enter_den(ndd, den);  /* pg_factor + the seen-prime dictionary, in place of the gcd scan */
 #else
     else if (den > 1) refine(den);
@@ -491,14 +496,14 @@ static void fill(struct ab_arr *a, const int64_t *num, const uint32_t *di, int s
 static void fill_end(void);
 /* After decomposition: each distinct denominator's edges over the (prime) nodes, then pass 2 per array. */
 static void ab_enter_end(void) {
-#if VARIANT == VAR_V6
+#if AB_DICT
     struct timespec v6t0, v6t1;
     clock_gettime(CLOCK_MONOTONIC, &v6t0);
 #endif
     for (uint32_t k = 0; k < ndd; k++) {
         dden *D = &dd[k];
         if (D->bad || D->den == 1) continue;
-#if VARIANT == VAR_V6
+#if AB_DICT
         v6_den_edges(k);  /* lookups in the dictionary, not a scan of every node */
         continue;
 #endif
@@ -516,7 +521,7 @@ static void ab_enter_end(void) {
         if (left != 1) die("unresolved denominator");
         D->ne = (uint8_t)ne;
     }
-#if VARIANT == VAR_V6
+#if AB_DICT
     clock_gettime(CLOCK_MONOTONIC, &v6t1);
     v6_t_edges = (uint64_t)(v6t1.tv_sec - v6t0.tv_sec) * 1000000000ull + (uint64_t)(v6t1.tv_nsec - v6t0.tv_nsec);
 #endif

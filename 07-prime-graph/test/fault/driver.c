@@ -1,6 +1,6 @@
-/* driver.c: the fault-injection trial driver (one binary per variant: build/drv_N, drv_O1, drv_O2, drv_O3).
+/* driver.c: the fault-injection trial driver (one binary per variant: build/drv_N, drv_O1, drv_O2, drv_O3, drv_J).
  *
- *   drv_X < job.txt        runs a job: one workload, its oracle, and a list of trials; one result line per trial
+ *   drv_X < job.txt  (X = N, O1, O2, O3, J)        runs a job: one workload, its oracle, and a list of trials; one result line per trial
  *   drv_X --script [--K k] < script.txt
  *                          runs a script with the test commands below, printing one line per command (test_fault.py)
  *
@@ -24,7 +24,7 @@
  *   AX a | AR a | EB | EE
  * Test commands (--script only): Z cls seed (inject now), ZC cls seed (inject and self-check the effect), Z8 n (arm F8
  *   for the n-th refinement from now), ZL (describe the last injection), AU (light audit), VER (a production check
- *   now), SEGV (raise SIGSEGV), HANG (loop forever), REC (print the trial record).  SEGV and HANG also work in jobs,
+ *   now), FIN (the final check), SEGV (raise SIGSEGV), HANG (loop forever), REC (print the trial record).  SEGV and HANG also work in jobs,
  *   for the tests of the classification.
  */
 
@@ -216,6 +216,9 @@ static void exec_cmd(char *line) {
     } else if (!strcmp(cmd, "AU")) {
         const char *m = pgi_audit_opt(g, 1, 0);
         sprintf(outbuf, "au %s", m ? m : "ok");
+    } else if (!strcmp(cmd, "FIN")) {
+        pgf_final_check(g);
+        strcpy(outbuf, "ok");
     } else if (!strcmp(cmd, "VER")) {
         pgf_periodic(g);
         strcpy(outbuf, "ok");
@@ -224,8 +227,9 @@ static void exec_cmd(char *line) {
     } else if (!strcmp(cmd, "HANG")) {
         for (volatile int x = 0;; x++) {}
     } else if (!strcmp(cmd, "REC")) {
-        sprintf(outbuf, "rec nverify=%" PRIu64 " nrepair=%" PRIu64 " halt=%d", pgf_rec ? pgf_rec->nverify : 0,
-                pgf_rec ? pgf_rec->nrepair : 0, pgf_rec ? pgf_rec->halt_kind : 0);
+        sprintf(outbuf, "rec nverify=%" PRIu64 " nrepair=%" PRIu64 " halt=%d nroll=%" PRIu64,
+                pgf_rec ? pgf_rec->nverify : 0, pgf_rec ? pgf_rec->nrepair : 0, pgf_rec ? pgf_rec->halt_kind : 0,
+                pgf_rec ? pgf_rec->nroll : 0);
     } else {
         fprintf(stderr, "driver: unknown command %s\n", cmd);
         exit(3);
@@ -277,6 +281,7 @@ static void run_compare(int from, int inject_cls, int pending) {
     static char line[1 << 22];
     for (int c = from; c < ncmd; c++) {
         pgf_rec->cur_cmd = c;
+        if (c == workend) pgf_final_check(g);  /* every checking variant verifies before the readout */
         if (pending && c < workend) {  /* a fault still to inject (no target until now): try before each command */
             int r = pgf_inject(g, inject_cls);
             if (r == 1) pending = 0;
@@ -328,10 +333,11 @@ static void print_record(long id, int cls, int status) {
     sanitize(r->latent_msg);
     printf("T\tid=%ld\tcls=%d\texit=%d\tsig=%s\tinjected=%d\tinj_cmd=%d\tinj_region=%s\tinj_desc=%s\thalt=%d\t"
            "halt_msg=%s\tnverify=%" PRIu64 "\tnrepair=%" PRIu64 "\trepair_cmd=%d\trepair_msg=%s\tmismatch_cmd=%d\t"
-           "mismatch_kind=%d\tgot=%.120s\twant=%.120s\tcompleted=%d\tlatent=%d\tlatent_msg=%s\tdone=%" PRIu64 "\n",
+           "mismatch_kind=%d\tgot=%.120s\twant=%.120s\tcompleted=%d\tlatent=%d\tlatent_msg=%s\tdone=%" PRIu64
+           "\tin_check=%d\tnroll=%" PRIu64 "\n",
            id, cls, exitc, sig, r->injected, r->inj_cmd, r->inj_region, r->inj_desc, r->halt_kind, r->halt_msg,
            r->nverify, r->nrepair, r->repair_cmd, r->repair_msg, r->mismatch_cmd, r->mismatch_kind, r->got, r->want,
-           r->completed, r->latent, r->latent_msg, r->done_cmds);
+           r->completed, r->latent, r->latent_msg, r->done_cmds, r->in_check, r->nroll);
     fflush(stdout);
 }
 
@@ -463,6 +469,7 @@ static int run_job(FILE *in) {
             print_record(t->id, t->cls, st);
             pgf_rec = &dummy;
         }
+        if (c == workend) pgf_final_check(g);
         strcpy(line, cmds[c]);
         exec_cmd(line);
     }

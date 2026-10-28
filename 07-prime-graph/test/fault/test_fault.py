@@ -7,8 +7,8 @@
    states, the driver's self-check compares the graph just before and just after the injection and confirms that
    exactly the intended change happened (F1: one list entry gone, its holder keeping the edge; F2: one stray entry
    whose holder has no edge; F3/F4/F5: one edge's node or exponent changed; F6: one reference count; F7: one atom's
-   dictionary entry; F9: exactly one bit of one byte) and nothing else in the index or the truth changed.  F5 must
-   report "not applicable" on N, O1 and O3 (no node-side exponent).  F8 must stop a refinement halfway.
+   dictionary entry; F5: one list position; F9: exactly one bit of one byte) and nothing else in the index or the
+   truth changed.  F8 must stop a refinement halfway; J's journal must finish it.
 2. Each outcome is reached end to end through the job runner, with workloads built so that the outcome is known:
    silent wrong, detected and repaired, detected and not repaired (production check and internal diagnostic),
    crash (signal and hang), benign, plus the not-injected cases.
@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import workload as W  # noqa: E402
 
-VARIANTS = ["N", "O1", "O2", "O3"]
+VARIANTS = ["N", "O1", "O2", "O3", "J"]
 
 
 def drv(v):
@@ -64,11 +64,8 @@ class Injectors(unittest.TestCase):
                     rc, out = script(v, SETUP[:k] + [f"ZC {cls} {seed}"])
                     self.assertEqual(rc, 0, (v, cls, out[-1:]))
                     line = out[-1]
-                    if cls == 5 and v != "O2":
-                        self.assertTrue(line.startswith("zc -1"), (v, cls, line))
-                        continue
                     self.assertTrue(line.startswith("zc 1 "), (v, cls, seed, k, line))
-                    if cls in (1, 2, 6, 7):  # index faults: the production audit must see them
+                    if cls in (1, 2, 5, 6, 7):  # index faults: the production audit must see them
                         self.assertIn("audit=fail", line, (v, cls, line))
 
     def test_f8_stops_a_refinement_halfway(self):
@@ -76,21 +73,26 @@ class Injectors(unittest.TestCase):
             # one holder on node 30: the split of 30 by 45 stops before it (0 of 1)
             # (N, O3: the graph is left inconsistent; O1, O2: the next refinement in the same entry verifies first
             # and rebuilds, so the record shows a repair)
-            rc, out = script(v, ["V 0 1 30", "Z8 1", "V 1 1 45", "ZL", "AU", "REC"])
+            rc, out = script(v, ["V 0 1 30", "Z8 1", "V 1 1 45", "ZL", "AU", "REC", "P 0"])
+            if v == "O3":  # the next refinement of the same entry is audited first: halt
+                self.assertEqual(rc, 42, (v, out))
+                continue
             self.assertEqual(out[3], "zl cls=8 pos=0 old=1", (v, out))
-            self.check_f8_effect(v, out[4], out[5])
+            self.check_f8_effect(v, out[4], out[5], out[6])
             # four holders: it stops after 2 of 4
             rc, out = script(v, ["V 0 1 30", "V 1 7 30", "V 2 11 30", "V 3 13 30", "Z8 1", "V 4 1 45", "ZL", "AU",
-                                 "REC"])
+                                 "REC", "P 2"])
             self.assertEqual(out[6], "zl cls=8 pos=2 old=4", (v, out))
-            self.check_f8_effect(v, out[7], out[8])
+            self.check_f8_effect(v, out[7], out[8], out[9], "= 11 30")  # 11/30 was in the half left behind
             # not armed: the same refinement completes and the graph is consistent
             rc, out = script(v, ["V 0 1 30", "V 1 7 30", "V 2 11 30", "V 3 13 30", "V 4 1 45", "AU"])
             self.assertEqual(out[-1], "au ok", (v, out))
 
-    def check_f8_effect(self, v, au, rec):
-        if v in ("O1", "O2"):
+    def check_f8_effect(self, v, au, rec, p0, right="= 1 30"):
+        if v in ("O1", "O2", "J"):
             self.assertIn("nrepair=1", rec, (v, rec))
+            self.assertEqual(p0 == right, v == "J", (v, p0))  # only J's roll-forward keeps the value right
+            self.assertEqual("nroll=1" in rec, v == "J", (v, rec))
         else:
             self.assertNotEqual(au, "au ok", (v, au))
             self.assertIn("nrepair=0", rec, (v, rec))
@@ -131,6 +133,12 @@ class Outcomes(unittest.TestCase):
             (o, sub), d = self.one(v, cmds, exps, 8, 0, K=1)
             self.assertEqual((o, sub), ("silent_wrong", "after a repair"), d)
             self.assertEqual(d["got"], "= 1 10")
+        # J: the journal rolls the refinement forward; O3: its pre-refinement audit halts
+        (o, sub), d = self.one("J", cmds, exps, 8, 0, K=1)
+        self.assertEqual(o, "detected_repaired", d)
+        self.assertEqual(d["nroll"], 1)
+        (o, sub), d = self.one("O3", cmds, exps, 8, 0, K=1000)
+        self.assertEqual((o, sub), ("detected_not_repaired", "production check"), d)
 
     def test_detected_and_repaired(self):
         # O1/O2, F1 (one of two holders of node 6 dropped from its list), check after every operation
@@ -207,12 +215,28 @@ class Outcomes(unittest.TestCase):
     def test_not_injected(self):
         cmds = ["V 0 1 6", "P 0"]
         exps = [X("= 1 6"), X("= 1 6")]
-        ctl, recs = job("N", cmds, exps, [(0, 8, 5, 1, 0), (1, 5, 1, 1, 0)])
-        got = {d["id"]: W.classify(d) for d in recs}
-        self.assertEqual(got[0], (None, "no refinement in the workload"))
-        self.assertEqual(got[1], (None, "not applicable"))
-        ctl, recs = job("O2", cmds, exps, [(1, 5, 1, 1, 0)])
-        self.assertEqual(W.classify(recs[0])[0], "benign")  # O2 has the record, so F5 applies
+        ctl, recs = job("N", cmds, exps, [(0, 8, 5, 1, 0)])
+        self.assertEqual(W.classify(recs[0]), (None, "no refinement in the workload"))
+        # F5 applies to every variant now; on N a wrong position in 1/6's edge is benign but left latent
+        for v in VARIANTS:
+            ctl, recs = job(v, cmds, exps, [(1, 5, 1, 1, 0)])
+            self.assertEqual(recs[0]["injected"], 1, v)
+        ctl, recs = job("N", cmds, exps, [(1, 5, 1, 1, 0)])
+        self.assertEqual(W.classify(recs[0]), ("benign", "latent inconsistency left"))
+        self.assertTrue(W.undetected(*W.classify(recs[0])))
+
+    def test_final_check_before_readout(self):
+        # F1 early, a K too large to fire and a phase at its end: only the check before the readout can see it
+        cmds = ["V 0 1 6", "V 1 5 6", "I 2 3", "P 0", "P 1", "P 2"]
+        exps = [X("= 1 6"), X("= 5 6"), X("= 3 1"), X("= 1 6"), X("= 5 6"), X("= 3 1")]
+        got = {}
+        for v in VARIANTS:
+            ctl, recs = job(v, cmds, exps, [(0, 1, 2, 1, 999)], K=1000 if v != "N" else 0, workend=3)
+            got[v] = W.classify(recs[0])
+        self.assertEqual(got["N"], ("benign", "latent inconsistency left"))
+        self.assertEqual(got["O3"], ("detected_not_repaired", "production check"))
+        for v in ("O1", "O2", "J"):
+            self.assertEqual(got[v], ("detected_repaired", "consistent"), v)
 
     def test_phase_controls_the_next_check(self):
         # O3 at K=3 with the fault before command 1: phase 0 checks after the first operation (halt before the
@@ -251,6 +275,10 @@ class Classify(unittest.TestCase):
         self.assertEqual(self.c(injected=0)[0], None)
         self.assertEqual(self.c(injected=-1)[0], None)
         self.assertEqual(self.c(exit=3, completed=0)[0], "crash")
+        self.assertEqual(self.c(sig=11, exit=-1, completed=0, in_check=1), ("crash", "inside a check (signal 11)"))
+        self.assertTrue(W.undetected("crash", "signal 11") and W.undetected("silent_wrong", "x"))
+        self.assertFalse(W.undetected("benign", "no trace") or W.undetected("detected_repaired", "consistent"))
+        self.assertTrue(W.repair_induced("silent_wrong", "after a repair"))
 
 
 class Control(unittest.TestCase):
@@ -263,7 +291,7 @@ class Control(unittest.TestCase):
         for seed in (11, 12, 13):
             w = W.Workload(seed, 600)
             for v in VARIANTS:
-                for K in ((0,) if v == "N" else (1, 100)):
+                for K in ((0,) if v == "N" else (1, 10, 1000)):
                     res = subprocess.run([drv(v)], input=W.job_text(w, K, []), capture_output=True, text=True)
                     self.assertTrue(res.stdout.startswith("CONTROL\tok"), (seed, v, K, res.stdout[:300]))
 

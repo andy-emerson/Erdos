@@ -1,15 +1,15 @@
 /* ovh.c: the time and memory overhead of a variant's production checks on two normal workloads (no fault).
  *
- *   ovh_X <workload> <K> <reps>     prints: ovh <variant> <workload> <K> <best seconds> <median seconds> <mem_peak bytes>
+ *   ovh_X <workload> <K> <reps> [scale]     prints: ovh <variant> <workload> <K> <best seconds> <median seconds> <mem_peak bytes>
  *                                           <checks per run> <operations per run> <checksum>
  *
  * Workloads (fixed seeds, identical across variants):
- *   dec   a decimal array expression: three arrays of 20,000 decimals (denominators 10^1..10^4); 300 times
+ *   dec   a decimal array expression: three arrays of 20,000 decimals (denominators 10^1..10^4); 1,000 times
  *         { begin; t = a*b; r = t + c; release t; end; s = sum(r); release r, s }
- *   dens  many distinct denominators: 10,000 values with distinct denominators (products of shared small primes and
- *         some large primes, so refinements happen), then 100,000 random add/sub/mul/div operations among them, each
+ *   dens  many distinct denominators: 5,000 values with distinct denominators (products of shared small primes and
+ *         some large primes, so refinements happen), then 300,000 random add/sub/mul/div operations among them, each
  *         result replacing a random value
- * The checksum (over every result read) must be equal across variants. */
+ * The checksum (over every result read) must be equal across variants.  scale divides REPS, NV and NOPS. */
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,10 +29,11 @@ static double now(void) {
 static uint64_t ck;
 static void mix(int64_t n, int64_t d) { ck = (ck ^ (uint64_t)n) * 0x100000001B3ull; ck = (ck ^ (uint64_t)d) * 0x100000001B3ull; }
 
-static uint64_t nops;  /* public calls that count as operations for the K counter */
+static uint64_t nops;
+static int scale = 1;  /* divides the workload sizes (smoke runs) */  /* public calls that count as operations for the K counter */
 
 static void w_dec(pg_graph *g) {
-    enum { N = 20000, REPS = 300 };
+    const int N = 20000, REPS = 1000 / scale;
     int64_t *nm = malloc(8 * N), *dn = malloc(8 * N);
     pg_array *A[3];
     for (int k = 0; k < 3; k++) {
@@ -68,7 +69,7 @@ static void w_dec(pg_graph *g) {
 }
 
 static void w_dens(pg_graph *g) {
-    enum { NV = 10000, NOPS = 100000 };
+    const int NV = 5000 / scale, NOPS = 300000 / scale;
     static const uint64_t P[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79,
                                  83, 89, 97, 101, 103, 107, 109, 113};
     static const uint64_t BIG[] = {65537, 1000003, 1000033, 2147483647, 4294967311ull};
@@ -119,7 +120,8 @@ static int cmpd(const void *a, const void *b) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 4) { fprintf(stderr, "usage: ovh dec|dens K reps\n"); return 2; }
+    if (argc < 4) { fprintf(stderr, "usage: ovh dec|dens K reps [scale]\n"); return 2; }
+    if (argc > 4) scale = atoi(argv[4]) > 0 ? atoi(argv[4]) : 1;
     const char *w = argv[1];
     uint64_t K = strtoull(argv[2], NULL, 10);
     int reps = atoi(argv[3]);

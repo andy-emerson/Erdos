@@ -11,7 +11,7 @@ pgf_last_t pgf_last;
 static uint64_t f8_left = 0;  /* F8 armed: the refinement count until the interrupted one */
 
 const char *pgf_variant(void) {
-    static const char *v[] = {"N", "O1", "O2", "O3"};
+    static const char *v[] = {"N", "O1", "O2", "O3", "J"};
     return v[PGF_POLICY];
 }
 
@@ -51,7 +51,7 @@ __attribute__((noreturn)) static void pgf_halt(const char *what, const char *msg
 
 /* ------------------------------------------------------------------------------------------------- rebuild */
 
-#if PGF_POLICY == 1 || PGF_POLICY == 2
+#if PGF_REPAIR
 /* Rebuild the derived index from the truth: the holders' factorizations (O2: the records they reference) and the
  * nodes' atoms.  Derived: node liveness, values and division constants, the dictionary, holder lists, reference
  * counts, list positions, each holder's cached p^a, each array's cached D, and the counters.  Anything that cannot be
@@ -193,11 +193,61 @@ static void pgf_rebuild(pg_graph *g, int midop) {
 
 /* ------------------------------------------------------------------------------------------------- the checks */
 
+#if PGF_JOURNAL
+static int same_atoms(const node_cold *C, const atom_t *A, int n) {
+    if (C->na != n) return 0;
+    for (int i = 0; i < n; i++)
+        if (C->at[i].p != A[i].p || C->at[i].e != A[i].e) return 0;
+    return 1;
+}
+/* J: finish an interrupted refinement from its journal, idempotently: the atoms as journaled, then every holder of
+ * N that has no edge to P yet gets the update (a holder that already has its P edge is done).  P's list is N's
+ * list copied (M1's copy step), so a holder's position in P's list is its position in N's. */
+static int pgf_rollforward(pg_graph *g) {
+    if (!g->jr.active) return 0;
+    uint32_t N = g->jr.N, P = g->jr.P, gQ = g->jr.gQ, gR = g->jr.gR;
+    if (!same_atoms(&g->nc[P], g->jr.Q, g->jr.nq)) node_set_atoms(g, P, g->jr.Q, g->jr.nq);
+    if (!same_atoms(&g->nc[N], g->jr.R, g->jr.nr)) node_set_atoms(g, N, g->jr.R, g->jr.nr);
+    node_cold *CN = &g->nc[N], *CP = &g->nc[P];
+    if (!CP->list || CP->len != CN->len) {  /* the copy step itself did not finish */
+        CP->lcap = CN->len < 4 ? 4 : CN->len;
+        CP->list = pgi_realloc(g, CP->list, (size_t)CP->lcap * 4);
+        memcpy(CP->list, CN->list, (size_t)CN->len * 4);
+        CP->len = CN->len;
+        CP->rc = CN->rc;
+    }
+    for (uint32_t i = 0; i < CN->len; i++) {
+        pg_value *h = HP(g, g->nc[N].list[i]);
+        if (h_find(g, h, P) >= 0) continue;  /* done before the interruption */
+        int k = h_find(g, h, N);
+        if (k < 0) continue;  /* not this refinement's damage: left to the audit */
+        uint32_t w = EW(g->EPL[h->eo + k]);
+        if (w * gR > 255 || w * gQ > 255) continue;
+        g->EPL[h->eo + k] = EP(N, w * gR);
+        h_insert_edge(g, h, P, w * gQ, i);
+    }
+    pin_patch(g, N, P, gQ, gR);
+    g->jr.active = 0;
+    return 1;
+}
+#endif
+
+
 static void pgf_verify(pg_graph *g, int midop) {
-    if (pgf_rec) pgf_rec->nverify++;
+    if (pgf_rec) { pgf_rec->nverify++; pgf_rec->in_check = 1; }
+#if PGF_JOURNAL
+    if (pgf_rollforward(g) && pgf_rec) {
+        if (!pgf_rec->nrepair) {
+            rec_str(pgf_rec->repair_msg, sizeof pgf_rec->repair_msg, "journal: an interrupted refinement rolled forward");
+            pgf_rec->repair_cmd = pgf_rec->cur_cmd;
+        }
+        pgf_rec->nrepair++;
+        pgf_rec->nroll++;
+    }
+#endif
     const char *m = pgi_audit_opt(g, 1, midop);
-    if (!m) return;
-#if PGF_POLICY == 1 || PGF_POLICY == 2
+    if (!m) { if (pgf_rec) pgf_rec->in_check = 0; return; }
+#if PGF_REPAIR
     char first[200];
     rec_str(first, sizeof first, m);
     pgf_rebuild(g, midop);
@@ -214,8 +264,17 @@ static void pgf_verify(pg_graph *g, int midop) {
         }
         pgf_rec->nrepair++;
     }
+    if (pgf_rec) pgf_rec->in_check = 0;
 #else
     pgf_halt("audit", m);
+#endif
+}
+
+void pgf_final_check(pg_graph *g) {  /* the verification before the results are read out */
+#if PGF_POLICY != 0
+    pgf_verify(g, 0);
+#else
+    (void)g;
 #endif
 }
 
@@ -228,7 +287,7 @@ void pgf_periodic(pg_graph *g) {
 }
 
 void pgf_before_split(pg_graph *g) {
-#if PGF_POLICY == 1 || PGF_POLICY == 2
+#if PGF_POLICY != 0
     pgf_verify(g, 1);
 #else
     (void)g;
@@ -456,21 +515,29 @@ int pgf_inject(pg_graph *g, int cls) {
         snprintf(d, sizeof d, "F4 holder %u edge to node %u: weight %u -> %u", h->id, n, w, x);
         break;
     }
-    case 5: {  /* a wrong exponent in a node-side record */
+    case 5: {  /* a wrong list position (index side only): the position of one edge in its node's list, which M1
+                * keeps in the holder's position array (PPL) and O2 in the shared record (ER.pos); the exponent and
+                * the membership are untouched */
+        pg_value *h;
+        if (!pick_holder(g, 1, &h)) return 0;
+        int k = (int)rndn(h->ne);
+        uint32_t n = edge_node(g, h, k), len = g->nc[n].len;
 #if PGF_O2
-        uint32_t N;
-        if (!pick_node(g, 1, &N)) return 0;
-        uint32_t p = (uint32_t)rndn(g->nc[N].len), r = g->nc[N].list[p], w = g->ER[r].w, x = wrong_weight(w);
-        g->ER[r].w = x;
-        pgf_last.node = N;
-        pgf_last.holder = g->ER[r].h;
-        pgf_last.old = w;
-        pgf_last.new_ = x;
-        snprintf(d, sizeof d, "F5 node %u list entry %u (holder %u): record weight %u -> %u", N, p, g->ER[r].h, w, x);
-        break;
+        uint32_t *pp = &g->ER[g->EPL[h->eo + k]].pos;
 #else
-        return -1;  /* M1's node lists hold holder ids only: there is no node-side exponent */
+        uint32_t *pp = &g->PPL[h->eo + k];
 #endif
+        uint32_t old = *pp, x;
+        if (len >= 2) { do x = (uint32_t)rndn(len); while (x == old); }
+        else x = old + 1;  /* a list of one: the only wrong position is out of range */
+        *pp = x;
+        pgf_last.holder = h->id;
+        pgf_last.node = n;
+        pgf_last.pos = (uint32_t)k;
+        pgf_last.old = old;
+        pgf_last.new_ = x;
+        snprintf(d, sizeof d, "F5 holder %u edge to node %u: list position %u -> %u (len %u)", h->id, n, old, x, len);
+        break;
     }
     case 6: {  /* a corrupted reference count */
         uint32_t N;
@@ -648,7 +715,19 @@ int pgf_selfcheck(pg_graph *g, int cls, char *msg, size_t cap) {
                  L, S[L].len, len, V, inl, w, dn, dl, dh, dd);
         break;
     }
-    case 3: case 4: case 5: {
+    case 5: {
+        pg_value *h = HP(g, V);
+#if PGF_O2
+        uint32_t cur = g->ER[g->EPL[h->eo + pgf_last.pos]].pos;
+#else
+        uint32_t cur = g->PPL[h->eo + pgf_last.pos];
+#endif
+        ok = cur == pgf_last.new_ && pgf_last.new_ != pgf_last.old && dn == 0 && dl == 0 && dh == 0 && dd == 0;
+        snprintf(why, sizeof why, "holder %u edge %u: position %u -> %u, nothing else changed; %d/%d/%d/%d", V,
+                 pgf_last.pos, pgf_last.old, cur, dn, dl, dh, dd);
+        break;
+    }
+    case 3: case 4: {
         int k = 0, nd = 0;
         pg_value *h = HP(g, ch == NONE ? 0 : ch);
         const uint32_t *e = HE(g, h);

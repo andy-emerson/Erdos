@@ -497,6 +497,13 @@ static uint32_t split_out(pg_graph *g, uint32_t Nid, const uint8_t *mv, int caus
     if (!nq || !nr) pgi_die("split: an empty part");
     uint32_t gQ = norm_atoms(Q, nq), gR = norm_atoms(R, nr);
     uint32_t P = node_alloc(g);  /* may move the node tables */
+#if PGF_JOURNAL
+    /* the journal, before any atom changes: enough to finish this refinement if it is interrupted */
+    g->jr.N = Nid; g->jr.P = P; g->jr.gQ = gQ; g->jr.gR = gR; g->jr.nq = nq; g->jr.nr = nr;
+    memcpy(g->jr.Q, Q, sizeof(atom_t) * (size_t)nq);
+    memcpy(g->jr.R, R, sizeof(atom_t) * (size_t)nr);
+    g->jr.active = 1;
+#endif
     node_set_atoms(g, P, Q, nq);
     node_set_atoms(g, Nid, R, nr);
     uint32_t len = g->nc[Nid].len, stop = len;
@@ -561,6 +568,9 @@ static uint32_t split_out(pg_graph *g, uint32_t Nid, const uint8_t *mv, int caus
         return P;
     }
     pin_patch(g, Nid, P, gQ, gR);
+#if PGF_JOURNAL
+    g->jr.active = 0;
+#endif
     if (cause) g->st_split_reduce++;
     else g->st_split_entry++;
     g->st_split_holders += len;
@@ -592,7 +602,7 @@ static void split_classes(pg_graph *g, uint32_t id, const uint64_t *ap, const ui
         int mvc = keep == 0 ? 1 : 0;
         uint8_t mv[MAXE];
         for (int a = 0; a < nn; a++) mv[a] = cls[a] == mvc;
-#if PGF_POLICY == 1 || PGF_POLICY == 2
+#if PGF_POLICY != 0
         pgf_before_split(g);  /* verify (and repair) before the copy and loop */
         if (!g->nh[id].alive || g->nc[id].na != nn) continue;  /* a rebuild changed the node: recompute */
 #endif

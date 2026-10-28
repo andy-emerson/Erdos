@@ -2,7 +2,7 @@
  *
  * The driver (driver.c) shares one pgf_trial record with each forked trial (anonymous shared memory): the library
  * writes into it what it injected, what it verified and repaired, and any halt; the driver adds the comparison with
- * the oracle.  Fault classes are numbered as in the test plan: 1..9 = F1..F9. */
+ * the oracle.  Fault classes are numbered as in the test plan: 1..9 = F1..F9 (revised plan: F5 is a list-side position field). */
 #ifndef PGFAULT_H
 #define PGFAULT_H
 
@@ -27,6 +27,9 @@ typedef struct {
     int latent;              /* after completion, the full audit (production mode) fails */
     char latent_msg[200];
     uint64_t done_cmds;
+    int in_check;            /* 1 while a production check (audit, rebuild, roll-forward) runs: a crash there is
+                              * a crash inside the check */
+    uint64_t nroll;          /* J: interrupted refinements rolled forward */
 } pgf_trial;
 
 extern pgf_trial *pgf_rec;       /* NULL: no recording */
@@ -42,6 +45,8 @@ extern uint64_t pgf_rng;         /* the injectors' random state */
 int pgf_inject(pg_graph *g, int cls);
 /* F8: the n-th refinement from now (n >= 1) stops halfway through its copy and loop; the program continues. */
 void pgf_arm_f8(uint64_t n);
+/* the production check before the readout (all checking variants); nothing for N */
+void pgf_final_check(pg_graph *g);
 const char *pgi_audit_opt(pg_graph *g, int light, int midop);
 const char *pgf_variant(void);
 

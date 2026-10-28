@@ -31,7 +31,8 @@
  * PGF_POLICY 0: N  (M1, no production checks)
  *            1: O1 (single source of truth; verify every K ops and before every refinement; rebuild the index)
  *            2: O2 (shared edge records; same verification; repair of membership by rebuild)
- *            3: O3 (M1 + the production audit every K ops; halt on mismatch, no repair)
+ *            3: O3 (M1 + the production audit every K ops and before every refinement; halt on mismatch)
+ *            4: J  (O1 + a journaled refinement: verify first rolls an interrupted refinement forward)
  * PGF_O2 is set for policy 2: holders and node lists reference shared edge records (holder, node, exponent). */
 #ifndef PGF_POLICY
 #define PGF_POLICY 0
@@ -41,6 +42,8 @@
 #else
 #define PGF_O2 0
 #endif
+#define PGF_REPAIR (PGF_POLICY == 1 || PGF_POLICY == 2 || PGF_POLICY == 4)  /* verify rebuilds the index */
+#define PGF_JOURNAL (PGF_POLICY == 4)
 
 typedef unsigned __int128 u128;
 typedef __int128 i128;
@@ -170,6 +173,8 @@ struct pg_graph {
     size_t erlive;
     unsigned gpos;
     uint32_t gring[GRING][MAXE];
+    /* J: the refinement journal (one refinement at a time): written before the atoms change, cleared at the end */
+    struct { int active; uint32_t N, P, gQ, gR; int nq, nr; atom_t Q[MAXE], R[MAXE]; } jr;
 };
 
 /* ------------------------------------------------------------------------------------------------- mem.c */

@@ -16,13 +16,26 @@ LENGTHS = [1, 6, 23, 64, 64, 300]
 
 CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 CLASS_NAMES = {1: "F1 drop list entry", 2: "F2 stray list entry", 3: "F3 wrong node in factorization",
-               4: "F4 wrong exponent in factorization", 5: "F5 wrong node-side exponent",
+               4: "F4 wrong exponent in factorization (O2: the shared record)", 5: "F5 wrong list position",
                6: "F6 wrong reference count", 7: "F7 wrong dictionary entry", 8: "F8 interrupted refinement",
                9: "F9 single bit flip"}
-BUG_CLASSES = [1, 2, 5, 6, 7, 8]
+INDEX_CLASSES = [1, 2, 5, 6, 7]   # faults in the derived index: a cross-check can see them
+TRUTH_CLASSES = [3, 4, 8]         # corruptions of the truth itself (F8: a half-applied refinement)
 HW_CLASSES = [9]
-TRUTH_CLASSES = [3, 4]
 OUTCOMES = ["detected_repaired", "detected_not_repaired", "silent_wrong", "crash", "benign", "spurious_error"]
+
+
+def undetected(outcome, sub):
+    """silent wrong, a crash without a diagnostic, or benign with the graph left inconsistent"""
+    return outcome in ("silent_wrong", "crash") or (outcome == "benign" and sub == "latent inconsistency left")
+
+
+def detected(outcome):
+    return outcome in ("detected_repaired", "detected_not_repaired")
+
+
+def repair_induced(outcome, sub):
+    return outcome == "silent_wrong" and sub == "after a repair"
 
 
 def fits(x):
@@ -364,7 +377,7 @@ def parse_record(line):
         k, _, v = kv.partition("=")
         d[k] = v
     for k in ("id", "cls", "exit", "injected", "inj_cmd", "halt", "nverify", "nrepair", "repair_cmd", "mismatch_cmd",
-              "mismatch_kind", "completed", "latent", "done", "nosplit"):
+              "mismatch_kind", "completed", "latent", "done", "nosplit", "in_check", "nroll"):
         if k in d and d[k] not in ("",):
             d[k] = int(d[k])
     d["sig"] = int(d["sig"]) if d.get("sig") else 0
@@ -391,6 +404,8 @@ def classify(d):
         sub = "after a repair" if d["nrepair"] > 0 else "no check fired first" if d["nverify"] == 0 else "checks passed"
         return "silent_wrong", sub
     if d["sig"]:
+        if d.get("in_check") == 1 and d["halt"] == 0:
+            return "crash", "inside a check" + (" (hang)" if d["sig"] == SIGALRM else f" (signal {d['sig']})")
         if d["sig"] == SIGABRT and d["halt"] == 2:
             return "detected_not_repaired", "internal diagnostic: " + d.get("halt_msg", "")[:60]
         if d["sig"] == SIGALRM:

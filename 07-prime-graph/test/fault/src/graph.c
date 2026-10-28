@@ -10,6 +10,7 @@
  *   - the reduction hook (pgi_partial): the g < N case of the spec's reduction.
  */
 #include "pg_internal.h"
+#include "pgfault.h"
 
 /* ------------------------------------------------------------------------------------------------- nodes */
 
@@ -543,7 +544,22 @@ static uint32_t split_out(pg_graph *g, uint32_t Nid, const uint8_t *mv, int caus
         h_insert_edge(g, h, P, w * gQ, i);
     }
 #endif
-    if (interrupted) return P;  /* the rest of the update never happens; the program continues */
+    if (interrupted) {  /* the rest of the update never happens; the program continues */
+        if (pgf_rec) {  /* note the kinds of the holders left behind (V value, D array denominator, X exception, T transient) */
+            size_t o = strlen(pgf_rec->inj_desc);
+            for (uint32_t i = stop; i < len && o + 3 < sizeof pgf_rec->inj_desc; i++) {
+#if PGF_O2
+                uint32_t hid = g->ER[g->nc[Nid].list[i]].h;
+#else
+                uint32_t hid = g->nc[Nid].list[i];
+#endif
+                pgf_rec->inj_desc[o++] = i == stop ? ':' : ',';
+                pgf_rec->inj_desc[o++] = " VDXT"[HP(g, hid)->kind];
+            }
+            pgf_rec->inj_desc[o] = 0;
+        }
+        return P;
+    }
     pin_patch(g, Nid, P, gQ, gR);
     if (cause) g->st_split_reduce++;
     else g->st_split_entry++;
@@ -782,6 +798,8 @@ void pg_graph_destroy(pg_graph *g) {
     pgi_free(g, g->ER);
     free(g);
 }
+
+
 
 
 /* ------------------------------------------------------------------------------------------------- fault test */

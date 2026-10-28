@@ -3,8 +3,10 @@
  *   m3_bench <contender> <job> <indir> <outfile> <reps> [K | opsname]
  *   m3_bench --version
  *
- * contenders: pg       the M1 library (lib/build/libprimegraph.a): array jobs through its expression API
+ * contenders: pg       the M1 library (lib/build/libprimegraph.a), V4 form: array jobs through its expression API
  *                      (pg_array_* between pg_expr_begin and pg_expr_end), ops jobs through single-value calls
+ *             pg-v3    the same, V3 form: each array call outside any expression (reduced on its own); the harness
+ *                      calibrates between pg and pg-v3 for fma and chain jobs
  *             mpq      GMP mpq_t per element (mpq_set_si + mpq_canonicalize at entry)
  *             fmpq     FLINT fmpq per element (fmpq_set_si at entry); a*b + c as fmpq_mul + fmpq_add
  *             fmpq-am  the same, a*b + c as fmpq_set + fmpq_addmul (the harness calibrates between the two forms)
@@ -21,11 +23,15 @@
  *             op     the job
  *             exit   every result read out in lowest terms as two int64 (pg_array_to_fracs / pg_value_get;
  *                    mpz_get_si / fmpz_get_si after a fits test; fz: fmpq_set_fmpz_frac, then fmpz_get_si)
- *             total  the minimum over reps of one rep's entry + op + exit; each phase column is its own minimum
- *             Objects of GMP and FLINT are initialised once before the reps and reused (as a caller would keep
- *             them); pg's graph is destroyed after each rep.  Releases, clears and destruction are not timed.
+ *             total  the minimum over reps of one rep's entry + op + exit; each phase column is its own minimum.
+ *                    With reps > 1 the first (cold) rep is discarded: minima over reps 2..reps.
+ *             Allocation: in ops jobs (single values) GMP and FLINT initialise every value inside the timed entry
+ *             and every result inside the timed op, as M1 allocates its values and results there; they are cleared
+ *             untimed after the rep.  In array jobs GMP and FLINT vectors are initialised once before the reps and
+ *             reused.  pg's graph is destroyed after each rep.  Releases, clears and destruction are not timed.
  * outfile:    int64 count, count int64 numerators, count int64 denominators; denominator 0 marks an element the
- *             contender could not produce (pg: an operation that returned an error; GMP/FLINT: a result beyond 64 bits)
+ *             contender could not produce (pg: an operation or a read-out that returned an error; GMP/FLINT: a
+ *             result beyond 64 bits)
  * stdout:     entry=<ns> op=<ns> exit=<ns> total=<ns> flint_threads=<k> ..., then contender statistics
  * exit code:  0 ok, 3 unable (fz on an ops job), other: error
  * M3_CORRUPT: (tests only) "num:i", "den:i", "unred:i", "sign:i", "ovf:i", "drop", "swap:i" corrupts the output
@@ -65,7 +71,9 @@ static uint64_t now(void) {
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
 }
+static int REP;  /* the current rep; with REPS > 1, rep 0 (cold) is not recorded */
 static void record(uint64_t t0, uint64_t t1, uint64_t t2, uint64_t t3) {
+    if (REPS > 1 && REP == 0) return;
     if (t1 - t0 < be) be = t1 - t0;
     if (t2 - t1 < bo) bo = t2 - t1;
     if (t3 - t2 < bx) bx = t3 - t2;
@@ -147,13 +155,14 @@ static void print_times(void) {
 
 /* ------------------------------------------------------------------ pg: the M1 library */
 
-static void run_pg(void) {
+static void run_pg(int v4) {
     pg_stats st = {0};
     pg_array_info info = {0};
     long fails = 0;
     if (is("ops")) {
         pg_value **v = xmalloc(sizeof(pg_value *) * (size_t)NV), **r = xmalloc(sizeof(pg_value *) * (size_t)T);
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             fails = 0;
             uint64_t t0 = now();
             pg_graph *g = pg_graph_create();
@@ -166,8 +175,7 @@ static void run_pg(void) {
             }
             uint64_t t2 = now();
             for (long t = 0; t < T; t++) {
-                if (r[t]) pg_value_get(g, r[t], &ON[t], &OD[t]);
-                else { ON[t] = 0; OD[t] = 0; fails++; }
+                if (!r[t] || pg_value_get(g, r[t], &ON[t], &OD[t]) != PG_OK) { ON[t] = 0; OD[t] = 0; fails++; }
             }
             uint64_t t3 = now();
             record(t0, t1, t2, t3);
@@ -176,6 +184,7 @@ static void run_pg(void) {
         }
     } else {
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             pg_array *X[3] = {0}, *R = NULL;
             pg_value *sv = NULL;
             pg_status s = PG_OK;
@@ -185,10 +194,10 @@ static void run_pg(void) {
             for (int j = 0; j < NIN; j++)
                 if (pg_array_from_fracs(g, IN[j].num, IN[j].den, (size_t)N, &X[j]) != PG_OK) { fprintf(stderr, "entry failed\n"); exit(1); }
             uint64_t t1 = now();
-            pg_expr_begin(g);
+            if (v4) pg_expr_begin(g);
             if (is("sum")) s = pg_array_sum(g, X[0], &sv);
             else if (is("fma")) s = pg_array_fma(g, X[0], X[1], X[2], &R);
-            else {  /* chain: one expression; each intermediate released as soon as the next exists */
+            else {  /* chain (v4: one expression); each intermediate released as soon as the next exists */
                 pg_array *x = X[0];
                 for (int k = 0; k < K && s == PG_OK; k++) {
                     pg_array *y = NULL;
@@ -198,13 +207,17 @@ static void run_pg(void) {
                 }
                 R = s == PG_OK ? x : NULL;
             }
-            if (pg_expr_end(g) != PG_OK) { fprintf(stderr, "pg_expr_end failed\n"); exit(1); }
+            if (v4 && pg_expr_end(g) != PG_OK) { fprintf(stderr, "pg_expr_end failed\n"); exit(1); }
             uint64_t t2 = now();
             if (s != PG_OK) {
                 for (long i = 0; i < NOUT; i++) ON[i] = OD[i] = 0;
                 fails = NOUT;
-            } else if (is("sum")) pg_value_get(g, sv, &ON[0], &OD[0]);
-            else pg_array_to_fracs(g, R, ON, OD);
+            } else if (is("sum")) {
+                if (pg_value_get(g, sv, &ON[0], &OD[0]) != PG_OK) { ON[0] = OD[0] = 0; fails = 1; }
+            } else if (pg_array_to_fracs(g, R, ON, OD) != PG_OK) {
+                for (long i = 0; i < NOUT; i++) ON[i] = OD[i] = 0;
+                fails = NOUT;
+            }
             uint64_t t3 = now();
             record(t0, t1, t2, t3);
             pg_stats_get(g, &st);
@@ -214,8 +227,8 @@ static void run_pg(void) {
     }
     write_out();
     print_times();
-    printf(" fails=%ld nodes=%zu splits_entry=%zu splits_reduce=%zu restarts=%zu v4_retries=%zu rho=%zu "
-           "cache_hits=%zu exc_out=%zu D=%" PRId64 " mem_peak=%zu\n", fails, st.nodes_live, st.splits_entry,
+    printf(" form=%s fails=%ld nodes=%zu splits_entry=%zu splits_reduce=%zu restarts=%zu v4_retries=%zu rho=%zu "
+           "cache_hits=%zu exc_out=%zu D=%" PRId64 " mem_peak=%zu\n", v4 ? "v4" : "v3", fails, st.nodes_live, st.splits_entry,
            st.splits_reduce, st.restarts, st.v4_retries, st.rho_calls, st.den_cache_hits, info.exceptions, info.D,
            st.mem_peak);
 }
@@ -232,14 +245,14 @@ static void mpq_out(long i, const mpq_t q) {
 static void run_mpq(void) {
     if (is("ops")) {
         mpq_t *v = xmalloc(sizeof(mpq_t) * (size_t)NV), *r = xmalloc(sizeof(mpq_t) * (size_t)T);
-        for (long i = 0; i < NV; i++) mpq_init(v[i]);
-        for (long t = 0; t < T; t++) mpq_init(r[t]);
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             toolong = 0;
-            uint64_t t0 = now();
-            for (long i = 0; i < NV; i++) { mpq_set_si(v[i], V.num[i], (unsigned long)V.den[i]); mpq_canonicalize(v[i]); }
+            uint64_t t0 = now();  /* values and results allocated inside the timed phases, as M1's are */
+            for (long i = 0; i < NV; i++) { mpq_init(v[i]); mpq_set_si(v[i], V.num[i], (unsigned long)V.den[i]); mpq_canonicalize(v[i]); }
             uint64_t t1 = now();
             for (long t = 0; t < T; t++) {
+                mpq_init(r[t]);
                 if (OPC[t]) mpq_mul(r[t], v[IA[t]], v[IB[t]]);
                 else mpq_add(r[t], v[IA[t]], v[IB[t]]);
             }
@@ -247,6 +260,8 @@ static void run_mpq(void) {
             for (long t = 0; t < T; t++) mpq_out(t, r[t]);
             uint64_t t3 = now();
             record(t0, t1, t2, t3);
+            for (long i = 0; i < NV; i++) mpq_clear(v[i]);  /* untimed, as pg_graph_destroy */
+            for (long t = 0; t < T; t++) mpq_clear(r[t]);
         }
     } else {
         mpq_t *x[3];
@@ -256,6 +271,7 @@ static void run_mpq(void) {
         mpq_t s;
         mpq_init(s);
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             toolong = 0;
             uint64_t t0 = now();
             for (int j = 0; j < NIN; j++)
@@ -287,13 +303,15 @@ static void fmpq_out(long i, const fmpq_t q) {
 
 static void run_fmpq(int addmul) {
     if (is("ops")) {
-        fmpq *v = _fmpq_vec_init(NV), *r = _fmpq_vec_init(T);
+        fmpq *v = xmalloc(sizeof(fmpq) * (size_t)NV), *r = xmalloc(sizeof(fmpq) * (size_t)T);
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             toolong = 0;
-            uint64_t t0 = now();
-            for (long i = 0; i < NV; i++) fmpq_set_si(v + i, V.num[i], (ulong)V.den[i]);
+            uint64_t t0 = now();  /* values and results initialised inside the timed phases, as M1's are */
+            for (long i = 0; i < NV; i++) { fmpq_init(v + i); fmpq_set_si(v + i, V.num[i], (ulong)V.den[i]); }
             uint64_t t1 = now();
             for (long t = 0; t < T; t++) {
+                fmpq_init(r + t);
                 if (OPC[t]) fmpq_mul(r + t, v + IA[t], v + IB[t]);
                 else fmpq_add(r + t, v + IA[t], v + IB[t]);
             }
@@ -301,6 +319,8 @@ static void run_fmpq(int addmul) {
             for (long t = 0; t < T; t++) fmpq_out(t, r + t);
             uint64_t t3 = now();
             record(t0, t1, t2, t3);
+            for (long i = 0; i < NV; i++) fmpq_clear(v + i);  /* untimed, as pg_graph_destroy */
+            for (long t = 0; t < T; t++) fmpq_clear(r + t);
         }
     } else {
         fmpq *x[3];
@@ -309,6 +329,7 @@ static void run_fmpq(int addmul) {
         fmpq_t s;
         fmpq_init(s);
         for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
             toolong = 0;
             uint64_t t0 = now();
             for (int j = 0; j < NIN; j++) for (long i = 0; i < N; i++) fmpq_set_si(x[j] + i, IN[j].num[i], (ulong)IN[j].den[i]);
@@ -345,6 +366,7 @@ static void run_fz(void) {
     fmpz_t D, DO, s, S, t;
     fmpz_init(D); fmpz_init(DO); fmpz_init(s); fmpz_init(S); fmpz_init(t);
     for (int rep = 0; rep < REPS; rep++) {
+        REP = rep;
         toolong = 0;
         memset(seen, 0, sizeof seen);
         for (int d = 0; d < 65536; d++) fmpz_zero(cof + d);
@@ -426,7 +448,8 @@ int main(int argc, char **argv) {
     }
     ON = xmalloc(8 * (size_t)NOUT);
     OD = xmalloc(8 * (size_t)NOUT);
-    if (!strcmp(CON, "pg")) run_pg();
+    if (!strcmp(CON, "pg")) run_pg(1);
+    else if (!strcmp(CON, "pg-v3")) run_pg(0);
     else if (!strcmp(CON, "mpq")) run_mpq();
     else if (!strcmp(CON, "fmpq")) run_fmpq(0);
     else if (!strcmp(CON, "fmpq-am")) run_fmpq(1);

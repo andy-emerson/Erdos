@@ -57,7 +57,7 @@ __attribute__((noreturn)) static void pgf_halt(const char *what, const char *msg
  * counts, list positions, each holder's cached p^a, each array's cached D, and the counters.  Anything that cannot be
  * rebuilt (an edge to a node without atoms, an atom in two nodes, edges out of order) is left for the audit that
  * follows, which then halts. */
-static void pgf_rebuild(pg_graph *g) {
+static void pgf_rebuild(pg_graph *g, int midop) {
     /* 1. nodes: alive iff they have atoms; their derived data; empty lists */
     g->nlive = 0;
     g->nmulti = 0;
@@ -162,8 +162,9 @@ static void pgf_rebuild(pg_graph *g) {
     }
     free(mark);
 #endif
-    /* 4. nodes left without holders are freed (S5) */
-    for (uint32_t id = 0; id < g->nnodes; id++)
+    /* 4. nodes left without holders are freed (S5); not in the middle of an operation, which may still be about to
+     *    link holders to them (a refinement's new part, found by the dictionary) */
+    for (uint32_t id = 0; id < g->nnodes && !midop; id++)
         if (g->nh[id].alive && g->nc[id].rc == 0) node_release(g, id);
     /* 5. each holder's cached p^a, and each array's cached D */
     for (uint32_t hid = 0; hid < g->hn; hid++) {
@@ -199,7 +200,7 @@ static void pgf_verify(pg_graph *g, int midop) {
 #if PGF_POLICY == 1 || PGF_POLICY == 2
     char first[200];
     rec_str(first, sizeof first, m);
-    pgf_rebuild(g);
+    pgf_rebuild(g, midop);
     const char *m2 = pgi_audit_opt(g, 1, midop);
     if (m2) {
         char b[440];

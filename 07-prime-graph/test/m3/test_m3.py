@@ -9,10 +9,12 @@
    with more than one thread is rejected too.
 2. Every contender gives exactly Python's fractions on small inputs of every workload and on hand-made inputs that
    need cancellation, sign handling and values near the 64-bit bounds.
-3. The generator: every workload fits the M1 bounds; reuse jobs use each value exactly U times; shared pairs share.
+3. The generator: every workload fits the M1 bounds; the reuse axes hold what rule 7c says (A: uses per value U with
+   10 values per denominator; B: one use per value, V values per denominator); shared pairs share.
 4. The statistics: the bootstrap, the verdict band (5% floor, widened by the null spread), the best library, n/a
    propagation, and the pay-back answer.
-5. The rule guard: no measured run without the pre-registered rule; partial runs cannot write results/.
+5. The rule guard: no measured run without the pre-registered rule; partial runs cannot write results/; --revise
+   rewrites the rule only while no results exist.
 """
 import os
 import shutil
@@ -27,7 +29,7 @@ import numpy as np
 import m3_bench as m3
 
 m3.build()
-CONTENDERS = ("pg", "mpq", "fmpq", "fmpq-am", "fz")
+CONTENDERS = ("pg", "pg-v3", "mpq", "fmpq", "fmpq-am", "fz")
 CORRUPTIONS = {  # M3_CORRUPT mode: the reason the checker must give (a substring of its message)
     "num:3": "wrong value", "den:3": "wrong value", "unred:3": "not in lowest terms", "sign:3": "nonpositive",
     "ovf:3": "no result", "drop": "results, expected", "swap:3": "wrong value",
@@ -122,7 +124,7 @@ class EveryContenderEveryJobKind(TmpDir):
         cls.tmpc = Path(tempfile.mkdtemp(prefix="m3jobs-"))
         W = m3.workloads(scale=0.001)
         cls.cases = []  # (dir, job, extra, expected)
-        for wl in ("DEC", "MIX12", "G-mix4", "S16", "R1k-U3", "Rpq-U3"):
+        for wl in ("DEC", "MIX12", "G-mix4", "S16", "A-mid-U3", "B-pq-V6"):
             w = W[wl]
             data = w["gen"](m3.wrng(7, wl), w["n"])
             d = cls.tmpc / wl
@@ -236,24 +238,33 @@ class Generator(unittest.TestCase):
         with self.assertRaises(ValueError):
             m3.expected("fma", data)  # the product's numerator is 2^80
 
-    def test_reuse_uses_each_value_U_times(self):
-        pool = m3.pq_dens(m3.wrng(1, "pool"), 64, 200, 2**16, 2**31)
-        for fam in ("R1k", "Rpq"):
-            for U in m3.U_GRID:
-                with self.subTest(fam=fam, U=U):
-                    g = m3.reuse(m3.wrng(1, f"{fam}{U}"), 600, U, fam, pool)
-                    (ia, ib, op), = g["ops"].values()
-                    n = len(g["v"][0])
-                    self.assertEqual(n, 2 * 600 // U)
-                    counts = np.bincount(np.concatenate([ia, ib]), minlength=n)
-                    self.assertTrue((counts == U).all())
-                    if fam == "Rpq":
-                        den = g["v"][1]
-                        self.assertTrue((den[ia] == den[ib]).all())
-                        self.assertTrue((op == 0).all())
-                        self.assertTrue(((den >= 2**32) & (den < 2**62)).all())
-                    else:
-                        self.assertEqual(set(op.tolist()), {0, 1})
+    def test_reuse_axes(self):
+        """Axis A: each value used exactly U times, each denominator on exactly 10 values (the pool scales with the
+        values).  Axis B: each value used once, each denominator on exactly V values.  pq: partners share a
+        denominator, add only, 32-62 bits.  The number of operations is the same along an axis."""
+        T = 1500
+        for axis, (var, _, grid) in m3.AXES.items():
+            for kind in ("mid", "pq"):
+                for x in grid:
+                    with self.subTest(axis=axis, kind=kind, x=x):
+                        g = m3.reuse(m3.wrng(1, f"{axis}{kind}{x}"), T, axis, x, kind)
+                        (ia, ib, op), = g["ops"].values()
+                        self.assertEqual(len(ia), T)
+                        U, vpd = (x, m3.VALUES_PER_DEN_A) if axis == "A" else (1, x)
+                        num, den = g["v"]
+                        n = len(num)
+                        self.assertEqual(n, 2 * T // U)
+                        self.assertTrue((np.bincount(np.concatenate([ia, ib]), minlength=n) == U).all())
+                        _, per_den = np.unique(den, return_counts=True)
+                        self.assertTrue((per_den == vpd).all())
+                        self.assertEqual(len(per_den), n // vpd)
+                        if kind == "pq":
+                            self.assertTrue((den[ia] == den[ib]).all())
+                            self.assertTrue((op == 0).all())
+                            self.assertTrue(((den >= 2**32) & (den < 2**62)).all())
+                        else:
+                            self.assertEqual(set(op.tolist()), {0, 1})
+                            self.assertTrue(((den >= 2) & (den < 2**20)).all())
 
     def test_shared_pairs_share(self):
         g = m3.pairs(m3.wrng(1, "sh"), 500, 30, 100)
@@ -324,6 +335,18 @@ class Statistics(unittest.TestCase):
         self.assertGreater(a["h"], 0.15)
         self.assertEqual(a["verdict"], "tie")             # 15% faster, but inside the null spread
 
+    def test_payback_per_axis_and_family(self):
+        W, an = {}, {}
+        verdicts = {"A-mid": ["slower", "tie", "faster", "faster", "faster"], "B-pq": ["slower"] * 5}
+        for fam, vs in verdicts.items():
+            for x, v in zip(m3.AXES[fam[0]][2], vs):
+                W[f"{fam}-{x}"] = {"family": fam, "x": x}
+                an[f"{fam}-{x} add"] = {"wl": f"{fam}-{x}", "verdict": v}
+        A = m3.answers({"workloads": W}, an)["payback"]
+        self.assertEqual((A["A-mid"]["faster_from"], A["A-mid"]["parity_from"], A["A-mid"]["axis"]), (10, 3, "A"))
+        self.assertEqual((A["B-pq"]["faster_from"], A["B-pq"]["parity_from"], A["B-pq"]["axis"]), (None, None, "B"))
+        self.assertTrue(A["A-mid"]["complete"] and A["B-pq"]["complete"])
+
     def test_payback(self):
         P = m3.payback
         self.assertEqual(P([(1, "slower"), (3, "tie"), (10, "faster"), (30, "faster"), (100, "faster")]), (10, 3))
@@ -339,8 +362,9 @@ class Statistics(unittest.TestCase):
 class RuleGuard(TmpDir):
     def test_rule_text(self):
         t = m3.rule_text()
-        for s in ("12 interleaved rounds", "10,000", "h = max(5%, null spread)", "U = {1, 3, 10, 30, 100}",
-                  "faster", "slower", "tie", "best library"):
+        for s in ("12 interleaved rounds", "3 reps", "first rep (cold) is discarded", "10,000",
+                  "h = max(5%, null spread)", "{1, 3, 10, 30, 100}", "{2, 6, 20, 60, 200}", "Axis A", "Axis B",
+                  "best normal use", "V3", "faster", "slower", "tie", "best library"):
             self.assertIn(s, t)
 
     def test_measured_run_refuses_without_the_rule(self):
@@ -357,6 +381,25 @@ class RuleGuard(TmpDir):
     def test_partial_run_cannot_write_results(self):
         self.assertEqual(m3.main(["--only", "DEC"]), 2)
         self.assertEqual(m3.main(["--scale", "0.1"]), 2)
+
+    def test_revise_rewrites_until_results_exist(self):
+        saved = (m3.RULE_FILE, m3.RESULTS)
+        try:
+            m3.RULE_FILE, m3.RESULTS = self.tmp / "rule.md", self.tmp / "results"
+            self.assertEqual(m3.main(["--write-rule"]), 0)
+            m3.RULE_FILE.write_text(m3.RULE_FILE.read_text().replace(m3.rule_text(), "an older rule"))
+            self.assertEqual(m3.main(["--revise", "revised after pre-run review"]), 0)
+            text = m3.RULE_FILE.read_text()
+            self.assertIn(m3.rule_text(), text)
+            self.assertNotIn("an older rule", text)
+            self.assertIn("**Revised", text)
+            self.assertIn("revised after pre-run review", text)
+            self.assertIn("revised after pre-run review", (m3.RESULTS / "m3.md").read_text())
+            (m3.RESULTS / "m3.json").write_text("{}")
+            self.assertEqual(m3.main(["--revise", "zz-second-revision"]), 2)
+            self.assertNotIn("zz-second-revision", m3.RULE_FILE.read_text())
+        finally:
+            m3.RULE_FILE, m3.RESULTS = saved
 
     def test_write_rule_does_not_overwrite(self):
         saved = (m3.RULE_FILE, m3.RESULTS)

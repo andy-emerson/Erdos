@@ -24,7 +24,8 @@
  *   AX a | AR a | EB | EE
  * Test commands (--script only): Z cls seed (inject now), ZC cls seed (inject and self-check the effect), Z8 n (arm F8
  *   for the n-th refinement from now), ZL (describe the last injection), AU (light audit), VER (a production check
- *   now), SEGV (raise SIGSEGV), REC (print the trial record).
+ *   now), SEGV (raise SIGSEGV), HANG (loop forever), REC (print the trial record).  SEGV and HANG also work in jobs,
+ *   for the tests of the classification.
  */
 
 #include <errno.h>
@@ -103,10 +104,12 @@ static void exec_cmd(char *line) {
         put_value(dst, s, v);
     } else if (!strcmp(cmd, "N")) {
         int dst = (int)rd(&p), x = (int)rd(&p);
-        put_value(dst, pg_neg(g, VS[x], &v), v);
+        s = pg_neg(g, VS[x], &v);
+        put_value(dst, s, v);
     } else if (!strcmp(cmd, "C")) {
         int dst = (int)rd(&p), x = (int)rd(&p);
-        put_value(dst, pg_value_clone(g, VS[x], &v), v);
+        s = pg_value_clone(g, VS[x], &v);
+        put_value(dst, s, v);
     } else if (!strcmp(cmd, "R")) {
         int x = (int)rd(&p);
         pg_value_release(g, VS[x]);
@@ -128,12 +131,14 @@ static void exec_cmd(char *line) {
         int dst = (int)rd(&p);
         size_t n = (size_t)rd(&p);
         for (size_t i = 0; i < n; i++) { nb[i] = rd(&p); db[i] = rd(&p); }
-        put_array(dst, pg_array_from_fracs(g, nb, db, n, &a), a);
+        s = pg_array_from_fracs(g, nb, db, n, &a);
+        put_array(dst, s, a);
     } else if (!strcmp(cmd, "AV")) {
         int dst = (int)rd(&p);
         size_t n = (size_t)rd(&p);
         for (size_t i = 0; i < n; i++) vb[i] = VS[rd(&p)];
-        put_array(dst, pg_array_from_values(g, vb, n, &a), a);
+        s = pg_array_from_values(g, vb, n, &a);
+        put_array(dst, s, a);
     } else if (!strcmp(cmd, "AO")) {
         char op = *strtok_r(NULL, " \n", &p);
         int dst = (int)rd(&p), x = (int)rd(&p), y = (int)rd(&p);
@@ -146,10 +151,12 @@ static void exec_cmd(char *line) {
         put_array(dst, s, a);
     } else if (!strcmp(cmd, "AS")) {
         int dst = (int)rd(&p), x = (int)rd(&p);
-        put_value(dst, pg_array_sum(g, AS[x], &v), v);
+        s = pg_array_sum(g, AS[x], &v);
+        put_value(dst, s, v);
     } else if (!strcmp(cmd, "AD")) {
         int dst = (int)rd(&p), x = (int)rd(&p), y = (int)rd(&p);
-        put_value(dst, pg_array_dot(g, AS[x], AS[y], &v), v);
+        s = pg_array_dot(g, AS[x], AS[y], &v);
+        put_value(dst, s, v);
     } else if (!strcmp(cmd, "AG")) {
         int x = (int)rd(&p);
         size_t i = (size_t)rd(&p);
@@ -160,7 +167,8 @@ static void exec_cmd(char *line) {
     } else if (!strcmp(cmd, "AGV")) {
         int dst = (int)rd(&p), x = (int)rd(&p);
         size_t i = (size_t)rd(&p);
-        put_value(dst, pg_array_get(g, AS[x], i, &v), v);
+        s = pg_array_get(g, AS[x], i, &v);
+        put_value(dst, s, v);
     } else if (!strcmp(cmd, "AX")) {
         int x = (int)rd(&p);
         size_t n = pg_array_len(AS[x]);
@@ -213,6 +221,8 @@ static void exec_cmd(char *line) {
         strcpy(outbuf, "ok");
     } else if (!strcmp(cmd, "SEGV")) {
         raise(SIGSEGV);
+    } else if (!strcmp(cmd, "HANG")) {
+        for (volatile int x = 0;; x++) {}
     } else if (!strcmp(cmd, "REC")) {
         sprintf(outbuf, "rec nverify=%" PRIu64 " nrepair=%" PRIu64 " halt=%d", pgf_rec ? pgf_rec->nverify : 0,
                 pgf_rec ? pgf_rec->nrepair : 0, pgf_rec ? pgf_rec->halt_kind : 0);
@@ -297,7 +307,8 @@ static void child_limits(void) {
     setrlimit(RLIMIT_CORE, &r);
     r.rlim_cur = r.rlim_max = (rlim_t)1536 << 20;
     setrlimit(RLIMIT_AS, &r);
-    alarm(30);
+    const char *to = getenv("FAULT_TIMEOUT");  /* seconds before a trial counts as a hang (default 30) */
+    alarm(to ? (unsigned)atoi(to) : 30);
     int fd = open("/dev/null", O_WRONLY);
     if (fd >= 0) { dup2(fd, 2); close(fd); }  /* diagnostics are recorded; keep stderr quiet */
 }

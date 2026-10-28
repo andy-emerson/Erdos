@@ -49,7 +49,7 @@ const char *pgi_audit_opt(pg_graph *g, int light, int midop) {
         }
         live++;
         if (C->rc != C->len) return "I3: reference count differs from the list length";
-        if (C->rc == 0) return "S5: an unused node was not freed";
+        if (C->rc == 0 && !midop) return "S5: an unused node was not freed";
         if (!C->na || C->na > 15) return "a node without atoms";
         u128 v = 1;
         uint32_t ge = 0;

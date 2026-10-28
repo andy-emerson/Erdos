@@ -48,6 +48,8 @@ static v6meta *vm;
 static uint32_t vmcap;
 static uint64_t *v6pp;  /* prime lists of the nodes */
 static size_t v6npp, v6ppcap;
+static uint64_t *v6ppi, *v6ppl;  /* each listed prime's exact-division constants (odd primes; 2 by shifts) */
+static size_t v6ppicap, v6pplcap;
 static uint32_t *v6fw;  /* forwarding: the parts of each dead node, EP(part, exponent) */
 static size_t v6nfw, v6fwcap;
 static uint32_t *dsm;   /* primes below 2^16: holder node + 1 (0: not seen) */
@@ -142,8 +144,15 @@ static uint32_t v6_node(uint64_t v, const uint64_t *pr, int npr) {
     v6meta *M = &vm[id];
     M->fc = 0; M->fo = 0; M->pc = (uint8_t)npr;
     GROW(v6pp, v6npp, v6ppcap, (size_t)npr);
+    GROW(v6ppi, v6npp, v6ppicap, (size_t)npr);
+    GROW(v6ppl, v6npp, v6pplcap, (size_t)npr);
     M->po = (uint32_t)v6npp;
-    for (int i = 0; i < npr; i++) { v6pp[v6npp++] = pr[i]; dict_set(pr[i], id); }
+    for (int i = 0; i < npr; i++) {
+        v6ppi[v6npp] = pr[i] & 1 ? inv64(pr[i]) : 0;
+        v6ppl[v6npp] = UINT64_MAX / pr[i];
+        v6pp[v6npp++] = pr[i];
+        dict_set(pr[i], id);
+    }
     if (npr > 1) { v6_nonprime++; v6_upd(); }
     return id;
 }
@@ -221,8 +230,16 @@ static void v6_split_by(uint32_t id, uint64_t g) {
     }
     v6_kill(id, parts, np);
 }
-static inline uint64_t v6_part(uint64_t m, const ab_node *N) {  /* the proper common part of m and N (0: none) */
-    uint64_t g = gcd64(m, N->v);
+/* A proper common part of m and a node holding several primes (0: none): the product of the node's primes that
+ * divide m, each tested by exact division (the primes are known, so no gcd).  It is below the node's value, since
+ * the caller found that the node itself does not divide m. */
+static inline uint64_t v6_part(uint64_t m, const ab_node *N) {
+    const v6meta *M = &vm[N - nodes];
+    uint64_t g = 1;
+    for (uint32_t j = 0; j < M->pc; j++) {
+        uint64_t p = v6pp[M->po + j];
+        if (p & 1 ? m * v6ppi[M->po + j] <= v6ppl[M->po + j] : !(m & 1)) g *= p;
+    }
     return (g > 1 && g < N->v) ? g : 0;
 }
 

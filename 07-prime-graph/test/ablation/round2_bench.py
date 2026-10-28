@@ -472,13 +472,13 @@ BIASES = [
     "of W7's distinct denominators, which was most of its W7 entry cost (about 50 ms of dictionary passes, "
     "now about 17).",
     "V6's nodes need not be prime.  While a live node holds several primes, or an operand may name a dead node "
-    "(after a split during the ops), fin, core_add and core_mul run hooked copies (ab_v6.c) that take a gcd against "
-    "such nodes and split them on a proper common part; otherwise they run the control's code unchanged, after one "
+    "(after a split during the ops), fin, core_add and core_mul run hooked copies (ab_v6.c) that test such nodes' "
+    "known primes by exact division and split them on a proper common part; otherwise they run the control's code unchanged, after one "
     "test of a global flag.  A split during the fill re-expands every distinct denominator's edges at once, and the "
     "elements filled before it are rewritten at the end of the entry (timed).  W7's semiprime denominators stay "
-    "nodes of two primes (their primes are never seen apart), so W7's ops stay on the hooked copies (a gcd against "
-    "each such node in every reduction and cancellation).  In a full-size check before the measured run, V6's W7 op "
-    "phase took about 21 ms against V0' 14 ms, so on W7 the hooked ops are a real cost, besides the entry.",
+    "nodes of two primes (their primes are never seen apart), so W7's ops stay on the hooked copies: each "
+    "reduction and cancellation against such a node tests its known primes by exact division (no gcd).  In a "
+    "full-size check before the measured run, V6's W7 op phase took about 15.7 ms against V0' 13.7 ms.",
     "The fill keeps one V6-only test per element (has a split happened since the previous element?), to know which "
     "elements to rewrite.",
     "V6's dictionary passes are timed as pass 1 (which includes the per-element denominator hash shared with V0') "

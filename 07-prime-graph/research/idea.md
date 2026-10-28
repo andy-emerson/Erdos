@@ -65,6 +65,26 @@ As computing resources become available, denominators are decomposed into primes
 - **Numerator growth** under repeated multiplication is inherent; no representation avoids it.
 - **Wide denominators** above 64 bits rely on gcd refinement alone. How well values sharing large factors get connected is untested.
 
+## Scalability requirements (agreed Oct 27)
+
+The graph grows with every value stored. **No arithmetic operation may cost more as the graph grows.** An operation touches only its operands' numerators, their edges, and those denominator nodes, usually fewer than ten. It never touches the rest of the graph. The graph is not stored as a matrix ("rows" below is only a manner of speaking).
+
+- **Edges are stored on both sides.** Each numerator keeps the list of its denominator nodes and weights, so an operation finds its denominators immediately, without a search. Each denominator node keeps the list of its numerators, which is what makes a split cheap.
+- **Splitting a node is a copy and a loop, with no history kept.** To split 5 out of 30 when a new value 11/45 arrives:
+  1. node 30's numerator list is duplicated for the new node 5, and the original becomes 6, keeping its list;
+  2. the new value joins 5's list;
+  3. one loop over 5's list adds an edge to 5 in each of those numerators' own lists, the newcomer included. The list says exactly which numerators to update, so there is no search.
+
+  Each numerator keeps its weight: 30ʷ = 6ʷ·5ʷ. Here gcd(30, 45) = 15, so 3 is split out the same way, and 30 ends as nodes 2, 3 and 5. A split costs one pass over the node's numerator list. Splits are rare, since each permanently refines the graph and they can number no more than the distinct primes found; operations stay local. Rejected alternatives: sharing a frozen list between the parts, and forwarding links. Both need a growing structure recording the history of splits.
+- **Finding sharing by lookup, not scanning** (the seen-prime dictionary). A dictionary keyed by prime records which node holds each prime.
+  - On the first sighting, the prime is only marked; nothing is split.
+  - On a second sighting, the prime is split out of both denominators. This gives the coarsest correct graph.
+  - Entry order: trial division by the small-prime table; then exact division by the large primes already in the dictionary; then Miller–Rabin and Pollard's rho only on what remains, adding any primes found to the dictionary.
+- **Large leftovers are refined in batches.** Leftovers with no known factors are refined against each other by gcd at idle times, in batches (Bernstein's product-tree method, nearly linear in the batch), or when two values actually meet in an operation. They are never compared against every node at entry.
+- **Unused nodes are freed.** Each denominator node has a reference count and is freed when no numerator uses it, so the node table does not grow forever.
+
+The only costs that grow with the data are those every system has: the size of the values themselves, and array operations that are linear in the array.
+
 ## Next steps
 
 1. A quick prior-art scan (about half an hour) to learn whether an implementation exists that should be benchmarked against.

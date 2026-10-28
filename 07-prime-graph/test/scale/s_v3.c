@@ -222,7 +222,7 @@ static int op_run(int op, uint32_t ha, uint32_t hb, raw *r) {
         if (get_view(ha, &ta, &va) < 0 || get_view(hb, &tb, &vb) < 0) { st_op_restart++; continue; }
         int ok = op == OP_ADD ? core_add(va, vb, 0, r) : core_mul(va, vb, r);
         if (ok < 0) { st_op_restart++; continue; }
-        if (corrupt_result && r->den) { corrupt_result = 0; r->num += 1; }
+        if (corrupt_result && r->den) { corrupt_result = 0; r->num += (int64_t)r->den; }  /* test hook: off by 1 */
         if (!ok) st_ovf_ops++;
         return ok;
     }

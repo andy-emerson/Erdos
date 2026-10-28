@@ -33,9 +33,11 @@
  * leftover refined by gcd), and the op restarts on fresh views (s_partial, the hook in s_core.c's fin and core_mul).
  *
  * The idle pass (lazy mode): the pending atoms X are checked against the settled large atoms K by a remainder tree
- * (Z_K mod x for every x, Z_K the product of K) and against each other by a batch gcd (s_core.c).  The hits are
- * resolved by descending the product trees, refined by a coprime base per connected component, and the nodes
- * sharing a base element are split (copy and loop) and merged (one loop over the absorbed node's list).
+ * (Z_K mod x for every x, Z_K the product of K) and against each other by a batch gcd (s_core.c).  Each hit's
+ * partners are found by descending the product trees; each pair is refined by gcd (the coprime base of the two
+ * current atoms, never factoring), and a piece held by two nodes is split out of both (copy and loop) and the two
+ * single nodes merged (one loop over the absorbed node's list).  A map from refined atoms to their pieces lives
+ * only for the duration of one pass.  Ops that meet a pending or leftover atom refine it by gcd too (s_partial).
  */
 
 static int s_lazy;            /* 1: no Miller-Rabin or rho at entry; leftovers wait for the idle pass */
@@ -279,10 +281,14 @@ static void node_reatom(uint32_t id, atom_t *at, int na) {
         EPL[H[h].eo + k] = EP(id, w);
     }
 }
-/* atom idx of node id (a leftover) shares g with a numerator: replace it by its coprime pieces */
+/* atom idx of node id (a leftover) shares g with a numerator: replace it by its coprime pieces.  A pending atom has
+ * not been checked against the other nodes yet, so a piece may already be an atom elsewhere: the two are merged. */
+static void resolve_piece(uint64_t b, const uint32_t *cand, int nc);
 static void refine_atom(uint32_t id, int idx, uint64_t g) {
     atom_t A = nd[id].at[idx], nat[64];
-    int n2 = 0;
+    int n2 = 0, nconf = 0;
+    uint64_t confb[64];
+    uint32_t confid[64];
     for (int i = 0; i < nd[id].na; i++) if (i != idx) nat[n2++] = nd[id].at[i];
     uint64_t base[64], chk = 1;
     int nb = coprime_base2(A.a, g, base);
@@ -290,10 +296,16 @@ static void refine_atom(uint32_t id, int idx, uint64_t g) {
         uint32_t f = vlog(A.a, base[b]);
         if (!f) continue;
         for (uint32_t j = 0; j < f; j++) chk *= base[b];
+        uint32_t prev = dict_get(base[b]);
+        if (prev != NONE && prev != id) { confb[nconf] = base[b]; confid[nconf++] = prev; }
         nat[n2++] = (atom_t){base[b], (uint8_t)(A.e * f), (uint8_t)(A.k == 2 ? 2 : (is_prime(base[b]) ? 0 : 1))};
     }
     if (chk != A.a) die("refine_atom: pieces do not multiply back");
     node_reatom(id, nat, n2);
+    for (int c = 0; c < nconf; c++) {
+        uint32_t cand[2] = {id, confid[c]};
+        resolve_piece(confb[c], cand, 2);
+    }
     st_refine++;
 }
 /* The op hook: node id (several atoms, or not prime) left a power on a denominator while sharing part of m (m is
@@ -831,7 +843,7 @@ static int g_corrupt(const char *what) {
 static void g_stats(FILE *f) {
     fprintf(f, "\"nodes_live\": %u, \"node_slots\": %u, \"nodes_multi\": %llu, \"atoms_not_prime\": %llu, "
                "\"nodes_new\": %llu, \"nodes_freed\": %llu, \"splits_entry\": %llu, \"splits_op\": %llu, "
-               "\"splits_idle\": %llu, \"split_numerators\": %llu, \"split_ns\": %llu, \"split_max_ns\": %llu, "
+               "\"splits_idle\": %llu, \"split_numerators_total\": %llu, \"split_ns_total\": %llu, \"split_max_ns\": %llu, "
                "\"merges\": %llu, \"refines\": %llu, \"restarts\": %llu, \"rho_calls\": %llu, \"idle_ns_total\": %llu, "
                "\"idle_hits\": %llu, \"idle_pending\": %llu, \"idle_known\": %llu, \"dict_entries\": %zu",
             nlive, nnodes, (unsigned long long)n_multi, (unsigned long long)n_unk, (unsigned long long)st_node_new,

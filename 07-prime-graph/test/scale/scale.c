@@ -97,28 +97,34 @@ static int64_t rnum(void) { return (int64_t)rndn(1ull << 21) - (1ll << 20); }
 
 /* ---------------------------------------------------------------- measurement helpers */
 
-typedef struct { uint64_t ns_add, ns_mul, ovf, n; } opres;
-/* M ops (half add, half mul) on the operand pairs pa, pb (random live values when NULL), results into ring slots
- * [off, off + M); nchk of them checked */
+typedef struct { uint64_t ns_add, ns_mul, ovf, n, first_add, first_mul; } opres;
+static int REPS = 3;
+/* M ops (half add, half mul) on the operand pairs fa, fb (random live values when NULL), results into ring slots
+ * [off, off + M); repeated REPS times on the same pairs, the minimum kept (the first repetition reported too);
+ * nchk results of the last repetition checked */
 static opres op_sample_on(uint32_t M, uint32_t nchk, const uint32_t *fa, const uint32_t *fb, uint32_t off) {
-    opres o = {0, 0, 0, M};
-    if (!nlv || !M) return o;
+    opres o = {UINT64_MAX, UINT64_MAX, 0, M, 0, 0};
+    if (!nlv || !M) { o.ns_add = o.ns_mul = 0; return o; }
     if (ring_n < off + M) die("ring too small");
     uint32_t *pa = malloc((size_t)M * 4), *pb = malloc((size_t)M * 4);
     for (uint32_t j = 0; j < M; j++) {
         pa[j] = fa ? fa[j] : LV[rndn(nlv)];
         pb[j] = fb ? fb[j] : LV[rndn(nlv)];
     }
-    uint64_t ov0 = st_ovf_ops;
     raw r;
-    SET_PHASE(1);
-    uint64_t t0 = now_ns();
-    for (uint32_t j = 0; j < M / 2; j++) { op_run(OP_ADD, pa[j], pb[j], &r); ring_store(off + j, &r); }
-    uint64_t t1 = now_ns();
-    for (uint32_t j = M / 2; j < M; j++) { op_run(OP_MUL, pa[j], pb[j], &r); ring_store(off + j, &r); }
-    uint64_t t2 = now_ns();
-    SET_PHASE(0);
-    o.ns_add = t1 - t0; o.ns_mul = t2 - t1; o.ovf = st_ovf_ops - ov0;
+    for (int rep = 0; rep < REPS; rep++) {
+        uint64_t ov0 = st_ovf_ops;
+        SET_PHASE(1);
+        uint64_t t0 = now_ns();
+        for (uint32_t j = 0; j < M / 2; j++) { op_run(OP_ADD, pa[j], pb[j], &r); ring_store(off + j, &r); }
+        uint64_t t1 = now_ns();
+        for (uint32_t j = M / 2; j < M; j++) { op_run(OP_MUL, pa[j], pb[j], &r); ring_store(off + j, &r); }
+        uint64_t t2 = now_ns();
+        SET_PHASE(0);
+        if (t1 - t0 < o.ns_add) o.ns_add = t1 - t0;
+        if (t2 - t1 < o.ns_mul) o.ns_mul = t2 - t1;
+        if (!rep) { o.first_add = t1 - t0; o.first_mul = t2 - t1; o.ovf = st_ovf_ops - ov0; }
+    }
     if (CHK)
         for (uint32_t c = 0; c < nchk; c++) {
             uint32_t j = (uint32_t)rndn(M);
@@ -217,7 +223,8 @@ static void wl_growth(void) {
         printf("{\"wl\": \"growth\", \"step\": %llu, \"batch_values\": %llu, \"distinct_in_batch\": %u, "
                "\"entry_ns\": %llu, \"entry_ns_per_value\": %.2f, \"idle_ns\": %llu, \"op_add_ns\": %.2f, "
                "\"op_mul_ns\": %.2f, \"op_ns\": %.2f, \"op_ovf\": %llu, \"ops\": %llu, \"batch_entry_splits\": %llu, "
-               "\"fixed_add_ns\": %.2f, \"fixed_mul_ns\": %.2f, \"fixed_ns\": %.2f, \"fixed_ovf\": %llu, ",
+               "\"fixed_add_ns\": %.2f, \"fixed_mul_ns\": %.2f, \"fixed_ns\": %.2f, \"fixed_ovf\": %llu, "
+               "\"fixed_first_ns\": %.2f, \"op_first_ns\": %.2f, \"reps\": %d, ",
                (unsigned long long)b, (unsigned long long)B, (unsigned)dhcnt, (unsigned long long)(t1 - t0),
                (double)(t1 - t0) / B, (unsigned long long)idle, (double)o.ns_add / (M / 2), (double)o.ns_mul / (M - M / 2),
                (double)(o.ns_add + o.ns_mul) / M, (unsigned long long)o.ovf, (unsigned long long)M,
@@ -227,7 +234,8 @@ static void wl_growth(void) {
 #endif
                    s0),
                (double)f.ns_add / (M / 2), (double)f.ns_mul / (M - M / 2), (double)(f.ns_add + f.ns_mul) / M,
-               (unsigned long long)f.ovf);
+               (unsigned long long)f.ovf, (double)(f.first_add + f.first_mul) / M, (double)(o.first_add + o.first_mul) / M,
+               REPS);
         emit_common(stdout);
         emit_audit(stdout, m, ans, ran);
         printf("}\n");
@@ -589,6 +597,7 @@ int main(int argc, char **argv) {
     s_lazy = (int)arg_u("lazy", 0);
 #endif
     BUDGET = arg_d("budget_s", 0);
+    REPS = (int)arg_u("reps", 3);
     const char *chk = arg_s("chk", NULL);
     if (chk) CHK = fopen(chk, "w");
     g_init();

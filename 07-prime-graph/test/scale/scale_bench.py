@@ -4,12 +4,18 @@
     python3 scale_bench.py --quick      # a smoke run on small sizes, written to build/quick/ (not results/)
     python3 scale_bench.py --only growth,churn   # a subset of the sweeps
 
+Expected time of the full run: about an hour on this 2-core machine (estimated from scaled-down runs, not measured):
+growth ~5 min for S, ~4 for S-lazy, 10 (budget) for C; churn ~3 + ~2 + 10 (budget); distinct ~2 + 10 (budget); heavy
+and chain a few minutes.  Peak memory about 2.5 GB (heavy split at 10^7).  The C rows stop at a 600 s budget each.
+
 Rows:
   S       every requirement at once on V3 arrays: two-sided edges, splits by copy and loop, the seen-prime dictionary
           at entry (trial division, the leftover looked up whole, a bounded hot list of known large primes,
           Miller-Rabin, rho), reference-counted nodes freed at zero, values deletable (scale.c, g_s.c, s_v3.c)
   S-lazy  S with no Miller-Rabin or rho at entry: large leftovers become pending atoms, refined in the idle pass
-          by a remainder tree against the settled large atoms and a batch gcd among themselves (GMP)
+          by a remainder tree against the settled large atoms and a batch gcd among themselves (GMP); the hits are
+          located by descending the product trees and refined pairwise by gcd (coprime bases), never factored.
+          In S (rho mode) every leftover is factored at entry, so its idle pass has nothing to do.
   C       the control (reference curve only): round two's V0' entry (gcd scan of every node, factoring of every
           non-prime node, edges by a scan) on the same V3 arrays, one-sided edges, no reference counts; a split is
           followed by a rewrite scan of every holder
@@ -17,7 +23,8 @@ Rows:
 Sweeps (each step is one row of a table; every step's sampled results are checked against fractions):
   1 growth    batches of 10^5 values up to 10^7, live nodes rising to about 10^5; per batch: entry, idle pass, and
               10^5 ops twice: a FIXED sample (the same operand pairs, from the first batch, every step) and a sample
-              over ALL live values.  Pass: the fixed sample's time per op stays within 2x of the first batch.
+              over ALL live values; each sample runs 3 times on the same pairs and the minimum is kept (the first,
+              cold repetition is reported too).  Pass: the fixed sample's time per op stays within 2x of batch 1.
   2 heavy     one node (30030) shared by 10^6..10^7 numerators, then 1/7 and 1/6 force two splits: time vs degree
   3 churn     10^6 live values, 10^7 events (delete a random value / insert); nodes and memory over time; at the
               end everything is deleted and the allocations are counted (the leak check)
@@ -342,16 +349,16 @@ def report_md(res, cfg, files):
     for r in res.get("growth", []):
         L.append(f"## 1. Growth: {r['row']}\n")
         L.append(f"Parameters {r['params']}; wall {r['wall_s']:.0f} s; checks: {chk_cell(r)}.\n")
-        L.append("| Step | Values | Live nodes | Entry ns/value | Idle ms | Fixed ns/op (add, mul) | All-values ns/op | "
-                 "Ovf (fixed/all) | Splits (entry/op/idle) | Memory MB | Audit |")
-        L.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+        L.append("| Step | Values | Live nodes | Entry ns/value | Idle ms | Fixed ns/op (add, mul) | Fixed, cold rep | "
+                 "All-values ns/op | All, cold rep | Ovf (fixed/all) | Splits (entry/op/idle) | Memory MB | Audit |")
+        L.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
         for s in r["steps"]:
             if "fixed_ns" not in s:
-                L.append(f"| stopped: {s.get('stopped')} at step {s.get('step')} | | | | | | | | | | |")
+                L.append(f"| stopped: {s.get('stopped')} at step {s.get('step')} | | | | | | | | | | | | |")
                 continue
             L.append(f"| {s['step']} | {fmt(s['values'])} | {fmt(s['nodes_live'])} | {fmt(s['entry_ns_per_value'])} | "
                      f"{s['idle_ns'] / 1e6:.1f} | {fmt(s['fixed_ns'])} ({fmt(s['fixed_add_ns'])}, {fmt(s['fixed_mul_ns'])}) | "
-                     f"{fmt(s['op_ns'])} | {s['fixed_ovf']}/{s['op_ovf']} | "
+                     f"{fmt(s['fixed_first_ns'])} | {fmt(s['op_ns'])} | {fmt(s['op_first_ns'])} | {s['fixed_ovf']}/{s['op_ovf']} | "
                      f"{s.get('splits_entry', 0)}/{s.get('splits_op', '—')}/{s.get('splits_idle', '—')} | "
                      f"{s['mem'] / 1e6:.0f} | {s['audit'] or ''} |")
         L.append("")
@@ -452,7 +459,19 @@ def report_md(res, cfg, files):
     L.append("- Heavy split and chain use single values (V3's all-exception arrays), so each value is its own "
              "numerator; a V3 array of 10^7 equal denominators would be one numerator on the node.")
     L.append("- Memory counts the representation's allocations (tables, pools, lists, arrays, handles), not the "
-             "verification copies of the entered values or the GMP temporaries of audits and the idle pass.")
+             "verification copies of the entered values or the GMP temporaries of audits and the idle pass.  The "
+             "edge pool has size classes (1, 2, 4, 8, 16 edges) whose freed slots are reused only within a class, so "
+             "a split that grows millions of edge lists past a class boundary raises memory by a step (heavy split).")
+    L.append("- Deviation from the entry order in idea.md: \"exact division by the large primes already in the "
+             "dictionary\" is a bounded hot list of the 16 most recent large primes (plus a lookup of the whole "
+             "leftover), because a pass over every known large prime grows with the graph (prior-art-3 section 4).")
+    L.append("- S-lazy's coprime invariant holds after the idle pass, which the workloads run right after every entry. "
+             "Between an entry and the idle pass, values are exact but an op on two pending leftovers that share a "
+             "factor may give a false overflow or a result not in lowest terms.")
+    L.append("- \"False\" overflows come from the shared V0' op code, which tests the unreduced common denominator "
+             "of an add against 2^63; S and C behave alike there.")
+    L.append("- Op time includes S's hook for nodes with several atoms (first sightings): one exact-division test per "
+             "atom when a node keeps a power; a hit splits the node during the op (counted as op splits).")
     return "\n".join(L) + "\n"
 
 

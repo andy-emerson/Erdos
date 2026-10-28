@@ -5,3 +5,5 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
 - [v0.1](v0.1.md): sections 1–6 (problem and core idea).
 - [v0.2](v0.2.md): sections 1–6, recast as an extension of the gcd method, with costs in three forms throughout. Related work, costs and limits, and evidence are to come.
 - [v0.3](v0.3.md): sections 1–6 with the refined gcd method derived as a chain of gcds, an equal-input-size assumption, costs split into arithmetic and data-structure categories, appendices on multiplication, division and the gcd, and a bibliography of classical sources (some fields TBD).
+
+- [note-tripartite](note-tripartite.md): working note comparing two tripartite designs (common divisors; coprime base). Not part of the paper.

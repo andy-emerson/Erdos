@@ -287,6 +287,16 @@ class Control(unittest.TestCase):
         self.assertTrue(ctl.startswith("CONTROL\tfail"), ctl)
         self.assertEqual(recs, [])
 
+    def test_check_inside_expression_end(self):
+        # regression: the measured set's workload 12 refines inside the outermost pg_expr_end, while pending arrays
+        # are still deferred at depth 0; the pre-refinement check must accept that (it once halted every variant)
+        import fault_bench as B
+        w, _ = B.trial_specs(12, 2000, 20, B.SEED)
+        for v in VARIANTS:
+            res = subprocess.run([drv(v)], input=W.job_text(w, 10 if v != "N" else 0, []), capture_output=True,
+                                 text=True)
+            self.assertTrue(res.stdout.startswith("CONTROL\tok"), (v, res.stdout[:300]))
+
     def test_random_workloads_pass_the_control(self):
         for seed in (11, 12, 13):
             w = W.Workload(seed, 600)

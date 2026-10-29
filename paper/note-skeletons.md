@@ -74,13 +74,24 @@ When $g = c \cdot g'$ has been found for the pair $(i, j)$:
 2. For each of rows $i$ and $j$: if its cell at $g$ is empty, fill it with $d/g$, which is the residual at $c$ divided by $g'$.
 3. Set the pair bit $(i, j)$.
 
-When $g' = 1$, $g$ is $c$ itself, and only step 3 does anything.
+When $g' = 1$, $g$ is $c$ itself, already recorded in both rows: only step 3 is done, with no binary search. The residuals at $g$ are known at the end ($d/g$ from step 2, or the residuals at $c$), so the operation uses them without reading the cells again.
 
-### Results start as islands
+### Results: islands that inherit what is known
 
-A result's denominator, if it is new, enters like any other denominator: a row with only column 0 filled, and no pair bits set. The operation that produced it may know more (for instance, that $36$ is a multiple of $6$), but none of that is recorded.
+A result's denominator, if it is new, starts as an **island**: no pair bit is set for it. A pair bit is set in only one place: when two **operand** denominators are compared inside an addition, a subtraction or a division. Multiplication searches the pair's rows but does not compare the pair, so it never sets the bit. So there is no "met but not compared" state. A set bit always means "compared, and the gcd is recorded in both rows". A new denominator stays an island until it is used as an operand.
 
-A pair bit is set in only one place: when two **operand** denominators are compared inside an addition, a subtraction or a division. Multiplication searches the pair's rows but does not compare the pair, so it never sets the bit. So there is no "met but not compared" state. A set bit always means "compared, and the gcd is recorded in both rows". A new denominator stays an island, linked to nothing but column 0, until it is used as an operand.
+**What the operation knows.** Its row, though, need not be empty. Often the operation knows that its result's denominator $e$ is a multiple of an operand's denominator, $e = d_k \cdot \mu$, with $\mu$ a number it has already computed. Then every divisor $c$ known to divide $d_k$ also divides $e$, and the residual is exact with no division:
+
+$$
+\frac{e}{c} = \frac{d_k}{c} \cdot \mu .
+$$
+
+So the new row **inherits** row $k$: every filled cell of row $k$ is filled in the new row, with its residual multiplied by $\mu$. The operations know this in four cases:
+- **addition and subtraction,** when nothing cancels ($h = 1$): $e = d_i \cdot r_y = d_j \cdot r_x$, the lcm, so the new row inherits both rows;
+- **multiplication:** $e = (d_i/g_2)(d_j/g_1)$, so if $g_2 = 1$ it inherits row $i$ with $\mu = d_j/g_1$, and if $g_1 = 1$ row $j$ with $\mu = d_i/g_2$; with equal indices, $e = d_i^2$ inherits row $i$ with $\mu = d_i$;
+- **division,** when $g = 1$: $e = d_i \cdot (|m_y|/g_1)$, so it inherits row $i$.
+
+Otherwise nothing is inherited. When the sum cancels ($h > 1$), $e$ is the lcm divided by $h$, and a known divisor need not survive: in $\tfrac{1}{18} + \tfrac{1}{30}$, $6$ divides both, but $e = 45$. Finding out would take tests, which are not done. No divisor is inserted, no gcd is computed, and a denominator the lookup finds keeps its row unchanged. Design 2 does the same from its own structures ("Results: reusing known valuations" below).
 
 ### Adding two values
 
@@ -92,35 +103,41 @@ function add(m_x over d_i, m_y over d_j)
         return store((sum / h) over (d_i / h))
     end if
     set col to the largest column filled in both row i and row j
-    if pair[i, j] is not set then
-        set c to divisor[col]
-        set g' to gcd(cell[i, col], cell[j, col])       the residuals at c
-        set g to c · g'
-        record g for rows i and j                       this sets pair[i, j]
-        set col to the column of g
-    end if
-    set g to divisor[col]
     set r_x to cell[i, col]
     set r_y to cell[j, col]
+    if pair[i, j] is not set then
+        set c to divisor[col]
+        set g' to gcd(r_x, r_y)                         the residuals at c
+        if g' is not 1 then
+            record g = c · g' for rows i and j
+            set col to the column of g
+            set r_x to r_x / g' and r_y to r_y / g'     the residuals at g, already known
+        end if
+        set pair[i, j]
+    end if
+    set g to divisor[col]
     set sum to m_x · r_y + m_y · r_x
     if g is 1 then
         set h to 1
     else
         set h to gcd(sum, g)
     end if
+    if h is 1 then
+        return store(sum over (r_x · d_j)), inheriting row i times r_y and row j times r_x
+    end if
     return store((sum / h) over (r_x · (d_j / h)))
 end function
 ```
 
-The denominator $r_x \cdot (d_j / h)$ equals $g\, r_x r_y / h$, since $d_j = g\, r_y$; written this way it costs one multiplication, not two. `store` searches the denominator list for the result's denominator, appends it as a new island if it is absent, and appends the numerator with that index.
+The denominator $r_x \cdot (d_j / h)$ equals $g\, r_x r_y / h$, since $d_j = g\, r_y$; written this way it costs one multiplication, not two. `store` searches the denominator list for the result's denominator; if it is absent, appends it as a new island, with the inherited rows if any; and appends the numerator with that index. A zero sum is stored as $0/1$, with nothing inherited.
 
 ### Example
 
 Denominators $12$, $18$, $30$ at indices 0, 1, 2. At the start, the divisor list is $[1]$, the rows are $\{1{:}12\}$, $\{1{:}18\}$ and $\{1{:}30\}$ (written as divisor:residual, for the filled cells only), and no pair bit is set.
 
-- **$\tfrac{1}{12} + \tfrac{5}{18}$.** Rows 0 and 1 share only column 0, so $c = 1$. The pair bit is not set, so $g' = \gcd(12, 18) = 6$ and $g = 6$. Divisor $6$ is inserted, giving the list $[1, 6]$. Row 0 becomes $\{1{:}12, 6{:}2\}$, row 1 becomes $\{1{:}18, 6{:}3\}$, and pair bit (0, 1) is set. The sum is $1 \cdot 3 + 5 \cdot 2 = 13$ over $2 \cdot 18 = 36$, and $\gcd(13, 6) = 1$. Result: $13/36$. Its denominator $36$ is new: index 3, an island.
-- **$\tfrac{1}{12} + \tfrac{1}{30}$.** Row 0 has columns 0 and 1 filled, row 2 only column 0, so $c = 1$. The pair bit is not set, so $g = \gcd(12, 30) = 6$. Divisor $6$ is already listed. Row 2 becomes $\{1{:}30, 6{:}5\}$, and pair bit (0, 2) is set. The sum is $1 \cdot 5 + 1 \cdot 2 = 7$ over $2 \cdot 30 = 60$. Result: $7/60$ (index 4).
-- **$\tfrac{1}{18} + \tfrac{1}{30}$: the chain at work.** The pair (1, 2) has never been compared, but both rows now have column 1 filled, so $c = 6$. The remaining gcd runs on the stored residuals: $g' = \gcd(3, 5) = 1$, so $g = 6$. No gcd on the full denominators was needed. Pair bit (1, 2) is set. The sum is $1 \cdot 5 + 1 \cdot 3 = 8$ over $3 \cdot 30 = 90$, and $h = \gcd(8, 6) = 2$. Result: $4/45$ (index 5).
+- **$\tfrac{1}{12} + \tfrac{5}{18}$.** Rows 0 and 1 share only column 0, so $c = 1$. The pair bit is not set, so $g' = \gcd(12, 18) = 6$ and $g = 6$. Divisor $6$ is inserted, giving the list $[1, 6]$. Row 0 becomes $\{1{:}12, 6{:}2\}$, row 1 becomes $\{1{:}18, 6{:}3\}$, and pair bit (0, 1) is set. The sum is $1 \cdot 3 + 5 \cdot 2 = 13$ over $2 \cdot 18 = 36$, and $\gcd(13, 6) = 1$. Result: $13/36$. Its denominator $36$ is new: index 3, an island with no pair bit. Nothing cancelled, so $36 = 12 \cdot 3 = 18 \cdot 2$ inherits rows 0 and 1: $\{1{:}36, 6{:}2 \cdot 3 = 6\}$.
+- **$\tfrac{1}{12} + \tfrac{1}{30}$.** Row 0 has columns 0 and 1 filled, row 2 only column 0, so $c = 1$. The pair bit is not set, so $g = \gcd(12, 30) = 6$. Divisor $6$ is already listed. Row 2 becomes $\{1{:}30, 6{:}5\}$, and pair bit (0, 2) is set. The sum is $1 \cdot 5 + 1 \cdot 2 = 7$ over $2 \cdot 30 = 60$. Result: $7/60$ (index 4), inheriting $\{1{:}60, 6{:}10\}$.
+- **$\tfrac{1}{18} + \tfrac{1}{30}$: the chain at work.** The pair (1, 2) has never been compared, but both rows now have column 1 filled, so $c = 6$. The remaining gcd runs on the stored residuals: $g' = \gcd(3, 5) = 1$, so $g = 6$. No gcd on the full denominators was needed. Pair bit (1, 2) is set. The sum is $1 \cdot 5 + 1 \cdot 3 = 8$ over $3 \cdot 30 = 90$, and $h = \gcd(8, 6) = 2$. Result: $4/45$ (index 5). Here $h = 2$, so nothing is inherited: $6$ does not divide $45$, and row 5 is $\{1{:}45\}$.
 - **A later $\tfrac{7}{12} + \tfrac{1}{18}$.** Pair bit (0, 1) is set, so the search's answer, $c = 6$, is the gcd. No gcd of denominators is computed. The sum is $7 \cdot 3 + 1 \cdot 2 = 23$ over $36$, and $\gcd(23, 6) = 1$. Result: $23/36$, whose denominator is found at index 3.
 
 ### The implementation form: the baseline to be built
@@ -146,13 +163,15 @@ Numerators point to the list, not to the lookup, because the lookup rearranges i
 
 Why: the search runs on every addition, and with bits it checks 64 columns per instruction, where the concept checks one cell at a time. And most denominators are divisible by only a few of the known divisors, so full-width cells would mostly be empty.
 
-**3. The pair table, already 1 bit per cell,** is packed column by column, so that a new denominator appends its column at the end. Since it stores no column numbers, inserting a new divisor shifts only the incidence bit rows. The residual rows keep their order, because the set bits keep theirs; only the two rows that gain the new divisor get one residual inserted. Nothing is renumbered.
+**3. The pair table, already 1 bit per cell,** is packed column by column, so that a new denominator appends its column at the end. Since it stores no column numbers, inserting a new divisor shifts only the incidence bit rows, from that column on; a divisor larger than all the others goes at the end, and nothing shifts. The residual rows keep their order, because the set bits keep theirs; only the two rows that gain the new divisor get one residual inserted. Nothing is renumbered.
+
+**Inherited rows, in this form.** A new row that inherits is the OR of the inherited bit rows, word by word, with column 0 set. Its residual row is built by walking the set bits in order: column 0 holds $e$, and each other column holds the inherited row's residual times $\mu$, read in order alongside that row's bits, so with no popcount per column. Where both inherited rows hold a column, the first is used; both give $e/c$. The cost is one OR per word and one multiplication per inherited cell. *Example:* $\tfrac{5}{18} \cdot \tfrac{7}{30}$ gives $g_1 = 5$ and $g_2 = 1$ (below), so $108 = 18 \cdot 6$ inherits row $18$ (bits 1 1, residuals $[18, 3]$): its bits are 1 1, and its residuals $[108,\ 3 \cdot 6] = [108, 18]$.
 
 So the implementation form has seven structures: numerators, denominators, the lookup, divisors, the pair table, incidence bits and residual rows.
 
 ### Properties
 
-- **Nothing stored is ever wrong.** Every entry is a fact about two unchanging denominators. Any entry can be checked: $c \cdot r = d$.
+- **Nothing stored is ever wrong.** Every entry is a fact about two unchanging denominators, recorded by a comparison or inherited by a result. Any entry can be checked: $c \cdot r = d$.
 - **The second gcd remains.** The design knows $g$ but not its parts, so reduction needs $\gcd(\text{sum}, g)$.
 - **Growth.** The pair table grows with $D^2/2$ bits. The incidence matrix grows with $D \cdot C$ bits, and the residual rows with the number of set bits.
 - **Inserting a divisor is the expensive moment.** Every incidence bit row shifts by one bit from that column on.
@@ -185,32 +204,30 @@ Each is computed by walking the two sorted rows together.
 
 ### Entering a new denominator
 
-Find it with the lookup; if it is new, append its value to the list. Then split it over the base. This is *factor refinement*: gcds and divisions only, never factoring.
+Find it with the lookup; if it is new, append its value to the list. Then split it over the base. This is *factor refinement*: gcds and divisions only, never factoring. It is one scan of the base, from the first piece to the last.
 
 ```text
 function enter(d)
     set rest to d
     start a new, empty exponent row for d
-    repeat
-        find a piece q in the base with gcd(rest, q) not 1
-        if there is none then
-            leave the loop
-        end if
+    set p to 0                                           the scan position
+    while rest is not 1 and p is below C do              C grows when a split appends pieces
+        set q to piece p
         set g to gcd(rest, q)
-        if g is q then
+        if g is 1 then
+            set p to p + 1
+        else if g is q then
             divide rest by q as many times as it goes, counting k
             add k to ν_q in the new row
         else
-            split q into pairwise coprime pieces built from g and q / g
+            split q into pairwise coprime pieces built from g and q / g;
+                the first takes q's index p, the others go at the end of the base
             for each row, including the new row, that holds the entry (q, t) do
-                remove the entry (q, t) from that row
-                for each new piece s do
-                    add the entry (s, t · ν_s(q)) to that row
-                end for
+                replace the entry (q, t) by the entries (s, t · ν_s(q)) for each new piece s
                 re-sort that row by piece index
             end for
         end if
-    end repeat
+    end while
     if rest is not 1 then
         append rest to the base as a new piece
         add (rest, 1) to the new row
@@ -218,7 +235,7 @@ function enter(d)
 end function
 ```
 
-The loop runs until `rest` shares nothing with any piece. After dividing out $q$, the rest may still share part of $q$ (entering $12$ when $q = 6$ leaves $2$). The next pass then splits $q$. Splitting $q$ into pieces built from $g$ and $q/g$ is itself factor refinement on those two numbers (the explainer, §4).
+The scan never goes back. After dividing out $q$, it stays at $q$, since the rest may still share part of $q$: entering $12$ when $q = 6$ leaves $2$, and the next test splits $6$. After a split it stays at $p$, which now holds the first new piece; the other new pieces are at the end of the base, and the scan reaches them later. The pieces before $p$ need no second test: each was coprime to the rest when tested, and the rest only loses factors. The scan stops as soon as the rest is $1$, and the gcd it finds is the one it uses. Splitting $q$ into pieces built from $g$ and $q/g$ is itself factor refinement on those two numbers (the explainer, §4).
 
 Splitting a piece rewrites the exponent rows of the denominators that used it. It never touches a stored value.
 
@@ -231,27 +248,57 @@ function add(m_x over d_i, m_y over d_j)
         set h to gcd(sum, d_i)
         return store((sum / h) over (d_i / h))
     end if
-    set r_x to 1, set r_y to 1, and set "equal" to empty
+    set r_x to 1, set r_y to 1, set "equal" to empty, R to empty and L to empty
     walk rows i and j together; for each piece q with a = ν_q(d_i) and b = ν_q(d_j) do
         multiply r_x by q^(a − min(a, b))
         multiply r_y by q^(b − min(a, b))
-        if a equals b and a is not 0 then
-            add q^a to the list "equal"
+        if a equals b then
+            add (q, a, q^a) to the list "equal"         a is not 0: the walk visits only pieces of a row
+        else
+            add (q, max(a, b)) to R                       the result's valuation, already known
         end if
     end walk
     set sum to m_x · r_y + m_y · r_x
     set den to d_i · r_y
-    for each q in "equal" do
-        set h to gcd(sum, q)
+    for each (q, a, p) in "equal" do                     p = q^a, formed once in the walk
+        set h to gcd(sum, p)
         if h is not 1 then
             divide sum by h, and den by h
         end if
+        add (q, a, p, h) to L                            the power test waits for the lookup
     end for
-    return store(sum over den)
+    return store(sum over den), with R and L
+end function
+
+function finish(R, L)                                    only for a new denominator, after the lookup
+    set u to 1
+    for each (q, a, p, h) in L do
+        if h is 1 then
+            add (q, a) to R                              h = q^0: no division
+        else if h is q^k for some k then                 divide h by q while the remainder is 0
+            add (q, a − k) to R if a − k > 0
+        else
+            multiply u by p / h                          a leftover: q is composite
+        end if
+    end for
+    return (R, u)
 end function
 ```
 
-Only the pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$ can cancel (the explainer, §6, gives the reason). When there are none, no gcd at all is computed.
+Only the pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$ can cancel (the explainer, §6, gives the reason). When there are none, no gcd at all is computed. A zero sum is stored as $0/1$, as in Design 1. $R$ and $L$ carry what the walk knows about the result's denominator (next section). Whether each cancellation $h$ is a power of its piece matters only for building a new row, so `store` looks the denominator up first, and runs `finish` only if it is new; $h = 1$ is $q^0$ and costs no division.
+
+### Results: reusing known valuations
+
+**What the operation knows.** A new result's denominator must be entered over the base, but most of its valuations are already known from the walk that computed it:
+- **addition and subtraction:** $\nu_q(e) = \max(\nu_q(d_i), \nu_q(d_j))$ where the two differ, and $\nu_q(d_i) - k$ where they are equal and the cancellation is $q^k$;
+- **multiplication:** the two rows added, less the cancellation; with equal indices, row $i$ doubled;
+- **division:** $\nu_q(d_i) - \min(\nu_q(d_i), \nu_q(d_j))$ for the part $d_i / g_2$; only $|m_y| / g_1$, from the old numerator, is unknown.
+
+The one thing the walk cannot know is what remains of a composite piece $q$ when its cancellation $h$ is not a power of $q$: the **leftover** $q^a / h$. (Base $[6]$: $\gcd(2, 6) = 2$ is not a power of $6$, and the leftover is $3$.)
+
+**In the implementation,** the operation passes the known valuations as a row $R$ and the unknown part as a number $u$ (the product of the leftovers, or $|m_y|/g_1$ in division, or $1$). In addition and multiplication, the power tests that complete $R$ and give $u$ wait until the lookup has failed to find the denominator (`finish` above). A new denominator is entered by the scan above, started from $R$ with `rest` set to $u$. When $u = 1$ no gcd is computed at all. When the lookup finds the denominator, $R$ and $u$ are discarded. This is the counterpart of Design 1's inherited rows: each design reuses what its own structures already hold, and neither computes a gcd to do it.
+
+*Example:* $\tfrac{1}{12} + \tfrac{5}{18}$ over the base $(2, 3)$. The walk sees $\nu_2 = 2, 1$ and $\nu_3 = 1, 2$, unequal at both, so $R = \{2{:}2, 3{:}2\}$ and $u = 1$: the row of $36$ is $R$, with no gcd. In $\tfrac{1}{18} + \tfrac{1}{30}$, piece $2$ has equal valuations $1, 1$ and cancels by $h = 2 = 2^1$, so $R = \{3{:}2, 5{:}1\}$ and $u = 1$: the row of $45$.
 
 ### Example
 
@@ -293,15 +340,15 @@ No further gcd is needed. Numerators are not part of the structures, so neither 
 
 > $m_x$ shares no factor with $d_i$ (lowest terms), so it shares none with any divisor of $d_i$. Hence for every common divisor $c$ of $d_i$ and $d_j$: $\gcd(m_x, d_j) = \gcd(m_x, d_j / c)$. Likewise $\gcd(m_y, d_i) = \gcd(m_y, d_i / c)$.
 
-**Design 1.** The search gives the largest known common divisor $c$ and both residuals at $c$, without comparing the pair (the pair bit is neither needed nor set). Then $g_1 = \gcd(m_x, d_j/c)$ and $g_2 = \gcd(m_y, d_i/c)$. This is a modest saving: when $c = 1$ nothing is saved, and in every case each gcd still starts by dividing a full-width numerator. Design 1 has nothing more to offer here; the result's denominator $(d_i/g_2)(d_j/g_1)$ is looked up and, if new, enters as an island.
+**Design 1.** The search gives the largest known common divisor $c$ and both residuals at $c$, without comparing the pair (the pair bit is neither needed nor set). Then $g_1 = \gcd(m_x, d_j/c)$ and $g_2 = \gcd(m_y, d_i/c)$. This is a modest saving: when $c = 1$ nothing is saved, and in every case each gcd still starts by dividing a full-width numerator. The result's denominator $(d_i/g_2)(d_j/g_1)$ is looked up and, if new, enters as an island, inheriting row $i$ if $g_2 = 1$ and row $j$ if $g_1 = 1$ (see "Results: islands that inherit what is known").
 
 **Design 2.** The cross gcds are taken piece by piece, because the powers $q^{\nu_q(d)}$ in a row share no factor with one another:
 - at a piece $q$ in **both** rows, nothing can cancel (by the fact above), and $\nu_q$ of the result is $\nu_q(d_i) + \nu_q(d_j)$;
 - at a piece only in $d_j$, compute $\gcd(m_x, q^{\nu_q(d_j)})$; at a piece only in $d_i$, compute $\gcd(m_y, q^{\nu_q(d_i)})$. If the answer is $q^k$, $\nu_q$ of the result is the valuation minus $k$.
 
-So the result's valuations are the two rows added, minus the cancellation, and the result needs only the lookup, not refinement. One exception: when a piece is composite, its gcd with a numerator need not be a power of it. Then the result's denominator splits that piece, and it is entered by refinement like any new denominator. (Base $[6]$, from denominators $6$ and $36$: in $\tfrac{2}{1} \cdot \tfrac{1}{6}$, $\gcd(2, 6) = 2$ is not a power of $6$; the result is $\tfrac{1}{3}$, and entering $3$ splits $6$ into $2$ and $3$.) The per-piece gcds for $g_1$ together have the size of one gcd against $u_j = \prod q^{\nu_q(d_j)}$ over the pieces $q$ in row $j$ only (and $u_i$ likewise for $g_2$). $u_j$ divides $d_j/g$, where $g = \gcd(d_i, d_j)$, and is smaller than it whenever a piece in both rows has a larger valuation in $d_j$. But there is one division of the numerator per piece; the saving is mainly that shared pieces are skipped.
+So the result's valuations are the two rows added, minus the cancellation, and the result needs only the lookup, not refinement. One exception: when a piece is composite, its gcd with a numerator need not be a power of it. Then the result's denominator splits that piece: the valuations known at every other piece are kept, and only the leftover is refined. (Base $[6]$, from denominators $6$ and $36$: in $\tfrac{2}{1} \cdot \tfrac{1}{6}$, $\gcd(2, 6) = 2$ is not a power of $6$; the result is $\tfrac{1}{3}$, the leftover is $3$, and refining it splits $6$ into $2$ and $3$.) The per-piece gcds for $g_1$ together have the size of one gcd against $u_j = \prod q^{\nu_q(d_j)}$ over the pieces $q$ in row $j$ only (and $u_i$ likewise for $g_2$). $u_j$ divides $d_j/g$, where $g = \gcd(d_i, d_j)$, and is smaller than it whenever a piece in both rows has a larger valuation in $d_j$. But there is one division of the numerator per piece; the saving is mainly that shared pieces are skipped.
 
-**Same denominator.** When $i$ is $j$, both cross gcds are $1$ ($\gcd(m_x, d_i) = 1$ by lowest terms), so $\tfrac{m_x}{d} \cdot \tfrac{m_y}{d} = \tfrac{m_x m_y}{d^2}$ with no gcd at all. This is true of plain rationals too; in the designs, equal indices detect it with one comparison. The denominator $d^2$ is still looked up (in Design 2 its valuations are doubled, so no refinement), and it overflows the width sooner.
+**Same denominator.** When $i$ is $j$, both cross gcds are $1$ ($\gcd(m_x, d_i) = 1$ by lowest terms), so $\tfrac{m_x}{d} \cdot \tfrac{m_y}{d} = \tfrac{m_x m_y}{d^2}$ with no gcd at all. This is true of plain rationals too; in the designs, equal indices detect it with one comparison. The denominator $d^2$ is still looked up (in Design 1, if new, it inherits row $i$ times $d$; in Design 2 its valuations are doubled, so no refinement), and it overflows the width sooner.
 
 **A zero factor.** If $x = 0$, stored as $0/1$, then $g_1 = \gcd(0, d_j) = d_j$ and $g_2 = \gcd(m_y, 1) = 1$, so the formula gives $0/1$ with no special case (and likewise for $y = 0$).
 
@@ -315,13 +362,13 @@ $x / y = x \cdot (1/y)$, and $y = 0$ is an error. The reciprocal of $m_y/d_j$ is
 - $g_1 = \gcd(m_x, |m_y|)$, between two numerators: neither design helps;
 - $g_2 = \gcd(d_i, d_j)$, between two denominators: exactly what the designs are for. Design 1 finds it by the search, a lookup if the pair bit is set, otherwise by the chain, then records it and sets the bit (two operand denominators were compared). Design 2 reads it from the valuations, as the min at each piece.
 
-The result is $\pm (m_x/g_1)(d_j/g_2)$ over $(d_i/g_2)(|m_y|/g_1)$. Its denominator contains part of the old numerator, which the structures have never seen, so it must be entered: looked up in Design 1 (an island if new), and looked up and, if new, refined in Design 2. In Design 2 only $|m_y|/g_1$ is a new number to refine: the valuations of $d_i/g_2$ are already known, $\nu_q(d_i) - \min(\nu_q(d_i), \nu_q(d_j))$ at each piece. This is where division costs Design 2 more than multiplication does.
+The result is $\pm (m_x/g_1)(d_j/g_2)$ over $(d_i/g_2)(|m_y|/g_1)$. Its denominator contains part of the old numerator, which the structures have never seen, so it must be entered: looked up in Design 1 (an island if new, inheriting row $i$ times $|m_y|/g_1$ when $g_2 = 1$), and looked up and, if new, refined in Design 2. In Design 2 only $|m_y|/g_1$ is a new number to refine: the valuations of $d_i/g_2$ are already known, $\nu_q(d_i) - \min(\nu_q(d_i), \nu_q(d_j))$ at each piece. This is where division costs Design 2 more than multiplication does.
 
 **A zero dividend.** If $x = 0$, stored as $0/1$, then $g_1 = \gcd(0, |m_y|) = |m_y|$ and $g_2 = 1$, so the result is $0/1$ with no special case.
 
 When $i$ is $j$, $g_2 = d_i$ and the denominators cancel completely: the result is $m_x/m_y$ reduced by $\gcd(m_x, m_y)$, with the sign moved to the numerator.
 
-*Example:* $\tfrac{5}{12} \div \left(-\tfrac{7}{18}\right) = -\tfrac{5 \cdot 18}{12 \cdot 7}$. Here $g_1 = \gcd(5, 7) = 1$, and $g_2 = \gcd(12, 18) = 6$: Design 1 reads it from the search, since pair bit (0, 1) is set; Design 2 reads it from $\min$ at pieces $2$ and $3$. Result: $-\tfrac{5 \cdot 3}{2 \cdot 7} = -\tfrac{15}{14}$. The denominator $14$ is new. Design 2 refines it: it shares $2$ with the piece $2$, leaving $7$, a new piece; its row is $\{2{:}1, 7{:}1\}$.
+*Example:* $\tfrac{5}{12} \div \left(-\tfrac{7}{18}\right) = -\tfrac{5 \cdot 18}{12 \cdot 7}$. Here $g_1 = \gcd(5, 7) = 1$, and $g_2 = \gcd(12, 18) = 6$: Design 1 reads it from the search, since pair bit (0, 1) is set; Design 2 reads it from $\min$ at pieces $2$ and $3$. Result: $-\tfrac{5 \cdot 3}{2 \cdot 7} = -\tfrac{15}{14}$. The denominator $14$ is new. Design 1 inherits nothing, since $g_2 = 6$, and $6$ does not divide $14$. Design 2 reuses what its walk knows: rows $\{2{:}2, 3{:}1\}$ and $\{2{:}1, 3{:}2\}$ give $\nu_2 = 2 - 1 = 1$ and $\nu_3 = 1 - 1 = 0$ for $12/6 = 2$, so $R = \{2{:}1\}$, and only $u = |m_y|/g_1 = 7$ is new. Refining $7$ over the base $[2, 3, 5]$ finds it coprime to every piece, so $7$ becomes a new piece, and the row of $14$ is $\{2{:}1, 7{:}1\}$.
 
 ## Width
 
@@ -365,7 +412,8 @@ Both are worse than plain rationals here, Design 1 by far. Bytes per rational is
 | Structures | 7 (5 in the concept) | 5 |
 | Full-width values stored | numerators, denominators, divisors, residuals | numerators, denominators, base pieces |
 | Index or bit storage | lookup: $S$ index slots; pair table: $D^2/2$ bits; incidence: $D \cdot C$ bits | lookup: $S$ index slots; exponent rows: one small (index, $\nu_q(d)$) pair per piece $q$ dividing each denominator $d$ |
-| At entry of a denominator | a lookup, then append; no gcds | a lookup, then a gcd with every piece; possible splits |
+| At entry of a denominator | a lookup, then append; no gcds | a lookup, then a gcd with every piece in one scan; possible splits |
+| A new result denominator | an island that inherits the rows of operand denominators it is known to be a multiple of; no gcds | the known valuations, with only the unknown part scanned; no gcds when nothing is unknown |
 | Gcd of a pair | always AND plus scan; that is the gcd if the pair bit is set, otherwise one gcd on residuals, then recorded | always read from the rows; never computed per pair |
 | Residuals | stored, read by popcount | multiplied out from pieces on each addition |
 | Reduction after adding | $\gcd(\text{sum}, g)$ on all of $g$ | only against pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$, often none |
@@ -383,7 +431,7 @@ Notation as in the paper (v0.3, §1 and §4):
 - $s$ is the size of the part shared at equal valuation, the product of $q^{\nu_q(d_i)}$ over the $e$ pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$, and $s_i$ is the size of the $i$-th such factor $q^{\nu_q(d_i)}$;
 - $\pi$ is the size of the largest piece;
 - $\rho$ is the number of pieces the two rows use;
-- $\lambda \le n$ is the sum of $\nu_q(d)$ over a denominator's pieces $q$.
+- $\lambda \le n$ is the sum of $\nu_q(d)$ over a denominator's pieces $q$, and $\tau \le \lambda$ the number of those pieces.
 
 Also:
 - $D$ is the number of denominators. To avoid a clash, the paper's division cost $D(\cdot)$ is written $\text{Div}(\cdot)$ here;
@@ -399,7 +447,7 @@ Where a cell gives three forms, they are symbolic; schoolbook; fastest.
 | Arithmetic per addition, $g$ and residuals in hand | $3M(n, u) + \text{Div}(2n, \gamma) + G(\gamma)$, plus exact divisions by $h$; $O(nu + n\gamma)$; $O(n \log u + n \log \gamma + \gamma \log^2 \gamma)$ | $3M(n, u) + O(n) + \sum_i \big(\text{Div}(n, s_i) + G(s_i)\big)$; zero reduction when $s = 0$; $O(nu + ns)$; $O(n \log u + e\, n \log s + s \log^2 s)$ |
 | Structure per addition, every pair | AND plus scan, $O(C/64)$; two popcounts, $O(C/64)$ | a merge of two rows, $O(\rho)$; products of pieces to form $r_x$ and $r_y$, $O\big(M(u) \log \rho\big)$ |
 | Extra, pair not yet compared | $G(n - \kappa)$ on residuals ($G(n)$ when $c = 1$); $M(\kappa, \gamma - \kappa)$ for $c \cdot g'$; up to two exact divisions for residuals; a binary search, $O(\log C)$; a new divisor costs $O(D \cdot C/64)$ to shift the incidence rows, with nothing renumbered | not applicable |
-| Per new denominator | a lookup, expected $O(1)$ checks; $O(C/64 + D/64)$ to add an incidence row and a pair-table column; no gcds | the same lookup; about $C$ gcds per pass over the base, with a pass repeated after each division or split, each gcd after a division, and $\lambda$ exact divisions: $C\,\big(\text{Div}(n, \pi) + G(\pi)\big) + \lambda\, \text{Div}(n, \pi)$; per split, a small refinement plus a scan of all rows, $O(E)$ |
+| Per new denominator | a lookup, expected $O(1)$ checks; $O(C/64 + D/64)$ to add an incidence row and a pair-table column; for a result, an OR of at most two rows, $O(C/64)$, and one multiplication per inherited cell; no gcds | the same lookup; one scan of the base, at most $C + \tau$ gcds plus one per piece created by a split, since after dividing by a piece the scan tests it a second time; and $\lambda + \tau$ divisions, $\lambda$ that succeed and one that fails per piece divided: $(C + \tau)\big(\text{Div}(n, \pi) + G(\pi)\big) + (\lambda + \tau)\, \text{Div}(n, \pi)$; for a result, only the unknown part $u$ is scanned, and none when $u = 1$, after power tests on the tested pieces, made only for a new denominator; per split, a small refinement plus a scan of all rows, $O(E)$ |
 | Memory, besides the values | $\tfrac{D(D-1)}{2} + D \cdot C$ bits, plus $kD$ full-width residuals and $S$ index slots | about $2E$ small numbers, plus $S$ index slots |
 
 ## Prepared for cluster maintenance
@@ -410,6 +458,17 @@ Clusters are a later step, not part of the skeleton. The skeleton already keeps 
 
 Both baselines are built as written above, and the builders and reviewers are told the goal: **an accurate representation of the skeleton, not an optimized version for production.** Bugs and plain inefficiencies inside the skeleton are fixed. Nothing outside it is added.
 
+**Plain inefficiencies removed** (the spec, §15.1), all reflected above:
+- Design 2's entry is **one scan** of the base: it stays at a piece after dividing by it or splitting it, never restarts at the first piece, and stops as soon as the rest is $1$;
+- the gcd that the scan finds is the one used, not computed again;
+- each power $q^a$ of a piece of equal valuation is formed once in the walk and kept for the gcd;
+- in addition and multiplication, the test of whether a cancellation is a power of its piece is made after the lookup, and only for a new denominator; a cancellation of $1$ costs no division;
+- in Design 1, a comparison hands back the residuals at the gcd, which it already knows, so the addition does not read them again;
+- when $g' = 1$, Design 1 sets the pair bit at once, with no binary search;
+- a divisor inserted at the end of the list shifts no row.
+
+**Result reuse: the author's ruling** (Oct 28, 2026, refined the same day; the spec, §15.2). Reusing what an operation knows about its result's denominator is allowed only as an optimization that **both designs can use**, and only in a form that **a production implementation would actually use**: cheap and generally useful, not contrived to help this test. So both designs reuse it, each from its own structures and with no extra gcd: Design 1 inherits the rows of operand denominators that the result is known to be a multiple of, and Design 2 keeps the valuations its walk computed and refines only the unknown part. Facts that would take extra work or hold only in narrow cases are left out: for instance, that the search's divisor divides a product's denominator when both cross gcds are above 1 (true, but it needs a division and covers one column), or tests of known divisors against a denominator after cancellation.
+
 **Inside the skeleton:**
 - one fixed integer width, 64 bits, set in one place, with overflow detected; schoolbook arithmetic;
 - the same gcd and division routines in both designs and in the control;
@@ -417,12 +476,14 @@ Both baselines are built as written above, and the builders and reviewers are to
 - Design 1's 1-bit pair table, packed column by column; 1-bit incidence rows with AND, highest set bit and popcount; residual rows;
 - sorted insertion of divisors with immediate shifting (Design 1);
 - testing every piece at entry (Design 2);
+- result reuse, in both designs, as ruled above: inherited rows (Design 1); known valuations, refining only the unknown part (Design 2);
 - lazy work only: nothing is computed until an operation needs it.
 
 **Outside the skeleton** (possible later improvements):
 - threading, GPUs and batching in phases;
 - background (eager) comparisons;
-- linking a new divisor to every other denominator it divides, or recording what an operation knows about its result's denominator (Design 1);
+- linking a new divisor to every other denominator it divides (Design 1);
+- recording about a result's denominator more than the ruling allows: divisibility tests, new divisors from the operation's quantities, or facts added to an existing denominator's row (either design);
 - an index that limits which pieces a new denominator is tested against (Design 2);
 - caching residual products (Design 2);
 - deferred re-sorting of divisors (Design 1);

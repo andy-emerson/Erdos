@@ -1,0 +1,58 @@
+[     7.1s] step 1: workloads, exact references and predicted figures
+[    10.3s] step 2: unit tests (test build)
+[    11.7s] unit tests pass: unit-layer1: unit: 1146103 checks, 0 failures; diff-layer1: checksum 7b6083446efe8a13; unit-08: unit (width 64): 3379 checks, 0 failures
+[    11.7s] step 3: pilot
+[    12.7s] machine idle before the pilot (load 0.46, max 0.5), after waiting 1 s
+[    31.3s] pilot projection: 9.0 min (pilot 18.6 s, factor 1.00, elapsed 0.5 min; limit 45 min)
+[    31.3s] pilot only: stopping after step 3
+[    31.3s] results: /home/claude/erdos/09-interning/test/results/results.md
+[    40.1s] unit tests pass: unit-layer1: unit: 1146103 checks, 0 failures; diff-layer1: checksum 7b6083446efe8a13; unit-08: unit (width 64): 3379 checks, 0 failures
+[    40.1s] step 4: gates
+[    45.5s] step 5: counting runs and memory runs
+[    46.2s] step 6: calibration and rounds
+[    47.2s] machine busy before the calibration and rounds of job 1 (load 0.74 (max 0.5)); waiting 15 s
+[    63.2s] machine busy before the calibration and rounds of job 1 (load 0.58 (max 0.5)); waiting 15 s
+[    79.2s] machine idle before the calibration and rounds of job 1 (load 0.45, max 0.5), after waiting 33 s
+[    79.2s] job 1: calibration
+[    80.3s] job 1: 12 rounds
+[   100.1s] machine busy before the calibration and rounds of job 2 (load 0.56 (max 0.5)); waiting 15 s
+[   116.2s] machine idle before the calibration and rounds of job 2 (load 0.43, max 0.5), after waiting 17 s
+[   116.2s] job 2: calibration
+[   117.3s] job 2: 12 rounds
+[   138.9s] machine busy before the calibration and rounds of job 3 (load 0.6 (max 0.5)); waiting 15 s
+[   154.9s] machine idle before the calibration and rounds of job 3 (load 0.46, max 0.5), after waiting 17 s
+[   154.9s] job 3: calibration
+[   155.8s] job 3: 12 rounds
+[   172.2s] machine busy before the calibration and rounds of job 4 (load 0.55 (max 0.5)); waiting 15 s
+[   188.2s] machine idle before the calibration and rounds of job 4 (load 0.43, max 0.5), after waiting 17 s
+[   188.2s] job 4: calibration
+[   189.2s] job 4: 12 rounds
+[   209.5s] machine busy before the calibration and rounds of job 5 (load 0.59 (max 0.5)); waiting 15 s
+[   225.5s] machine idle before the calibration and rounds of job 5 (load 0.42, max 0.5), after waiting 17 s
+[   225.5s] job 5: calibration
+[   226.5s] job 5: 12 rounds
+[   243.7s] machine busy before the calibration and rounds of job 6 (load 0.55 (max 0.5)); waiting 15 s
+[   259.7s] machine idle before the calibration and rounds of job 6 (load 0.43, max 0.5), after waiting 17 s
+[   259.7s] job 6: calibration
+[   260.7s] job 6: 12 rounds
+[   278.6s] machine busy before the calibration and rounds of job 7 (load 0.59 (max 0.5)); waiting 15 s
+[   294.6s] machine idle before the calibration and rounds of job 7 (load 0.46, max 0.5), after waiting 17 s
+[   294.6s] job 7: calibration
+[   295.5s] job 7: 12 rounds
+[   311.7s] machine busy before the calibration and rounds of job 8 (load 0.61 (max 0.5)); waiting 15 s
+[   327.8s] machine idle before the calibration and rounds of job 8 (load 0.48, max 0.5), after waiting 17 s
+[   327.8s] job 8: calibration
+[   329.0s] job 8: 12 rounds
+[   352.8s] machine busy before the calibration and rounds of job 9 (load 0.66 (max 0.5)); waiting 15 s
+[   368.8s] machine busy before the calibration and rounds of job 9 (load 0.51 (max 0.5)); waiting 15 s
+[   384.8s] machine idle before the calibration and rounds of job 9 (load 0.4, max 0.5), after waiting 33 s
+[   384.8s] job 9: calibration
+[   385.9s] job 9: 12 rounds
+[   404.2s] machine busy before the calibration and rounds of job 10 (load 0.57 (max 0.5)); waiting 15 s
+[   420.2s] machine idle before the calibration and rounds of job 10 (load 0.41, max 0.5), after waiting 17 s
+[   420.2s] job 10: calibration
+[   421.1s] job 10: 12 rounds
+[   440.3s] machine idle before the calibration and rounds of job 11 (load 0.5, max 0.5), after waiting 1 s
+[   440.3s] job 11: calibration
+[   441.2s] job 11: 12 rounds
+[   458.5s] results: /home/claude/erdos/09-interning/test/results/results.md

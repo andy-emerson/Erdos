@@ -1,22 +1,47 @@
-/* l1.c: Design 3, layer 1 (spec 09-interning v0.1).  Compiled twice:
- *   without L1_OPT: L1, the baseline (spec §§4-15), symbols l1_*;
- *   with -DL1_OPT:  L1-opt (spec §17), symbols l1o_*: L1 with the tricks O-1 to O-7 added, and nothing else.
+/* l1.c: Design 3, layer 1 (spec 09-interning v0.1).  One source, compiled once per row:
+ *   no setting:             L1, the baseline (spec §§4-15), symbols l1_*;
+ *   -DL1_OPT:               L1-opt (spec §17), symbols l1o_*: L1 with the tricks O-1 to O-7 added, and nothing else;
+ *   -DL1_Q32:               L1-Q32 (spec §18), symbols l1q_*: L1 with 16-bit index fields and lookup slots;
+ *   -DL1_OPT -DL1_Q32:      L1-opt-Q32 (spec §18), symbols l1oq_*: L1-opt with 16-bit index fields;
+ *   -DL1_LKGATE:            the lookup gate's build (spec §18.1 item 4; test only), symbols l1g_*: L1 whose lookup
+ *                           is the slot-width-parameterized lookup of the Q32 rows, built at 32-bit slots.
  * With L1_OPT off, every line between "#ifdef L1_OPT" and its "#endif" is gone, and the helpers below reduce to the
- * 08 routines they wrap (spec §17 item 2).
+ * 08 routines they wrap (spec §17 item 2).  With L1_Q32 and L1_LKGATE off, the source compiles to the L1 and L1-opt
+ * measured at commit b3b88b6 (the "Q64" rows): every Q32 line is inside "#ifdef L1_Q32" or the PLK lookup.
  *
  * Three structures (spec §5): the whole numbers W (one 64-bit word each, distinct), the lookup (the 08 lookup in L1;
- * in L1-opt the same hash, probing and growth with fingerprinted slots, O-6), and the rationals (two 32-bit fields:
- * tag bit and numerator index, denominator index).  Every full-width operation goes through the 08 module
- * (sk_internal.h), unchanged. */
+ * in L1-opt the same hash, probing and growth with fingerprinted slots, O-6; in L1-Q32 the same hash, probing and
+ * growth with 16-bit slots, in its own translation unit src/plk.c as the 08 lookup is in common.c), and the
+ * rationals (two 32-bit fields, or two 16-bit fields in the Q32 rows: tag bit and numerator index, denominator
+ * index).  Every full-width operation goes through the 08 module (sk_internal.h), unchanged. */
 #include "l1.h"
 
 #include "sk_internal.h"
 
-#ifdef L1_OPT
+#if defined(L1_LKGATE) && (defined(L1_OPT) || defined(L1_Q32))
+#error "the lookup gate's build is L1 at 32-bit slots: L1_LKGATE goes without L1_OPT and L1_Q32"
+#endif
+
+#if defined(L1_OPT) && defined(L1_Q32)
+#define P(name) l1oq_##name
+#define L1S l1oq_class
+#define ROWNAME "l1oq"
+#define IS_OPT 1
+#elif defined(L1_OPT)
 #define P(name) l1o_##name
 #define L1S l1o_class
 #define ROWNAME "l1o"
 #define IS_OPT 1
+#elif defined(L1_Q32)
+#define P(name) l1q_##name
+#define L1S l1q_class
+#define ROWNAME "l1q"
+#define IS_OPT 0
+#elif defined(L1_LKGATE)
+#define P(name) l1g_##name
+#define L1S l1g_class
+#define ROWNAME "l1g"
+#define IS_OPT 0
 #else
 #define P(name) l1_##name
 #define L1S l1_class
@@ -24,24 +49,52 @@
 #define IS_OPT 0
 #endif
 
+/* The parameterized plain lookup (PLK): L1-Q32's lookup, and the lookup gate's.  L1 and L1-opt (Q64) do not use it. */
+#if !defined(L1_OPT) && (defined(L1_Q32) || defined(L1_LKGATE))
+#define PLK 1
+#endif
+
 typedef struct L1S L1T;
 
+#define NOIDX SK_NONE /* "no index" in a 32-bit variable: never stored in a field or a slot */
+#ifdef L1_Q32
+/* spec §18.1: a 16-bit numerator field (the tag in its top bit, the index in its low 15 bits) and a 16-bit denominator
+ * field; capacity 32,768 whole numbers, at indices 0 to 32,767.  The no-index value is NOIDX (UINT32_MAX), which is
+ * never written to a field; a slot's empty mark is 0xFFFF, above every index. */
+typedef uint16_t l1_field;
+#define TAG 0x8000u
+#define IDX 0x7FFFu
+#define L1_W_LIMIT 32768u /* the count of whole numbers may not exceed it (spec §18.1 item 2) */
+#else
+typedef uint32_t l1_field;
 #define TAG 0x80000000u
 #define IDX 0x7FFFFFFFu
-#define NOIDX SK_NONE
 /* spec §15: fewer than 2^31 - 1 whole numbers (the value 2^31 - 1 is kept free) */
 #define L1_W_LIMIT 0x7FFFFFFEu
+#endif
 
 typedef struct rat {
-    uint32_t num; /* tag in the top bit (1 for -), numerator index in the low 31 bits */
-    uint32_t den; /* denominator index */
+    l1_field num; /* tag in the top bit (1 for -), numerator index in the low 31 bits (15 in the Q32 rows) */
+    l1_field den; /* denominator index */
 } rat;
 
+#define L1_PHI UINT64_C(0x9E3779B97F4A7C15)
+
 #ifdef L1_OPT
-/* O-6: a slot holds the index and the low 32 bits of the hash product v * phi mod 2^64. */
+/* O-6: a slot holds the index and the low 32 bits of the hash product v * phi mod 2^64.  L1-opt-Q32 keeps the 32-bit
+ * fingerprint and narrows only the index, so its slot is 6 bytes, packed (spec §18.1 item 5). */
+#ifdef L1_Q32
+typedef struct __attribute__((packed)) oslot {
+    uint16_t idx;
+    uint32_t fp;
+} oslot;
+#define SLOT_EMPTY 0xFFFFu
+#else
 typedef struct oslot {
     uint32_t idx, fp;
 } oslot;
+#define SLOT_EMPTY NOIDX
+#endif
 typedef struct olookup {
     oslot *slot;
     uint32_t S;
@@ -52,6 +105,12 @@ typedef struct olookup {
 } olookup;
 #endif
 
+#ifdef PLK
+/* The 08 lookup (08 common.c) with its slot width as a parameter: 16-bit slots in L1-Q32, 32-bit in the gate's build.
+ * It is its own translation unit, src/plk.c, called across it as L1-Q64 calls sk_lookup in common.c (plk.h; D-25). */
+#include "plk.h"
+#endif
+
 struct L1S {
     sk_int *W; /* the whole numbers, each in [0, 2^63 - 1] */
     uint32_t nW, capW;
@@ -60,6 +119,8 @@ struct L1S {
     uint32_t idx0, idx1; /* O-2: the indices of 0 and 1 once interned, else NOIDX */
     int reserved;        /* O-7: the rational list was reserved */
     uint32_t shadow_cap; /* O-7: the capacity L1's doubling would have had (for the counters) */
+#elif defined(PLK)
+    plookup lk;
 #else
     sk_lookup lk;
 #endif
@@ -180,9 +241,18 @@ static inline bool mulx(L1T *c, kv p, kv q, kv *r) {
 
 /* ----------------------------------------------------------------------------------------- the lookup */
 
-#ifdef L1_OPT
-#define L1_PHI UINT64_C(0x9E3779B97F4A7C15)
+/* Q32, test build only (spec §18.1 item 3): an index written to a 16-bit field or slot reads back equal to the index,
+ * so nothing was truncated.  Capacity itself is checked in every build, once per new whole number, by intern. */
+#if defined(L1_Q32) && defined(SK_AUDIT)
+#define Q32_READBACK(stored, k)                                                                                   \
+    do {                                                                                                          \
+        if ((uint32_t)(stored) != (uint32_t)(k)) sk_die("Q32: an index did not fit its 16-bit field or slot");  \
+    } while (0)
+#else
+#define Q32_READBACK(stored, k) ((void)0)
+#endif
 
+#ifdef L1_OPT
 /* The 08 lookup's hash, probing order and growth rule (08 common.c), with O-6's slots. */
 static inline uint64_t hprod(sk_int v) { return (uint64_t)v * L1_PHI; }
 
@@ -190,7 +260,7 @@ static void olk_init(olookup *t) {
     t->S = 16;
     t->log2S = 4;
     t->slot = sk_xmalloc(sizeof(oslot) * t->S);
-    for (uint32_t s = 0; s < t->S; s++) t->slot[s] = (oslot){NOIDX, 0};
+    for (uint32_t s = 0; s < t->S; s++) t->slot[s] = (oslot){SLOT_EMPTY, 0};
 #ifdef SK_AUDIT
     t->filled = 0;
 #endif
@@ -204,7 +274,7 @@ static uint32_t olk_find(const L1T *c, sk_int v, uint32_t *empty) {
     for (;;) {
         CNT(lookup_probe, 1);
         oslot sl = t->slot[s];
-        if (sl.idx == NOIDX) {
+        if (sl.idx == SLOT_EMPTY) {
             if (empty) *empty = s;
             return NOIDX;
         }
@@ -223,10 +293,11 @@ static void olk_place(olookup *t, const sk_int *W, uint32_t k) {
     uint32_t mask = t->S - 1, s = (uint32_t)(hp >> (64 - t->log2S));
     for (;;) {
         CNT(lookup_probe, 1);
-        if (t->slot[s].idx == NOIDX) break;
+        if (t->slot[s].idx == SLOT_EMPTY) break;
         s = (s + 1) & mask;
     }
     t->slot[s] = (oslot){k, (uint32_t)hp};
+    Q32_READBACK(t->slot[s].idx, k);
 }
 
 static void olk_insert(olookup *t, const sk_int *W, uint32_t k, uint32_t empty) {
@@ -236,7 +307,7 @@ static void olk_insert(olookup *t, const sk_int *W, uint32_t k, uint32_t empty) 
         t->S *= 2;
         t->log2S++;
         t->slot = sk_xrealloc(t->slot, sizeof(oslot) * t->S);
-        for (uint32_t s = 0; s < t->S; s++) t->slot[s] = (oslot){NOIDX, 0};
+        for (uint32_t s = 0; s < t->S; s++) t->slot[s] = (oslot){SLOT_EMPTY, 0};
         for (uint32_t i = 0; i <= k; i++) olk_place(t, W, i);
 #ifdef SK_AUDIT
         t->filled = k + 1;
@@ -244,6 +315,7 @@ static void olk_insert(olookup *t, const sk_int *W, uint32_t k, uint32_t empty) 
         return;
     }
     t->slot[empty] = (oslot){k, (uint32_t)hprod(W[k])};
+    Q32_READBACK(t->slot[empty].idx, k);
 #ifdef SK_AUDIT
     t->filled++;
 #endif
@@ -253,6 +325,8 @@ static void olk_insert(olookup *t, const sk_int *W, uint32_t k, uint32_t empty) 
 static inline uint32_t lk_find(const L1T *c, sk_int v, uint32_t *empty) {
 #ifdef L1_OPT
     return olk_find(c, v, empty);
+#elif defined(PLK)
+    return PLKN(find)(&c->lk, c->W, v, empty);
 #else
     return sk_lookup_find(&c->lk, c->W, v, empty);
 #endif
@@ -265,9 +339,14 @@ static uint32_t intern(L1T *c, sk_int v) {
         XCNT(c, intern_found, 1);
         return k;
     }
-    if (c->nW >= L1_W_LIMIT) {
+    if (c->nW >= L1_W_LIMIT) { /* one check per new whole number, in every build */
+#ifdef L1_Q32
+        fprintf(stderr, "layer 1 (Q32): capacity of 32,768 whole numbers exceeded (spec §18.1 item 2)\n");
+        sk_die("capacity exceeded");
+#else
         fprintf(stderr, "layer 1: limit of spec §15 exceeded: whole numbers\n");
         sk_die("limit exceeded");
+#endif
     }
     SK_RESERVE(c->W, c->nW, c->capW, 16);
     k = c->nW++;
@@ -276,6 +355,8 @@ static uint32_t intern(L1T *c, sk_int v) {
     olk_insert(&c->lk, c->W, k, empty);
     if (v == 0) c->idx0 = k; /* O-2 */
     else if (v == 1) c->idx1 = k;
+#elif defined(PLK)
+    PLKN(insert)(&c->lk, c->W, k, empty);
 #else
     sk_lookup_insert(&c->lk, c->W, k, empty);
 #endif
@@ -335,6 +416,8 @@ static sk_status store_known(L1T *c, sk_int n, uint32_t i, sk_int e, uint32_t j,
     SK_RESERVE(c->R, c->N, c->capR, 16);
     c->R[c->N].num = tag | i;
     c->R[c->N].den = j;
+    Q32_READBACK(c->R[c->N].num & IDX, i);
+    Q32_READBACK(c->R[c->N].den, j);
     *out = c->N++;
     return SK_OK;
 }
@@ -354,6 +437,8 @@ L1T *P(create)(void) {
 #ifdef SK_AUDIT
     c->tricks = L1O_ALL;
 #endif
+#elif defined(PLK)
+    PLKN(init)(&c->lk);
 #else
     sk_lookup_init(&c->lk);
 #endif
@@ -372,7 +457,7 @@ void P(destroy)(L1T *c) {
 }
 
 #ifdef L1_OPT
-void l1o_reserve(l1o_class *c, uint32_t n) {
+void P(reserve)(L1T *c, uint32_t n) {
     if (!ON(c, L1O_T7) || c->N != 0 || n <= c->capR) return;
     c->R = sk_xrealloc(c->R, (size_t)n * sizeof(rat));
     c->capR = n;
@@ -713,7 +798,7 @@ static const char *check_lookup_full(const L1T *c) {
     uint64_t held = 0;
     for (uint32_t s = 0; s < c->lk.S; s++) {
         oslot sl = c->lk.slot[s];
-        if (sl.idx == NOIDX) continue;
+        if (sl.idx == SLOT_EMPTY) continue;
         if (sl.idx >= c->nW) return "lookup: a slot holds an index not below W";
         if (sl.fp != (uint32_t)hprod(c->W[sl.idx])) return "lookup: a fingerprint does not match its value";
         held++;
@@ -721,6 +806,8 @@ static const char *check_lookup_full(const L1T *c) {
     if (held != c->nW) return "lookup: does not hold exactly W indices";
     if (2 * (uint64_t)c->nW > c->lk.S) return "lookup: more than half full";
     return NULL;
+#elif defined(PLK)
+    return PLKN(audit_full)(&c->lk, c->W, c->nW);
 #else
     return sk_lookup_audit_full(&c->lk, c->W, c->nW);
 #endif
@@ -731,6 +818,8 @@ static const char *check_lookup_count(const L1T *c) {
     if (c->lk.filled != c->nW) return "lookup: does not hold exactly W indices";
     if (2 * (uint64_t)c->nW > c->lk.S) return "lookup: more than half full";
     return NULL;
+#elif defined(PLK)
+    return PLKN(audit_count)(&c->lk, c->nW);
 #else
     return sk_lookup_audit_count(&c->lk, c->nW);
 #endif
@@ -840,7 +929,7 @@ sk_status P(t_corrupt_whole)(L1T *c, uint32_t k, sk_int v) {
 }
 
 #ifdef L1_OPT
-sk_status l1o_t_tricks(l1o_class *c, unsigned mask) {
+sk_status P(t_tricks)(L1T *c, unsigned mask) {
 #ifdef SK_AUDIT
     c->tricks = mask & L1O_ALL;
     return SK_OK;

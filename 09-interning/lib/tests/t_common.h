@@ -1,6 +1,8 @@
 /* t_common.h: shared by the unit and differential tests (test build only): an exact reference with 128-bit
- * integers and its own Euclid gcd (independent of the 08 module, spec §14.1), a PRNG, a row table that drives L1,
- * L1-opt and the control through one interface, and the order of cases of spec §7 computed from magnitudes. */
+ * integers and its own Euclid gcd (independent of the 08 module, spec §14.1), a PRNG, a row table that drives every
+ * layer-1 row (L1, L1-opt, L1-Q32, L1-opt-Q32, the lookup gate's build) and the control through one interface, and
+ * the order of cases of spec §7 computed from magnitudes.  Compiled with -DT_Q32, ROW_L1 and ROW_L1O, and the tests'
+ * direct calls, are the Q32 rows (spec §18.3 item 2). */
 #ifndef T_COMMON_H
 #define T_COMMON_H
 
@@ -100,13 +102,25 @@ static inline uint64_t rndn(uint64_t n) { return rnd() % n; }
 
 typedef struct row {
     const char *name;
-    int kind; /* 0 L1, 1 L1-opt, 2 ctl */
+    int kind;            /* 0 a baseline layer-1 row (L1, L1-Q32, the gate's build), 1 an L1-opt row, 2 ctl */
+    unsigned rat_bytes;  /* layer 1: bytes per rational entry (8 at Q64, 4 at Q32) */
+    unsigned slot_bytes; /* layer 1: bytes per lookup slot (L1 4, L1-opt 8, L1-Q32 2, L1-opt-Q32 6) */
     void *(*create)(void);
     void (*destroy)(void *);
     sk_status (*enter)(void *, sk_int, sk_int, sk_handle *);
     sk_status (*op[5])(void *, sk_handle, sk_handle, sk_handle *); /* indexed by sk_phase 1..4 */
     sk_status (*read)(const void *, sk_handle, sk_int *, sk_int *);
     uint32_t (*size)(const void *);
+    /* layer 1 only (NULL for ctl) */
+    uint32_t (*wholes)(const void *);
+    sk_status (*t_whole)(const void *, uint32_t, sk_int *);
+    sk_status (*t_rat)(const void *, sk_handle, int *, uint32_t *, uint32_t *);
+    sk_status (*t_force_general)(void *, int);
+    sk_status (*counters)(const void *, sk_counters *, l1_xcounters *);
+    sk_status (*audit)(void *, const char **);
+    sk_status (*audit_changed)(void *, const char **);
+    void (*memory)(const void *, sk_memory *);
+    sk_status (*overflow)(const void *, sk_overflow *);
 } row;
 
 #define WRAP(P, T)                                                                                                \
@@ -122,34 +136,68 @@ typedef struct row {
     }                                                                                                             \
     static uint32_t P##w_size(const void *c) { return P##size((const T *)c); }
 
-WRAP(l1_, l1_class)
-WRAP(l1o_, l1o_class)
+/* the layer-1 calls beyond the common ones */
+#define WRAPL(P, T)                                                                                               \
+    WRAP(P, T)                                                                                                    \
+    static uint32_t P##w_wholes(const void *c) { return P##wholes((const T *)c); }                                \
+    static sk_status P##w_t_whole(const void *c, uint32_t k, sk_int *v) { return P##t_whole((const T *)c, k, v); } \
+    static sk_status P##w_t_rat(const void *c, sk_handle h, int *n, uint32_t *i, uint32_t *j) {                   \
+        return P##t_rat((const T *)c, h, n, i, j);                                                                \
+    }                                                                                                             \
+    static sk_status P##w_t_force_general(void *c, int on) { return P##t_force_general((T *)c, on); }            \
+    static sk_status P##w_counters(const void *c, sk_counters *b, l1_xcounters *x) {                              \
+        return P##counters((const T *)c, b, x);                                                                   \
+    }                                                                                                             \
+    static sk_status P##w_audit(void *c, const char **w) { return P##audit((T *)c, w); }                          \
+    static sk_status P##w_audit_changed(void *c, const char **w) { return P##audit_changed((T *)c, w); }          \
+    static void P##w_memory(const void *c, sk_memory *m) { P##memory((const T *)c, m); }                          \
+    static sk_status P##w_overflow(const void *c, sk_overflow *o) { return P##overflow((const T *)c, o); }
+
+WRAPL(l1_, l1_class)
+WRAPL(l1o_, l1o_class)
+WRAPL(l1q_, l1q_class)
+WRAPL(l1oq_, l1oq_class)
+WRAPL(l1g_, l1g_class)
 WRAP(sk_ctl_, sk_ctl)
 
-static const row ROW_L1 = {"L1", 0, l1_w_create, l1_w_destroy, l1_w_enter,
-    {NULL, l1_w_add, l1_w_sub, l1_w_mul, l1_w_div}, l1_w_read, l1_w_size};
-static const row ROW_L1O = {"L1-opt", 1, l1o_w_create, l1o_w_destroy, l1o_w_enter,
-    {NULL, l1o_w_add, l1o_w_sub, l1o_w_mul, l1o_w_div}, l1o_w_read, l1o_w_size};
-static const row ROW_CTL = {"ctl", 2, sk_ctl_w_create, sk_ctl_w_destroy, sk_ctl_w_enter,
-    {NULL, sk_ctl_w_add, sk_ctl_w_sub, sk_ctl_w_mul, sk_ctl_w_div}, sk_ctl_w_read, sk_ctl_w_size};
+#define LROW(name, kind, rb, sb, P)                                                                               \
+    {name, kind, rb, sb, P##w_create, P##w_destroy, P##w_enter, {NULL, P##w_add, P##w_sub, P##w_mul, P##w_div},  \
+     P##w_read, P##w_size, P##w_wholes, P##w_t_whole, P##w_t_rat, P##w_t_force_general, P##w_counters,           \
+     P##w_audit, P##w_audit_changed, P##w_memory, P##w_overflow}
 
-/* Layer-1 helpers that work on either row (kind 0 or 1). */
-static inline uint32_t lw_wholes(const row *R, const void *c) {
-    return R->kind == 0 ? l1_wholes((const l1_class *)c) : l1o_wholes((const l1o_class *)c);
-}
+/* every row, at both widths */
+static const row ROW_L1_64 = LROW("L1", 0, 8, 4, l1_);
+static const row ROW_L1O_64 = LROW("L1-opt", 1, 8, 8, l1o_);
+static const row ROW_L1Q = LROW("L1-Q32", 0, 4, 2, l1q_);
+static const row ROW_L1OQ = LROW("L1-opt-Q32", 1, 4, 6, l1oq_);
+static const row ROW_L1G = LROW("L1-lookup-gate", 0, 8, 4, l1g_);
+static const row ROW_CTL = {"ctl", 2, 0, 0, sk_ctl_w_create, sk_ctl_w_destroy, sk_ctl_w_enter,
+    {NULL, sk_ctl_w_add, sk_ctl_w_sub, sk_ctl_w_mul, sk_ctl_w_div}, sk_ctl_w_read, sk_ctl_w_size,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+
+/* The rows the unit and differential tests drive: the Q64 rows, or with -DT_Q32 the Q32 rows (spec §18.3 item 2). */
+#ifdef T_Q32
+#define ROW_L1 ROW_L1Q
+#define ROW_L1O ROW_L1OQ
+#define T_WIDTH "Q32"
+#else
+#define ROW_L1 ROW_L1_64
+#define ROW_L1O ROW_L1O_64
+#define T_WIDTH "Q64"
+#endif
+
+/* Layer-1 helpers that work on any layer-1 row (kind 0 or 1), and on ctl where it applies. */
+static inline uint32_t lw_wholes(const row *R, const void *c) { return R->wholes(c); }
 static inline sk_int lw_whole(const row *R, const void *c, uint32_t k) {
     sk_int v = -1;
-    if (R->kind == 0) l1_t_whole((const l1_class *)c, k, &v);
-    else l1o_t_whole((const l1o_class *)c, k, &v);
+    R->t_whole(c, k, &v);
     return v;
 }
 static inline void lw_rat(const row *R, const void *c, sk_handle h, int *neg, uint32_t *i, uint32_t *j) {
-    if (R->kind == 0) l1_t_rat((const l1_class *)c, h, neg, i, j);
-    else l1o_t_rat((const l1o_class *)c, h, neg, i, j);
+    R->t_rat(c, h, neg, i, j);
 }
 static inline void lw_counters(const row *R, const void *c, sk_counters *b, l1_xcounters *x) {
-    if (R->kind == 0) l1_counters((const l1_class *)c, b, x);
-    else if (R->kind == 1) l1o_counters((const l1o_class *)c, b, x);
+    if (R->kind != 2) R->counters(c, b, x);
     else {
         sk_counters tmp;
         sk_ctl_counters((const sk_ctl *)c, b ? b : &tmp);
@@ -157,24 +205,63 @@ static inline void lw_counters(const row *R, const void *c, sk_counters *b, l1_x
     }
 }
 static inline sk_status lw_audit(const row *R, void *c, int full, const char **why) {
-    if (R->kind == 0) return full ? l1_audit((l1_class *)c, why) : l1_audit_changed((l1_class *)c, why);
-    if (R->kind == 1) return full ? l1o_audit((l1o_class *)c, why) : l1o_audit_changed((l1o_class *)c, why);
+    if (R->kind != 2) return full ? R->audit(c, why) : R->audit_changed(c, why);
     return full ? sk_ctl_audit((sk_ctl *)c, why) : sk_ctl_audit_changed((sk_ctl *)c, why);
 }
 static inline void lw_force_general(const row *R, void *c, int on) {
-    if (R->kind == 0) l1_t_force_general((l1_class *)c, on);
-    else if (R->kind == 1) l1o_t_force_general((l1o_class *)c, on);
+    if (R->kind != 2) R->t_force_general(c, on);
 }
 static inline void lw_memory(const row *R, const void *c, sk_memory *m) {
-    if (R->kind == 0) l1_memory((const l1_class *)c, m);
-    else if (R->kind == 1) l1o_memory((const l1o_class *)c, m);
+    if (R->kind != 2) R->memory(c, m);
     else sk_ctl_memory((const sk_ctl *)c, m);
 }
 static inline sk_status lw_overflow(const row *R, const void *c, sk_overflow *o) {
-    if (R->kind == 0) return l1_overflow((const l1_class *)c, o);
-    if (R->kind == 1) return l1o_overflow((const l1o_class *)c, o);
+    if (R->kind != 2) return R->overflow(c, o);
     return sk_ctl_overflow((const sk_ctl *)c, o);
 }
+
+/* With -DT_Q32, the tests' direct calls of L1 and L1-opt go to L1-Q32 and L1-opt-Q32.  Defined after the row tables,
+ * so the Q64 rows above stay Q64. */
+#ifdef T_Q32
+#define l1_class l1q_class
+#define l1_create l1q_create
+#define l1_destroy l1q_destroy
+#define l1_enter l1q_enter
+#define l1_add l1q_add
+#define l1_sub l1q_sub
+#define l1_mul l1q_mul
+#define l1_div l1q_div
+#define l1_read l1q_read
+#define l1_wholes l1q_wholes
+#define l1_counters l1q_counters
+#define l1_audit l1q_audit
+#define l1_audit_changed l1q_audit_changed
+#define l1_memory l1q_memory
+#define l1_t_whole l1q_t_whole
+#define l1_t_rat l1q_t_rat
+#define l1_t_corrupt_rat l1q_t_corrupt_rat
+#define l1_t_corrupt_whole l1q_t_corrupt_whole
+#define l1o_class l1oq_class
+#define l1o_create l1oq_create
+#define l1o_destroy l1oq_destroy
+#define l1o_enter l1oq_enter
+#define l1o_add l1oq_add
+#define l1o_sub l1oq_sub
+#define l1o_mul l1oq_mul
+#define l1o_div l1oq_div
+#define l1o_read l1oq_read
+#define l1o_wholes l1oq_wholes
+#define l1o_counters l1oq_counters
+#define l1o_audit l1oq_audit
+#define l1o_audit_changed l1oq_audit_changed
+#define l1o_memory l1oq_memory
+#define l1o_t_whole l1oq_t_whole
+#define l1o_t_rat l1oq_t_rat
+#define l1o_t_corrupt_rat l1oq_t_corrupt_rat
+#define l1o_t_corrupt_whole l1oq_t_corrupt_whole
+#define l1o_reserve l1oq_reserve
+#define l1o_t_tricks l1oq_t_tricks
+#endif
 
 /* sums over core and store of one phase */
 static inline uint64_t xsum_case(const l1_xcounters *x, int ph, int k) {

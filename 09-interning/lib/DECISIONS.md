@@ -86,6 +86,63 @@ No plain inefficiency was found to fix, so the change log is empty and no `CHANG
 - **D-16. Trick switches** are a run-time mask in the test build only. In the timing and counting builds every trick
   is on with no test (spec §17 item 4).
 
+## The Q32 rows (spec §18; added Oct 29, 2026, after the Q64 run of `b3b88b6`, an exception the author approved)
+
+- **D-17. One source, five builds.** `src/l1.c` gives L1 (`l1_`), L1-opt (`-DL1_OPT`, `l1o_`), L1-Q32 (`-DL1_Q32`,
+  `l1q_`), L1-opt-Q32 (`-DL1_OPT -DL1_Q32`, `l1oq_`), and the lookup gate's build (`-DL1_LKGATE`, `l1g_`; tests and
+  gates only). `L1_Q32` changes only the field type (`l1_field`: `uint16_t`, tag `0x8000`, index mask `0x7FFF`), the
+  capacity test (`nW >= 32768` aborts with "capacity of 32,768 whole numbers exceeded"), the lookup's slot type and the
+  test-build read-back check. Everything else is the Q64 text.
+- **D-18. The Q64 object code is unchanged.** Each Q64 object (L1 and L1-opt; timing, counting and test builds),
+  compiled from the new `l1.c`, is identical in every section (`objdump -s`) to the one compiled from `b3b88b6`'s,
+  and so are the Q64 bench binaries of the harness (D-24). Checked again after D-25 by building `b3b88b6`'s tree and
+  the current tree at the same path and comparing whole files: every timing, counting and test object (`l1.o`,
+  `l1o.o`, `common.o`, `ctl.o`) and all 12 Q64 and library bench binaries (L1, L1-opt and ctl in three builds; fmpq,
+  mpq, fz) are byte-identical. The sanitizer build's `common.o` and `ctl.o` are identical too; its `l1.o` and `l1o.o`
+  differ only in source-location metadata (line numbers in debug information and in UBSan's records, shifted by the
+  Q32 lines added to `l1.c`): that build is a test build, never timed. L1-Q64 still calls `sk_lookup` in `vendor08/common.c`;
+  L1-opt-Q64 still uses its O-6 lookup in `l1.c` (it never used `sk_lookup`, spec §17.1 O-6), whose only source change
+  is a macro (`SLOT_EMPTY`, defined as `NOIDX` at Q64) that compiles to the same code (**ambiguous**: the direction
+  said both Q64 rows "keep using the unchanged 08 lookup code"; only L1-Q64 ever did).
+- **D-19. The parameterized lookup (PLK).** For L1-Q32 and the gate's build, `src/plk.c` (D-25) repeats 08's `start_slot`,
+  `sk_lookup_init`, `sk_lookup_find`, `place`, `sk_lookup_insert` and the two audit helpers line for line, with the
+  slot type `pslot` (`uint16_t`, empty `0xFFFF`; or `uint32_t`, empty `0xFFFFFFFF`, in the gate's build) in place of
+  `uint32_t` and `SK_NONE`. Counting is the same: one lookup search per hash, one probe per slot read.
+- **D-20. L1-opt-Q32's slot** is `{uint16_t idx; uint32_t fp;}` with `__attribute__((packed))`: 6 bytes, the 32-bit
+  fingerprint of L1-opt-Q64 kept, so the fingerprint test rejects exactly the same probes (spec §18.1 item 5, Q-4).
+  The fingerprint is read unaligned; gcc, the one compiler of rule item 2, emits a plain 4-byte load on x86-64.
+- **D-21. "No index" and the empty marks.** The code's "no index" stays `NOIDX` = `SK_NONE` = $2^{32} - 1$ in 32-bit
+  variables, never stored. The Q32 empty slot is `0xFFFF`, above every 15-bit index; an L1-opt-Q32 slot is empty by
+  its index field alone. So all 32,768 indices are usable, and a numerator field of `0xFFFF` (tag −, index 32,767)
+  is a valid rational (unit test `q32`).
+- **D-22. The per-write check** (spec §18.1 item 3) is `Q32_READBACK`, compiled only with `L1_Q32` and `SK_AUDIT`:
+  after each write of an index into a 16-bit rational field or slot, the field is read back and compared. The timing
+  and counting builds of the Q32 rows have no such branch; the capacity test in `intern` (one per new whole number)
+  is in every build.
+- **D-23. O-7's "bytes avoided"** counts rational-list bytes (`sizeof(rat)` × the rationals at each growth avoided),
+  so it is half L1-opt-Q64's at 4 bytes per rational. It is the one counter that differs between the widths; the
+  tests and the harness check it as exactly half (spec §18.3 item 1).
+- **D-24. Tests at both widths.** `tests/unit.c` and `tests/diff.c` are compiled twice: as written (Q64) and with
+  `-DT_Q32`, under which `t_common.h` points `ROW_L1`, `ROW_L1O` and every direct `l1_`/`l1o_` call at the Q32 rows
+  (macros defined after the row tables, which hold every row of both widths). The row table now carries each row's
+  layer-1 calls as function pointers, and its entry and slot sizes. `tests/q32.c` checks the Q32 rows against the Q64
+  rows on 200 random workloads (values, whole-number lists, fields, every counter, memory reports), the gate's build
+  against L1 on the same workloads, and capacity: each Q32 row filled to exactly 32,768 whole numbers and audited,
+  then the next new whole number, by entry and by an operation, in a forked child, which must abort (`SIGABRT`) with
+  the capacity message while the parent's class is untouched.
+- **D-25. The Q32 lookup is its own translation unit** (after the review of the Q32 change). The PLK was first written
+  as static functions in `l1.c`, which gcc inlined into L1-Q32, while L1-Q64 calls `sk_lookup_find` and
+  `sk_lookup_insert` in `vendor08/common.c` across a translation unit: the L1 pair would then have differed in
+  inlining as well as in slot width. It is now `src/plk.c` (with `src/plk.h`), compiled once per use (`-DL1_Q32`:
+  `plkq.o`, symbols `l1q_plk_*`, 16-bit slots; `-DL1_LKGATE`: `plkg.o`, `l1g_plk_*`, 32-bit slots) and called from
+  `l1.c` as external functions at the same three places where L1-Q64 calls `sk_lookup_*` (init, find, insert; the
+  audits likewise), with no link-time optimization (rule item 2's flags). `nm` shows `l1q_plk_init`, `_find` and
+  `_insert` undefined in `l1q.o`, as `sk_lookup_init`, `_find` and `_insert` are in `l1.o`. The lookup gate's build
+  now calls the 32-bit PLK in its own unit too, so the gate compares two separately compiled lookups.
+  **The L1-opt pair is unaffected:** both L1-opt rows keep the O-6 lookup inside `l1.c` (static, as at `b3b88b6`);
+  `l1oq.o` is byte-identical, in the timing, counting and test builds, to its object before this change, and `l1o.o`
+  to `b3b88b6`'s (D-18).
+
 ## Ambiguous or not as written (for the author)
 
 1. 08's `sk_common.h` was copied at commit `08bbfbe`, not from the working tree, which has uncommitted Design 2 fields (D-1).
@@ -93,3 +150,5 @@ No plain inefficiency was found to fix, so the change log is empty and no `CHANG
 3. The scope of O-4's "known 1", and O-4 in entry (D-10).
 4. O-2 in entry, and its switch (D-11).
 5. O-5's divisions skipped, needed by §17.3 item 3 but not listed in §17.2 (D-13).
+6. L1-opt-Q64 never used 08's `sk_lookup` (O-6 has its own slots); it keeps its own lookup, unchanged in object code (D-18).
+7. L1-opt-Q32's slot packed to 6 bytes rather than padded to 8 (D-20; spec Q-4).

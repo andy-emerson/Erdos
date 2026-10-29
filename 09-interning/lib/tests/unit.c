@@ -1,5 +1,6 @@
 /* unit.c: unit tests of layer 1 (spec §14.3 item 1, §17.3 items 4-5), L1 and L1-opt, with the control where a test
- * applies to it.  Test build only. */
+ * applies to it.  Test build only.  Compiled as written for the Q64 rows, and with -DT_Q32 for L1-Q32 and
+ * L1-opt-Q32 (spec §18.3 item 2): the same tests, the paper's v0.4 examples included. */
 #include "t_common.h"
 
 /* ----------------------------------------------------------------------------------------- helpers */
@@ -450,15 +451,16 @@ static void test_store(void) {
         /* growth of the lookup: S = 16 holds 8; the 9th whole number doubles it */
         sk_memory m;
         lw_memory(R, c, &m);
-        uint64_t slot = R->kind == 0 ? 4 : 8;
+        uint64_t slot = R->slot_bytes; /* L1 4, L1-opt 8; L1-Q32 2, L1-opt-Q32 6 (spec §13.2, §17.1 O-6, §18.1) */
+        CHECK_EQ(slot, R->kind == 0 ? (R->rat_bytes == 8 ? 4 : 2) : (R->rat_bytes == 8 ? 8 : 6));
         CHECK_EQ(m.item[1].used, 16 * slot);
         for (sk_int v = 10; v < 14; v++) ent(R, c, v, 1); /* 10..13: W = 9 */
         CHECK_EQ(lw_wholes(R, c), 9);
         lw_memory(R, c, &m);
         CHECK_EQ(m.item[1].used, 32 * slot);
         CHECK_EQ(m.item[0].used, 8 * 9);
-        CHECK_EQ(m.item[2].used, 8 * R->size(c));
-        double bpr = 8.0 + (8.0 * 9 + (double)slot * 32) / R->size(c);
+        CHECK_EQ(m.item[2].used, (uint64_t)R->rat_bytes * R->size(c));
+        double bpr = (double)R->rat_bytes + (8.0 * 9 + (double)slot * 32) / R->size(c);
         CHECK(m.used_per_rational > bpr - 1e-9 && m.used_per_rational < bpr + 1e-9);
         for (sk_int v = 20; v < 200; v++) ent(R, c, v, 1);
         audits_ok(R, c);
@@ -794,8 +796,8 @@ static void test_o6_o7(void) {
     CHECK_EQ(XT(x, SK_PH_ENTRY, o7_growths_avoided), 9); /* 16, 32, ..., 2048 and the first */
     sk_memory m;
     l1o_memory(c, &m);
-    CHECK_EQ(m.item[2].allocated, 8 * 3000);
-    CHECK_EQ(m.item[1].used, 8 * 8192);
+    CHECK_EQ(m.item[2].allocated, ROW_L1O.rat_bytes * 3000);
+    CHECK_EQ(m.item[1].used, ROW_L1O.slot_bytes * 8192);
     audits_ok(&ROW_L1O, c);
     l1o_destroy(c);
 }
@@ -841,6 +843,6 @@ int main(void) {
     test_o3_o4_o5();
     test_o6_o7();
     test_counting_rules();
-    printf("unit: %d checks, %d failures\n", checks, failures);
+    printf("unit (%s rows): %d checks, %d failures\n", T_WIDTH, checks, failures);
     return failures ? 1 : 0;
 }

@@ -99,7 +99,7 @@ static uint64_t heap_now(void) {
 static uint64_t HEAP0;
 
 #ifdef SCALAR
-/* ======================================================================================= scalar rows: L1, L1-opt, ctl */
+/* ============================================ scalar rows: L1, L1-opt, L1-Q32, L1-opt-Q32, ctl (and the lookup gate) */
 static uint32_t *HD; /* handle returned by each call */
 static int64_t *PERCALL;
 

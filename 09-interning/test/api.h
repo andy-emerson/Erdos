@@ -1,12 +1,14 @@
-/* api.h: where the harness meets the C APIs.  Build with exactly one of IMPL_L1, IMPL_L1O, IMPL_CTL (the scalar rows,
- * lib/: liblayer1 sources and the 08 control copied unchanged), IMPL_FMPQ, IMPL_MPQ, IMPL_FZ (the library rows,
- * FLINT and GMP as installed).  SK_COUNT: the counting build; SK_COUNT + SK_AUDIT: the test build (scalar rows). */
+/* api.h: where the harness meets the C APIs.  Build with exactly one of IMPL_L1, IMPL_L1O, IMPL_L1Q, IMPL_L1OQ,
+ * IMPL_L1G, IMPL_CTL (the scalar rows, lib/: liblayer1 sources and the 08 control copied unchanged; L1Q and L1OQ are
+ * the Q32 rows, spec §18; L1G is the lookup gate's build, never timed), IMPL_FMPQ, IMPL_MPQ, IMPL_FZ (the library
+ * rows, FLINT and GMP as installed).  SK_COUNT: the counting build; SK_COUNT + SK_AUDIT: the test build (scalar rows). */
 #ifndef L1_API_H
 #define L1_API_H
 
 #include <stdio.h>
 
-#if defined(IMPL_L1) || defined(IMPL_L1O) || defined(IMPL_CTL)
+#if defined(IMPL_L1) || defined(IMPL_L1O) || defined(IMPL_L1Q) || defined(IMPL_L1OQ) || defined(IMPL_L1G) ||       \
+    defined(IMPL_CTL)
 #define SCALAR 1
 #include "l1.h"
 #include "sk_ctl.h"
@@ -27,6 +29,21 @@ typedef l1_class api_class;
 typedef l1o_class api_class;
 #define IMPL_NAME "L1opt"
 #define LAYER1 1
+#elif defined(IMPL_L1Q)
+#define API(f) l1q_##f
+typedef l1q_class api_class;
+#define IMPL_NAME "L1q"
+#define LAYER1 1
+#elif defined(IMPL_L1OQ)
+#define API(f) l1oq_##f
+typedef l1oq_class api_class;
+#define IMPL_NAME "L1oq"
+#define LAYER1 1
+#elif defined(IMPL_L1G)
+#define API(f) l1g_##f
+typedef l1g_class api_class;
+#define IMPL_NAME "L1g"
+#define LAYER1 1
 #else
 #define API(f) sk_ctl_##f
 typedef sk_ctl api_class;
@@ -36,6 +53,8 @@ typedef sk_ctl api_class;
 static inline void api_reserve(api_class *c, uint32_t n) {
 #ifdef IMPL_L1O
     l1o_reserve(c, n); /* O-7, untimed, before entry */
+#elif defined(IMPL_L1OQ)
+    l1oq_reserve(c, n);
 #else
     (void)c, (void)n;
 #endif
@@ -128,7 +147,7 @@ static inline void api_dump_memory(const api_class *c, const char *when, FILE *f
 #define IMPL_NAME "fz"
 #endif
 #else
-#error "define one of IMPL_L1, IMPL_L1O, IMPL_CTL, IMPL_FMPQ, IMPL_MPQ, IMPL_FZ"
+#error "define one of IMPL_L1, IMPL_L1O, IMPL_L1Q, IMPL_L1OQ, IMPL_L1G, IMPL_CTL, IMPL_FMPQ, IMPL_MPQ, IMPL_FZ"
 #endif
 
 #endif

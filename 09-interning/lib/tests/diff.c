@@ -2,7 +2,8 @@
  * L1-opt (every trick on, and a random set of tricks) and the control against an exact 128-bit reference; the case
  * of every operation against the order of §7 applied to magnitudes; L1-opt's whole-number list and stored values
  * equal to L1's; and, per operation, L1's gcds, gcd work, divisions, multiplications and additions equal to the
- * control's on cases den and general (spec §14.1 item 3).  Audits on the gate schedule.
+ * control's on cases den and general (spec §14.1 item 3).  Audits on the gate schedule.  Compiled as written for the
+ * Q64 rows, and with -DT_Q32 for L1-Q32 and L1-opt-Q32 (spec §18.3 item 2).
  *
  *   diff [--seeds N]   */
 #include "t_common.h"
@@ -208,7 +209,7 @@ int main(int argc, char **argv) {
     for (int i = 1; i + 1 < argc; i++)
         if (!strcmp(argv[i], "--seeds")) seeds = atoi(argv[i + 1]);
     for (int s = 0; s < seeds; s++) one(s);
-    printf("diff: %d seeds, %d checks, %d failures\n", seeds, checks, failures);
+    printf("diff (%s rows): %d seeds, %d checks, %d failures\n", T_WIDTH, seeds, checks, failures);
     printf("checksum %016llx\n", (unsigned long long)checksum);
     return failures ? 1 : 0;
 }

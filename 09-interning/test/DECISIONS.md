@@ -142,6 +142,71 @@ listed at the end.
     work and multiplication verdicts show their two counts.
   - **Order (rule item 10):** the strata come first, and the per-job verdicts and magnitudes are listed beneath.
 
+## The Q32 rows (rule, revision of Oct 29, 2026; spec §18)
+
+- **R-15. Rows and capacity.** The implementations `L1q` and `L1oq` (rows L1-Q32 and L1-opt-Q32) are built like L1
+  and L1-opt with `-DL1_Q32`; `L1q` and `L1g` also compile `lib/src/plk.c`, their lookup, as its own translation unit,
+  as every L1 binary compiles `vendor08/common.c` (lib D-25; its code hash covers `plk.c` and `plk.h`). Step 1 records, from the generator's predicted W at the end, the jobs over the capacity
+  of 32,768 (`q32_over_capacity` in `state.json`, with W); on those jobs the Q32 rows have no gate, counting, memory
+  or timed run, and the analysis reports them as over capacity. With the rule's seeds these are jobs 5, 6 and 7.
+- **R-16. The lookup gate** (spec §18.1 item 4) is `L1g`, a test build of L1 with `-DL1_LKGATE`. In step 4 it runs
+  `gate` on every job, like L1; once both have passed, every counter line of its gate run (lookup searches and probes
+  per phase and part included) must equal L1's, and its read-out and whole-number list must be L1's. It is never
+  timed, and is no row.
+- **R-17. Q32 against Q64** (spec §18.3 item 1). In step 4, once both gates of a job pass, each Q32 row's read-out and
+  whole-number list must equal its Q64 row's, and its counter lines must equal the Q64 row's with O-7's bytes avoided
+  halved (lib D-23); L1-opt-Q32 is also checked against L1-Q32 as L1-opt against L1. In step 5 the same counter check,
+  and equal per-call core counts, are made on the counting runs; a failure is a bug (rule item 5). The per-case sums
+  (spec §14.1 item 3) are of L1, L1-opt and ctl only, since the Q32 rows' per-call counts equal their Q64 rows'.
+- **R-18. The Q64 binaries.** The Q64 bench binaries built from the current sources are byte-identical to those built
+  from `b3b88b6`'s (timing, counting and test builds of L1, L1-opt and ctl; lib D-18), so the Q64 rows re-run are the
+  binaries measured. Checked after lib D-25 by building both trees at one path: all 12 Q64 and library bench binaries
+  byte-identical.
+- **A-6. Analysis after the revision.**
+  - **Verdicts:** the Q32 rows only, each against its Q64 row (time, B_used, B_heap) and against ctl, fmpq, mpq, the
+    best library and fz (time, B_used, B_heap); gcd work, multiplications and lookups are checked equal (R-17), not
+    compared. On an over-capacity job each such verdict is "over capacity", with W.
+  - **The band h** of every time verdict is this run's L1 against L1-null (rule item 7), the Q32 rows' included. This
+    is a documented necessity, not a change to the author's safeguard 2, which now reads "the re-run Q64 rows are used
+    only for the paired Q32-vs-Q64 comparison and for the band h of the same run": h bands the verdicts of the rounds
+    it comes from, so it must come from the same rounds, and `b3b88b6`'s h cannot serve this run. The wording is
+    flagged in the README for the author's confirmation.
+  - **Changed Q64 verdicts:** the re-run's Q64 verdicts (every comparison of the run at `b3b88b6`) are computed only to
+    be compared with `verdicts.csv` of `b3b88b6`, read with `git show`; every (job, X, Y, measure) whose verdict
+    differs is listed with both ratios, with no choice between them. They are written to `q64_rerun_verdicts.csv`,
+    apart from `verdicts.csv`, and enter no stratum.
+  - **The statement** that the Q32 rows were designed after the Q64 results had been seen heads the verdicts and is
+    repeated under Limitations.
+  - **The model table:** per job, after entry and at the end, for each layer-1 row: W and N from the generator, S from
+    the growth rule, S/W, E, the predicted bits per rational, B_used × 8 with an "identity" check to 1e-6 bits, and
+    B_heap × 8 with its ratio to the prediction. The table says the B_used column is an accounting identity and only
+    B_heap tests anything.
+  - **Strata:** the Q32 comparisons, with the number of the stratum's jobs and of its over-capacity jobs; the total of
+    over-capacity jobs heads the table, which says the Q32 strata cover fewer jobs.
+  - **Gcd work against time** (rule item 12) is reported for the Q32 rows: per job, L1-Q32 and L1-opt-Q32 against ctl,
+    their gcd work and multiplications (their own counting runs, equal to their Q64 rows', by the fixed bands; reported,
+    not verdicts) beside their time verdict against ctl in this run, with the candidates for a wider-number test;
+    over-capacity jobs are marked. L1-opt-Q32 against L1-Q32 has no time verdict (the Q32 rows are not compared with
+    each other) and so no line. L1's and L1-opt's table depends on the Q64 time verdicts and is official at `b3b88b6`.
+    The counts tables (per case, per operation, tricks) are kept; they are deterministic.
+  - **Links:** the report links the archived results (`../results-q64-b3b88b6/results.md`) wherever it refers to the
+    official Q64 verdicts, and the changed-verdict list reads `verdicts.csv` from the archive (its sha256 checked), or
+    from `git show b3b88b6:...` if the archive is not intact.
+- **R-19. The pilot's projection, updated** (rule, revision: Within the hard stop). The remaining-work estimate is
+  11.5 minutes (from 8.5: gates 33 -> 60 runs, 1.5 -> 2.7 minutes; counting and memory runs 115 -> 155 with repeats,
+  1 -> 1.4; calibration and rounds, 69 -> 85 timed invocations per round, 6 -> 7.4), and the pilot's nominal wall time
+  1.2 minutes (from 1: 31 -> 37 invocations per pilot round, the Q32 rows running on pilot jobs 1, 3 and 10), so a
+  pilot at the estimated speed gives factor 1 and does not count the added rows twice. The 45-minute limit and the
+  60-minute hard stop are unchanged (`common.py`; `test_pilot_stop_rule`).
+- **R-20. The official data, and the results folder** (rule, revision: the official data). `test/results/` as the
+  run of `b3b88b6` left it (the four committed files and the raw, uncommitted `state.json` and `run.log`) is copied,
+  unchanged, to `test/results-q64-b3b88b6/`, to be committed with the code; `common.ARCHIVE_SHA256` records each
+  file's sha256. The run under the revision writes to `test/results-q32/` (`common.RESULTS`). The runner refuses to
+  start if an archived file is missing or differs, or if its output folder is the archive or the original
+  `test/results/` (`common.PROTECTED`), never deletes there, and re-checks the archive at the end; `analyze.py`
+  refuses to write a report into either (`test_official_data_protected`). Before this, a fresh run would have deleted
+  `state.json` and `run.log` of `b3b88b6` and overwritten its `results.md` and `verdicts.csv`.
+
 ## Ambiguous or not possible as written (for the author)
 
 1. **08's unit tests for ctl** (R-2). They cover every 08 row. They are run whole from 08's commit `08bbfbe`, extracted
@@ -154,3 +219,6 @@ listed at the end.
 5. **The hard-stop clock** starts at the build, a few seconds before the rule's "start of step 1" (R-14). This errs on
    the safe side.
 6. **fz's simpler timing loop** slightly favours the ceiling (R-5).
+7. **The band h after the revision** comes from the re-run L1 against L1-null, of the same rounds: a documented
+   necessity, with safeguard 2 worded to include it; pending the author's confirmation (A-6, README).
+8. **The pilot's projection** is updated for the Q32 rows (R-19): estimates only; the 45-minute limit is unchanged.

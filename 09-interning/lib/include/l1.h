@@ -1,8 +1,10 @@
 /* l1.h: Design 3, layer 1 (spec 09-interning v0.1): exact sharing of whole numbers.
  *
- * Two rows from one source (src/l1.c):
+ * Rows from one source (src/l1.c):
  *   l1_*   L1, the baseline (spec §§4-15), compiled without L1_OPT;
- *   l1o_*  L1-opt (spec §17), the same source compiled with -DL1_OPT: the tricks O-1 to O-7, every one on.
+ *   l1o_*  L1-opt (spec §17), the same source compiled with -DL1_OPT: the tricks O-1 to O-7, every one on;
+ *   l1q_*  L1-Q32, and l1oq_* L1-opt-Q32 (spec §18): the same, compiled with -DL1_Q32: 16-bit index fields;
+ *   l1g_*  the lookup gate's build (-DL1_LKGATE; not a row): L1 with the parameterized lookup at 32-bit slots.
  *
  * Build settings, as the 08 library (spec §4.6 item 3): neither SK_COUNT nor SK_AUDIT, the timing build; SK_COUNT,
  * the counting build; SK_COUNT and SK_AUDIT, the test build.  Width 64 only (spec §4.3 item 1).
@@ -115,16 +117,25 @@ enum {
     sk_status P##t_corrupt_rat(T *c, sk_handle x, int neg, uint32_t i, uint32_t j);                               \
     sk_status P##t_corrupt_whole(T *c, uint32_t k, sk_int v);
 
-/* L1, the baseline */
+/* L1, the baseline (L1-Q64 where both widths are meant) */
 L1_DECLARE(l1_, l1_class)
-/* L1-opt */
+/* L1-opt (L1-opt-Q64) */
 L1_DECLARE(l1o_, l1o_class)
+/* L1-Q32 and L1-opt-Q32 (spec §18): the same source with -DL1_Q32 (16-bit index fields; capacity 32,768 whole
+ * numbers, exceeding it aborts with a message) */
+L1_DECLARE(l1q_, l1q_class)
+L1_DECLARE(l1oq_, l1oq_class)
+/* The lookup gate's build (spec §18.1 item 4; tests and gates only, never timed): L1 with -DL1_LKGATE, whose lookup
+ * is the Q32 rows' slot-width-parameterized lookup built at 32-bit slots */
+L1_DECLARE(l1g_, l1g_class)
 
 /* O-7: size the rational list for exactly n rationals, before entry (untimed).  A no-op in L1's source compiled
  * without L1_OPT (not declared there) and, in the test build, with O-7 switched off. */
 void l1o_reserve(l1o_class *c, uint32_t n);
+void l1oq_reserve(l1oq_class *c, uint32_t n);
 /* Test build: the tricks that are on (a mask of L1O_T*; every one by default).  Set before the first call. */
 sk_status l1o_t_tricks(l1o_class *c, unsigned mask);
+sk_status l1oq_t_tricks(l1oq_class *c, unsigned mask);
 
 #ifdef __cplusplus
 }

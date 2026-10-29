@@ -8,13 +8,22 @@ and lookups (fixed bands), per-case ratios (reported, no verdict), per-stratum c
 reported-only items of item 12: realized reuse (N, W, W/N, 2N/W after entry and at the end), memory against reuse,
 counts per operation, the per-case table (gcds, gcd work, multiplications), L1-opt's tricks beside their predicted
 figures with the share of L1's work each removes (O-1 to O-5), operation time alone, entry against operations with
-store's share, the limitations (keeping every result; one row with every trick), gcd work against time, and the
-chosen forms. There is no overall or combined verdict (item 11). A run that stopped (pilot
-projection, failed gate, hard stop) is reported with what it has and no verdict. Adapted from 08's analyze.py
-(decisions A-a, A-b, A-g carry over).
+store's share, the limitations (keeping every result; one row with every trick), gcd work against time (for the Q32
+rows; L1's and L1-opt's is official at b3b88b6), and the chosen forms. There is no overall or combined verdict (item
+11). A run that stopped (pilot projection, failed gate, hard stop) is reported with what it has and no verdict. Adapted
+from 08's analyze.py (decisions A-a, A-b, A-g carry over).
+
+The run after the revision of Oct 29, 2026 (the Q32 rows, an author-approved exception; rule.md, top): the verdicts
+reported are the Q32 rows' (against their Q64 rows, ctl, fmpq, mpq, the best library and fz). The official Q64
+verdicts stay those of commit b3b88b6, archived unchanged in test/results-q64-b3b88b6/; this run's Q64 rows serve only
+the paired Q32-against-Q64 comparison and the band h of the same run (L1 against L1-null: h must come from the rounds it
+bands), and every Q64 verdict that differs between the two runs is listed, without choosing. A report is never written
+into the archive (common.PROTECTED).
 """
 import csv
+import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -23,8 +32,18 @@ import numpy as np
 import common as C
 
 NA = "n/a"
-X_ROWS = ("L1", "L1-opt")
+X_ROWS = ("L1", "L1-opt")                      # the Q64 rows: re-run, compared with b3b88b6 only
+X_Q32 = C.Q32_ROWS                             # the Q32 rows: this run's verdicts
 Y_ROWS = ("ctl", "fmpq", "mpq", "fz", "best")
+OVER = "over capacity"
+ARCHIVE_LINK = f"../{C.ARCHIVE.name}/results.md"     # from RESULTS (test/results-q32/) to the archived results
+DESIGNED_AFTER = ("The Q32 rows were designed after the Q64 results of commit b3b88b6 had been seen (rule, revision "
+                  "of Oct 29, 2026: an exception approved by the author to \"only while nothing has been measured\"). "
+                  "The official Q64 verdicts, against ctl and the libraries and of L1-opt against L1, stay those of "
+                  f"b3b88b6 ([archived results]({ARCHIVE_LINK})); the Q64 rows re-run here are used only for the "
+                  "paired Q32-against-Q64 comparison and for the band h of the same run (L1 against L1-null, which must "
+                  "come from the same rounds as the verdicts it bands), and every Q64 verdict that differs between the "
+                  "two runs is listed below, without choosing between them")
 CHAIN_NOTE = ("on this chain job every result is kept as a new element, which is not the libraries' normal use (spec "
               "§10 item 3; rule, Limitations)")
 ONE_ROW_NOTE = ("L1-opt is timed with all its adopted tricks on together; the counters show each trick's effect on the "
@@ -92,6 +111,7 @@ class Data:
         self.st = st
         self.stopped = set(st.get("stopped_impls", []))
         self.lib_na = set(st.get("library_na", []))
+        self.over = {int(j): w for j, w in st.get("q32_over_capacity", {}).items()}
         self.rounds, self.capped = {}, {}
         for rec in st.get("records", []):
             if rec.get("label") == "pilot" or rec["kind"] != "time" or "bug" in rec:
@@ -116,6 +136,8 @@ class Data:
 
     def unavailable(self, job, row):
         impl = C.ROW_IMPL[row]
+        if row in C.Q32_ROWS and job in self.over:
+            return f"{row}: {OVER} (W = {self.over[job]} > {C.Q32_CAPACITY})"
         if impl in self.stopped:
             return f"{row}: stopped by a bug (item 5), re-run pending"
         if f"{impl}:{job}" in self.lib_na:
@@ -199,8 +221,12 @@ def ratio_entry(meas, ratio, verdict, extra=None):
 
 
 def compare(d, job, X, Y, h, field="total"):
-    """Every measure of rule item 8 for X (L1 or L1-opt) against Y (a row, or "best")."""
+    """Every measure of rule item 8 for X (L1, L1-opt, L1-Q32 or L1-opt-Q32) against Y (a row, or "best")."""
     out = []
+    if X in X_Q32 and job in d.over:           # rule, revision (capacity): a finding, not n/a
+        w = {"why": f"W = {d.over[job]} > {C.Q32_CAPACITY}", "W": d.over[job]}
+        meas = ["time"] + ([] if field != "total" or Y == "best" else ["B_used", "B_heap"])
+        return [ratio_entry(m, None, OVER, w) for m in meas]
     yrow = d.best_lib(job) if Y == "best" else Y
     # time
     if yrow is None:
@@ -235,8 +261,9 @@ def compare(d, job, X, Y, h, field="total"):
         if u:
             e["untracked"] = True
         out.append(e)
-    # gcd work, multiplications (against ctl; L1-opt also against L1), lookups (L1-opt against L1)
-    if Y == "ctl" or (X == "L1-opt" and Y == "L1"):
+    # gcd work, multiplications (against ctl; L1-opt also against L1), lookups (L1-opt against L1). The Q32 rows' equal
+    # their Q64 rows' (spec §18.3, checked by the gates and counting runs): reported as checked, not compared.
+    if X in X_ROWS and (Y == "ctl" or (X == "L1-opt" and Y == "L1")):
         ix, iy = C.ROW_IMPL[X], C.ROW_IMPL[Y]
         for meas, name in (("gcd work", "gcd_work"), ("multiplications", "mul")):
             gx, gy = d.ctr(job, ix, name), d.ctr(job, iy, name)
@@ -259,6 +286,8 @@ def compare(d, job, X, Y, h, field="total"):
 # ---------------------------------------------------------------------------------------------------- report
 def report(outdir):
     outdir = Path(outdir)
+    if C.protected(outdir):                    # rule, revision of Oct 29, 2026: the official data are never rewritten
+        raise SystemExit(f"{outdir} holds official data: refusing to write a report there")
     st = json.loads((outdir / "state.json").read_text())
     d = Data(st)
     md = (outdir / "results.md").read_text() if (outdir / "results.md").exists() else ""
@@ -361,23 +390,65 @@ def workload_section(st):
     return "\n".join(L) + "\n"
 
 
+def q32_pairs(job):
+    """The Q32 rows' comparisons (rule item 1 and the revision of Oct 29, 2026): each against its Q64 row (paired),
+    and against ctl, fmpq, mpq, the best library and fz."""
+    ys = [Y for Y in Y_ROWS if Y != "fz" or C.JOBS[job]["fz"]]
+    return [(X, C.Q32_PAIR[X]) for X in X_Q32] + [(X, Y) for X in X_Q32 for Y in ys]
+
+
+def q64_pairs(job):
+    """The Q64 comparisons of the run at b3b88b6, re-run here only to list the verdicts that changed."""
+    return [(X, Y) for X in X_ROWS for Y in Y_ROWS if Y != "fz" or C.JOBS[job]["fz"]] + [("L1-opt", "L1")]
+
+
+def csv_row(job, X, Y, e):
+    return dict(job=job, X=X, Y=Y, measure=e["measure"], verdict=e["verdict"], ratio=e["ratio"], lo=e.get("lo"),
+                hi=e.get("hi"), h=e.get("h"), after_entry=e.get("after_entry"), severe=e.get("severe"),
+                untracked=e.get("untracked"))
+
+
+def official_q64():
+    """The official Q64 verdicts: verdicts.csv of commit b3b88b6, from the archive (test/results-q64-b3b88b6/, its
+    sha256 checked), else from git at that commit. ({(job, X, Y, measure): row}, source), or (None, why)."""
+    if C.archive_check() is None:
+        text, src = (C.ARCHIVE / "verdicts.csv").read_text(), f"[{C.ARCHIVE.name}/verdicts.csv](../{C.ARCHIVE.name}/verdicts.csv)"
+    else:
+        p = subprocess.run(["git", "show", f"{C.OFFICIAL_Q64_COMMIT}:{C.OFFICIAL_Q64_VERDICTS}"], cwd=C.ROOT,
+                           capture_output=True, text=True)
+        if p.returncode:
+            return None, f"neither the archive ({C.archive_check()}) nor git could be read"
+        text, src = p.stdout, f"`git show {C.OFFICIAL_Q64_COMMIT}:{C.OFFICIAL_Q64_VERDICTS}`"
+    return {(int(r["job"]), r["X"], r["Y"], r["measure"]): r for r in csv.DictReader(io.StringIO(text))}, src
+
+
 def verdict_sections(d, st, outdir):
     jobs = sorted(int(j) for j in st.get("gen", {}) if st["gen"][j].get("constructible", True))
-    rows_csv, per_job = [], {}
-    out = ["## Verdicts (rule items 8-10; per measure only, no overall winner)", "",
+    rows_csv, rerun_csv, per_job = [], [], {}
+    over = sorted(j for j in jobs if j in d.over)
+    out = ["## Verdicts of the Q32 rows (rule items 8-10 and the revision of Oct 29, 2026; per measure only, no "
+           "overall winner)", "",
+           f"**{DESIGNED_AFTER}.**", "",
+           f"*Over capacity:* {len(over)} of {len(jobs)} jobs " +
+           (("(" + ", ".join(f"job {j}, W = {d.over[j]}" for j in over) + ")") if over else "") +
+           f" have more than {C.Q32_CAPACITY:,} distinct whole numbers at the end; the Q32 rows do not run there, and "
+           "each of their verdicts on those jobs is **over capacity**, a finding about the design at that width.", "",
            f"*Limitation:* {ONE_ROW_NOTE}.", ""]
     for job in jobs:
         h, null, why = null_h(d, job)
         per_job[job] = {"h": h, "null": null}
         out.append(f"#### Job {job} ({C.JOBS[job]['name']})")
         out.append("")
-        out.append(f"Null control L1 against L1-null: " + (f"ratio {null[0]:.3f} [{null[1]:.3f}, {null[2]:.3f}], "
-                                                           f"h = {h:.3f}" if null else f"n/a ({why})"))
+        out.append(f"Null control L1 against L1-null (this run): " +
+                   (f"ratio {null[0]:.3f} [{null[1]:.3f}, {null[2]:.3f}], h = {h:.3f}" if null else f"n/a ({why})"))
         out.append("")
+        if job in d.over:
+            out.append(f"L1-Q32 and L1-opt-Q32: **over capacity** (W = {d.over[job]} > {C.Q32_CAPACITY:,}); "
+                       "every Q32 verdict of this job is over capacity.")
+            out.append("")
         out.append("| X | Y | measure | verdict | ratio | interval / after entry | flags |")
         out.append("| --- | --- | --- | --- | --- | --- | --- |")
-        pairs = [(X, Y) for X in X_ROWS for Y in Y_ROWS if Y != "fz" or C.JOBS[job]["fz"]] + [("L1-opt", "L1")]
-        for X, Y in pairs:
+        for X, Y in q32_pairs(job):
             for e in compare(d, job, X, Y, h):
                 flags = []
                 if e.get("severe"):
@@ -388,21 +459,20 @@ def verdict_sections(d, st, outdir):
                     flags.append("chain: every result kept")
                 if Y == "fz":
                     flags.append("ceiling gap")
+                if Y in ("L1", "L1-opt"):
+                    flags.append("paired Q32 against Q64")
                 if Y == "best" and e.get("vs"):
                     flags.append(f"best library: {e['vs']}")
                 iv = (f"[{e['lo']:.3f}, {e['hi']:.3f}], h {e['h']:.3f}" if "lo" in e else
-                      fmt(e.get("after_entry")) if "after_entry" in e else
-                      "skipped: " + ", ".join(f"{t} {v}" for t, v in e["skips"].items()) if "skips" in e else
-                      f"{e['x']} / {e['y']}" if e.get("x") is not None and e.get("y") is not None else "")
+                      e["why"] if e["verdict"] == OVER else
+                      fmt(e.get("after_entry")) if "after_entry" in e else "")
                 out.append(f"| {X} | {Y} | {e['measure']} | {e['verdict']} | {fmt(e['ratio'])} | {iv} | "
                            f"{', '.join(flags)} |")
-                rows_csv.append(dict(job=job, X=X, Y=Y, measure=e["measure"], verdict=e["verdict"], ratio=e["ratio"],
-                                     lo=e.get("lo"), hi=e.get("hi"), h=e.get("h"), after_entry=e.get("after_entry"),
-                                     severe=e.get("severe"), untracked=e.get("untracked")))
+                rows_csv.append(csv_row(job, X, Y, e))
         # operation time alone (item 12), with the job's h
         out.append("")
-        ys = ("ctl", "fmpq", "mpq") + (("fz",) if C.JOBS[job]["fz"] else ())
-        pairs_ops = [(X, Y) for X in X_ROWS for Y in ys] + [("L1-opt", "L1")]
+        ys = ("L1", "L1-opt", "ctl", "fmpq", "mpq") + (("fz",) if C.JOBS[job]["fz"] else ())
+        pairs_ops = [(X, Y) for X in X_Q32 for Y in ys if Y not in X_ROWS or Y == C.Q32_PAIR[X]]
         out.append("Operation time alone (entry and read-out excluded; rule item 12, verdicts by item 8 with the "
                    "job's h): " + "; ".join(
                        f"{X} vs {Y} {e['verdict']} {fmt(e['ratio'])}" +
@@ -412,80 +482,188 @@ def verdict_sections(d, st, outdir):
             out.append("")
             out.append(f"*Limitation:* {CHAIN_NOTE}.")
         out.append("")
+        for X, Y in q64_pairs(job):
+            for e in compare(d, job, X, Y, h):
+                rerun_csv.append(csv_row(job, X, Y, e))
     write_csv(outdir / "verdicts.csv", rows_csv)
+    write_csv(outdir / "q64_rerun_verdicts.csv", rerun_csv)
     # rule item 10: the strata first, the per-job verdicts and magnitudes beneath
-    head, per_job_lines = out[:4], out[4:]
-    out = head + strata_section(rows_csv) + ["### Per job and measure, with magnitudes (rule item 8)", ""] + \
+    head, per_job_lines = out[:8], out[8:]
+    out = head + strata_section(rows_csv, d, jobs) + ["### Per job and measure, with magnitudes (rule item 8)", ""] + \
         per_job_lines
-    out += gcd_vs_time_section(rows_csv, jobs)
+    out += gcd_vs_time_section(d, rows_csv, jobs)
+    out += changed_q64_section(rerun_csv)
+    out += model_section(d, st, jobs)
     out += reported_sections(d, st, jobs, outdir)
     out += ["## Limitations (rule, Limitations)", "",
             "- **Keeping every result** (spec §10 item 3): every row stores every result as a new element; on the "
             "chain jobs (8-11) this is not the libraries' normal use, so it is noted beside every chain verdict against "
             "fmpq, mpq and the best library.",
-            f"- **One row with every trick:** {ONE_ROW_NOTE}.", ""]
+            f"- **One row with every trick:** {ONE_ROW_NOTE}.",
+            f"- **Designed after the Q64 results:** {DESIGNED_AFTER}.", ""]
     return out
 
 
-def gcd_vs_time_section(rows, jobs):
-    """Rule item 12: a job where L1 (or L1-opt) removes gcd work or multiplications but not time, at 64 bits, is a
-    candidate for a wider-number test, where both cost more."""
-    out = ["## Gcd work against time (rule item 12)", "",
-           "A job where the row removes gcd work or multiplications (verdict win) but has no time win against the same "
-           "row is a **candidate for a wider-number test**, where both cost more.", "",
+def gcd_vs_time_section(d, rows, jobs):
+    """Rule item 12, for the Q32 rows: a job where the row removes gcd work or multiplications against ctl (fixed bands
+    of item 8) but has no time win against ctl, at 64 bits, is a candidate for a wider-number test, where both cost
+    more. The counts are the Q32 row's own counting run (equal to its Q64 row's, checked: spec §18.3 item 1), so they
+    are reported here, not as verdicts; the time verdict is the Q32 row's against ctl in this run, with this run's h.
+    L1's and L1-opt's table is official at b3b88b6 (the archive)."""
+    out = ["## Gcd work against time, Q32 rows (rule item 12)", "",
+           "A job where the Q32 row removes gcd work or multiplications against ctl (verdict win by the fixed bands of "
+           "item 8) but has no time win against ctl is a **candidate for a wider-number test**, where both cost more. "
+           "The counts are the row's own counting run, equal to its Q64 row's (checked, spec §18.3 item 1); the time "
+           "verdict is this run's. L1's and L1-opt's table is official at b3b88b6 "
+           f"([archived results]({ARCHIVE_LINK})). The Q32 rows are not compared with each other (rule item 1, "
+           "revision), so L1-opt-Q32 against L1-Q32 has no time verdict and no row here.", "",
            "| job | X | Y | gcd work | multiplications | time | candidate |", "| --- | --- | --- | --- | --- | --- | --- |"]
     idx = {(r["job"], r["X"], r["Y"], r["measure"]): r for r in rows}
     cands = []
     for job in jobs:
-        for X, Y in (("L1", "ctl"), ("L1-opt", "ctl"), ("L1-opt", "L1")):
-            g, m, t = (idx.get((job, X, Y, k)) for k in ("gcd work", "multiplications", "time"))
-            if g is None and m is None:
+        for X in X_Q32:
+            Y = "ctl"
+            if job in d.over:
+                out.append(f"| {job} | {X} | {Y} | {OVER} | {OVER} | {OVER} | - |")
                 continue
-            removes = any(e is not None and e["verdict"] == "win" for e in (g, m))
+            ix = C.ROW_IMPL[X]
+            cells, removes = [], False
+            for name in ("gcd_work", "mul"):
+                gx, gy = d.ctr(job, ix, name), d.ctr(job, "ctl", name)
+                if gx is None or gy is None or gy == 0:
+                    cells.append(NA)
+                else:
+                    v = fixed_verdict(gx / gy)
+                    removes = removes or v == "win"
+                    cells.append(f"{v} {fmt(gx / gy)}")
+            t = idx.get((job, X, Y, "time"))
             tv = t["verdict"] if t else NA
-            cand = removes and tv != "win" and tv != NA
+            cand = removes and tv not in ("win", NA)
             if cand:
                 cands.append(f"job {job} ({X} against {Y})")
-
-            def cell(e):
-                return f"{e['verdict']} {fmt(e['ratio'])}" if e else NA
-            out.append(f"| {job} | {X} | {Y} | {cell(g)} | {cell(m)} | {cell(t)} | "
+            out.append(f"| {job} | {X} | {Y} | {cells[0]} | {cells[1]} | "
+                       f"{(tv + ' ' + fmt(t['ratio'])) if t and t['ratio'] is not None else tv} | "
                        f"{'yes' if cand else ('n/a' if removes and tv == NA else 'no')} |")
     out += ["", "Candidates: " + ("; ".join(cands) if cands else "none") + ".", ""]
     return out
 
 
-def strata_section(rows):
+def changed_q64_section(rerun):
+    """Rule, revision of Oct 29, 2026, safeguard 3: every Q64 verdict that differs between b3b88b6 and this run."""
+    out = ["## Q64 verdicts that changed between the two runs (rule, revision of Oct 29, 2026)", "",
+           f"The official Q64 verdicts are those of commit {C.OFFICIAL_Q64_COMMIT}. The Q64 rows were re-run here only "
+           "for the paired comparison with the Q32 rows. Every (job, X, Y, measure) whose verdict differs between the "
+           "two runs is listed, with both magnitudes; neither run is chosen over the other.", ""]
+    off, src = official_q64()
+    if off is None:
+        return out + [f"n/a: the official verdicts of {C.OFFICIAL_Q64_COMMIT} could not be read: {src}.", ""]
+    out += [f"Official verdicts read from {src} ([archived results]({ARCHIVE_LINK})).", ""]
+    changed, same, missing = [], 0, 0
+    for r in rerun:
+        o = off.get((r["job"], r["X"], r["Y"], r["measure"]))
+        if o is None:
+            missing += 1
+            continue
+        if o["verdict"] == str(r["verdict"]):
+            same += 1
+        else:
+            changed.append((r, o))
+    out.append(f"{len(changed)} changed, {same} unchanged" + (f", {missing} not in {C.OFFICIAL_Q64_COMMIT}" if missing
+                                                              else "") + ".")
+    if changed:
+        out += ["", f"| job | X | Y | measure | {C.OFFICIAL_Q64_COMMIT} verdict | ratio | this run's verdict | ratio |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+        for r, o in changed:
+            ofr = float(o["ratio"]) if o["ratio"] not in ("", None) else None
+            out.append(f"| {r['job']} | {r['X']} | {r['Y']} | {r['measure']} | {o['verdict']} | {fmt(ofr)} | "
+                       f"{r['verdict']} | {fmt(r['ratio'])} |")
+    return out + [""]
+
+
+def model_section(d, st, jobs):
+    """Rule, revision of Oct 29, 2026 (the model's prediction): bits per rational = H + E W/N, E = 64 + b_s S/W, with
+    W from the generator and S from the growth rule, beside the measured B_used and B_heap. For B_used this is an
+    accounting identity (it restates the memory report's sum), so its equality to the byte is a check of the report,
+    not of the model; only B_heap tests anything."""
+    out = ["## The model's bits per rational (rule, revision of Oct 29, 2026)", "",
+           "bits per rational = H + E W/N, E = 64 + b_s S/W (H the rational's field bits; b_s the bits per lookup slot: "
+           "L1 32, L1-opt 64, L1-Q32 16, L1-opt-Q32 48), with W from the generator and S from the growth rule, made "
+           "before any run. **For B_used this is an accounting identity**: it restates the memory report's sum, so the "
+           "\"identity\" column checks the report to the byte and tests nothing about the design. **Only B_heap "
+           "tests anything:** it is measured by the C library's heap statistics, with capacity slack and allocator "
+           "headers that the model leaves out.", "",
+           "| job | when | row | W | N | S | S/W | E | predicted bits | B_used bits | identity | B_heap bits | "
+           "B_heap / predicted |", "| --- |" * 1 + " --- |" * 12]
+    g = st.get("gen", {})
+    for job in jobs:
+        m = g.get(str(job))
+        if not m:
+            continue
+        for when, key in (("after entry", "after_entry"), ("end", "end")):
+            W, N = m["reuse"][key]["W"], m["reuse"][key]["N"]
+            S = C.lookup_slots(W)
+            for impl in C.LAYER1:
+                row = C.IMPL_ROWS[impl][0]
+                E = 64 + C.SLOT_BITS[impl] * S / W
+                pred = C.RAT_BITS[impl] + E * W / N
+                if row in C.Q32_ROWS and job in d.over:
+                    out.append(f"| {job} | {when} | {row} | {W} | {N} | {S} | {S / W:.3f} | {E:.1f} | {pred:.2f} | "
+                               f"{OVER} | - | {OVER} | - |")
+                    continue
+                u, _ = d.mem_per(job, row, "used", key)
+                hp, _ = d.mem_per(job, row, "heap", key)
+                ident = NA if u is None else ("ok" if abs(8 * u - pred) < 1e-6 else "MISMATCH")
+                out.append(f"| {job} | {when} | {row} | {W} | {N} | {S} | {S / W:.3f} | {E:.1f} | {pred:.2f} | "
+                           f"{fmt(8 * u if u is not None else None, 2)} | {ident} | "
+                           f"{fmt(8 * hp if hp is not None else None, 2)} | "
+                           f"{fmt(8 * hp / pred if hp is not None else None)} |")
+    return out + [""]
+
+
+def strata_section(rows, d, jobs):
+    over = [j for j in jobs if j in d.over]
     out = ["### Strata (rule item 10)", "",
-           "| stratum | X | Y | measure | win | tie | loss | over cap | n/a | median ratio | severe flags |",
-           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+           f"**Over-capacity jobs: {len(over)}** of {len(jobs)}" + (f" ({', '.join(map(str, over))})" if over else "") +
+           ". **The Q32 strata cover fewer jobs** than the Q64 strata of b3b88b6: a stratum's over-capacity jobs are "
+           "counted in the \"over capacity\" column and enter no other count or median.", "",
+           "| stratum | jobs | over capacity | X | Y | measure | win | tie | loss | over cap | n/a | median ratio | "
+           "severe flags |",
+           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for s in C.STRATA_ORDER:
-        jobs = C.STRATA[s]
-        keys = sorted({(r["X"], r["Y"], r["measure"]) for r in rows if r["job"] in jobs})
+        sj = [j for j in C.STRATA[s] if j in jobs]
+        keys = sorted({(r["X"], r["Y"], r["measure"]) for r in rows if r["job"] in sj})
         for X, Y, meas in keys:
-            rs = [r for r in rows if r["job"] in jobs and (r["X"], r["Y"], r["measure"]) == (X, Y, meas)]
+            rs = [r for r in rows if r["job"] in sj and (r["X"], r["Y"], r["measure"]) == (X, Y, meas)]
             cnt = {k: sum(1 for r in rs if r["verdict"] == k) for k in ("win", "tie", "loss")}
-            cap = sum(1 for r in rs if "over cap" in str(r["verdict"]))
+            oc = sum(1 for r in rs if r["verdict"] == OVER)
+            cap = sum(1 for r in rs if "over cap" in str(r["verdict"]) and r["verdict"] != OVER)
             na = sum(1 for r in rs if r["verdict"] == NA)
             rat = [r["ratio"] for r in rs if r["ratio"] is not None]
             sev = sum(1 for r in rs if r.get("severe"))
-            out.append(f"| {s} | {X} | {Y} | {meas} | {cnt['win']} | {cnt['tie']} | {cnt['loss']} | {cap} | {na} | "
-                       f"{fmt(float(np.median(rat)) if rat else None)} | {sev} |")
+            out.append(f"| {s} | {len(sj)} | {oc} | {X} | {Y} | {meas} | {cnt['win']} | {cnt['tie']} | {cnt['loss']} | "
+                       f"{cap} | {na} | {fmt(float(np.median(rat)) if rat else None)} | {sev} |")
     return out + [""]
 
 
 def reported_sections(d, st, jobs, outdir):
-    out = ["## Also reported (rule item 12)", ""]
+    out = ["## Also reported (rule item 12)", "",
+           f"The time-dependent items of rule item 12 for L1 and L1-opt (gcd work against time) are official at commit "
+           f"{C.OFFICIAL_Q64_COMMIT} ([archived results]({ARCHIVE_LINK})); the Q32 rows' are above. The counts below "
+           "are deterministic and equal to that run's.", ""]
     # memory against reuse
+    mrows = ("L1", "L1-opt", "L1-Q32", "L1-opt-Q32", "ctl", "fmpq", "mpq", "fz")
     out += ["### Memory against reuse (jobs by W/N at the end; bytes per stored rational, end)", "",
-            "| job | W/N | " + " | ".join(f"{r} used / heap" for r in ("L1", "L1-opt", "ctl", "fmpq", "mpq", "fz")) +
-            " | L1 formula check |", "| --- | --- |" + " --- |" * 7]
+            "| job | W/N | " + " | ".join(f"{r} used / heap" for r in mrows) +
+            " | L1 formula check |", "| --- | --- |" + " --- |" * (len(mrows) + 1)]
     g = st["gen"]
     for job in sorted(jobs, key=lambda j: g[str(j)]["reuse"]["end"]["W_per_N"]):
         cells = []
-        for r in ("L1", "L1-opt", "ctl", "fmpq", "mpq", "fz"):
+        for r in mrows:
             if r == "fz" and not C.JOBS[job]["fz"]:
                 cells.append("-")
+                continue
+            if r in C.Q32_ROWS and job in d.over:
+                cells.append(OVER)
                 continue
             u, _ = d.mem_per(job, r, "used")
             hp, _ = d.mem_per(job, r, "heap")
@@ -571,7 +749,8 @@ def reported_sections(d, st, jobs, outdir):
             ""]
     for job in jobs:
         cells = []
-        for row in ("L1", "L1-opt", "ctl", "fmpq", "mpq") + (("fz",) if C.JOBS[job]["fz"] else ()):
+        for row in ("L1", "L1-opt", "L1-Q32", "L1-opt-Q32", "ctl", "fmpq", "mpq") + \
+                (("fz",) if C.JOBS[job]["fz"] else ()):
             e, _ = d.times(job, row, "entry")
             t, _ = d.times(job, row, "total")
             if e is not None and t is not None:
@@ -596,7 +775,7 @@ def reported_sections(d, st, jobs, outdir):
             "| --- | --- | --- | --- |" + " --- |" * (len(OP_COUNTS) + 1)]
     for job in jobs:
         nph = st.get("gen", {}).get(str(job), {}).get("phase_counts")
-        for impl in C.COUNTED:
+        for impl in ("L1", "L1opt", "ctl"):          # the Q32 rows' equal their Q64 rows' (spec §18.3, checked)
             if d.counts.get((job, impl)) is None or "counts" not in d.counts[(job, impl)]:
                 continue
             for ph in C.PHASES:

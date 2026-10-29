@@ -1,8 +1,9 @@
 """The runner of research/rule.md: order of work, pilot with its projection, gates with the exact checks, counting
 and memory runs, calibration (forms and r), 12 rounds, the time cap and the 60-minute hard stop.
 
-    python3 runner.py                      the measured run: results in test/results/ (refuses unless rule.md is the
-                                           fixed rule, the 08 copies are unchanged, and the machine has 2 cores)
+    python3 runner.py                      the measured run: results in test/results-q32/ (refuses unless rule.md is
+                                           the fixed rule, the 08 copies are unchanged, the archive of b3b88b6 is
+                                           unchanged, and the machine has 2 cores)
     python3 runner.py --pilot-only         steps 1-3 (generation, unit tests, pilot with its projection), then stop
     python3 runner.py --resume             continue a run stopped by a failed gate or after --pilot-only: re-runs the
                                            unit tests and every gate not passed, then goes on (refused once a timed
@@ -11,9 +12,20 @@ and memory runs, calibration (forms and r), 12 rounds, the time cap and the 60-m
                                            full (unit tests, gates, counting and memory runs, calibration, every
                                            round); L1 re-runs L1 and L1-null; "all" re-runs every row; any
                                            implementation whose stored gate or counting results ran other code is
-                                           re-run too (a change to l1.c re-runs L1 and L1-opt)
+                                           re-run too (a change to l1.c re-runs L1, L1-opt, L1-Q32, L1-opt-Q32 and
+                                           the lookup gate)
+
+Rows (rule item 1 and its revision of Oct 29, 2026): L1, L1-opt, L1-null, ctl, fmpq, mpq, fz where marked, and L1-Q32
+and L1-opt-Q32 (implementations L1q and L1oq) on the jobs whose predicted W at the end is within the Q32 capacity of
+32,768. The gates also run the lookup gate (L1g, spec §18.1 item 4) on every job, and check each Q32 row against its
+Q64 row (spec §18.3 item 1).
     python3 runner.py --toy [--jobs 1,3] [--hard-stop-s S]
                                            harness test only: toy-size workloads in build/toy/
+
+Results (rule, revision of Oct 29, 2026: the official data): this run writes only to test/results-q32/. The measured
+run of b3b88b6 is archived, unchanged, in test/results-q64-b3b88b6/ (with the original test/results/); the runner never
+writes, deletes or overwrites a file there, refuses to start if any archived file differs from its recorded sha256, and
+checks it again at the end.
 
 Before any timed run (the pilot, and each job's calibration and rounds) the machine must be idle: load average and other
 processes' CPU use under the thresholds of common.py; if not, the runner waits, logging it, and after 10 minutes refuses
@@ -211,10 +223,10 @@ class Runner:
             if r.returncode:
                 raise RunStop(f"unit-test build failed: {' '.join(cmd)}\n{r.stderr}")
             objs.append(str(o))
-        for name, src in L.UNIT_TESTS.items():
+        for name, (src, tdefs) in L.UNIT_TESTS.items():
             exe = self.bin / name
-            cmd = [L.CC] + L.CFLAGS + L.MODE_DEFS["test"] + inc + ["-I", str(L.LIBDIR / "tests"), str(src)] + objs + \
-                ["-o", str(exe)]
+            cmd = [L.CC] + L.CFLAGS + L.MODE_DEFS["test"] + tdefs + inc + ["-I", str(L.LIBDIR / "tests"), str(src)] + \
+                objs + ["-o", str(exe)]
             r = subprocess.run(cmd, capture_output=True, text=True)
             if r.returncode:
                 raise RunStop(f"unit-test build failed: {' '.join(cmd)}\n{r.stderr}")
@@ -255,6 +267,14 @@ class Runner:
     def meta(self, job):
         return json.loads((self.wl / f"job-{job:02d}.json").read_text())
 
+    def q32_fits(self, job):
+        """Rule, revision of Oct 29, 2026 (capacity): a Q32 row runs only on the jobs whose generator-predicted W at the
+        end is at most the Q32 capacity, 32,768."""
+        return str(job) not in self.state.get("q32_over_capacity", {})
+
+    def rows_of(self, job):
+        return C.rows_of(job, q32=self.q32_fits(job))
+
     # ------------------------------------------------------------------------------------------- checks
     def check(self, job, readout):
         """Every stored value against the exact reference (rule item 5). None, or the first mismatch."""
@@ -292,8 +312,9 @@ class Runner:
         return tot, full
 
     def exact_checks(self, impl, job, stdout):
-        """Spec §14.1 items 1-2 and, for L1-opt, §17.3 item 2: W after entry and at the end, the count of every case per
-        phase, and the predicted trick counters, each equal to the generator's figure. Returns a list of failures."""
+        """Spec §14.1 items 1-2 and, for L1-opt and L1-opt-Q32, §17.3 item 2: W after entry and at the end, the count of
+        every case per phase, and the predicted trick counters, each equal to the generator's figure. Returns a list
+        of failures."""
         pred = self.meta(job)["predicted"]
         fails = []
         wl = {l.split()[1]: int(l.split()[2]) for l in stdout.splitlines() if l.startswith("wholes ")}
@@ -308,7 +329,7 @@ class Runner:
                 got = tot.get((ph, "case_" + k), 0)
                 if got != want.get(k, 0):
                     fails.append(f"{ph} case {k}: {got} != predicted {want.get(k, 0)}")
-        if impl == "L1opt":
+        if impl in C.OPT_IMPLS:
             for ph in C.PHASES:
                 want = pred["tricks"].get(ph, {})
                 names = set(want) | {n for (p, n) in tot if p == ph and n.startswith(("o1_", "o2_", "o3_", "o4_", "o5_"))}
@@ -317,20 +338,26 @@ class Runner:
                         fails.append(f"{ph} {n}: {tot.get((ph, n), 0)} != predicted {want.get(n, 0)}")
         return fails
 
-    def against_l1(self, job):
-        """Spec §17.3 items 1 and 3 on the gate runs: L1-opt's stored values and whole-number list equal to L1's; its
-        found plus skipped lookups equal to L1's found, appended equal, and its arithmetic equal to L1's less its
-        counted skips. Returns a list of failures."""
-        g = self.state["gates"]
-        a, b = g.get(f"L1:{job}"), g.get(f"L1opt:{job}")
-        if not a or not b or "fail" in a or "fail" in b:
-            return ["L1 or L1-opt has no passed gate"]
+    def same_run(self, job, base, impl, what):
+        """The gate runs of impl and base on job: the same stored values and the same whole-number list."""
         fails = []
-        ra, rb = self.tmp / f"g-{job:02d}-L1.out", self.tmp / f"g-{job:02d}-L1opt.out"
+        ra, rb = self.tmp / f"g-{job:02d}-{base}.out", self.tmp / f"g-{job:02d}-{impl}.out"
         if ra.read_bytes() != rb.read_bytes():
-            fails.append("stored values differ from L1's")
-        if (self.tmp / f"w-{job:02d}-L1.bin").read_bytes() != (self.tmp / f"w-{job:02d}-L1opt.bin").read_bytes():
-            fails.append("whole-number list differs from L1's")
+            fails.append(f"stored values differ from {what}'s")
+        if (self.tmp / f"w-{job:02d}-{base}.bin").read_bytes() != (self.tmp / f"w-{job:02d}-{impl}.bin").read_bytes():
+            fails.append(f"whole-number list differs from {what}'s")
+        return fails
+
+    def against_l1(self, job, opt="L1opt"):
+        """Spec §17.3 items 1 and 3 on the gate runs: L1-opt's (or L1-opt-Q32's) stored values and whole-number list
+        equal to L1's (L1-Q32's); its found plus skipped lookups equal to L1's found, appended equal, and its arithmetic
+        equal to L1's less its counted skips. Returns a list of failures."""
+        base = C.BASE_OF[opt]
+        g = self.state["gates"]
+        a, b = g.get(f"{base}:{job}"), g.get(f"{opt}:{job}")
+        if not a or not b or "fail" in a or "fail" in b:
+            return [f"{base} or {opt} has no passed gate"]
+        fails = self.same_run(job, base, opt, base)
         ta, tb = {}, {}
         for src, dst in ((a["counts"], ta), (b["counts"], tb)):
             for (ph, n), v in self.parse_counts(src)[0].items():
@@ -348,7 +375,48 @@ class Runner:
                ("add", ta.get("add", 0) - tb.get("o5_add_skipped", 0), "additions")]
         for name, want, what in rel:
             if tb.get(name, 0) != want:
-                fails.append(f"{what}: L1-opt {tb.get(name, 0)} != L1 less skips {want}")
+                fails.append(f"{what}: {opt} {tb.get(name, 0)} != {base} less skips {want}")
+        return fails
+
+    @staticmethod
+    def scaled_o7(lines, num, den):
+        """Counter lines with O-7's bytes avoided (rational-list bytes) scaled by num / den; every other line as is."""
+        out = []
+        for l in lines:
+            t = l.split()
+            if t[0] == "xctr" and t[3] == "o7_bytes_avoided":
+                t[4] = str(int(t[4]) // den * num)
+            out.append(" ".join(t))
+        return out
+
+    def against_q64(self, job, q32, counts_key="gates"):
+        """Spec §18.3 item 1: a Q32 row against its Q64 row on a job within capacity: the same stored values and
+        whole-number list (gate runs), and every counter equal, line for line, except O-7's bytes avoided, which are
+        rational-list bytes and so half (4 bytes per rational against 8). Returns a list of failures."""
+        q64 = C.Q64_OF[q32]
+        src = self.state[counts_key]
+        a, b = src.get(f"{q64}:{job}"), src.get(f"{q32}:{job}")
+        if not a or not b or "counts" not in a or "counts" not in b:
+            return [f"{q64} or {q32} has no result to compare"]
+        fails = self.same_run(job, q64, q32, q64) if counts_key == "gates" else []
+        if self.scaled_o7(a["counts"], 1, 2) != list(b["counts"]):
+            fails.append(f"counters differ from {q64}'s")
+        if counts_key == "counts" and a.get("percall_sha256") != b.get("percall_sha256"):
+            fails.append(f"per-call core counts differ from {q64}'s")
+        return fails
+
+    def lookup_gate(self, job):
+        """Spec §18.1 item 4: the parameterized lookup built at 32-bit slots (L1g, L1 with that lookup) gives, on every
+        job, the probe counts of L1, whose lookup is 08's sk_lookup: every counter line equal (lookup searches and
+        probes per phase and part included), and the same stored values and whole-number list. Failures, or []."""
+        g = self.state["gates"]
+        a, b = g.get(f"L1:{job}"), g.get(f"L1g:{job}")
+        if not a or not b or "fail" in a or "fail" in b:
+            return ["L1 or the lookup gate's build has no passed gate run"]
+        fails = self.same_run(job, "L1", "L1g", "L1")
+        if a["counts"] != b["counts"]:
+            diff = [x for x in b["counts"] if x not in set(a["counts"])][:5]
+            fails.append(f"counters differ from L1's (sk_lookup): {diff}")
         return fails
 
     def percase_check(self, job):
@@ -357,7 +425,7 @@ class Runner:
         L1, L1-opt and ctl, for rule items 6 and 12. Returns (failures, per-case table)."""
         cases = np.frombuffer((self.wl / f"job-{job:02d}.case").read_bytes(), dtype=np.int8)
         sums = {}
-        for impl in C.COUNTED:
+        for impl in ("L1", "L1opt", "ctl"):        # the Q32 rows' per-call counts equal their Q64 rows' (spec §18.3)
             p = self.tmp / f"p-{job:02d}-{impl}-0.bin"
             arr = np.fromfile(p, dtype="<i8").reshape(-1, 5)
             per = {}
@@ -501,7 +569,7 @@ class Runner:
 
     def rounds(self, job, nrounds, cal, store, live, label):
         """Interleaved rounds: every row once per round, as its own process, order rotated by one per round."""
-        order = C.rows_of(job)
+        order = self.rows_of(job)
         capped = set()
         for k in range(nrounds):
             rot = order[k % len(order):] + order[:k % len(order)]
@@ -541,7 +609,7 @@ class Runner:
     def live_rows(self, job):
         stopped = set(self.state.get("stopped_impls", []))
         na = set(self.state.get("library_na", []))
-        return [r for r in C.rows_of(job) if C.ROW_IMPL[r] not in stopped and f"{C.ROW_IMPL[r]}:{job}" not in na]
+        return [r for r in self.rows_of(job) if C.ROW_IMPL[r] not in stopped and f"{C.ROW_IMPL[r]}:{job}" not in na]
 
     # ------------------------------------------------------------------------------------------- code versions
     def stamp_code(self, impl, res):
@@ -607,7 +675,7 @@ class Runner:
             return res
         res["audits"] = next((l for l in p.stdout.splitlines() if l.startswith("audits")), "")
         res["counts"] = [l for l in p.stdout.splitlines() if l.startswith(("ctr ", "xctr "))]
-        if impl in ("L1", "L1opt"):
+        if impl in C.LAYER1 or impl in C.GATE_ONLY:
             fails = self.exact_checks(impl, job, p.stdout)
             if fails:
                 res["fail"] = "exact checks (spec §14.1, §17.3): " + "; ".join(fails[:10])
@@ -672,11 +740,15 @@ class Runner:
                                                  if v["out"].strip()))
 
     def gate_pairs(self, impls_only=None, skip_passed=True):
+        """The gate runs: every counted row on every job (the Q32 rows on the jobs within capacity), and the lookup
+        gate's build on every job (spec §18.1 item 4)."""
         done = self.state.setdefault("gates", {})
         pairs = []
         for job in self.constructible():
-            for impl in C.COUNTED:
+            for impl in C.COUNTED + C.GATE_ONLY:
                 if impls_only is not None and impl not in impls_only:
+                    continue
+                if impl in C.Q32_IMPLS and not self.q32_fits(job):
                     continue
                 k = f"{impl}:{job}"
                 g = done.get(k)
@@ -691,15 +763,34 @@ class Runner:
         gates = self.state.setdefault("gates", {})
         for (impl, job), r in res.items():
             gates[f"{impl}:{job}"] = r
-        # L1-opt against L1 (spec §17.3 items 1, 3), once both gates of a job have passed
+        # once both gates of a job have passed: L1-opt against L1, and L1-opt-Q32 against L1-Q32 (spec §17.3 items 1,
+        # 3); each Q32 row against its Q64 row (spec §18.3 item 1); the lookup gate against L1 (spec §18.1 item 4)
+        def passed(k):
+            return k in gates and "fail" not in gates[k]
         for job in sorted({j for _, j in pairs}):
-            k = f"L1opt:{job}"
-            if k in gates and "fail" not in gates[k] and f"L1:{job}" in gates and "fail" not in gates[f"L1:{job}"]:
-                fails = self.against_l1(job)
+            for opt in C.OPT_IMPLS:
+                k, kb = f"{opt}:{job}", f"{C.BASE_OF[opt]}:{job}"
+                if passed(k) and passed(kb):
+                    fails = self.against_l1(job, opt)
+                    if fails:
+                        gates[k]["fail"] = f"against {C.BASE_OF[opt]} (spec §17.3): " + "; ".join(fails)
+                    else:
+                        gates[k]["against_l1"] = "pass"
+            for q32 in C.Q32_IMPLS:
+                k, kb = f"{q32}:{job}", f"{C.Q64_OF[q32]}:{job}"
+                if passed(k) and passed(kb):
+                    fails = self.against_q64(job, q32)
+                    if fails:
+                        gates[k]["fail"] = f"against {C.Q64_OF[q32]} (spec §18.3): " + "; ".join(fails)
+                    else:
+                        gates[k]["against_q64"] = "pass"
+            k = f"L1g:{job}"
+            if passed(k) and passed(f"L1:{job}"):
+                fails = self.lookup_gate(job)
                 if fails:
-                    gates[k]["fail"] = "against L1 (spec §17.3): " + "; ".join(fails)
+                    gates[k]["fail"] = "lookup gate (spec §18.1 item 4): " + "; ".join(fails)
                 else:
-                    gates[k]["against_l1"] = "pass"
+                    gates[k]["lookup_gate"] = "pass: every counter, probes included, equal to L1's (sk_lookup)"
         self.save()
         failed = {k: v["fail"] for k, v in gates.items() if "fail" in v and tuple(k.split(":")) in
                   {(i, str(j)) for i, j in pairs}}
@@ -712,7 +803,7 @@ class Runner:
         each is repeated and must give identical figures (rule item 2)."""
         tasks = []
         for job in self.constructible():
-            for impl in C.impls_of(job):
+            for impl in C.impls_of(job, q32=self.q32_fits(job)):
                 if impls_only is not None and impl not in impls_only:
                     continue
                 reps = (0, 1) if job in C.COUNT_REPEAT_JOBS else (0,)
@@ -738,10 +829,21 @@ class Runner:
             if "bug" in r:
                 self.bug(dict(row=C.IMPL_ROWS[impl][0], job=job, bug=r["bug"]),
                          f"{kind} run" + (" (repeat)" if rep else ""))
+        # spec §18.3 item 1: each Q32 row's counters and per-call core counts equal its Q64 row's (O-7's bytes halved)
+        for job in self.constructible():
+            for q32 in C.Q32_IMPLS:
+                if "counts" in counts.get(f"{q32}:{job}", {}) and "counts" in counts.get(f"{C.Q64_OF[q32]}:{job}", {}):
+                    fails = self.against_q64(job, q32, counts_key="counts")
+                    if fails:
+                        self.bug(dict(row=C.IMPL_ROWS[q32][0], job=job,
+                                      bug={"what": "spec §18.3 item 1: " + "; ".join(fails)}),
+                                 f"counting run, {q32} against {C.Q64_OF[q32]}")
+                    else:
+                        counts[f"{q32}:{job}"]["against_q64"] = "pass"
         # spec §14.1 item 3: on cases den and general, L1's arithmetic equals ctl's
         percase = self.state.setdefault("percase", {})
         for job in self.constructible():
-            if all("counts" in counts.get(f"{i}:{job}", {}) for i in C.COUNTED):
+            if all("counts" in counts.get(f"{i}:{job}", {}) for i in ("L1", "L1opt", "ctl")):
                 fails, sums = self.percase_check(job)
                 percase[str(job)] = sums
                 if fails:
@@ -765,7 +867,7 @@ class Runner:
                          f"B {f['median_B'] / 1e6:.3f} ms)")
         lines += ["", "| row | form | r | calibration rep (ms, r runs) | reps per invocation |",
                   "| --- | --- | --- | --- | --- |"]
-        for (j, row), c in sorted(cal.items(), key=lambda x: C.rows_of(job).index(x[0][1])):
+        for (j, row), c in sorted(cal.items(), key=lambda x: self.rows_of(job).index(x[0][1])):
             if "bug" in c:
                 lines.append(f"| {row} | - | - | bug: see Bugs | - |")
             elif c.get("overcap"):
@@ -788,6 +890,11 @@ class Runner:
         bad = L.vendor08_check()
         if bad:
             raise SystemExit(f"the 08 module or control changed (spec §4.3 item 4): {bad}")
+        bad = C.archive_check()
+        if bad:
+            raise SystemExit(f"the archive of the official Q64 run ({C.OFFICIAL_Q64_COMMIT}) changed: {bad}")
+        if C.protected(self.out):
+            raise SystemExit(f"{self.out} holds official data (rule, revision of Oct 29, 2026): refusing to write there")
         if not self.toy:
             if len(os.sched_getaffinity(0)) < 2 or os.cpu_count() < 2:
                 raise SystemExit("the rule needs 2 cores (item 4)")
@@ -807,6 +914,14 @@ class Runner:
         self.state["workload_sha256"] = {str(j): hashlib.sha256(self.wlpath(j).read_bytes()).hexdigest()
                                          for j in self.jobs if metas[j].get("constructible", True)}
         self.state["not_constructible"] = [j for j in self.jobs if not metas[j].get("constructible", True)]
+        # rule, revision of Oct 29, 2026 (capacity): the jobs whose predicted W at the end exceeds the Q32 capacity;
+        # the Q32 rows are reported there as over capacity, with W, and do not run
+        self.state["q32_over_capacity"] = {str(j): metas[j]["predicted"]["W_end"] for j in self.jobs
+                                           if metas[j].get("constructible", True)
+                                           and metas[j]["predicted"]["W_end"] > C.Q32_CAPACITY}
+        if self.state["q32_over_capacity"]:
+            self.log("Q32 rows over capacity (W at the end > 32,768) on jobs " +
+                     ", ".join(f"{j} (W {w})" for j, w in self.state["q32_over_capacity"].items()))
         self.save()
 
     def constructible(self):
@@ -873,6 +988,10 @@ class Runner:
 
     # ------------------------------------------------------------------------------------------- top level
     def start(self):
+        # write-protection first, before anything is created: never make or touch a folder of official data
+        # (checked in preflight too; start() must not rely on it having run)
+        if C.protected(self.out):
+            raise SystemExit(f"{self.out} holds official data (rule, revision of Oct 29, 2026): refusing to write there")
         self.out.mkdir(parents=True, exist_ok=True)
         self.tmp.mkdir(parents=True, exist_ok=True)
         if self.a.resume or self.a.rerun:
@@ -942,6 +1061,9 @@ class Runner:
             import analyze
             analyze.report(self.out)
             self.log(f"results: {self.out / 'results.md'}")
+            bad = C.archive_check()
+            if bad:
+                self.log(f"WARNING: the archive of {C.OFFICIAL_Q64_COMMIT} changed during the run: {bad}")
 
     def rest(self):
         self.step4_gates()
@@ -954,7 +1076,7 @@ class Runner:
         self.log(f"re-run of {impls} in full")
         self.save()
         self.unit_tests()
-        counted = [i for i in impls if i in C.COUNTED]
+        counted = [i for i in impls if i in C.COUNTED + C.GATE_ONLY]
         if counted:
             self.step4_gates(impls_only=counted, skip_passed=False)
         self.log("step 5 (re-run): counting runs and memory runs")

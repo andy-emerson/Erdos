@@ -12,12 +12,31 @@ HERE = Path(__file__).resolve().parent              # 09-interning/test
 ROOT = HERE.parent                                   # 09-interning
 RULE_FILE = ROOT / "research" / "rule.md"
 BUILD = HERE / "build"
-RESULTS = HERE / "results"
+# Results folders (rule, revision of Oct 29, 2026: the official data). The run after the revision (the Q32 rows) writes
+# only to RESULTS. The measured run of b3b88b6 is kept in ARCHIVE: a byte-for-byte copy of test/results/ as that run
+# left it (results.md, verdicts.csv, rounds.csv and counters.csv as committed at b3b88b6, and the raw state.json and
+# run.log), committed with the code. The runner refuses to write into ARCHIVE or the original test/results/
+# (PROTECTED), and refuses any run while a file of ARCHIVE differs from the sha256 recorded here.
+RESULTS = HERE / "results-q32"
+ARCHIVE = HERE / "results-q64-b3b88b6"
+PROTECTED = (ARCHIVE, HERE / "results")
+ARCHIVE_SHA256 = {
+    "counters.csv": "690e2105b8cdfd99c0b425a8256997d7c62d270d53bf702258f9d31459defb5a",
+    "results.md": "6d195328baf40a0c90696df7a595cf975db83b930ec4dafc7e7ca775d64b53ef",
+    "rounds.csv": "f3dc7b2cb34e203b4f9925bd885ad33b32f1bde06ec875254fe69b9e415c92fc",
+    "run.log": "9d8779f1c8db2de1dc13c49a3808d2d35ec4a0760c0a23814d02eaf02275c0ec",
+    "state.json": "ce322948a2b68936e7470a6f89ffb66403bb936ee3368a05009c60050c9e5e0a",
+    "verdicts.csv": "79ddcd3890e532183e8b670065fde85911058fb06aaa06bd2ec6f6f84cf9576f",
+}
 
 # sha256 of research/rule.md as fixed by the author, Oct 29, 2026 (every PROPOSED mark approved), with the procedural
-# revision of the same day (the idle-machine check; rule.md, top). The harness refuses a measured run unless the file
-# on disk has exactly this hash, so it holds the rule verbatim (rule.md, line 3).
-RULE_SHA256 = "eb631a463d99f14dd278c08dc95a9075099ed8f012b906c9da7e195b5ccbd26d"
+# revision of the same day (the idle-machine check) and the revision after the measured run of b3b88b6 (the Q32 rows,
+# an exception approved by the author; rule.md, top), re-pinned after that revision's review (safeguard 2 worded with
+# the band h, the Q32 lookup's own translation unit, the archived official data and test/results-q32/, the pilot's
+# projection updated, gcd work against time for the Q32 rows), and re-pinned for the wording of the whole run's
+# non-normative estimate with the Q32 rows (about 11 to 20 minutes; Run plan). The harness refuses a measured run unless the file on disk has
+# exactly this hash, so it holds the rule verbatim (rule.md, line 3).
+RULE_SHA256 = "99f3c189c3393bf0e89bf163faf7354d2d472c7b1e5c317a0e006a9ba7d063a1"
 
 MASTER_SEED = 20261029
 BOOT = 10_000
@@ -30,8 +49,14 @@ CAP_NS = 10_000_000_000            # a timed rep over 10 s: over cap
 COUNT_LIMIT_S = 600                # every counting or memory run: 10 minutes
 HARD_STOP_S = 60 * 60              # the whole run: 60 minutes
 PILOT_LIMIT_S = 45 * 60            # the pilot's projection limit
-PILOT_REMAINING_S = 8.5 * 60       # the remaining work's upper estimate (rule, Run plan step 3)
-PILOT_NOMINAL_S = 60.0             # the pilot's nominal wall time (1 minute)
+# The pilot's projection (rule, Run plan step 3, as revised Oct 29, 2026 for the Q32 rows; test/DECISIONS.md R-19):
+# the remaining work's upper estimate, 8.5 minutes before the revision (gates, counting and memory runs 2.5;
+# calibration and rounds 6), scaled by the work each part gains: gates 33 -> 60 runs (16 Q32, 11 lookup gate), 1.5 ->
+# 2.7 min; counting and memory runs 115 -> 155 (repeats on jobs 3, 5 and 10 included), 1 -> 1.4 min; timed invocations
+# per round and r-calibrations 69 -> 85, 6 -> 7.4 min: 11.5 minutes. The pilot's nominal wall time scales with its own invocations per round, 31 -> 37 (Q32 rows on pilot jobs 1,
+# 3 and 10): 1 -> 1.2 minutes. The 45-minute limit and the 60-minute hard stop are unchanged.
+PILOT_REMAINING_S = 11.5 * 60      # the remaining work's upper estimate (rule, Run plan step 3, revised)
+PILOT_NOMINAL_S = 72.0             # the pilot's nominal wall time (1.2 minutes, revised)
 BAND_MIN = 0.05
 FIXED_WIN, FIXED_LOSS, SEVERE = 0.90, 1.10, 2.0
 TIMED_CORE, HARNESS_CORE = 1, 0
@@ -62,14 +87,36 @@ CASE = {n: i for i, n in enumerate(CASES)}
 CASES_OF = {"add": CASES[0:4], "sub": CASES[0:4], "mul": CASES[4:10], "div": CASES[10:16]}
 O1_CASES = ("add_den", "mul_cross_ad", "mul_cross_cb", "div_num", "div_den")
 
-# Implementations (binaries) and rows. L1-null is the L1 binary run as its own row.
-IMPLS = ("L1", "L1opt", "ctl", "fmpq", "mpq", "fz")
-COUNTED = ("L1", "L1opt", "ctl")                    # counting build, test build, gates
+# Implementations (binaries) and rows. L1-null is the L1 binary run as its own row. L1 and L1-opt are the Q64 rows
+# (spec §18: "L1-Q64" and "L1-opt-Q64" where both widths are meant); L1q and L1oq are the Q32 rows, run only on the
+# jobs within their capacity. L1g is the lookup gate's build (spec §18.1 item 4): gates only, no row, never timed.
+IMPLS = ("L1", "L1opt", "L1q", "L1oq", "ctl", "fmpq", "mpq", "fz", "L1g")
+COUNTED = ("L1", "L1opt", "L1q", "L1oq", "ctl")    # counting build, test build, gates
+LAYER1 = ("L1", "L1opt", "L1q", "L1oq")
+Q32_IMPLS = ("L1q", "L1oq")
+Q64_OF = {"L1q": "L1", "L1oq": "L1opt"}            # each Q32 row's Q64 row (spec §18.3 item 1)
+OPT_IMPLS = ("L1opt", "L1oq")
+BASE_OF = {"L1opt": "L1", "L1oq": "L1q"}           # each L1-opt row's L1 (spec §17.3)
+GATE_ONLY = ("L1g",)
 LIBRARIES = ("fmpq", "mpq", "fz")
 FORMED = ("fmpq", "mpq")                            # forms A and B, calibrated per job
-ROW_IMPL = {"L1": "L1", "L1-opt": "L1opt", "L1-null": "L1", "ctl": "ctl", "fmpq": "fmpq", "mpq": "mpq", "fz": "fz"}
-IMPL_ROWS = {"L1": ("L1", "L1-null"), "L1opt": ("L1-opt",), "ctl": ("ctl",), "fmpq": ("fmpq",), "mpq": ("mpq",),
-             "fz": ("fz",)}
+ROW_IMPL = {"L1": "L1", "L1-opt": "L1opt", "L1-null": "L1", "L1-Q32": "L1q", "L1-opt-Q32": "L1oq", "ctl": "ctl",
+            "fmpq": "fmpq", "mpq": "mpq", "fz": "fz"}
+IMPL_ROWS = {"L1": ("L1", "L1-null"), "L1opt": ("L1-opt",), "L1q": ("L1-Q32",), "L1oq": ("L1-opt-Q32",),
+             "ctl": ("ctl",), "fmpq": ("fmpq",), "mpq": ("mpq",), "fz": ("fz",), "L1g": ()}
+Q32_ROWS = ("L1-Q32", "L1-opt-Q32")
+Q32_PAIR = {"L1-Q32": "L1", "L1-opt-Q32": "L1-opt"}  # the paired Q32-against-Q64 comparison (rule, revision)
+
+# Q32 capacity (spec §18.1 item 2): 32,768 whole numbers, at indices 0 to 32,767. A Q32 row runs only on the jobs
+# whose generator-predicted W at the end is at most this (rule, revision of Oct 29, 2026: capacity).
+Q32_CAPACITY = 32_768
+# The measured run whose Q64 results stay official (rule, revision of Oct 29, 2026, safeguard 1): its verdicts are
+# read from the archive (checked against ARCHIVE_SHA256), or else from git at that commit.
+OFFICIAL_Q64_COMMIT = "b3b88b6"
+OFFICIAL_Q64_VERDICTS = "09-interning/test/results/verdicts.csv"     # its path at that commit
+# The model's bits per lookup slot b_s and per rational H (rule, revision: the model's prediction).
+SLOT_BITS = {"L1": 32, "L1opt": 64, "L1q": 16, "L1oq": 48}
+RAT_BITS = {"L1": 64, "L1opt": 64, "L1q": 32, "L1oq": 32}
 
 
 def job_table():
@@ -104,15 +151,43 @@ STRATA = {"MONEY": (1, 2), "SMALL": (3, 4), "MOD": (5, 6), "NEW": (7,), "CHAINS"
 STRATA_ORDER = ("MONEY", "SMALL", "MOD", "NEW", "CHAINS")
 
 
-def rows_of(job):
-    r = ["L1", "L1-opt", "L1-null", "ctl", "fmpq", "mpq"]
+def rows_of(job, q32=True):
+    """The rows of a job (rule item 1); q32 False on a job over the Q32 capacity."""
+    r = ["L1", "L1-opt", "L1-null"] + (list(Q32_ROWS) if q32 else []) + ["ctl", "fmpq", "mpq"]
     if JOBS[job]["fz"]:
         r.append("fz")
     return r
 
 
-def impls_of(job):
-    return [i for i in IMPLS if i != "fz" or JOBS[job]["fz"]]
+def impls_of(job, q32=True):
+    return [i for i in IMPLS if (i != "fz" or JOBS[job]["fz"]) and (q32 or i not in Q32_IMPLS)
+            and i not in GATE_ONLY]
+
+
+def lookup_slots(W):
+    """S by the growth rule (spec §5 item 3): the smallest power of two, at least 16, with 2W <= S."""
+    S = 16
+    while 2 * W > S:
+        S *= 2
+    return S
+
+
+def archive_check():
+    """None, or the first file of the b3b88b6 archive that is missing or differs from its recorded sha256."""
+    for name, want in ARCHIVE_SHA256.items():
+        f = ARCHIVE / name
+        if not f.exists():
+            return f"{f}: missing"
+        got = hashlib.sha256(f.read_bytes()).hexdigest()
+        if got != want:
+            return f"{f}: sha256 {got} differs from the archived {want}"
+    return None
+
+
+def protected(path):
+    """True if path is, or is inside, a folder of official data that no run may write (PROTECTED)."""
+    p = Path(path).resolve()
+    return any(p == q.resolve() or q.resolve() in p.parents for q in PROTECTED)
 
 
 def rule_sha256(path=None):

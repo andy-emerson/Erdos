@@ -95,15 +95,13 @@ static inline sk_int sk_gcd_raw(sk_int a, sk_int b) {
     if (v == 0) return (sk_int)u;
     int s = sk_ctz_raw((uint64_t)(u | v));
     u >>= sk_ctz_raw((uint64_t)u);
-    do {
-        v >>= sk_ctz_raw((uint64_t)v);
-        if (u > v) {
-            sk_uint t = u;
-            u = v;
-            v = t;
-        }
-        v -= u;
-    } while (v != 0);
+    v >>= sk_ctz_raw((uint64_t)v);
+    while (u != v) { /* same binary method, written so the compiler emits conditional moves */
+        sk_uint m = u < v ? u : v;
+        sk_uint d = u < v ? v - u : u - v;
+        u = m;
+        v = d >> sk_ctz_raw((uint64_t)d);
+    }
     return (sk_int)(u << s);
 }
 

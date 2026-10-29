@@ -1,6 +1,6 @@
 # Skeleton baselines: results
 
-Run started 2026-10-28T23:49:53-05:00; status: in progress. Wall time on the run clock: 0.9 min.
+Run started 2026-10-29T06:45:12-05:00; status: in progress. Wall time on the run clock: 0.8 min.
 
 Per measure only: **this report names no overall winner and combines no measures** (rule item 11).
 
@@ -212,7 +212,7 @@ Within the matrix, jobs are numbered in the order level, then mix, as listed: jo
 
 ## Run
 
-- **Pilot** (discarded): timed part 21.9 s, gate pilot (job 20) 3.4 s; projected total 0.13 h (limit 4 h).
+- **Pilot** (discarded): timed part 17.6 s, gate pilot (job 20) 2.0 s; projected total 0.11 h (limit 4 h).
 - **Unit tests** (test build, widths 64 and 32): unit-0-w32 pass, unit-0-w64 pass
 - **Gates:** 3 of 3 passed.
 

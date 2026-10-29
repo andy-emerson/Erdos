@@ -1,8 +1,8 @@
-[    23.8s] step 1: workloads and exact references
-[    26.6s] step 2: unit tests (test build, widths 64 and 32)
-[    26.8s] unit tests pass: ['unit-0-w32', 'unit-0-w64']
-[    26.8s] step 3: pilot (timed part)
-[    48.7s] step 3: pilot (gate of job 20)
-[    52.1s] pilot projection: 0.13 h (timed pilot 21.9 s, gate pilot 3.4 s)
-[    52.1s] pilot only: stopping after step 3
-[    52.1s] results: /home/claude/erdos/08-skeletons/test/results/results.md
+[    24.7s] step 1: workloads and exact references
+[    27.5s] step 2: unit tests (test build, widths 64 and 32)
+[    27.6s] unit tests pass: ['unit-0-w32', 'unit-0-w64']
+[    27.6s] step 3: pilot (timed part)
+[    45.2s] step 3: pilot (gate of job 20)
+[    47.2s] pilot projection: 0.11 h (timed pilot 17.6 s, gate pilot 2.0 s)
+[    47.2s] pilot only: stopping after step 3
+[    47.2s] results: /home/claude/erdos/08-skeletons/test/results/results.md

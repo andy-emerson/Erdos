@@ -94,3 +94,7 @@ Each entry names the spec section it concerns.
 6. **§12.1** has no row for bit-routine calls (DEC-8) and no phase for the ceiling's read (DEC-11).
 7. **§12.2** gives entry sizes at w = 64 only (DEC-28).
 8. **The note's lookup example** uses slot = value mod 8. The spec's hash (G-5) differs, so the example's slots cannot be reproduced; the unit tests check the behaviour instead (growth at half full, and found at its index).
+
+## Change log
+
+- **Oct 29, 2026: shared gcd made branch-free, same method, same counts; speeds up every row; approved by the author.** `sk_gcd_raw` in `src/sk_internal.h` (the binary method of DEC-33, shared by every row) now takes the minimum and the absolute difference by conditional moves instead of a compare-and-swap branch. It is the same binary method on the same magnitudes, so every result is the same; the gcd counters count calls, not loop steps, so every count is the same.

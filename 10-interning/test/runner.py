@@ -31,7 +31,7 @@ Before any timed run (the pilot, and each job's calibration and rounds) the mach
 processes' CPU use under the thresholds of common.py; if not, the runner waits, logging it, and after 10 minutes refuses
 (R-13, as 08's R-p). The hard-stop clock starts at the build, just before step 1 (R-14).
 
-Adapted from 08-skeletons/test/runner.py (its decisions R-a to R-c, R-g, R-i to R-o carry over; test/DECISIONS.md).
+Adapted from shared/partial-sharing-baseline/test/runner.py (then 08-skeletons) (its decisions R-a to R-c, R-g, R-i to R-o carry over; test/DECISIONS.md).
 """
 import argparse
 import concurrent.futures as cf
@@ -239,6 +239,7 @@ class Runner:
         root = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=C.ROOT, capture_output=True, text=True)
         if root.returncode:
             raise RunStop("08's unit tests: not in a git repository")
+        # 08-skeletons/lib is the folder's path at commit 08bbfbe (now shared/partial-sharing-baseline/lib): kept as is
         arch = subprocess.run(f"git archive {L.COMMIT_08} 08-skeletons/lib | tar -x -C {lib08}", shell=True,
                               cwd=root.stdout.strip(), capture_output=True, text=True)
         if arch.returncode:

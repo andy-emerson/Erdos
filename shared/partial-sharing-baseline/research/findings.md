@@ -85,4 +85,4 @@ These are results for **skeletons**: the design note lists improvements for each
 
 ## Status
 
-**Concluded.** Superseded by the active work on Design 3 in [`09-interning`](../../../09-interning/) (to be renumbered 10): whole numbers interned and stored once, with index-equality shortcuts in place of partial sharing. The index-valued pair table, a deferred variant of Design 1 ([rule](rule.md), "Deferred"), was not run.
+**Concluded.** Superseded by the active work on Design 3 in [`10-interning`](../../../10-interning/): whole numbers interned and stored once, with index-equality shortcuts in place of partial sharing. The index-valued pair table, a deferred variant of Design 1 ([rule](rule.md), "Deferred"), was not run.

@@ -54,7 +54,7 @@ DIFF_SEEDS = "200"
 COMMIT_08 = "08bbfbe"
 LIB08_SOURCES = ["src/common.c", "src/ctl.c", "src/d1.c", "src/d2.c", "src/ceil.c", "src/rows.c"]
 
-# sha256 of the 08 files as copied from 08-skeletons at commit 08bbfbe (lib/vendor08/SHA256SUMS): spec §4.3 item 4,
+# sha256 of the 08 files as copied from 08-skeletons (now shared/partial-sharing-baseline) at commit 08bbfbe (lib/vendor08/SHA256SUMS): spec §4.3 item 4,
 # rule item 2. Any other content is refused. L1 (Q64) uses 08's lookup (sk_lookup, common.c) through these files.
 VENDOR08_SHA256 = {
     "common.c": "8f1d177ec1c5cd5db9ce9927f1260354b8aaa216554788a72d89c3d097f58043",

@@ -49,4 +49,4 @@ These are results for a **skeleton**: the design note lists improvements, such a
 
 ## Status
 
-**Concluded.** Superseded by the active work on Design 3 in [`09-interning`](../../09-interning/) (to be renumbered 10): whole numbers interned and stored once, with index-equality shortcuts. The index-valued pair table, a deferred variant of Design 1, was not run.
+**Concluded.** Superseded by the active work on Design 3 in [`10-interning`](../../10-interning/): whole numbers interned and stored once, with index-equality shortcuts. The index-valued pair table, a deferred variant of Design 1, was not run.

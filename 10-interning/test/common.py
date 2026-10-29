@@ -1,6 +1,6 @@
 """Shared constants of the layer-1 harness: the run plan of research/rule.md, paths, rows and file formats.
 
-Nothing here is measured; gen.py, runner.py and analyze.py import it. Adapted from 08-skeletons/test/common.py.
+Nothing here is measured; gen.py, runner.py and analyze.py import it. Adapted from shared/partial-sharing-baseline/test/common.py (then 08-skeletons).
 """
 import hashlib
 import struct
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import numpy as np
 
-HERE = Path(__file__).resolve().parent              # 09-interning/test
-ROOT = HERE.parent                                   # 09-interning
+HERE = Path(__file__).resolve().parent              # 10-interning/test
+ROOT = HERE.parent                                   # 10-interning
 RULE_FILE = ROOT / "research" / "rule.md"
 BUILD = HERE / "build"
 # Results folders (rule, revision of Oct 29, 2026: the official data). The run after the revision (the Q32 rows) writes
@@ -34,9 +34,12 @@ ARCHIVE_SHA256 = {
 # an exception approved by the author; rule.md, top), re-pinned after that revision's review (safeguard 2 worded with
 # the band h, the Q32 lookup's own translation unit, the archived official data and test/results-q32/, the pilot's
 # projection updated, gcd work against time for the Q32 rows), and re-pinned for the wording of the whole run's
-# non-normative estimate with the Q32 rows (about 11 to 20 minutes; Run plan). The harness refuses a measured run unless the file on disk has
+# non-normative estimate with the Q32 rows (about 11 to 20 minutes; Run plan), and re-pinned after the Q32 run for the
+# rename to 10-interning (paths only: links to shared/partial-sharing-baseline; rule.md, top). RULE_SHA256_AT_Q32_RUN is
+# the hash the Q32 run of test/results-q32/ was made under. The harness refuses a measured run unless the file on disk has
 # exactly this hash, so it holds the rule verbatim (rule.md, line 3).
-RULE_SHA256 = "99f3c189c3393bf0e89bf163faf7354d2d472c7b1e5c317a0e006a9ba7d063a1"
+RULE_SHA256 = "de2049725b26821910a5b985fd229a284855ac585c97cbff0be7ef47ec3dca50"
+RULE_SHA256_AT_Q32_RUN = "99f3c189c3393bf0e89bf163faf7354d2d472c7b1e5c317a0e006a9ba7d063a1"
 
 MASTER_SEED = 20261029
 BOOT = 10_000
@@ -113,7 +116,7 @@ Q32_CAPACITY = 32_768
 # The measured run whose Q64 results stay official (rule, revision of Oct 29, 2026, safeguard 1): its verdicts are
 # read from the archive (checked against ARCHIVE_SHA256), or else from git at that commit.
 OFFICIAL_Q64_COMMIT = "b3b88b6"
-OFFICIAL_Q64_VERDICTS = "09-interning/test/results/verdicts.csv"     # its path at that commit
+OFFICIAL_Q64_VERDICTS = "09-interning/test/results/verdicts.csv"     # its path at that commit (folder renamed 10-interning later)
 # The model's bits per lookup slot b_s and per rational H (rule, revision: the model's prediction).
 SLOT_BITS = {"L1": 32, "L1opt": 64, "L1q": 16, "L1oq": 48}
 RAT_BITS = {"L1": 64, "L1opt": 64, "L1q": 32, "L1oq": 32}

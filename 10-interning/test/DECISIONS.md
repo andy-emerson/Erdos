@@ -8,7 +8,7 @@ listed at the end.
 ## Generator (gen.py, l1model.py)
 
 - **G-1. 08's code is copied, not imported.** `draw_shared`, the P50 denominators, `vals`, the G3 operations and the
-  Builder are copied from `08-skeletons/test/gen.py`, which is under separate work. The workload, reference and
+  Builder are copied from `shared/partial-sharing-baseline/test/gen.py` (08-skeletons/test/gen.py at the time), which is under separate work. The workload, reference and
   read-out formats are 08's. The header's third integer marks the fz jobs.
 - **G-2. Random streams.** Job n draws from one `random.Random(20261029 + n)`, in this order: the inputs (catalog, set
   or pool first), then the operations (G3) or the chains (each chain's x_0, then per step the operation and y_k).

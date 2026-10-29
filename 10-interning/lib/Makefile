@@ -1,8 +1,8 @@
-# layer 1 (spec 09-interning v0.1).  Targets:
+# layer 1 (spec 10-interning v0.1).  Targets:
 #   make              build/{timing,counting,test}/liblayer1.a: L1 (l1_*), L1-opt (l1o_*), L1-Q32 (l1q_*), L1-opt-Q32
 #                     (l1oq_*), the lookup gate's build (l1g_*), the parameterized lookup of L1-Q32 and of the gate
 #                     (src/plk.c, its own object: plkq.o, plkg.o), and the 08 module and control (vendor08/, copied
-#                     unchanged from 08-skeletons at commit 08bbfbe)
+#                     unchanged from 08-skeletons, now shared/partial-sharing-baseline, at commit 08bbfbe)
 #   make test         unit and differential tests at both widths, and the Q32 tests (test build)
 #   make sanitize     the same under AddressSanitizer + UBSan
 #   make check        test + sanitize, and the sha256 of every vendor08 file against 08's
@@ -98,7 +98,7 @@ sanitize: build/asan/unit build/asan/unitq build/asan/diff build/asan/diffq buil
 	ASAN_OPTIONS=detect_leaks=1 ./build/asan/diffq --seeds 40
 	ASAN_OPTIONS=detect_leaks=1 ./build/asan/q32
 
-# spec §4.3 item 4, rule item 2: the 08 files are unchanged (sha256 as at 08-skeletons commit 08bbfbe)
+# spec §4.3 item 4, rule item 2: the 08 files are unchanged (sha256 as at commit 08bbfbe of 08-skeletons, now shared/partial-sharing-baseline)
 hashes:
 	cd vendor08 && sha256sum -c SHA256SUMS
 

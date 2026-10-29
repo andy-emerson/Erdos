@@ -142,6 +142,7 @@ def test_official_data_protected():
     revision writes to test/results-q32/ only, and neither the runner nor the analysis writes into the archive or the
     original test/results/."""
     assert C.archive_check() is None, C.archive_check()
+    # the folder was 09-interning at b3b88b6 (renamed 10-interning later): the path below is the one at that commit
     for name in ("counters.csv", "results.md", "rounds.csv", "verdicts.csv"):     # as committed at b3b88b6
         p = subprocess.run(["git", "show", f"{C.OFFICIAL_Q64_COMMIT}:09-interning/test/results/{name}"], cwd=C.ROOT,
                            capture_output=True)

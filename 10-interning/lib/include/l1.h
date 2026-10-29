@@ -1,4 +1,4 @@
-/* l1.h: Design 3, layer 1 (spec 09-interning v0.1): exact sharing of whole numbers.
+/* l1.h: Design 3, layer 1 (spec 10-interning v0.1): exact sharing of whole numbers.
  *
  * Rows from one source (src/l1.c):
  *   l1_*   L1, the baseline (spec §§4-15), compiled without L1_OPT;

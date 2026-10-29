@@ -9,7 +9,7 @@ No plain inefficiency was found to fix, so the change log is empty and no `CHANG
 ## Source and copies
 
 - **D-1. The 08 copies** (spec §4.3 item 4, §9). `vendor08/` holds `sk_internal.h`, `common.c`, `ctl.c`, `sk_common.h`
-  and `sk_ctl.h`, copied unchanged from 08-skeletons at commit `08bbfbe` (its HEAD on Oct 29, 2026). 08's working tree
+  and `sk_ctl.h`, copied unchanged from 08-skeletons (now shared/partial-sharing-baseline) at commit `08bbfbe` (its HEAD on Oct 29, 2026). 08's working tree
   had uncommitted changes in progress to `sk_common.h` (new Design 2 counter fields), so the committed file was taken,
   not the working copy (**ambiguous**). The other four files are identical in both. `vendor08/SHA256SUMS` and
   `test/libconf.py` record the hashes; `make hashes` and the runner check them before every run.

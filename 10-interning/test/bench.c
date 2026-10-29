@@ -1,5 +1,5 @@
 /* bench.c: one invocation of one row on one job (research/rule.md item 4), driven by runner.py.  Adapted from the 08
- * driver (08-skeletons/test/bench.c) and, for the library rows, the M3 driver (07-prime-graph/test/m3/m3_bench.c).
+ * driver (shared/partial-sharing-baseline/test/bench.c) and, for the library rows, the M3 driver (07-prime-graph/test/m3/m3_bench.c).
  *
  *   bench calib <workload> <readout> [A|B]              one rep at r = 1, 2, 4, ... until a rep lasts >= 50 ms
  *   bench time  <workload> <readout> <r> <reps> [A|B]   timed reps of r runs each

@@ -1,9 +1,12 @@
 """Check that every relative Markdown link, and its #anchor, resolves, in every .md file of the repository that git
 tracks or would track (ignored files are skipped). Links to web pages (http:, mailto: and so on) are not checked.
 Anchors follow GitHub's heading slugs.
+A results file's verbatim copy of its measurement rule, between `<!-- rule begins -->` and `<!-- rule ends -->`, is
+skipped: it is the rule's text exactly as it stood when the run was made (links relative to research/, to folders as they
+were then), and it may not be edited (its run's results are sha256-pinned or official data).
 
 Usage: python3 shared/checklinks.py [REPO] [EXCLUDED_TOP_DIR ...]   (exit status 1 if a link is broken)
-Example: python3 shared/checklinks.py . 09-interning
+Example: python3 shared/checklinks.py . 10-interning
 """
 import re
 import subprocess
@@ -45,6 +48,7 @@ def anchors(p):
 bad = 0; total = 0
 for f in files:
     text = f.read_text(encoding="utf-8")
+    text = re.sub(r"<!-- rule begins -->.*?<!-- rule ends -->", "", text, flags=re.S)   # verbatim rule copies
     text_nocode = re.sub(r"```.*?```", "", text, flags=re.S)
     text_nocode = re.sub(r"`[^`\n]*`", lambda m: "" if "](" not in m.group(0) else m.group(0), text_nocode)
     for m in list(LINK.finditer(text_nocode)) + list(IMG.finditer(text_nocode)):

@@ -19,7 +19,7 @@ There are 11 jobs. Between them they vary reuse, from small sets of whole number
 
 **Status:** Oct 29, 2026, revised after the first review. Every threshold and choice is approved by the author, Oct 29, 2026: the thresholds, the 60-minute hard stop and 45-minute pilot limit, the 2.0 severe-memory flag, and all seven L1-opt tricks. The rule is fixed.
 
-**Reuses from 08** (unchanged): the shared integer module (`08-skeletons/lib/src/sk_internal.h`, `common.c`), the hash lookup and the control (`ctl.c`). The harness is adapted from 08's harness and from the 07 M3 driver.
+**Reuses from 08** (unchanged): the shared integer module (`shared/partial-sharing-baseline/lib/src/sk_internal.h`, `common.c`), the hash lookup and the control (`ctl.c`). The harness is adapted from 08's harness and from the 07 M3 driver.
 
 **Order of work:** paper → spec and rule → review → build → review → run → results. Built Oct 29, 2026: [`lib/`](lib/) (L1 and L1-opt from one source, the 08 copies in `lib/vendor08/`; [`lib/DECISIONS.md`](lib/DECISIONS.md)) and [`test/`](test/) (generator, driver, runner, analysis; [`test/DECISIONS.md`](test/DECISIONS.md)). Independently reviewed Oct 29, 2026 (differential tests including FLINT and GMP, fidelity, fairness); only minor problems were found, and they are fixed: the analysis reports every item of rule item 12, the spec's wording of O-2, O-4 and O-5 is made exact, and the runner checks that the machine is idle before any timed run (a procedural revision of the rule, re-pinned by hash). The earlier pilot's results were cleared; the pilot and the full run are run later, alone on the machine.
 

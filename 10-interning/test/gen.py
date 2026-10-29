@@ -12,7 +12,7 @@ Master seed 20261029; job n uses random.Random(20261029 + n). For every job it w
 --toy scales every job down (10,000 inputs -> 200, 20,000 operations -> 400, 1,000 chains -> 20) to test the harness
 only; toy workloads are never measured.
 
-The 08 generator (08-skeletons/test/gen.py) is the starting point: draw_shared, den, vals, the G3 operations and the
+The 08 generator (shared/partial-sharing-baseline/test/gen.py, then 08-skeletons) is the starting point: draw_shared, den, vals, the G3 operations and the
 Builder are copied from it (its decisions G-a, G-c, G-d, G-h carry over); 08 is not imported.
 """
 import argparse

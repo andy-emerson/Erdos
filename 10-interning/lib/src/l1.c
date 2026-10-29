@@ -1,4 +1,4 @@
-/* l1.c: Design 3, layer 1 (spec 09-interning v0.1).  One source, compiled once per row:
+/* l1.c: Design 3, layer 1 (spec 10-interning v0.1).  One source, compiled once per row:
  *   no setting:             L1, the baseline (spec §§4-15), symbols l1_*;
  *   -DL1_OPT:               L1-opt (spec §17), symbols l1o_*: L1 with the tricks O-1 to O-7 added, and nothing else;
  *   -DL1_Q32:               L1-Q32 (spec §18), symbols l1q_*: L1 with 16-bit index fields and lookup slots;

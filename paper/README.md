@@ -10,6 +10,11 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
 - [v0.4](v0.4.md) (current draft): exact sharing of whole numbers; partial sharing deferred. Shared denominators, shared numerators, and a combined structure of whole numbers stored once, with arithmetic, structure and algorithm kept apart.
 - [v0.5](v0.5.md) (in progress: sections 1–2): naive rational arithmetic, written from scratch: storage, the textbook formulas, and the shortcuts for stored integers that are equal, opposite or zero; then arithmetic in lowest terms: growing integers, the gcd and Euclid's algorithm, reduced storage, and the cases where a gcd is known in advance.
 
+  **To revisit after section 3:**
+  - which of section 2's special cases move to section 3, for the paper's flow;
+  - whether some known-answer skips belong as early as section 1;
+  - how opposite denominators are presented.
+
 **Moved, Oct 29, 2026.** The two working notes that were here are not part of the paper and now live with the work they describe:
 - the note on the two skeleton designs, formerly `note-skeletons.md`: the joint note is [`shared/partial-sharing-baseline/research/design-note.md`](../shared/partial-sharing-baseline/research/design-note.md), and each design's part is in [`08-common-divisors/research/design-note.md`](../08-common-divisors/research/design-note.md) and [`09-coprime-base/research/design-note.md`](../09-coprime-base/research/design-note.md);
 - the explainer of coprime bases and the exponent-vector notation ($p^{\alpha}$, $\wedge$, $\vee$), formerly `note-coprime-base.md`: [`09-coprime-base/research/coprime-base-notation.md`](../09-coprime-base/research/coprime-base-notation.md).

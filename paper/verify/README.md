@@ -1,0 +1,42 @@
+# Checks for Appendix A of v0.5
+
+These checks belong to [Appendix A](../v0.5.md#appendix-a-the-library-in-python) of the paper, "The library in Python", and are kept outside the paper. Run them from the repository root with one command:
+
+```sh
+python3 paper/verify/verify.py
+```
+
+The run takes about 30 seconds and ends with `ALL CHECKS PASSED`, or with `FAILED` and the failing checks; the exit status is 0 or 1. Use `--no-control` to skip the comparison with 10-interning's control, which then needs no compiler and no numpy. Use `--paper FILE` to check another copy of the paper. **Nothing is timed.**
+
+Requirements: Python 3 (tested with 3.13). The control comparison also needs `gcc` and numpy, because 10-interning's own generator imports numpy.
+
+## What is checked
+
+1. **The code is the paper's.** `verify.py` reads the one ` ```python ` block under the heading "Appendix A. The library in Python" in `v0.5.md` and runs it. Nothing is copied, so if the paper changes, the checks run on the new code. The block must define `rational`, `numerator`, `denominator`, `mod`, `gcd`, `reduce`, `add`, `subtract`, `multiply` and `divide`, in that order, and nothing else.
+2. **The translation is line for line.** Each function's last pseudocode definition before the appendix is its final form, and the paper's own pseudocode is parsed for it. That pseudocode is translated mechanically with the substitutions the appendix lists (`·` to `*`, `−` to `-`, `=` to `==` in conditions, `AND`/`OR`, `/` to `//`, `ERROR` to `raise ZeroDivisionError`, and `b′`, `s₊`, `k₁` and the rest to `b_prime`, `s_plus`, `k1` and the rest). The result must equal the appendix function as a syntax tree and in its number of lines. `rational`, `numerator` and `denominator` (section 1.2) and `mod` (section 2.3) are defined only in prose, so their four short forms are fixed in the harness; `mod(u, v)` is kept as a call, and `mod` returns `u % v`.
+3. **Every function against `fractions.Fraction`.**
+   - `mod` is checked on every pair with 0 ≤ u ≤ 60 and 1 ≤ v ≤ 30, and on random pairs: the result is in 0..v−1 and differs from u by a multiple of v.
+   - `gcd` is checked against `math.gcd` on every pair in −30..30 except (0, 0), and on random and common-factor pairs up to 200 bits.
+   - `reduce` is checked on every pair in −30..30 with a nonzero denominator, and on random pairs.
+   - The four operations are checked on every pair of stored values with |numerator| ≤ 12 and denominator ≤ 12, which covers zero, ±1 and every sign combination. They are also checked on random values up to 200 bits, and on pairs built to hit each coincidence the special cases test for: shared denominators, equal or opposite numerators, cross matches, reciprocals and common factors.
+   - Every result must be a pair of integers with a positive denominator and gcd 1, and must equal the exact value.
+   - Division by zero must raise `ZeroDivisionError` for every dividend tried.
+   - No operation may call `reduce`, as section 2.9 says.
+4. **Branch coverage.** Every `if` of the appendix is traced (`sys.settrace`), both its true and its false outcome, and so is every term of each top-level `or`. Every outcome and every term must be reached, and every statement must run. The report gives the counts by line of the paper. It also lists the outcomes reached only by direct calls, never from inside the four operations. These are `gcd`'s `v < 0` (no operation passes `gcd` a negative second argument) and `reduce`'s `b < 0` and `g == 1` (no operation calls `reduce`).
+5. **The worked computation of section 2.9** is reproduced exactly:
+   - every call of `reduce`, `gcd`, `subtract`, `add`, `divide` and `multiply`, in order and nesting, with its arguments and result, including each step of every gcd chain;
+   - the condition and outcome of every `if` each function evaluates, matching the paper's step tables;
+   - the intermediate values (`g`, `b_prime`, `d_prime`, `t`, `h`, `p`, `q`, `k3`, …);
+   - and that `reduce` and each operation run exactly once.
+6. **Against 10-interning's textbook control (TC), correctness only** (`control.py`):
+   - Round 2's own generator (`10-interning/test/r2_gen.py`) writes its small (toy) workloads for the eight jobs round 2 runs (1–4 and 8–11, 360 to 840 calls each) into a temporary directory.
+   - TC is built there from `10-interning/lib/src/tc.c` with round 2's own compiler commands (`r2_libconf.build_commands`, counting build only). It is run once per job in its `count` mode, the untimed mode round 2's self-tests use.
+   - The paper's library runs the same calls: an entry `p, q` is `reduce(rational(p, q))`, and each operation is applied to the stored values of earlier calls.
+   - Every call's value must equal TC's read-out, integer for integer, and the generator's exact reference.
+   - Nothing is written outside the temporary directory.
+
+## Limits
+
+- Python's integers are unbounded, so the fixed-width storage of section 1 (and TC's 64-bit overflow checks) is not modelled.
+- `gcd` is recursive, as in the paper, so Python's default recursion limit (1000) bounds it. That allows inputs of several hundred bits even in the worst case, well beyond what is tested here.
+- Outside the paper's interface, `rational(p, 0)` is not rejected (the paper requires q ≠ 0 and does not check it), and `gcd(0, 0)` returns 0. Neither is tested.

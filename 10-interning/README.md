@@ -4,7 +4,13 @@ Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5
 
 ## Round 2: two textbook baselines (approved Oct 29, 2026)
 
-**Status: approved by the author, Oct 29, 2026; not built, not run.** An independent review (Oct 29, 2026) accepted the choices R2-1 to R2-10, two of them on conditions that the revision met (v0.2 §17). The author then approved every choice and every threshold, with gcd work as a check, not a verdict, and added the ±1 operand shortcut. The rule is fixed. Next come the build, its review, and the run.
+**Status: approved by the author, Oct 29, 2026; built and reviewed (below), not run.** An independent review (Oct 29, 2026) accepted the choices R2-1 to R2-10, two of them on conditions that the revision met (v0.2 §17). The author then approved every choice and every threshold, with gcd work as a check, not a verdict, and added the ±1 operand shortcut. The rule is fixed. Next come the build, its review, and the run.
+
+**Build (Oct 29, 2026): built and reviewed, not run.** The build review found it ready after one fix (the profile's
+M per operation, now divided by the runs per rep) and two minor ones; every untimed test passes. **For the author to
+confirm:** R2-H7 in [`test/DECISIONS.md`](test/DECISIONS.md): batch times exist per part only (entry, operations,
+read-out), so the profile gives estimated ns per operation per part, as the spec gives them, and per job phase and
+per case only shares and mean corrected times (spec §13.4 item 7 speaks of each job phase's batch time).
 
 The author's decisions (Oct 29, 2026):
 - **Only two rows:**

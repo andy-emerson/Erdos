@@ -222,3 +222,51 @@ listed at the end.
 7. **The band h after the revision** comes from the re-run L1 against L1-null, of the same rounds: a documented
    necessity, with safeguard 2 worded to include it; pending the author's confirmation (A-6, README).
 8. **The pilot's projection** is updated for the Q32 rows (R-19): estimates only; the 45-minute limit is unchanged.
+
+# Round 2 harness (rule-r2, spec v0.2), Oct 29, 2026
+
+New files beside round 1's, which are kept unchanged (spec §16 item 2): `bench_r2.c`, `api_r2.h`, `r2_common.py`,
+`r2_model.py`, `r2_gen.py`, `r2_libconf.py`, `r2_checks.py`, `r2_runner.py`, `r2_analyze.py`, `test_r2_harness.py`.
+Each choice is **pending the author's review**.
+
+- **R2-H1. The fixed rule's pin.** `r2_common.RULE_SHA256` holds the sha256 of `research/rule-r2.md` as committed
+  at `ba3f647`; a measured run is refused if the file differs or holds the word "PROPOSED".
+- **R2-H2. Workloads.** `r2_gen.py` calls round 1's `gen.gen_job` unchanged, checks each workload's sha256 against
+  round 1's pinned `results-q32/state.json` (all 11 identical), then runs `r2_model.py` for the predictions (every
+  counter per phase, W and the whole-number list's hash) and checks its values against the reference.
+- **R2-H3. A lean runner.** The runner imports no numpy and parses read-outs as bytes (the read-out and the reference
+  share one format), so the process forked for each timed invocation is small; generation runs as its own process,
+  the analysis only after the last timed block. Inside a timed block it only forks, waits and reads a few lines of the
+  last output (r after calibration; an over-cap rep); read-out checks, logs and state are written after the block.
+- **R2-H4. Spawning and the hard stop**: as rule-r2 item 5 (fork; `sched_setaffinity` to core 1, `dup2` to a file,
+  `execv`, `_exit(127)`; one blocking `waitpid`; `setitimer` armed with the time left, its handler kills the child
+  and raises). Untimed steps use `subprocess` with `taskset`, two at a time; the pool is joined, and the runner
+  asserts it is single-threaded before every timed block.
+- **R2-H5. The disturbance check** compares process start times to recognize a reused pid, counts new kernel threads
+  as explained forks, and treats a runner over 2 ticks in a block as a harness bug that stops the run (the rule calls
+  it a bug but does not say what follows). Pilot blocks record host ticks without flagging; every other test applies,
+  and a disturbed pilot block is also re-run once.
+- **R2-H6. Calibration and rounds** are one timed block per job; Q32-null takes Q32's r; rounds rotate Q32,
+  Q32-null, TC by one per round; the rep kept is the minimum of reps 2-3 (round 1's R-b).
+- **R2-H7. The profile.** Every invocation uses the seed 20261029 (so its sampled calls are the same each time) and
+  K = 32, at the timing build's calibrated r, 3 reps; the rep kept is the one of minimum batch total among reps 2-3,
+  with its phase figures. Batch totals exist per part only (entry, operations, read-out), so estimated ns per
+  operation are given per part; per job phase (add, sub, mul, div) and per case only shares and mean corrected times
+  (**ambiguous**: spec §13.4 item 7 speaks of each job phase's batch time).
+- **R2-H7a. The memory run's stdout buffer** (build review, Oct 29, 2026). The C library allocates stdout's 4 KB
+  buffer on the heap at the first `printf`, which in the memory run fell between the after-entry heap figure and the
+  end figure, so only B_heap (end) included it. `bench_r2.c` now gives stdout a static buffer before any output, so
+  neither figure includes it.
+- **R2-H7b. The profile's M per operation** (build review fix, Oct 29, 2026). The driver sums the growth cycles over
+  a rep's r runs, like every profile accumulator; the batch figures are divided by r, and M now is too (it was r
+  times too large). `test_profile_m_per_run` checks it with a synthetic profile at r = 4 against r = 1.
+- **R2-H8. Bugs.** A check failure before the gates (the pilot) stops the run; after them it stops that row (Q32 with
+  Q32-null), and `--rerun Q32|TC` re-runs it in full. A call-for-call or gcd-work difference stops both rows.
+  `--resume` continues a run stopped before step 6.
+- **R2-H8a. P_prof includes the idle check** (build review, Oct 29, 2026). The pilot's P_prof is timed around the
+  whole profiling block, including its idle check (2 s at least). It is kept in: the projection's 36 × P_prof is then
+  larger, so the pilot's stop is more conservative, never less.
+- **R2-H9. Tests without timing.** The harness self-tests time nothing: the timed-block machinery runs with a
+  stand-in driver script; the profiling build is run only for its results and accounting; the disturbance detector
+  is shown a real short-lived process started inside a snapshot pair (caught by the fork counter and its parent's
+  cutime).

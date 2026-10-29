@@ -106,3 +106,63 @@ check: hashes test sanitize
 
 clean:
 	rm -rf build
+
+# ======================================================================================================== round 2
+# Spec v0.2 (Q32 and TC, the two textbook baselines).  Targets:
+#   make r2            build/r2/{timing,counting,test,profiling}/libr2.a: Q32 (src/q32.c, q32_*), its lookup (src/plk.c
+#                      with -DL1_Q32, unchanged), TC (src/tc.c, tc_*), the profiling clock (src/r2prof.c) and the 08
+#                      module (vendor08/common.c, unchanged); four builds differing only in -D settings (spec §6 item 4)
+#   make r2-test       unit tests and the differential test of both rows (test build)
+#   make r2-sanitize   the same under AddressSanitizer + UBSan
+#   make r2-check      hashes + r2-test + r2-sanitize
+# The v0.1 targets above are retired and unchanged (spec §16); round 2 builds none of their objects.
+
+V_profiling = -DSK_PROFILE
+R2HDR = include/r2.h include/q32.h include/tc.h src/r2int.h src/plk.h vendor08/sk_internal.h vendor08/sk_common.h
+R2THDR = tests/r2t.h
+
+.PHONY: r2 r2-test r2-sanitize r2-check
+r2: build/r2/timing/libr2.a build/r2/counting/libr2.a build/r2/test/libr2.a build/r2/profiling/libr2.a
+
+# $(1) dir, $(2) flags
+define R2CONFIG
+$(1)/obj/q32.o: src/q32.c $(R2HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/plk.o: src/plk.c $(R2HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) -DL1_Q32 $(INC) -c $$< -o $$@
+$(1)/obj/tc.o: src/tc.c $(R2HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/r2prof.o: src/r2prof.c $(R2HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/common.o: vendor08/common.c $(R2HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/libr2.a: $(1)/obj/q32.o $(1)/obj/plk.o $(1)/obj/tc.o $(1)/obj/r2prof.o $(1)/obj/common.o
+	ar rcs $$@ $$^
+$(1)/r2_unit: tests/r2_unit.c $(R2THDR) $(1)/libr2.a
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -Itests $$< $(1)/libr2.a -o $$@
+$(1)/r2_diff: tests/r2_diff.c $(R2THDR) $(1)/libr2.a
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -Itests $$< $(1)/libr2.a -o $$@
+endef
+
+$(eval $(call R2CONFIG,build/r2/timing,$(OPT) $(V_timing)))
+$(eval $(call R2CONFIG,build/r2/counting,$(OPT) $(V_counting)))
+$(eval $(call R2CONFIG,build/r2/test,$(OPT) $(V_test)))
+$(eval $(call R2CONFIG,build/r2/profiling,$(OPT) $(V_profiling)))
+$(eval $(call R2CONFIG,build/r2/asan,$(SAN) $(V_test)))
+
+R2_SEEDS ?= 300
+
+r2-test: build/r2/test/r2_unit build/r2/test/r2_diff
+	./build/r2/test/r2_unit
+	./build/r2/test/r2_diff --seeds $(R2_SEEDS)
+
+r2-sanitize: build/r2/asan/r2_unit build/r2/asan/r2_diff
+	ASAN_OPTIONS=detect_leaks=1 ./build/r2/asan/r2_unit
+	ASAN_OPTIONS=detect_leaks=1 ./build/r2/asan/r2_diff --seeds 60
+
+r2-check: hashes r2-test r2-sanitize

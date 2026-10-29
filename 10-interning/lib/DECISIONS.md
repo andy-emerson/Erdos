@@ -152,3 +152,58 @@ No plain inefficiency was found to fix, so the change log is empty and no `CHANG
 5. O-5's divisions skipped, needed by §17.3 item 3 but not listed in §17.2 (D-13).
 6. L1-opt-Q64 never used 08's `sk_lookup` (O-6 has its own slots); it keeps its own lookup, unchanged in object code (D-18).
 7. L1-opt-Q32's slot packed to 6 bytes rather than padded to 8 (D-20; spec Q-4).
+
+# Round 2 (spec v0.2: Q32 and TC), Oct 29, 2026
+
+Builder's choices where spec v0.2 is silent or unclear, each the plainest correct option found, **pending the author's
+review**. Instruction followed: textbook baselines, correct programming, not clever engineering. No retired file was
+changed; `lib/Makefile` only gained round-2 targets at its end (`r2`, `r2-test`, `r2-sanitize`, `r2-check`). No plain
+inefficiency or bug in the reused code was found to fix.
+
+- **R2-D1. Sources.** `include/r2.h` (cases, counters, switches, profile report), `include/q32.h`, `include/tc.h`,
+  `src/q32.c`, `src/tc.c`, `src/r2int.h` (counting, switch, sign and probe macros shared by both rows),
+  `src/r2prof.c` (the fenced TSC read and the probe cost). Q32 uses `src/plk.c` built with `-DL1_Q32`, unchanged, as
+  its own object; its timing-build object is byte-identical to v0.1's `plkq.o`. `q32.c` defines `L1_Q32` itself
+  before including `plk.h`.
+- **R2-D2. The ±1 test** is `same(a, b)` and `same(c, d)`: an index comparison in Q32, a magnitude comparison in TC
+  (in lowest terms a = b only for ±1/1). All six comparisons are made before a case is chosen in multiplication and
+  division (v0.1 L-13 carried). Q32 reads the other operand's numerator only when the ±1 is −1, to keep a zero's tag
+  + (spec §10.2 note 1); TC applies the sign by negation.
+- **R2-D3. Reads (K-Q3).** Q32 reads the whole numbers a case uses through one helper that skips an index already
+  read in the operation (including division's c). `reads_skipped` = 4 − reads made, per operation (entry excluded).
+- **R2-D4. Store hints.** Q32's store takes the tag, the magnitudes (−1 when not read, only with a hint) and the hints
+  i, j (`SAME_I` for K-Q2). The test build checks every hint against the list and K-14's invariant, and aborts on a
+  mismatch.
+- **R2-D5. Counter cells.** As round 1: core and store per phase. K-14, K-Q1 and K-Q2 count in the store part;
+  every other K counter, the cases and the comparisons in the core.
+- **R2-D6. What a K counter's skipped arithmetic is** (spec §13.1 says only "the arithmetic it skipped"): the
+  difference from the same operation with every known-answer skip off. So K-4 and K-6 count 4 divisions and the gcd
+  gcd(t, 1) (work bits(max(|t|, 1))); K-2 counts case cross's 3 multiplications and 1 addition for ±1/1 ∓ 1/1, and
+  otherwise case den's addition, gcd(0, d) and 2 divisions (the counting build reads d for the work; not a K-Q3 read);
+  K-9 and K-11 count 2 divisions per unit gcd and one operation; K-12 and K-15 count operations only (their cases do
+  no arithmetic); K-13 counts every sign the pseudocode applies (as `sgn`), and its operations are those of every
+  case but `zero`; K-14 counts stores. The unit test checks this call for call: with every skip off but K-13, each
+  call's arithmetic exceeds the baseline's by exactly the K counters, and Q32's lookups by K-Q1 + K-Q2; with K-13
+  off alone, its multiplications by K-13's count (**ambiguous**: an interpretation). **Accepted by the build review
+  (Oct 29, 2026).**
+- **R2-D7. The test-build switches.** `t_force_general` sends every operation to its general case (all six
+  comparisons false). `t_known_off(mask)` turns off K-n by bit n−1 and the K-Q1/K-Q2 hints by `R2_KOFF_HINTS`: off,
+  K-1 and K-3 to K-11 divide by a gcd of 1 (K-4 and K-6 take the refined path), K-2 lets x − x fall to its next
+  case, K-13 multiplies by ±1 with a counted multiplication, K-14 restores v0.1's zero normalization, and the hints
+  are dropped (every whole number looked up). K-12 and K-15 are cases, sent to general by the shortcuts switch only.
+- **R2-D8. Overflow step names** follow the v0.2 pseudocode ("add cross: s_x*a*d", "multiply general: a'*c'", ...).
+  "add num: t = s_x*d' + s_y*b'" is checked but cannot overflow (g ≥ 2 halves both terms); "add num: a*t" names both
+  the K-4 and the K-5 branch. **The build review accepted keeping the unreachable `add num` check (Oct 29, 2026).**
+- **R2-D9. Division by zero** is tested after reading c, before the comparisons; that read is counted in K-Q3 even
+  though the call then fails (nothing is stored).
+- **R2-D10. Tests.** `tests/r2_unit.c` (worked example, every case with both switches, signs, zero, ±1, overlaps,
+  entry, every reachable overflow step with operands found by a search over large values, the store, each K-skip
+  with h = 1 and h ≠ 1, zero results, audits, the switches call for call, TC against Q32, capacity by forked
+  children that must abort with the message), `tests/r2_diff.c` (random workloads against a 128-bit reference, both
+  rows' every per-call counter equal, divisions by zero and overflows alike; every case and K-skip must be met).
+- **R2-D11. The profiling build.** Probes guarded by the class's sampling flag; chained fenced reads; F, C, A.gcd
+  (each gcd bracketed alone), A.rest, I, S; M bracketed on every growth (W list, lookup when 2(k+1) > S, rational or
+  pair list) and taken out of the sampled call's phase. Entry starts in A.rest (no operand fetch); argument checks
+  before the first probe fall in U. Each probe interval is charged to the phase it closes, and a read's cost is
+  subtracted once per interval; U's correction subtracts two reads per sampled call (the outer pair).
+  `prof_sample` and `prof_outer` are added to the interface for the driver (spec §6 item 1 names only `profile`).

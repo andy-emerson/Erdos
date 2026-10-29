@@ -1,6 +1,6 @@
 # skeletons: the library of spec v0.1
 
-C11 library for [spec v0.1](../v0.1.md). It has four rows: the control (§6), Design 1 (§7), Design 2 (§8) and the shared-denominator ceiling (§9). They share one integer module (§4.3), one lookup (§5), counters (§12.1), a memory report (§12.2) and audits (§13.2).
+C11 library for [spec v0.1](../v0.1.md). It has four rows: the control (§6), Design 1 (§7, amended Oct 29, 2026: a set of compared pairs, and sparse incidence rows), Design 2 (§8, amended Oct 29, 2026: refined on demand) and the shared-denominator ceiling (§9). They share one integer module (§4.3), one lookup (§5), counters (§12.1), a memory report (§12.2) and audits (§13.2).
 
 Choices the spec leaves open are in [DECISIONS.md](DECISIONS.md). Fixes of plain inefficiencies are in [CHANGELOG.md](CHANGELOG.md) (spec §11).
 
@@ -32,7 +32,7 @@ There is one compiler (gcc) and one set of flags, `-std=c11 -O2 -Wall -Wextra -W
 | --- | --- | --- |
 | timing | (none) | counters and audits compiled out |
 | counting | `-DSK_COUNT` | counters |
-| test | `-DSK_COUNT -DSK_AUDIT` | counters, audits and the change list |
+| test | `-DSK_COUNT -DSK_AUDIT` | counters, audits, the change list, and Design 2's meeting iteration bound (DEC-49) |
 
 The width is `-DSK_WIDTH=32`; the default is 64 (§4.3 item 1). **A program must be compiled with the same `SK_WIDTH` as the library it links.** `sk_build_width()`, `sk_build_counting()` and `sk_build_audit()` report how the library was built.
 
@@ -104,7 +104,7 @@ sk_status sk_ceil_audit(sk_ceil *c, const char **why);    /* also _audit_schedul
 
 - **`sk_counters`** is `c[phase][part]`, an array of `sk_count`.
   - Phases: `SK_PH_ENTRY`, `ADD`, `SUB`, `MUL`, `DIV`, and `READ` (ceiling only).
-  - Parts: `SK_CORE` (everything before `store`) and `SK_STORE` (lookup, append, the new denominator's structures, and Design 2's `finish`, `power` and `refine`).
+  - Parts: `SK_CORE` (everything before `store`, including Design 2's meetings, where all its refinement happens) and `SK_STORE` (lookup, append, the new denominator's structures, and Design 2's `finish` and `power`).
   - Each `sk_count` has these fields, from the table of §12.1:
     - gcds: `gcd`, `gcd_hist[65]` and `gcd_work`
     - divisions: `div_exact` and `div_rem`
@@ -118,10 +118,11 @@ sk_status sk_ceil_audit(sk_ceil *c, const char **why);    /* also _audit_schedul
 - **`sk_memory`** has `item[0..n-1]` = {name, used, allocated} for each structure of §12.2, the totals `used` and `allocated`, `values` (N), and `used_per_rational`, which is the bytes per rational. It also has `allocated_per_rational`.
   - Items, in order:
     - ctl: `values`
-    - d1: `numerators`, `denominators`, `lookup`, `divisors`, `pair table`, `incidence bits`, `residual rows`
-    - d2: `numerators`, `denominators`, `lookup`, `base`, `exponent rows`
+    - d1: `numerators`, `denominators`, `lookup`, `divisors`, `pair set`, `incidence rows`
+    - d2: `numerators`, `denominators`, `lookup`, `base`, `exponent rows`, `remainders`
     - ceil: `stored vectors`
-  - Entry sizes follow the width: at w = 32, numerators take 8 bytes and denominators 4. Row headers are 16 bytes; a ceiling vector's E plus its header is 24 bytes.
+  - Entry sizes follow the width: at w = 32, numerators take 8 bytes and denominators 4. Row headers are 16 bytes; a ceiling vector's E plus its header is 24 bytes. Design 1's pair set is 8 bytes per slot at both widths (its keys are index pairs), and is reported whole, as the lookup is. Design 1's `divisors` are w/8 + 4 bytes each (the value, and its id in the list sorted by value); an entry of its `incidence rows` is a residual and a 32-bit divisor id, w/8 + 4 bytes, with no padding.
+  - Design 1's counters on its sparse rows (DEC-43): `scan_and_words` counts merge steps of the search, `scan_popcount_words` counts row entries read to place a new residual, and `ref_words_shifted` and `ref_stride_growths` stay 0, since no row shifts.
 - **`sk_overflow`** has `count` (overflows so far), and for the last overflow `op`, `x`, `y` and `step`. The step is named after the pseudocode, for example `"add: t = m_x*r_y + m_y*r_x"`.
 
 ### Running the gate (spec §13.3 item 2), as the tests do
@@ -149,18 +150,21 @@ Count every call that stores a value: `enter`, `enter_vector` and the operations
 
 All of these pass at widths 64 and 32, in the test build and under ASan + UBSan.
 
-- **`tests/unit.c`** (3,379 checks per width):
+- **`tests/unit.c`** (4,664 checks per width):
   - every worked example of the note, with its intermediate structures:
-    - Design 1's divisors, incidence rows, residual rows and pair bits, islands, and the chain and pair-bit-hit counts
-    - the incidence example [1, 4, 6, 15], where 4 is inserted mid-list and every row shifts
-    - Design 2's base, its splits and its exponent rows
+    - Design 1's divisors, incidence rows with their residuals, and compared pairs, islands, and the chain and pair-hit counts
+    - the incidence example [1, 4, 6, 15], where 4 is inserted below 6: ids stay as they were and no row shifts
+    - Design 2's base, its meetings, splits, exponent rows and remainders: bare rows at entry, and only what each meeting needs refined
   - zero, negatives, division by zero, the most negative integer, invalid handles, same-index fast paths and denominator 1
   - an overflow in each operation, with the record checked and the class still valid
-  - composite pieces in multiplication (the base [6] case) and in addition, with exact store counts
-  - entering 12 over the base [6], where the scan stays at a piece after dividing by it
+  - Design 2's extra refinement: its counterexample, 3/4 + 1/8, gives 7/8 with it, and 14/16 without it (via a test hook), which the audit then rejects
+  - Design 2's meeting iteration bound: an injected fault that would make a meeting loop forever aborts it instead (in a child process)
+  - composite pieces in multiplication (the base [6] case, where the leftover stays in the remainder until it meets row 6 and splits 6) and in addition, with exact counts
+  - u_12 = 12 meeting the base [6], where the remainder test stays at a piece after dividing by it and after splitting it
   - lookup-found results with no power test, and h = 1 with no division
   - islands for each operation, including multiples of an operand's denominator
-  - stride growth past 64 divisors
+  - more than 64 divisors inserted in decreasing order: ids in order of insertion, sorted by value, nothing shifted
+  - Design 1's pair set: empty until a pair is compared, growth at half full, either order of a pair, nothing inserted by multiplication, and a membership test counted as one pair read plus a lookup
   - the large-base audit
   - lookup growth at half full
   - exact memory accounting
@@ -171,7 +175,7 @@ All of these pass at widths 64 and 32, in the test build and under ASan + UBSan.
 - **`tests/diff.c`**: 40 seeds × 7 workload families (shared factors, large shared factors, composites, none, one denominator, small, near full width), with half the operands earlier results, plus a ceiling run per seed.
   - Operations within the operand rule must succeed in every row. A result that does not fit must overflow.
   - Every stored value is read out and checked.
-  - It checks the overflow counter and records, that Design 1's and Design 2's new-denominator counters equal the distinct stored denominators, and that the memory totals add up.
+  - It checks the overflow counter and records, that Design 1's and Design 2's new-denominator counters equal the distinct stored denominators, and that the memory totals add up. Its coverage line reports Design 2's meetings, absorbs, extra refinements and splits.
   - Audits follow the gate schedule, with incremental audits after every call or every 7th call.
   - The timing, counting and test builds must print the same checksum of every status, handle and value (§4.6 item 4).
 

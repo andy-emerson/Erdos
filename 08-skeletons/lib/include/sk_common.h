@@ -90,26 +90,31 @@ typedef struct sk_count {
     /* lookups */
     uint64_t lookup_search;            /* one per hash computed (searches and re-placements on growth) */
     uint64_t lookup_probe;             /* one per slot read */
-    uint64_t pair_read;                /* Design 1: pair bits read */
+    uint64_t pair_read;                /* Design 1: membership tests of the pair set */
     /* scans */
-    uint64_t scan_and_words;           /* Design 1: words ANDed in searches */
-    uint64_t scan_popcount_words;      /* Design 1: words popcounted */
+    uint64_t scan_and_words;           /* Design 1: row-merge steps in searches (DEC-43; formerly words ANDed) */
+    uint64_t scan_popcount_words;      /* Design 1: row entries read to place a residual (formerly words popcounted) */
     uint64_t scan_merge_entries;       /* Design 2: row entries walked in merges */
-    uint64_t scan_refine_pieces;       /* Design 2: pieces tested in refine */
-    uint64_t scan_split_rows;          /* Design 2: rows visited in splits (the new row included) */
+    uint64_t scan_refine_pieces;       /* Design 2: pieces tested in absorb's scan of the base */
+    uint64_t scan_remainder_pieces;    /* Design 2: pieces tested against a remainder in meetings */
+    uint64_t scan_split_rows;          /* Design 2: rows visited in splits (every stored row) */
     uint64_t scan_content;             /* ceiling: numerators visited by content */
     /* refinements */
     uint64_t ref_div_inserted;         /* Design 1: divisors inserted */
-    uint64_t ref_words_shifted;        /* Design 1: incidence words shifted */
-    uint64_t ref_stride_growths;       /* Design 1: stride growths */
+    uint64_t ref_words_shifted;        /* Design 1: incidence words shifted (0 since the sparse rows: none shift) */
+    uint64_t ref_stride_growths;       /* Design 1: stride growths (0 since the sparse rows: no stride) */
     uint64_t ref_splits;               /* Design 2: splits */
-    uint64_t ref_pieces_created;       /* Design 2: pieces created (by a split, or appended by refine) */
+    uint64_t ref_pieces_created;       /* Design 2: pieces created (by a split, or appended by absorb) */
     uint64_t ref_entries_rewritten;    /* Design 2: row entries written by splits */
+    uint64_t ref_remainder_pulls;      /* Design 2: pieces pulled out of a remainder into its row */
     /* events */
-    uint64_t ev_compares;              /* Design 1: compares with the pair bit not set */
-    uint64_t ev_pair_hits;             /* Design 1: compares with the pair bit set */
+    uint64_t ev_compares;              /* Design 1: compares with the pair not in the set */
+    uint64_t ev_pair_hits;             /* Design 1: compares with the pair in the set */
     uint64_t ev_rows_u1;               /* Design 2: new rows built with u = 1 */
-    uint64_t ev_rows_refined;          /* Design 2: new rows needing refinement (u > 1) */
+    uint64_t ev_rows_unrefined;        /* Design 2: new rows stored with u > 1, left unrefined */
+    uint64_t ev_meetings;              /* Design 2: meetings (add, sub, div with different indices) */
+    uint64_t ev_absorbs;               /* Design 2: meetings' absorbs (the two remainders shared a factor) */
+    uint64_t ev_extra_queued;          /* Design 2: pieces a row gained in a meeting, queued for the other remainder */
     uint64_t ev_fast_paths;            /* all: same-index (control: same-denominator) fast paths */
     uint64_t ev_new_dens;              /* all but the ceiling: new denominators */
     uint64_t ev_overflows;             /* all: operations that returned SK_EOVERFLOW */

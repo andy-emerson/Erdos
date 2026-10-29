@@ -19,7 +19,9 @@
 Order of work (rule.md): 1 generate workloads and references; 2 unit tests at widths 64 and 32; 3 pilot (timed, then
 the gate of job 20) and its projection, stopping if it exceeds 4 hours; 4 gates, two at a time; 5 counting runs, two at
 a time; 6 calibration and 12 rounds, job by job, one timed invocation at a time on core 1. The whole run has a hard
-stop at 4 hours, checked between invocations and, by a timeout on every process, during them.
+stop at 4 hours, checked between invocations and, by a timeout on every process, during them. Before any timed run
+(the timed pilot, and each job's calibration and rounds) the machine must be idle: load average and other processes'
+CPU use under the thresholds of common.py; if not, the runner waits, logging it, and after 10 minutes refuses (R-p).
 """
 import argparse
 import concurrent.futures as cf
@@ -47,6 +49,44 @@ class HardStop(Exception):
 
 class RunStop(Exception):
     """The run stops and is reported to the author (projection over 4 hours, failed gate, failed pilot check)."""
+
+
+def _proc_cpu_ticks(exclude):
+    """{pid: (name, utime + stime in clock ticks)} for every process in /proc, except the pids in exclude."""
+    out = {}
+    for d in os.listdir("/proc"):
+        if not d.isdigit() or int(d) in exclude:
+            continue
+        try:
+            raw = Path(f"/proc/{d}/stat").read_text()
+        except OSError:
+            continue
+        name = raw[raw.find("(") + 1:raw.rfind(")")]
+        f = raw[raw.rfind(")") + 2:].split()
+        out[int(d)] = (name, int(f[11]) + int(f[12]))   # fields 14 and 15 of stat: utime, stime
+    return out
+
+
+def idle_probe(sample_s=None):
+    """Is the machine idle?  Returns (idle, detail): the 1-minute load average against C.IDLE_LOAD_MAX, and every other
+    process whose CPU use over a sample of sample_s seconds exceeds C.IDLE_PROC_CPU_MAX of one core.  The runner's own
+    process is excluded; it has no child while it checks."""
+    sample_s = C.IDLE_SAMPLE_S if sample_s is None else sample_s
+    me = {os.getpid()}
+    hz = os.sysconf("SC_CLK_TCK")
+    a = _proc_cpu_ticks(me)
+    time.sleep(sample_s)
+    b = _proc_cpu_ticks(me)
+    busy = []
+    for pid, (name, t1) in b.items():
+        t0 = a.get(pid, (name, t1))[1]                  # a process started during the sample counts from then on
+        share = (t1 - t0) / hz / sample_s
+        if share > C.IDLE_PROC_CPU_MAX:
+            busy.append({"pid": pid, "name": name, "cpu": round(share, 3)})
+    load1 = os.getloadavg()[0]
+    idle = load1 <= C.IDLE_LOAD_MAX and not busy
+    return idle, {"load1": round(load1, 2), "load_max": C.IDLE_LOAD_MAX, "busy": busy,
+                  "proc_cpu_max": C.IDLE_PROC_CPU_MAX}
 
 
 def stamp():
@@ -88,6 +128,7 @@ class Runner:
         self.state = None
         self.t0 = None
         self.code, self.code_int = code_hashes(self.lib)
+        self.idle_probe = idle_probe                   # replaceable in the harness self-tests
         self.cores = queue.Queue()
         for c in (C.HARNESS_CORE, C.TIMED_CORE):
             self.cores.put(c)
@@ -214,6 +255,35 @@ class Runner:
             if line.startswith(("error ", "auditfail ")):
                 return line
         return None
+
+    # ------------------------------------------------------------------------------------------- idle machine
+    def wait_idle(self, where):
+        """Before any timed run (the timed pilot, and each job's calibration and rounds in step 6): the machine must be
+        idle (R-p).  If it is busy, re-check every IDLE_POLL_S for up to IDLE_WAIT_S, logging each check, then refuse.
+        The wait counts on the run clock.  Toy runs (harness tests) log the check and never wait or refuse."""
+        t = time.monotonic()
+        checks = self.state.setdefault("idle_checks", [])
+        while True:
+            self.check_clock(where)
+            ok, d = self.idle_probe()
+            rec = dict(d, where=where, time=stamp(), idle=ok, waited_s=round(time.monotonic() - t, 1))
+            checks.append(rec)
+            self.save()
+            if ok:
+                if rec["waited_s"] > 0:
+                    self.log(f"machine idle before {where}, after waiting {rec['waited_s']:.0f} s")
+                return
+            what = f"load {d['load1']} (max {d['load_max']})" + (
+                "; busy: " + ", ".join(f"{b['name']}[{b['pid']}] {b['cpu']:.0%}" for b in d["busy"]) if d["busy"]
+                else "")
+            if self.toy:
+                self.log(f"machine busy before {where} ({what}); toy run: not waiting")
+                return
+            if time.monotonic() - t >= C.IDLE_WAIT_S:
+                self.log(f"machine still busy before {where} after {C.IDLE_WAIT_S:.0f} s ({what}): refusing to time")
+                raise RunStop(f"the machine is not idle before {where} ({what}); timed runs need an idle machine")
+            self.log(f"machine busy before {where} ({what}); waiting {C.IDLE_POLL_S:.0f} s")
+            time.sleep(C.IDLE_POLL_S)
 
     # ------------------------------------------------------------------------------------------- timed invocations
     def timed(self, job, row, kind, rnd=None, pos=None, r=None, reps=None):
@@ -520,6 +590,7 @@ class Runner:
         self.log("step 3: pilot (timed part)")
         jobs = [j for j in C.PILOT_TIMED_JOBS if j in self.constructible()]
         store = self.state.setdefault("pilot_records", [])
+        self.wait_idle("the timed pilot")
         t = time.monotonic()
         for job in jobs:
             cal = self.calibrate([job], store, self.live_rows)
@@ -565,6 +636,7 @@ class Runner:
             groups.append([19, 20] if j == 19 else [j])
         for jobs in groups:
             jobs = [j for j in jobs if j in self.constructible()]
+            self.wait_idle(f"the calibration and rounds of jobs {jobs}")
             self.log(f"jobs {jobs}: calibration")
             cal = self.calibrate(jobs, store, live)
             for (job, row), c in cal.items():

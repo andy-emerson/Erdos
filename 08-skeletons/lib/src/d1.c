@@ -1,13 +1,18 @@
-/* d1.c: Design 1, common divisors, in the note's implementation form (spec §7).  Seven structures: numerators,
- * denominators, the lookup (spec §5), divisors, the pair table, incidence bits and residual rows. */
+/* d1.c: Design 1, common divisors, in the note's implementation form (spec §7, as amended Oct 29, 2026).  Six
+ * structures: numerators, denominators, the lookup (spec §5), divisors, the pair set and sparse incidence rows. */
 #include "sk_d1.h"
 
 #include "sk_internal.h"
 
-typedef struct d1_res { /* one residual row; this header is the per-row header of spec §12.2 */
+/* One sparse incidence row (spec §7.1): len entries (divisor id, residual), sorted by divisor value; entry 0 is
+ * divisor 1 (id 0) with residual d_k.  One block holds cap residuals, then cap ids, so an entry is w/8 + 4 bytes
+ * with no padding.  This header is the per-row header of spec §12.2. */
+typedef struct d1_row {
     sk_int *r;
     uint32_t len, cap;
-} d1_res;
+} d1_row;
+
+static inline uint32_t *ids_of(const d1_row *row) { return (uint32_t *)(row->r + row->cap); }
 
 struct sk_d1 {
     /* numerators: the numerator and its denominator index (two parallel arrays, so an entry is w/8 + 4 bytes) */
@@ -18,19 +23,19 @@ struct sk_d1 {
     sk_int *den;
     uint32_t D, Dcap;
     sk_lookup look;
-    /* divisors, strictly increasing, entry 0 is 1 */
+    /* divisors: dv[id] is the divisor with stable id `id`, append-only, id 0 is 1; ord lists the ids sorted by
+     * value, strictly increasing, for the binary search (spec §7.1, D1-5) */
     sk_int *dv;
+    uint32_t *ord;
     uint32_t C, Ccap;
-    /* pair table: bit j(j-1)/2 + i for the pair i < j, packed column by column */
+    /* pair set (spec §7.1): the compared pairs only, a hash set of keys (j << 32) | i for i < j, linear probing;
+     * a slot holding 0 is empty (j >= 1, so no key is 0).  PS slots, a power of two, 0 until the first insertion,
+     * at most half full; PN keys. */
     uint64_t *pair;
-    uint64_t pair_cap; /* words allocated */
-    /* incidence bits: D rows of W words, one contiguous array with stride W */
-    uint64_t *inc;
-    uint32_t W;
-    uint32_t inc_cap; /* rows allocated */
-    /* residual rows */
-    d1_res *res;
-    uint32_t res_cap;
+    uint32_t PS, PN, log2PS;
+    /* incidence rows: one sparse row per denominator */
+    d1_row *row;
+    uint32_t row_cap;
 
     sk_opctx ctx;
     sk_overflow ovf;
@@ -40,13 +45,13 @@ struct sk_d1 {
 #ifdef SK_AUDIT
     /* the change list (spec §13.2): read only by the audits */
     uint32_t mark_N, mark_D;
-    sk_int *chg_div; /* divisors inserted since the last audit (by value: columns move) */
+    uint32_t *chg_div; /* ids of the divisors inserted since the last audit */
     uint32_t n_chg_div, cap_chg_div;
-    uint32_t *chg_row; /* rows that gained a bit or a residual */
+    uint32_t *chg_row; /* rows that gained an entry */
     uint32_t n_chg_row, cap_chg_row;
     uint8_t *row_dirty;
     uint32_t row_dirty_cap;
-    uint32_t *chg_pair; /* pair bits set, as (i, j) */
+    uint32_t *chg_pair; /* pairs inserted, as (i, j) */
     uint32_t n_chg_pair, cap_chg_pair;
     char msg[200];
 #endif
@@ -59,9 +64,10 @@ sk_d1 *sk_d1_create(void) {
     sk_lookup_init(&c->look);
     c->Ccap = 16;
     c->dv = sk_xmalloc(sizeof(sk_int) * c->Ccap);
+    c->ord = sk_xmalloc(sizeof(uint32_t) * c->Ccap);
     c->dv[0] = 1;
+    c->ord[0] = 0;
     c->C = 1;
-    c->W = 1;
     return c;
 }
 
@@ -72,10 +78,10 @@ void sk_d1_destroy(sk_d1 *c) {
     free(c->den);
     sk_lookup_free(&c->look);
     free(c->dv);
+    free(c->ord);
     free(c->pair);
-    free(c->inc);
-    for (uint32_t k = 0; k < c->D; k++) free(c->res[k].r);
-    free(c->res);
+    for (uint32_t k = 0; k < c->D; k++) free(c->row[k].r);
+    free(c->row);
 #ifdef SK_AUDIT
     free(c->chg_div);
     free(c->chg_row);
@@ -93,7 +99,7 @@ void sk_d1_destroy(sk_d1 *c) {
 #ifdef SK_AUDIT
 static void note_row(sk_d1 *c, uint32_t k) {
     if (c->row_dirty_cap < c->D) {
-        uint32_t nc = c->res_cap;
+        uint32_t nc = c->row_cap;
         c->row_dirty = sk_xrealloc(c->row_dirty, nc);
         memset(c->row_dirty + c->row_dirty_cap, 0, nc - c->row_dirty_cap);
         c->row_dirty_cap = nc;
@@ -103,9 +109,9 @@ static void note_row(sk_d1 *c, uint32_t k) {
     SK_RESERVE(c->chg_row, c->n_chg_row, c->cap_chg_row, 16);
     c->chg_row[c->n_chg_row++] = k;
 }
-static void note_div(sk_d1 *c, sk_int g) {
+static void note_div(sk_d1 *c, uint32_t id) {
     SK_RESERVE(c->chg_div, c->n_chg_div, c->cap_chg_div, 16);
-    c->chg_div[c->n_chg_div++] = g;
+    c->chg_div[c->n_chg_div++] = id;
 }
 static void note_pair(sk_d1 *c, uint32_t i, uint32_t j) {
     if (c->n_chg_pair + 2 > c->cap_chg_pair) {
@@ -124,135 +130,177 @@ static void note_pair(sk_d1 *c, uint32_t i, uint32_t j) {
 #define NOTE_PAIR(i, j) ((void)0)
 #endif
 
-/* ----------------------------------------------------------------------------------------- pair table */
+/* ----------------------------------------------------------------------------------------- pair set */
 
-static inline uint64_t pair_bit(uint32_t i, uint32_t j) { /* i < j; index arithmetic */
-    return (uint64_t)j * (j - 1) / 2 + i;
+#define SK_PAIR_PHI UINT64_C(0x9E3779B97F4A7C15)
+
+static inline uint64_t pair_key(uint32_t i, uint32_t j) { /* index arithmetic; orders the pair */
+    if (i > j) {
+        uint32_t t = i;
+        i = j;
+        j = t;
+    }
+    return ((uint64_t)j << 32) | i;
 }
 
+/* The starting slot of a key: the lookup's hash (spec §5 item 2), on the 64-bit key. */
+static inline uint32_t pair_slot(const sk_d1 *c, uint64_t key) {
+    return (uint32_t)((key * SK_PAIR_PHI) >> (64 - c->log2PS));
+}
+
+/* The slot holding key, or the empty slot where the search stops.  Counted as a lookup (rule 4): one search per
+ * hash, one probe per slot read.  Needs PS > 0. */
+static uint32_t pair_find(const sk_d1 *c, uint64_t key) {
+    CNT(lookup_search, 1);
+    uint32_t s = pair_slot(c, key), mask = c->PS - 1;
+    for (;;) {
+        CNT(lookup_probe, 1);
+        if (c->pair[s] == key || c->pair[s] == 0) return s;
+        s = (s + 1) & mask;
+    }
+}
+
+/* Is the pair (i, j) in the set ("compared")?  One pair read, plus the set's search and probes. */
 static inline bool pair_get(const sk_d1 *c, uint32_t i, uint32_t j) {
-    if (i > j) {
-        uint32_t t = i;
-        i = j;
-        j = t;
-    }
     CNT(pair_read, 1);
-    uint64_t b = pair_bit(i, j);
-    return (c->pair[b >> 6] >> (b & 63)) & 1;
+    if (c->PS == 0) return false; /* the empty set has no table to search */
+    uint64_t key = pair_key(i, j);
+    return c->pair[pair_find(c, key)] == key;
 }
 
-static inline void pair_set(sk_d1 *c, uint32_t i, uint32_t j) {
-    if (i > j) {
-        uint32_t t = i;
-        i = j;
-        j = t;
+/* Insert (i, j), exactly where the dense table set its bit.  The caller, compare, has just found the pair absent,
+ * so there is no membership search here (CL-3, DEC-47); a duplicate would break the count, which the audit checks.
+ * Before an insertion would make the set more than half full, PS doubles and every key is placed again, in the
+ * order of the old slots. */
+static void pair_set(sk_d1 *c, uint32_t i, uint32_t j) {
+    uint64_t key = pair_key(i, j);
+    if (2 * ((uint64_t)c->PN + 1) > c->PS) {
+        uint64_t *old = c->pair;
+        uint32_t oldS = c->PS;
+        c->PS = oldS ? 2 * oldS : 16;
+        if (c->PS == 0) sk_die("d1: pair set too large");
+        c->log2PS = (uint32_t)__builtin_ctz(c->PS);
+        c->pair = sk_xcalloc(c->PS, sizeof(uint64_t));
+        for (uint32_t t = 0; t < oldS; t++)
+            if (old[t]) c->pair[pair_find(c, old[t])] = old[t];
+        free(old);
     }
-    uint64_t b = pair_bit(i, j);
-    c->pair[b >> 6] |= UINT64_C(1) << (b & 63);
-    NOTE_PAIR(i, j);
+    c->pair[pair_find(c, key)] = key;
+    c->PN++;
+    NOTE_PAIR((uint32_t)(key & 0xffffffffu), (uint32_t)(key >> 32));
 }
 
-/* ----------------------------------------------------------------------------------------- incidence, residuals */
+/* ----------------------------------------------------------------------------------------- divisors, incidence rows */
 
-static inline uint64_t *row_of(const sk_d1 *c, uint32_t k) { return c->inc + (size_t)k * c->W; }
-
-static inline bool bit_get(const sk_d1 *c, uint32_t k, uint32_t col) {
-    return (row_of(c, k)[col >> 6] >> (col & 63)) & 1;
+/* The position in ord of the first divisor not below g: a binary search, comparisons only (not counted). */
+static uint32_t ord_find(const sk_d1 *c, sk_int g) {
+    uint32_t lo = 0, hi = c->C;
+    while (lo < hi) {
+        uint32_t mid = lo + (hi - lo) / 2;
+        if (c->dv[c->ord[mid]] < g) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
 }
 
-/* search(i, j) (spec §7.2): the largest column set in both rows. */
-static uint32_t search(const sk_d1 *c, uint32_t i, uint32_t j) {
-    const uint64_t *ri = row_of(c, i), *rj = row_of(c, j);
-    for (uint32_t w = c->W; w-- > 0;) {
+/* search(i, j) (spec §7.2): the entries of the largest divisor in both rows, by a merge of the two rows from their
+ * largest divisor down, stopping at the first divisor common to both.  One scan per merge step: one pair of entries
+ * compared (scan_and_words).  Divisor 1 is entry 0 of every row, so the merge always stops. */
+static void search(const sk_d1 *c, uint32_t i, uint32_t j, uint32_t *pi, uint32_t *pj) {
+    const d1_row *a = &c->row[i], *b = &c->row[j];
+    const uint32_t *ia = ids_of(a), *ib = ids_of(b);
+    uint32_t x = a->len - 1, y = b->len - 1;
+    for (;;) {
         CNT(scan_and_words, 1);
-        uint64_t x = ri[w] & rj[w];
-        if (x != 0) return 64 * w + (uint32_t)sk_hsb(x);
+        if (ia[x] == ib[y]) {
+            *pi = x;
+            *pj = y;
+            return;
+        }
+        if (c->dv[ia[x]] > c->dv[ib[y]]) {
+            if (x == 0) break;
+            x--;
+        } else {
+            if (y == 0) break;
+            y--;
+        }
     }
-    sk_die("d1: search found no common column (column 0 is not set)");
+    sk_die("d1: search found no common divisor (divisor 1 is not in a row)");
 }
 
-/* The position in residual row k of column col: the popcount of the row's bits below col (spec §7.1 item 3). */
-static uint32_t res_pos(const sk_d1 *c, uint32_t k, uint32_t col) {
-    const uint64_t *row = row_of(c, k);
-    uint32_t full = col >> 6, b = col & 63, pos = 0;
-    for (uint32_t w = 0; w < full; w++) {
-        CNT(scan_popcount_words, 1);
-        pos += (uint32_t)sk_popcount(row[w]);
-    }
-    if (b) {
-        CNT(scan_popcount_words, 1);
-        pos += (uint32_t)sk_popcount(row[full] & ((UINT64_C(1) << b) - 1));
-    }
-    return pos;
-}
-
-static inline sk_int residual(const sk_d1 *c, uint32_t k, uint32_t col) { return c->res[k].r[res_pos(c, k, col)]; }
-
-/* Shift row bits at and above column col up by one (spec §7.3, immediate shifting). */
-static void shift_row(uint64_t *row, uint32_t W, uint32_t col) {
-    uint32_t w0 = col >> 6, b = col & 63;
-    for (uint32_t w = W - 1; w > w0; w--) row[w] = (row[w] << 1) | (row[w - 1] >> 63);
-    uint64_t low = b ? (UINT64_C(1) << b) - 1 : 0;
-    row[w0] = (row[w0] & low) | ((row[w0] & ~low) << 1);
-}
-
-/* Insert divisor g at column col: grow the stride if C passes 64W, then shift every row if col is below the old C
- * (spec §7.3; D1-c: an insertion at the end shifts nothing). */
-static void insert_divisor(sk_d1 *c, uint32_t col, sk_int g) {
+/* Append divisor g with the next id, C, and insert that id into ord at position pos (spec §7.3).  No row changes and
+ * nothing is renumbered: ids are stable. */
+static uint32_t insert_divisor(sk_d1 *c, uint32_t pos, sk_int g) {
     sk_check_limit(c->C, "divisors");
-    uint32_t oldC = c->C;
-    SK_RESERVE(c->dv, c->C, c->Ccap, 16);
-    memmove(c->dv + col + 1, c->dv + col, sizeof(sk_int) * (oldC - col));
-    c->dv[col] = g;
+    if (c->C >= c->Ccap) {
+        c->Ccap = c->Ccap > UINT32_MAX / 2 ? UINT32_MAX : 2 * c->Ccap;
+        c->dv = sk_xrealloc(c->dv, sizeof(sk_int) * c->Ccap);
+        c->ord = sk_xrealloc(c->ord, sizeof(uint32_t) * c->Ccap);
+    }
+    uint32_t id = c->C;
+    c->dv[id] = g;
+    memmove(c->ord + pos + 1, c->ord + pos, sizeof(uint32_t) * (c->C - pos));
+    c->ord[pos] = id;
     c->C++;
     CNT(ref_div_inserted, 1);
-    NOTE_DIV(g);
-    if ((uint64_t)c->C > 64 * (uint64_t)c->W) { /* one more word of stride; copy to the new stride */
-        uint32_t W = c->W, nW = W + 1;
-        uint64_t *n = sk_xcalloc((size_t)(c->inc_cap ? c->inc_cap : 1) * nW, sizeof(uint64_t));
-        for (uint32_t k = 0; k < c->D; k++) memcpy(n + (size_t)k * nW, c->inc + (size_t)k * W, sizeof(uint64_t) * W);
-        free(c->inc);
-        c->inc = n;
-        c->W = nW;
-        CNT(ref_stride_growths, 1);
-    }
-    if (col < oldC) {
-        for (uint32_t k = 0; k < c->D; k++) shift_row(row_of(c, k), c->W, col);
-        CNT(ref_words_shifted, (uint64_t)c->D * (c->W - (col >> 6)));
-    }
+    NOTE_DIV(id);
+    return id;
 }
 
-/* Set bit (k, col) and insert residual s at its position. */
-static void add_bit(sk_d1 *c, uint32_t k, uint32_t col, sk_int s) {
-    row_of(c, k)[col >> 6] |= UINT64_C(1) << (col & 63);
-    uint32_t pos = res_pos(c, k, col);
-    d1_res *r = &c->res[k];
-    SK_RESERVE(r->r, r->len, r->cap, 2);
-    memmove(r->r + pos + 1, r->r + pos, sizeof(sk_int) * (r->len - pos));
-    r->r[pos] = s;
-    r->len++;
+/* Record that divisor id (value g) divides d_k, with residual s, unless row k holds it already.  g is above the
+ * divisor at entry p of the row, so its place is found by a binary search of the entries above p; one scan per
+ * entry read (scan_popcount_words). */
+static void place(sk_d1 *c, uint32_t k, uint32_t p, uint32_t id, sk_int g, sk_int s) {
+    d1_row *row = &c->row[k];
+    uint32_t *ids = ids_of(row);
+    uint32_t lo = p + 1, hi = row->len;
+    while (lo < hi) {
+        uint32_t mid = lo + (hi - lo) / 2;
+        CNT(scan_popcount_words, 1);
+        if (c->dv[ids[mid]] < g) lo = mid + 1;
+        else hi = mid;
+    }
+    if (lo < row->len && ids[lo] == id) return;
+    if (row->len == row->cap) { /* a new block of twice the capacity: residuals, then ids */
+        uint32_t ncap = row->cap > UINT32_MAX / 2 ? UINT32_MAX : 2 * row->cap;
+        sk_int *nr = sk_xmalloc((sizeof(sk_int) + sizeof(uint32_t)) * (size_t)ncap);
+        uint32_t *nid = (uint32_t *)(nr + ncap);
+        memcpy(nr, row->r, sizeof(sk_int) * row->len);
+        memcpy(nid, ids, sizeof(uint32_t) * row->len);
+        free(row->r);
+        row->r = nr;
+        row->cap = ncap;
+        ids = nid;
+    }
+    memmove(row->r + lo + 1, row->r + lo, sizeof(sk_int) * (row->len - lo));
+    memmove(ids + lo + 1, ids + lo, sizeof(uint32_t) * (row->len - lo));
+    row->r[lo] = s;
+    ids[lo] = id;
+    row->len++;
     NOTE_ROW(k);
 }
 
-/* compare(i, j) (spec §7.3): the column of gcd(d_i, d_j) and the residuals at it, recording the gcd if the pair
- * has not been compared.  i != j. */
-static sk_status compare(sk_d1 *c, uint32_t i, uint32_t j, uint32_t *col_out, sk_int *ri_out, sk_int *rj_out) {
-    uint32_t col = search(c, i, j);
-    sk_int ri = residual(c, i, col);
-    sk_int rj = residual(c, j, col);
+/* compare(i, j) (spec §7.3): the id of gcd(d_i, d_j) and the residuals at it, recording the gcd if the pair has not
+ * been compared.  i != j. */
+static sk_status compare(sk_d1 *c, uint32_t i, uint32_t j, uint32_t *id_out, sk_int *ri_out, sk_int *rj_out) {
+    uint32_t pi, pj;
+    search(c, i, j, &pi, &pj);
+    uint32_t id = ids_of(&c->row[i])[pi];
+    sk_int ri = c->row[i].r[pi];
+    sk_int rj = c->row[j].r[pj];
     if (pair_get(c, i, j)) { /* the gcd, by spec §7.6 */
         CNT(ev_pair_hits, 1);
-        *col_out = col;
+        *id_out = id;
         *ri_out = ri;
         *rj_out = rj;
         return SK_OK;
     }
     CNT(ev_compares, 1);
-    sk_int cd = c->dv[col];
+    sk_int cd = c->dv[id];
     sk_int gp = sk_gcd(ri, rj);
     if (gp == 1) { /* g is c (D1-b) */
         pair_set(c, i, j);
-        *col_out = col;
+        *id_out = id;
         *ri_out = ri;
         *rj_out = rj;
         return SK_OK;
@@ -260,19 +308,13 @@ static sk_status compare(sk_d1 *c, uint32_t i, uint32_t j, uint32_t *col_out, sk
     sk_int g;
     if (sk_mul(cd, gp, &g)) OVF("compare: g = c*g'");
     /* find g in the divisors by binary search (comparisons only) */
-    uint32_t lo = 0, hi = c->C;
-    while (lo < hi) {
-        uint32_t mid = lo + (hi - lo) / 2;
-        if (c->dv[mid] < g) lo = mid + 1;
-        else hi = mid;
-    }
-    uint32_t colg = lo;
-    if (!(colg < c->C && c->dv[colg] == g)) insert_divisor(c, colg, g);
-    sk_int si = sk_divexact(ri, gp), sj = sk_divexact(rj, gp); /* the residuals at col_g (D1-2) */
-    if (!bit_get(c, i, colg)) add_bit(c, i, colg, si);
-    if (!bit_get(c, j, colg)) add_bit(c, j, colg, sj);
+    uint32_t pos = ord_find(c, g);
+    uint32_t idg = (pos < c->C && c->dv[c->ord[pos]] == g) ? c->ord[pos] : insert_divisor(c, pos, g);
+    sk_int si = sk_divexact(ri, gp), sj = sk_divexact(rj, gp); /* the residuals at g (D1-2) */
+    place(c, i, pi, idg, g, si);
+    place(c, j, pj, idg, g, sj);
     pair_set(c, i, j);
-    *col_out = colg;
+    *id_out = idg;
     *ri_out = si;
     *rj_out = sj;
     return SK_OK;
@@ -280,29 +322,16 @@ static sk_status compare(sk_d1 *c, uint32_t i, uint32_t j, uint32_t *col_out, sk
 
 /* ----------------------------------------------------------------------------------------- store */
 
-/* A new denominator k with value e: an island (spec §7.4).  Incidence row with column 0 only, residual row [e],
- * pair-table column k of k zero bits.  No gcd, division or multiplication. */
+/* A new denominator k with value e: an island (spec §7.4).  A row with divisor 1 only, residual e; nothing in the
+ * pair set.  No gcd, division or multiplication. */
 static void new_row(sk_d1 *c, uint32_t k, sk_int e) {
-    if (k >= c->inc_cap) {
-        c->inc_cap = c->inc_cap ? 2 * c->inc_cap : 16;
-        c->inc = sk_xrealloc(c->inc, sizeof(uint64_t) * (size_t)c->inc_cap * c->W);
-    }
-    uint64_t *row = row_of(c, k);
-    memset(row, 0, sizeof(uint64_t) * c->W);
-    row[0] = 1;
-    SK_RESERVE(c->res, k, c->res_cap, 16);
-    c->res[k].r = sk_xmalloc(sizeof(sk_int));
-    c->res[k].r[0] = e;
-    c->res[k].len = 1;
-    c->res[k].cap = 1;
-    uint64_t bits = (uint64_t)(k + 1) * k / 2, words = (bits + 63) / 64;
-    if (words > c->pair_cap) {
-        uint64_t nc = c->pair_cap ? 2 * c->pair_cap : 16;
-        while (nc < words) nc *= 2;
-        c->pair = sk_xrealloc(c->pair, sizeof(uint64_t) * nc);
-        memset(c->pair + c->pair_cap, 0, sizeof(uint64_t) * (nc - c->pair_cap));
-        c->pair_cap = nc;
-    }
+    SK_RESERVE(c->row, k, c->row_cap, 16);
+    d1_row *row = &c->row[k];
+    row->cap = 1;
+    row->len = 1;
+    row->r = sk_xmalloc(sizeof(sk_int) + sizeof(uint32_t));
+    row->r[0] = e;
+    ids_of(row)[0] = 0;
 }
 
 /* store(n over e) (spec §5). */
@@ -372,11 +401,11 @@ static sk_status addsub(sk_d1 *c, sk_phase op, sk_handle x, sk_handle y, sk_hand
         sk_int h = sk_gcd(t, c->den[i]);
         return store(c, sk_divexact(t, h), sk_divexact(c->den[i], h), out);
     }
-    uint32_t col;
+    uint32_t id;
     sk_int rx, ry;
-    st = compare(c, i, j, &col, &rx, &ry);
+    st = compare(c, i, j, &id, &rx, &ry);
     if (st) return st;
-    sk_int g = c->dv[col];
+    sk_int g = c->dv[id];
     if (sk_mul(mx, ry, &a)) OVF("add: m_x*r_y");
     if (sk_mul(my, rx, &b)) OVF("add: m_y*r_x");
     if (sk_add(a, b, &t)) OVF("add: t = m_x*r_y + m_y*r_x");
@@ -405,9 +434,10 @@ sk_status sk_d1_mul(sk_d1 *c, sk_handle x, sk_handle y, sk_handle *out) {
         if (sk_mul(c->den[i], c->den[i], &e)) OVF("multiply: d_i*d_i");
         return store(c, n, e, out);
     }
-    uint32_t col = search(c, i, j); /* no compare, no pair bit */
-    sk_int rx = residual(c, i, col);
-    sk_int ry = residual(c, j, col);
+    uint32_t pi, pj;
+    search(c, i, j, &pi, &pj); /* no compare, no pair inserted */
+    sk_int rx = c->row[i].r[pi];
+    sk_int ry = c->row[j].r[pj];
     sk_int g1 = sk_gcd(mx, ry);
     sk_int g2 = sk_gcd(my, rx);
     if (sk_mul(sk_divexact(mx, g1), sk_divexact(my, g2), &n)) OVF("multiply: (m_x/g_1)*(m_y/g_2)");
@@ -432,9 +462,9 @@ sk_status sk_d1_div(sk_d1 *c, sk_handle x, sk_handle y, sk_handle *out) {
         if (neg) n = -n;
         return store(c, n, sk_divexact(t, g1), out);
     }
-    uint32_t col;
+    uint32_t id;
     sk_int rx, ry;
-    st = compare(c, i, j, &col, &rx, &ry); /* r_x = d_i/gcd, r_y = d_j/gcd */
+    st = compare(c, i, j, &id, &rx, &ry); /* r_x = d_i/gcd, r_y = d_j/gcd */
     if (st) return st;
     sk_int a = sk_divexact(mx, g1);
     if (neg) a = -a;
@@ -458,17 +488,15 @@ void sk_d1_memory(const sk_d1 *c, sk_memory *r) {
     sk_memory_add(r, "numerators", (uint64_t)c->N * (w + 4), (uint64_t)c->Ncap * (w + 4));
     sk_memory_add(r, "denominators", (uint64_t)c->D * w, (uint64_t)c->Dcap * w);
     sk_memory_add(r, "lookup", 4 * (uint64_t)c->look.S, 4 * (uint64_t)c->look.S);
-    sk_memory_add(r, "divisors", (uint64_t)c->C * w, (uint64_t)c->Ccap * w);
-    uint64_t bits = (uint64_t)c->D * (c->D ? c->D - 1 : 0) / 2;
-    sk_memory_add(r, "pair table", 8 * ((bits + 63) / 64), 8 * c->pair_cap);
-    sk_memory_add(r, "incidence bits", 8 * (uint64_t)c->D * c->W, 8 * (uint64_t)c->inc_cap * c->W);
-    uint64_t used = 0, alloc = 0;
+    sk_memory_add(r, "divisors", (uint64_t)c->C * (w + 4), (uint64_t)c->Ccap * (w + 4)); /* values and ord */
+    sk_memory_add(r, "pair set", 8 * (uint64_t)c->PS, 8 * (uint64_t)c->PS); /* like the lookup: the whole table */
+    uint64_t used = 0, alloc = 0; /* entries of the incidence rows, each a residual and a 32-bit divisor id */
     for (uint32_t k = 0; k < c->D; k++) {
-        used += c->res[k].len;
-        alloc += c->res[k].cap;
+        used += c->row[k].len;
+        alloc += c->row[k].cap;
     }
-    sk_memory_add(r, "residual rows", used * w + (uint64_t)c->D * sizeof(d1_res),
-                  alloc * w + (uint64_t)c->res_cap * sizeof(d1_res));
+    sk_memory_add(r, "incidence rows", used * (w + 4) + (uint64_t)c->D * sizeof(d1_row),
+                  alloc * (w + 4) + (uint64_t)c->row_cap * sizeof(d1_row));
     sk_memory_finish(r, c->N);
 }
 
@@ -503,47 +531,58 @@ static const char *check_values(const sk_d1 *c, uint32_t from) {
     return NULL;
 }
 
+/* Row k: entry 0 is divisor 1 with residual d_k; every id is below C; the entries are strictly increasing by divisor
+ * value (so no divisor twice); every divisor times its residual is d_k. */
 static const char *check_row(const sk_d1 *c, uint32_t k) {
-    const uint64_t *row = row_of(c, k);
-    if (!(row[0] & 1)) return "row: bit 0 not set";
-    uint64_t pop = 0;
-    for (uint32_t w = 0; w < c->W; w++) {
-        uint64_t x = row[w];
-        uint64_t lo = 64 * (uint64_t)w;
-        if (lo + 64 > c->C) { /* bits at or above column C must be clear */
-            uint32_t keep = c->C > lo ? (uint32_t)(c->C - lo) : 0;
-            uint64_t mask = keep >= 64 ? ~UINT64_C(0) : ((UINT64_C(1) << keep) - 1);
-            if (x & ~mask) return "row: a bit at or above column C is set";
-        }
-        pop += (uint64_t)__builtin_popcountll(x);
-    }
-    if (pop != c->res[k].len) return "row: residual row length differs from the row's popcount";
-    uint32_t pos = 0;
-    for (uint32_t w = 0; w < c->W; w++) {
-        uint64_t x = row[w];
-        while (x) {
-            uint32_t col = 64 * w + (uint32_t)__builtin_ctzll(x);
-            x &= x - 1;
-            sk_int p;
-            if (sk_mul_raw(c->dv[col], c->res[k].r[pos], &p) || p != c->den[k])
-                return "row: divisor times residual is not the denominator";
-            pos++;
-        }
+    const d1_row *row = &c->row[k];
+    const uint32_t *ids = ids_of(row);
+    if (row->len < 1 || row->len > row->cap) return "row: length not in 1..capacity";
+    if (ids[0] != 0) return "row: entry 0 is not divisor 1";
+    for (uint32_t t = 0; t < row->len; t++) {
+        if (ids[t] >= c->C) return "row: a divisor id is not below C";
+        if (t && c->dv[ids[t]] <= c->dv[ids[t - 1]]) return "row: entries not strictly increasing by divisor value";
+        sk_int p;
+        if (sk_mul_raw(c->dv[ids[t]], row->r[t], &p) || p != c->den[k])
+            return "row: divisor times residual is not the denominator";
     }
     return NULL;
 }
 
 static const char *check_pair(const sk_d1 *c, uint32_t i, uint32_t j) {
-    if (c->dv[search(c, i, j)] != sk_gcd(c->den[i], c->den[j]))
-        return "pair: the divisor at search(i, j) is not gcd(d_i, d_j)";
+    uint32_t pi, pj;
+    search(c, i, j, &pi, &pj);
+    if (c->dv[ids_of(&c->row[i])[pi]] != sk_gcd(c->den[i], c->den[j]))
+        return "pair: the divisor found by search(i, j) is not gcd(d_i, d_j)";
     return NULL;
 }
 
+int sk_d1_t_pair(const sk_d1 *c, uint32_t i, uint32_t j);
+
+/* The set's shape: a power-of-two table at most half full, PN keys, each i < j < D, each found at its value. */
+static const char *check_pair_set(const sk_d1 *c) {
+    if (c->PS && (c->PS & (c->PS - 1))) return "pair set: size not a power of two";
+    if (2 * (uint64_t)c->PN > c->PS) return "pair set: more than half full";
+    uint32_t n = 0;
+    for (uint32_t s = 0; s < c->PS; s++) {
+        uint64_t key = c->pair[s];
+        if (!key) continue;
+        n++;
+        uint32_t i = (uint32_t)(key & 0xffffffffu), j = (uint32_t)(key >> 32);
+        if (!(i < j && j < c->D)) return "pair set: a key is not a pair i < j < D";
+        if (pair_find(c, key) != s) return "pair set: a key is not found at its slot";
+    }
+    if (n != c->PN) return "pair set: count differs from the keys held";
+    return NULL;
+}
+
+/* Divisor id 0 is 1 and first in ord; ord lists C ids below C with strictly increasing values, so it is a
+ * permutation of the ids and the divisors are distinct. */
 static const char *check_divisors(const sk_d1 *c) {
-    if (c->C < 1 || c->dv[0] != 1) return "divisors: divisor 0 is not 1";
-    for (uint32_t k = 1; k < c->C; k++)
-        if (c->dv[k] <= c->dv[k - 1]) return "divisors: not strictly increasing";
-    if ((uint64_t)c->C > 64 * (uint64_t)c->W) return "incidence: C exceeds 64W";
+    if (c->C < 1 || c->dv[0] != 1 || c->ord[0] != 0) return "divisors: divisor 0 is not 1, first by value";
+    for (uint32_t k = 1; k < c->C; k++) {
+        if (c->ord[k] >= c->C) return "divisors: an id in the order is not below C";
+        if (c->dv[c->ord[k]] <= c->dv[c->ord[k - 1]]) return "divisors: not strictly increasing in the order";
+    }
     return NULL;
 }
 
@@ -554,19 +593,11 @@ static const char *full(const sk_d1 *c) {
     if ((f = check_divisors(c))) return f;
     for (uint32_t k = 0; k < c->D; k++)
         if ((f = check_row(c, k))) return f;
-    /* every set pair bit: walk the words, skipping zero words */
-    uint64_t bits = (uint64_t)c->D * (c->D ? c->D - 1 : 0) / 2, words = (bits + 63) / 64;
-    uint32_t j = 1;
-    for (uint64_t w = 0; w < words; w++) {
-        uint64_t x = c->pair[w];
-        while (x) {
-            uint64_t b = 64 * w + (uint64_t)__builtin_ctzll(x);
-            x &= x - 1;
-            while ((uint64_t)(j + 1) * j / 2 <= b) j++; /* column j holds bits j(j-1)/2 .. j(j+1)/2 - 1 */
-            uint32_t i = (uint32_t)(b - (uint64_t)j * (j - 1) / 2);
-            if ((f = check_pair(c, i, j))) return f;
-        }
-    }
+    if ((f = check_pair_set(c))) return f;
+    /* every pair in the set */
+    for (uint32_t s = 0; s < c->PS; s++)
+        if (c->pair[s] && (f = check_pair(c, (uint32_t)(c->pair[s] & 0xffffffffu), (uint32_t)(c->pair[s] >> 32))))
+            return f;
     return NULL;
 }
 
@@ -578,25 +609,25 @@ static const char *changed(const sk_d1 *c) {
             return "lookup: a new denominator is not found at its value";
     if ((f = sk_lookup_audit_count(&c->look, c->D))) return f;
     for (uint32_t t = 0; t < c->n_chg_div; t++) {
-        sk_int g = c->chg_div[t];
-        uint32_t lo = 0, hi = c->C;
-        while (lo < hi) {
-            uint32_t mid = lo + (hi - lo) / 2;
-            if (c->dv[mid] < g) lo = mid + 1;
-            else hi = mid;
-        }
-        if (lo >= c->C || c->dv[lo] != g) return "divisors: an inserted divisor is missing";
-        if (lo == 0 || c->dv[lo - 1] >= g) return "divisors: an inserted divisor is not above its lower neighbour";
-        if (lo + 1 < c->C && c->dv[lo + 1] <= g) return "divisors: an inserted divisor is not below its upper neighbour";
+        uint32_t id = c->chg_div[t];
+        if (id >= c->C) return "divisors: an inserted id is not below C";
+        sk_int g = c->dv[id];
+        uint32_t lo = ord_find(c, g);
+        if (lo >= c->C || c->ord[lo] != id) return "divisors: an inserted divisor is not found in the order";
+        if (lo == 0 || c->dv[c->ord[lo - 1]] >= g) return "divisors: an inserted divisor is not above its lower neighbour";
+        if (lo + 1 < c->C && c->dv[c->ord[lo + 1]] <= g)
+            return "divisors: an inserted divisor is not below its upper neighbour";
     }
-    if (c->dv[0] != 1) return "divisors: divisor 0 is not 1";
-    if ((uint64_t)c->C > 64 * (uint64_t)c->W) return "incidence: C exceeds 64W";
+    if (c->dv[0] != 1 || c->ord[0] != 0) return "divisors: divisor 0 is not 1, first by value";
     for (uint32_t k = c->mark_D; k < c->D; k++)
         if ((f = check_row(c, k))) return f;
     for (uint32_t t = 0; t < c->n_chg_row; t++)
         if ((f = check_row(c, c->chg_row[t]))) return f;
-    for (uint32_t t = 0; t + 1 < c->n_chg_pair; t += 2)
+    if (2 * (uint64_t)c->PN > c->PS) return "pair set: more than half full";
+    for (uint32_t t = 0; t + 1 < c->n_chg_pair; t += 2) {
+        if (!sk_d1_t_pair(c, c->chg_pair[t], c->chg_pair[t + 1])) return "pair set: an inserted pair is not found";
         if ((f = check_pair(c, c->chg_pair[t], c->chg_pair[t + 1]))) return f;
+    }
     return NULL;
 }
 
@@ -652,26 +683,37 @@ sk_status sk_d1_audit_changed(sk_d1 *c, const char **why) {
 /* Read-only views of the structures, for the unit tests (declared in tests/introspect.h, not in the public API). */
 uint32_t sk_d1_t_D(const sk_d1 *c) { return c->D; }
 uint32_t sk_d1_t_C(const sk_d1 *c) { return c->C; }
-sk_int sk_d1_t_divisor(const sk_d1 *c, uint32_t col) { return c->dv[col]; }
+/* Divisors by rank: rank `col` is the col-th smallest divisor (rank 0 is 1); its stable id is ord[col]. */
+sk_int sk_d1_t_divisor(const sk_d1 *c, uint32_t col) { return c->dv[c->ord[col]]; }
+uint32_t sk_d1_t_divisor_id(const sk_d1 *c, uint32_t col) { return c->ord[col]; }
 sk_int sk_d1_t_den(const sk_d1 *c, uint32_t k) { return c->den[k]; }
 uint32_t sk_d1_t_den_index(const sk_d1 *c, sk_handle x) { return c->nk[x]; }
-int sk_d1_t_bit(const sk_d1 *c, uint32_t k, uint32_t col) { return col < c->C && bit_get(c, k, col); }
-uint32_t sk_d1_t_res_len(const sk_d1 *c, uint32_t k) { return c->res[k].len; }
-sk_int sk_d1_t_res(const sk_d1 *c, uint32_t k, uint32_t pos) { return c->res[k].r[pos]; }
-int sk_d1_t_pair(const sk_d1 *c, uint32_t i, uint32_t j) {
-    if (i == j) return 0;
-    if (i > j) {
-        uint32_t t = i;
-        i = j;
-        j = t;
-    }
-    uint64_t b = pair_bit(i, j);
-    return (c->pair[b >> 6] >> (b & 63)) & 1;
+int sk_d1_t_bit(const sk_d1 *c, uint32_t k, uint32_t col) { /* does row k hold the divisor of rank col? */
+    if (col >= c->C) return 0;
+    const uint32_t *ids = ids_of(&c->row[k]);
+    for (uint32_t t = 0; t < c->row[k].len; t++)
+        if (ids[t] == c->ord[col]) return 1;
+    return 0;
 }
-uint32_t sk_d1_t_W(const sk_d1 *c) { return c->W; }
+uint32_t sk_d1_t_res_len(const sk_d1 *c, uint32_t k) { return c->row[k].len; }
+sk_int sk_d1_t_res(const sk_d1 *c, uint32_t k, uint32_t pos) { return c->row[k].r[pos]; }
+int sk_d1_t_pair(const sk_d1 *c, uint32_t i, uint32_t j) {
+    if (i == j || c->PS == 0) return 0;
+#ifdef SK_COUNT
+    sk_count *saved = sk_cur; /* a test view: counts nothing */
+    sk_cur = &sk_sink;
+#endif
+    uint64_t key = pair_key(i, j);
+    int in = c->pair[pair_find(c, key)] == key;
+#ifdef SK_COUNT
+    sk_cur = saved;
+#endif
+    return in;
+}
+uint32_t sk_d1_t_pairs(const sk_d1 *c) { return c->PN; }
 uint32_t sk_d1_t_S(const sk_d1 *c) { return c->look.S; }
 #ifdef SK_AUDIT
 /* test build only: break an invariant, so the tests can check that the audits find it */
-void sk_d1_t_corrupt_residual(sk_d1 *c, uint32_t k, uint32_t pos, sk_int v) { c->res[k].r[pos] = v; }
+void sk_d1_t_corrupt_residual(sk_d1 *c, uint32_t k, uint32_t pos, sk_int v) { c->row[k].r[pos] = v; }
 void sk_d1_t_corrupt_pair(sk_d1 *c, uint32_t i, uint32_t j) { pair_set(c, i, j); }
 #endif

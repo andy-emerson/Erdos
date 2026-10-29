@@ -109,9 +109,10 @@ static inline int api_gather(api_class *c, uint32_t v, const uint32_t *pos, cons
 #define SK_COUNT_FIELDS(X)                                                                                         \
     X(gcd) X(gcd_work) X(div_exact) X(div_rem) X(mul) X(add) X(bitops) X(lookup_search) X(lookup_probe)            \
     X(pair_read) X(scan_and_words) X(scan_popcount_words) X(scan_merge_entries) X(scan_refine_pieces)              \
-    X(scan_split_rows) X(scan_content) X(ref_div_inserted) X(ref_words_shifted) X(ref_stride_growths)              \
-    X(ref_splits) X(ref_pieces_created) X(ref_entries_rewritten) X(ev_compares) X(ev_pair_hits) X(ev_rows_u1)      \
-    X(ev_rows_refined) X(ev_fast_paths) X(ev_new_dens) X(ev_overflows)
+    X(scan_remainder_pieces) X(scan_split_rows) X(scan_content) X(ref_div_inserted) X(ref_words_shifted)           \
+    X(ref_stride_growths) X(ref_splits) X(ref_pieces_created) X(ref_entries_rewritten) X(ref_remainder_pulls)      \
+    X(ev_compares) X(ev_pair_hits) X(ev_rows_u1) X(ev_rows_unrefined) X(ev_meetings) X(ev_absorbs)                 \
+    X(ev_extra_queued) X(ev_fast_paths) X(ev_new_dens) X(ev_overflows)
 static inline void api_dump_counters(const api_class *c, FILE *f) {
     static const char *const part[SK_NPART] = {"core", "store"};
     sk_counters k;

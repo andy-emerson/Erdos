@@ -1,5 +1,5 @@
-/* sk_d2.h: Design 2: the coprime base (spec §8).  The control, Design 1 and Design 2 have identical signatures (spec §4.1); only the
- * prefix and the class type differ.  See ../README.md for the full contract. */
+/* sk_d2.h: Design 2: the coprime base, refined on demand (spec §8, amended Oct 29, 2026).  The control, Design 1
+ * and Design 2 have identical signatures (spec §4.1); only the prefix and the class type differ.  See ../README.md for the full contract. */
 #ifndef SK_D2_H
 #define SK_D2_H
 

@@ -14,9 +14,11 @@ RULE_FILE = ROOT / "research" / "rule.md"
 BUILD = HERE / "build"
 RESULTS = HERE / "results"
 
-# sha256 of research/rule.md as fixed by the author, Oct 28, 2026. The harness refuses a measured run unless the file
-# on disk has exactly this hash, so it holds the rule verbatim (rule.md, line 3).
-RULE_SHA256 = "0706ef56080c993520de1c0950d784a4e7b1bf566043cd678c5e567c3cbd11cd"
+# sha256 of research/rule.md as fixed by the author, Oct 28, 2026, with the revision of Oct 29, 2026 (Designs 2
+# and 1 redefined before any measurement: D2 on demand, D1's pair set and sparse incidence rows; rule.md line 5). The
+# harness refuses a measured run unless the file on disk has exactly this hash, so it holds the rule verbatim (rule.md,
+# line 3).
+RULE_SHA256 = "ff2b62379f9e0b7451066ceb413c119fccb73259201d2e5a4165e55d3bcb2c96"
 
 MASTER_SEED = 20261028
 BOOT = 10_000
@@ -34,6 +36,15 @@ TIMED_CORE, HARNESS_CORE = 1, 0
 COUNT_REPEAT_JOBS = (3, 9, 14, 18, 19, 23)
 PILOT_TIMED_JOBS = (3, 6, 9, 12, 15, 18)
 PILOT_GATE_JOB = 20
+
+# Idle-machine check before any timed run (test/DECISIONS.md R-p): the 1-minute load average must be at most
+# IDLE_LOAD_MAX, and no other process may use more than IDLE_PROC_CPU_MAX of one core over a sample of IDLE_SAMPLE_S.
+# If the machine is busy, the runner re-checks every IDLE_POLL_S for up to IDLE_WAIT_S, then refuses (RunStop).
+IDLE_LOAD_MAX = 0.5
+IDLE_PROC_CPU_MAX = 0.05
+IDLE_SAMPLE_S = 1.0
+IDLE_POLL_S = 15.0
+IDLE_WAIT_S = 600.0
 
 LEVELS = ("ALL", "P75", "P50", "P25", "NONE", "LG")
 SIGMA = {"ALL": 0.5, "P75": 0.75, "P50": 0.5, "P25": 0.25, "NONE": 0.0, "LG": None}

@@ -94,10 +94,21 @@ band, count or order the rule fixes. Items marked **ambiguous** are also listed 
     every design that had one. A shared file is in every row's hash, so a change to it invalidates every row.
   - Each session records the code it ran in `code_sessions`. Tested in test_harness.py (`test_code_hashes_invalidate`).
 - **R-n. Rule check.**
-  - The sha256 of rule.md as fixed (`0706ef56…`) is in common.py. Any other content is refused before step 1.
+  - The sha256 of rule.md as fixed (`ff2b6237…`) is in common.py. Any other content is refused before step 1.
   - The text checked is the text written verbatim into results.md, before the build and the first trial. The final
     report reprints that stored text.
   - `--stub` and `--hard-stop-s` are refused outside `--toy`.
+- **R-p. Idle machine before timing** (added Oct 29, 2026, after two independent reviews; procedure only, noted in
+  the rule's revision).
+  - Before the timed pilot, and before each job's calibration and rounds in step 6 (the arrival pair counts as one
+    job), the runner checks that the machine is idle: the 1-minute load average is at most **0.5**, and no other
+    process used more than **5% of one core** over a **1 s** sample (from `/proc/*/stat`; the runner itself is
+    excluded and has no child then). The thresholds are in common.py.
+  - If the machine is busy, the runner logs the load and the busy processes, waits **15 s** and checks again. After
+    **10 minutes** busy, it refuses to time: the run stops (`RunStop`) and is reported, with nothing timed on a busy
+    machine. The wait counts on the run clock.
+  - Every check, idle or not, is stored in `state.json` under `idle_checks`. Toy runs (harness tests) log the check
+    and never wait or refuse. Tested in test_harness.py (`test_idle_check`).
 
 ## Analysis (analyze.py)
 

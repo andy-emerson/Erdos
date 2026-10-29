@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import random
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -205,6 +206,54 @@ def test_code_hashes_invalidate():
             assert r.drop_stale() == {"D1"}
         finally:
             runner.libconf.LIB = old_lib
+
+
+def test_idle_check():
+    """R-p: a process spinning on a core makes the machine busy; a busy machine is waited on, logged and then refused
+    before any timed run; an idle one passes at once.  (The probe is injected for the wait logic, so this test does
+    not depend on the machine being idle.)"""
+    import subprocess
+    import sys
+    spin = subprocess.Popen([sys.executable, "-c", "while True: pass"])
+    try:
+        time.sleep(0.3)
+        idle, d = runner.idle_probe(sample_s=0.5)
+        assert not idle and any(b["pid"] == spin.pid for b in d["busy"]), d
+    finally:
+        spin.kill()
+        spin.wait()
+    with tempfile.TemporaryDirectory() as t:
+        def fresh(toy):
+            r = runner.Runner(ns(toy=toy, jobs="3" if toy else ""))
+            r.out = Path(t)
+            r.state_file = r.out / "state.json"
+            r.state = {"elapsed_before": 0}
+            r.t0 = time.monotonic()
+            return r
+        busy = (False, {"load1": 3.0, "load_max": C.IDLE_LOAD_MAX, "busy": [{"pid": 1, "name": "x", "cpu": 1.0}],
+                        "proc_cpu_max": C.IDLE_PROC_CPU_MAX})
+        old = (C.IDLE_WAIT_S, C.IDLE_POLL_S)
+        C.IDLE_WAIT_S, C.IDLE_POLL_S = 0.05, 0.01
+        try:
+            r = fresh(False)
+            r.idle_probe = lambda: busy
+            try:
+                r.wait_idle("the timed pilot")
+                raise AssertionError("a busy machine was not refused")
+            except runner.RunStop as e:
+                assert "not idle" in str(e)
+            assert len(r.state["idle_checks"]) >= 2 and not r.state["idle_checks"][-1]["idle"]
+            assert "refusing to time" in (Path(t) / "run.log").read_text()
+            seq = [busy, (True, dict(busy[1], load1=0.1, busy=[]))]
+            r = fresh(False)
+            r.idle_probe = lambda: seq.pop(0)
+            r.wait_idle("jobs [3]")                           # waits once, then passes
+            assert [c["idle"] for c in r.state["idle_checks"]] == [False, True]
+            r = fresh(True)                                   # toy runs log and go on
+            r.idle_probe = lambda: busy
+            r.wait_idle("the timed pilot")
+        finally:
+            C.IDLE_WAIT_S, C.IDLE_POLL_S = old
 
 
 def json_copy(x):

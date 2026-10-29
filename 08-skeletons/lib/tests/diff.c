@@ -173,7 +173,8 @@ typedef struct stats {
     long calls, ok, ovf, divzero, inval;
     long audits_full, audits_inc;
     long ceil_calls, ceil_ok, ceil_ovf;
-    uint64_t d1_inserted, d1_shifted, d1_stride, d1_hits, d2_splits, d2_refined, d2_u1, fast;
+    uint64_t d1_inserted, d1_shifted, d1_stride, d1_hits, d2_splits, d2_refined, d2_u1, d2_meet, d2_absorb, d2_extra;
+    uint64_t fast;
 } stats;
 static stats ST;
 
@@ -360,8 +361,11 @@ static void run_rows(uint64_t seed, int fam) {
                     ST.d1_stride += x->ref_stride_growths;
                     ST.d1_hits += x->ev_pair_hits;
                     ST.d2_splits += x->ref_splits;
-                    ST.d2_refined += x->ev_rows_refined;
+                    ST.d2_refined += x->ev_rows_unrefined;
                     ST.d2_u1 += x->ev_rows_u1;
+                    ST.d2_meet += x->ev_meetings;
+                    ST.d2_absorb += x->ev_absorbs;
+                    ST.d2_extra += x->ev_extra_queued;
                     ST.fast += x->ev_fast_paths;
                 }
             if (t == 0) continue;
@@ -526,10 +530,12 @@ int main(int argc, char **argv) {
     printf("ceiling calls %ld: operations ok %ld, overflowed %ld\n", ST.ceil_calls, ST.ceil_ok, ST.ceil_ovf);
     if (sk_build_counting())
         printf("coverage: d1 divisors inserted %llu, words shifted %llu, stride growths %llu, pair hits %llu; "
-               "d2 splits %llu, rows refined %llu, rows with u = 1 %llu; fast paths %llu\n",
+               "d2 splits %llu, rows with u > 1 %llu, rows with u = 1 %llu, meetings %llu, absorbs %llu, extra refinements "
+               "%llu; fast paths %llu\n",
                (unsigned long long)ST.d1_inserted, (unsigned long long)ST.d1_shifted,
                (unsigned long long)ST.d1_stride, (unsigned long long)ST.d1_hits, (unsigned long long)ST.d2_splits,
-               (unsigned long long)ST.d2_refined, (unsigned long long)ST.d2_u1, (unsigned long long)ST.fast);
+               (unsigned long long)ST.d2_refined, (unsigned long long)ST.d2_u1, (unsigned long long)ST.d2_meet,
+               (unsigned long long)ST.d2_absorb, (unsigned long long)ST.d2_extra, (unsigned long long)ST.fast);
     printf("checksum %016llx\n", (unsigned long long)checksum);
     free(vals);
     (void)FAMNAME;

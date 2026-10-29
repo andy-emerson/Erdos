@@ -1,5 +1,25 @@
-/* d2.c: Design 2, the coprime base (spec §8).  Five structures: numerators, denominators, the lookup (spec §5), the
- * base and the exponent rows. */
+/* d2.c: Design 2, the coprime base, with on-demand, local refinement (spec §8, as amended Oct 29, 2026).  Six
+ * structures: numerators, denominators, the lookup (spec §5), the base, the exponent rows and the remainders.
+ *
+ * Row k holds the known part of d_k, (piece, nu) entries, and a remainder u_k: d_k = prod q^nu * u_k (spec §8.1).
+ * u_k may share factors with any piece, its own row's included.  The base stays pairwise coprime.
+ *
+ *  - Entry and store compute no gcd against the base: a new denominator is stored with the known row R the
+ *    operation produced and the rest in u (spec §8.3).
+ *  - add, sub and div first meet rows i and j (meet() below, spec §8.2), which leaves
+ *        (M1) u_i coprime to every piece of row j,  (M2) u_j coprime to every piece of row i,  (M3) gcd(u_i,u_j) = 1.
+ *    Then every prime p dividing both d_i and d_j lies in a piece held by both rows (by M1-M3 it divides neither
+ *    remainder, and the base is pairwise coprime), so gcd(d_i, d_j) = prod over shared pieces q^min(a,b), and the
+ *    walk of the two rows gives the residuals, with r_x and r_y multiplied by u_i and u_j (spec §8.7).
+ *  - mul needs no meeting: g_2 = gcd(m_y, d_i) is taken piece by piece over row i and then u_i, dividing m_y as it
+ *    goes, so overlaps between u_i and row i's pieces are harmless; likewise g_1 (spec §8.5).
+ *
+ * meet() is a worklist.  Queue 0 holds the pieces u_i must be refined against (row j's), queue 1 those for u_j
+ * (row i's).  A piece pulled out of u_i into row i is a piece row i gains, so it goes on queue 1: the extra
+ * refinement, without which M2 fails (u_j was refined against row i's pieces as they were, not against the pieces
+ * row i gains during the meeting; unit test test_d2_extra).  Likewise for u_j.  A split of a queued piece queues
+ * its new pieces.  When both queues are done and g = gcd(u_i, u_j) > 1, g is refined against the whole base (one
+ * scan, as the former entry scan) and every piece of g goes on both queues. */
 #include "sk_d2.h"
 
 #include "sk_internal.h"
@@ -28,19 +48,23 @@ struct sk_d2 {
     uint32_t *nk;
     uint32_t N, Ncap;
     sk_int *den;
+    sk_int *u; /* the remainders, one per denominator (spec §8.1); den and u share the capacity Dcap */
     uint32_t D, Dcap;
     sk_lookup look;
     sk_int *base; /* the pieces, pairwise coprime, each > 1 */
     uint32_t C, Ccap;
-    d2_row *rows; /* exponent rows, one per denominator */
+    d2_row *rows; /* the known parts: exponent rows, one per denominator */
     uint32_t rows_cap;
 
-    /* temporaries of one call (not structures): R, L and "equal" */
+    /* temporaries of one call (not structures): R, L, "equal", and a meeting's two rows and two queues */
     d2_row R;
     d2_l *L;
     uint32_t nL, capL;
     d2_eq *eq;
     uint32_t neq, capeq;
+    uint32_t mk[2];
+    uint32_t *Q[2];
+    uint32_t nQ[2], hQ[2], capQ[2];
 
     sk_opctx ctx;
     sk_overflow ovf;
@@ -53,13 +77,48 @@ struct sk_d2 {
     uint32_t n_chg_piece, cap_chg_piece;
     uint8_t *piece_dirty;
     uint32_t piece_dirty_cap;
-    uint32_t *chg_row; /* existing rows rewritten by a split since the last audit */
+    uint32_t *chg_row; /* existing rows rewritten (by a split or a meeting) since the last audit */
     uint32_t n_chg_row, cap_chg_row;
     uint8_t *row_dirty;
     uint32_t row_dirty_cap;
     char msg[200];
+    uint64_t meet_steps, meet_bound; /* the meeting's iteration bound (DEC-49) */
 #endif
 };
+
+/* Test hook: 1 drops the extra refinement (a piece a row gains in a meeting is not queued for the other remainder),
+ * so that the unit test can show M1/M2 need it.  Read only in the test build; never set outside the unit test. */
+int sk_d2_t_skip_extra = 0;
+#ifdef SK_AUDIT
+#define SKIP_EXTRA sk_d2_t_skip_extra
+#else
+#define SKIP_EXTRA 0
+#endif
+
+/* Test hook: 1 injects a fault into reduce (a piece that divides the remainder is not divided out), so that the
+ * unit test can show the meeting's iteration bound turns the resulting endless loop into a loud failure.  Read only
+ * in the test build; never set outside the unit test. */
+int sk_d2_t_fault_stuck = 0;
+#ifdef SK_AUDIT
+#define FAULT_STUCK sk_d2_t_fault_stuck
+#else
+#define FAULT_STUCK 0
+#endif
+
+/* The meeting's iteration bound (DEC-49), audit and test builds only: every loop step of a meeting (queue takes,
+ * reduce and absorb steps, repeats) counts one, and a meeting that passes the bound aborts, so that a fault fails
+ * loudly instead of hanging.  The bound is generous: with B = bits(u_i) + bits(u_j) at the start, at most B + 1
+ * repeats, B absorbs and B divisions happen, at most B pieces are split, each into at most w pieces, so the base
+ * grows by at most (B + 1)(w + 1) pieces, and every scan is at most the base plus the pieces created.  The timing
+ * build has no bound and no step count. */
+#ifdef SK_AUDIT
+#define MEET_STEP()                                                                                      \
+    do {                                                                                                 \
+        if (++c->meet_steps > c->meet_bound) sk_die("d2: meeting passed its iteration bound (a fault)"); \
+    } while (0)
+#else
+#define MEET_STEP() ((void)0)
+#endif
 
 #define OVF(step) return sk_overflow_at(&c->ovf, &c->ctx, (step))
 
@@ -74,6 +133,7 @@ void sk_d2_destroy(sk_d2 *c) {
     free(c->num);
     free(c->nk);
     free(c->den);
+    free(c->u);
     sk_lookup_free(&c->look);
     free(c->base);
     for (uint32_t k = 0; k < c->D; k++) free(c->rows[k].e);
@@ -81,6 +141,8 @@ void sk_d2_destroy(sk_d2 *c) {
     free(c->R.e);
     free(c->L);
     free(c->eq);
+    free(c->Q[0]);
+    free(c->Q[1]);
 #ifdef SK_AUDIT
     free(c->chg_piece);
     free(c->piece_dirty);
@@ -150,18 +212,19 @@ static inline uint32_t row_find(const d2_row *r, uint32_t q) {
     return lo;
 }
 
-/* Add k to nu_q in a sorted row, inserting (q, k) if q is absent. */
-static void row_add(d2_row *r, uint32_t q, uint32_t k) {
+/* Add k to nu_q in a sorted row, inserting (q, k) if q is absent.  True if q was absent. */
+static bool row_add(d2_row *r, uint32_t q, uint32_t k) {
     uint32_t pos = row_find(r, q);
     if (pos < r->len && r->e[pos].q == q) {
         r->e[pos].nu += k;
-        return;
+        return false;
     }
     row_reserve(r, 1);
     memmove(r->e + pos + 1, r->e + pos, sizeof(d2_ent) * (r->len - pos));
     r->e[pos].q = q;
     r->e[pos].nu = k;
     r->len++;
+    return true;
 }
 
 /* q^n by repeated multiplication (spec §8.4 item 1), n >= 1: n - 1 multiplications.  True on overflow. */
@@ -173,10 +236,20 @@ static bool power_of(sk_int q, uint32_t n, sk_int *out) {
     return false;
 }
 
+/* a*b for two remainders whose product divides the result's denominator e, already computed and checked, so it
+ * cannot overflow (spec §8.3).  A factor 1 is not multiplied (no multiplication counted). */
+static inline sk_int umul(sk_int a, sk_int b) {
+    if (a == 1) return b;
+    if (b == 1) return a;
+    sk_int r;
+    if (sk_mul(a, b, &r)) sk_die("d2: a remainder product overflows (cannot happen: it divides a denominator)");
+    return r;
+}
+
 /* ----------------------------------------------------------------------------------------- refinement (§8.2) */
 
-/* The coprime base of {a, b} by pair refinement (spec §8.2 item 1): gcds and exact divisions only.  A worklist:
- * each pending number is tested against the numbers already known pairwise coprime (DECISIONS.md).  Every number
+/* The coprime base of {a, b} by pair refinement (spec §8.2): gcds and exact divisions only.  A worklist: each
+ * pending number is tested against the numbers already known pairwise coprime (DECISIONS.md).  Every number
  * divides q, and their product only falls, so there are at most 63 of them. */
 #define SK_PMAX 128
 static uint32_t pair_refine(sk_int a, sk_int b, sk_int *out) {
@@ -209,7 +282,24 @@ static uint32_t pair_refine(sk_int a, sk_int b, sk_int *out) {
     return nd;
 }
 
-/* split(q, g) (spec §8.2): q = piece p, 1 < g < q.  Rewrites every row holding p, and the new row R. */
+/* Queue s of the meeting gets piece p, unless it already holds it, done or not (index work: a linear search,
+ * since the queues are short). */
+static void q_push(sk_d2 *c, int s, uint32_t p) {
+    for (uint32_t t = 0; t < c->nQ[s]; t++)
+        if (c->Q[s][t] == p) return;
+    SK_RESERVE(c->Q[s], c->nQ[s], c->capQ[s], 16);
+    c->Q[s][c->nQ[s]++] = p;
+}
+
+static bool q_has(const sk_d2 *c, int s, uint32_t p) {
+    for (uint32_t t = 0; t < c->nQ[s]; t++)
+        if (c->Q[s][t] == p) return true;
+    return false;
+}
+
+/* split(q, g) (spec §8.2): q = piece p, 1 < g < q.  Rewrites every row holding p.  Splits happen only in meetings,
+ * before the operation builds its result's row R (R is empty then), so R is not visited (DEC-48).  In a meeting, a
+ * queue that holds p (done or not) also gets the new pieces. */
 static void split(sk_d2 *c, uint32_t p, sk_int g) {
     sk_int q = c->base[p];
     sk_int P[SK_PMAX];
@@ -247,10 +337,10 @@ static void split(sk_d2 *c, uint32_t p, sk_int g) {
     }
     CNT(ref_splits, 1);
     CNT(ref_pieces_created, nP - 1);
-    /* every row, then the new row */
-    CNT(scan_split_rows, (uint64_t)c->D + 1);
-    for (uint32_t k = 0; k <= c->D; k++) {
-        d2_row *r = k < c->D ? &c->rows[k] : &c->R;
+    /* every row */
+    CNT(scan_split_rows, c->D);
+    for (uint32_t k = 0; k < c->D; k++) {
+        d2_row *r = &c->rows[k];
         uint32_t pos = row_find(r, p);
         if (pos >= r->len || r->e[pos].q != p) continue;
         uint32_t t = r->e[pos].nu;
@@ -262,31 +352,69 @@ static void split(sk_d2 *c, uint32_t p, sk_int g) {
             r->len++;
         }
         CNT(ref_entries_rewritten, nP);
-        if (k < c->D) NOTE_ROW(k);
+        NOTE_ROW(k);
+    }
+    for (int s = 0; s < 2; s++)
+        if (q_has(c, s, p))
+            for (uint32_t t = first; t < c->C; t++) q_push(c, s, t);
+}
+
+/* reduce(s, p) (spec §8.2): refine the remainder of the meeting's side s against piece p.  Every power of p is
+ * pulled out of u into the row; where u holds only part of p, p is split, and the test stays at index p.  A piece
+ * the row did not hold before goes on the other side's queue: the extra refinement. */
+static void reduce(sk_d2 *c, int s, uint32_t p) {
+    uint32_t k = c->mk[s];
+    while (c->u[k] != 1) {
+        MEET_STEP();
+        CNT(scan_remainder_pieces, 1);
+        sk_int q = c->base[p];
+        sk_int g = sk_gcd(c->u[k], q);
+        if (g == 1) return;
+        if (g == q) {
+            if (FAULT_STUCK) continue; /* injected fault: u is not divided, and the loop cannot end */
+            uint32_t n = 0;
+            for (;;) { /* divide u by q as many times as it goes, counting every attempt (counting rule 2) */
+                sk_int rem, quo = sk_divrem(c->u[k], q, &rem);
+                if (rem != 0) break;
+                c->u[k] = quo;
+                n++;
+            }
+            CNT(ref_remainder_pulls, 1);
+            if (row_add(&c->rows[k], p, n) && !SKIP_EXTRA) {
+                CNT(ev_extra_queued, 1);
+                q_push(c, 1 - s, p);
+            }
+            NOTE_ROW(k);
+        } else {
+            split(c, p, g); /* the first new piece takes index p; the test stays at p */
+        }
     }
 }
 
-/* refine(R, u) (spec §8.2): builds the new row in c->R from the known row already there and u. */
-static void refine(sk_d2 *c, sk_int u) {
-    sk_int rest = u;
+/* absorb(g) (spec §8.2): g = gcd(u_i, u_j) > 1.  One scan of the base, as the former entry scan: g's factors in
+ * existing pieces are divided out (staying at a piece after dividing by it or splitting it), and what remains, if
+ * not 1, is a new piece.  Every piece of g goes on both queues. */
+static void absorb(sk_d2 *c, sk_int g) {
+    sk_int rest = g;
     uint32_t p = 0;
+    CNT(ev_absorbs, 1);
     while (rest != 1 && p < c->C) {
+        MEET_STEP();
         CNT(scan_refine_pieces, 1);
         sk_int q = c->base[p];
-        sk_int g = sk_gcd(rest, q);
-        if (g == 1) {
+        sk_int h = sk_gcd(rest, q);
+        if (h == 1) {
             p++;
-        } else if (g == q) {
-            uint32_t k = 0;
-            for (;;) { /* divide rest by q as many times as it goes, counting every attempt (counting rule 2) */
+        } else if (h == q) {
+            for (;;) { /* counting every attempt (counting rule 2) */
                 sk_int rem, quo = sk_divrem(rest, q, &rem);
                 if (rem != 0) break;
                 rest = quo;
-                k++;
             }
-            row_add(&c->R, p, k);
+            q_push(c, 0, p);
+            q_push(c, 1, p);
         } else {
-            split(c, p, g); /* the first new piece takes index p; the scan stays at p */
+            split(c, p, h); /* the scan stays at p */
         }
     }
     if (rest != 1) {
@@ -294,9 +422,50 @@ static void refine(sk_d2 *c, sk_int u) {
         SK_RESERVE(c->base, c->C, c->Ccap, 16);
         c->base[c->C] = rest;
         NOTE_PIECE(c->C);
-        row_append(&c->R, c->C, 1); /* the largest index: the row stays sorted */
+        q_push(c, 0, c->C);
+        q_push(c, 1, c->C);
         c->C++;
         CNT(ref_pieces_created, 1);
+    }
+}
+
+/* meet(i, j), i != j (spec §8.2): establishes M1, M2 and M3 (top of the file). */
+static void meet(sk_d2 *c, uint32_t i, uint32_t j) {
+    CNT(ev_meetings, 1);
+    c->mk[0] = i;
+    c->mk[1] = j;
+    c->nQ[0] = c->nQ[1] = c->hQ[0] = c->hQ[1] = 0;
+    if (c->u[i] == 1 && c->u[j] == 1) return;
+#ifdef SK_AUDIT
+    {
+        uint64_t B = (uint64_t)sk_bits_u_raw((uint64_t)c->u[i]) + (uint64_t)sk_bits_u_raw((uint64_t)c->u[j]);
+        uint64_t K = (uint64_t)c->C + c->rows[i].len + c->rows[j].len + (B + 1) * (SK_WIDTH + 1);
+        c->meet_steps = 0;
+        c->meet_bound = 8 * (B + 2) * K;
+    }
+#endif
+    /* queue 0 (for u_i): row j's pieces; queue 1 (for u_j): row i's.  The pieces of a row are distinct. */
+    for (int s = 0; s < 2; s++) {
+        const d2_row *r = &c->rows[c->mk[1 - s]];
+        if (c->capQ[s] < r->len) {
+            c->Q[s] = sk_xrealloc(c->Q[s], sizeof(uint32_t) * r->len);
+            c->capQ[s] = r->len;
+        }
+        for (uint32_t t = 0; t < r->len; t++) c->Q[s][t] = r->e[t].q;
+        c->nQ[s] = r->len;
+    }
+    for (;;) {
+        MEET_STEP();
+        while (c->hQ[0] < c->nQ[0] || c->hQ[1] < c->nQ[1]) {
+            MEET_STEP();
+            int s = c->hQ[0] < c->nQ[0] ? 0 : 1;
+            uint32_t p = c->Q[s][c->hQ[s]++];
+            if (c->u[c->mk[s]] != 1) reduce(c, s, p);
+        }
+        if (c->u[i] == 1 || c->u[j] == 1) break;
+        sk_int g = sk_gcd(c->u[i], c->u[j]);
+        if (g == 1) break;
+        absorb(c, g);
     }
 }
 
@@ -312,9 +481,9 @@ static int64_t power_test(sk_int h, sk_int q) {
     return k;
 }
 
-/* finish(R, L) (spec §8.3): completes R in c->R from L and returns u.  True on overflow. */
-static bool finish(sk_d2 *c, sk_int *u_out) {
-    sk_int u = 1;
+/* finish(R, L) (spec §8.3): completes R in c->R from L; each leftover multiplies *u.  True on overflow. */
+static bool finish(sk_d2 *c, sk_int *u_io) {
+    sk_int u = *u_io;
     for (uint32_t t = 0; t < c->nL; t++) {
         const d2_l *l = &c->L[t];
         int64_t k = power_test(l->h, c->base[l->q]);
@@ -324,13 +493,13 @@ static bool finish(sk_d2 *c, sk_int *u_out) {
             return true;
         }
     }
-    *u_out = u;
+    *u_io = u;
     return false;
 }
 
 /* ----------------------------------------------------------------------------------------- store */
 
-/* store(n over e) (spec §5, §8.3), with R in c->R and either L in c->L (has_L) or u. */
+/* store(n over e) (spec §5, §8.3), with R in c->R, the remainder u, and L in c->L if has_L.  No refinement. */
 static sk_status store(sk_d2 *c, sk_int n, sk_int e, bool has_L, sk_int u, sk_handle *out) {
     CNT_SET(c->cnt, c->ctx.op, SK_STORE);
     if (n == 0) { /* spec §5: 0/1, with R and L empty and u = 1 */
@@ -347,13 +516,17 @@ static sk_status store(sk_d2 *c, sk_int n, sk_int e, bool has_L, sk_int u, sk_ha
          * append so that an overflow in it (which the arithmetic rules out: u divides e) stores nothing. */
         if (has_L && finish(c, &u)) OVF("finish: u*(p/h)");
         sk_check_limit(c->D, "denominators");
-        SK_RESERVE(c->den, c->D, c->Dcap, 16);
+        if (c->D >= c->Dcap) {
+            c->Dcap = c->Dcap ? 2 * c->Dcap : 16;
+            c->den = sk_xrealloc(c->den, sizeof(sk_int) * c->Dcap);
+            c->u = sk_xrealloc(c->u, sizeof(sk_int) * c->Dcap);
+        }
         k = c->D;
         c->den[k] = e;
+        c->u[k] = u;
         sk_lookup_insert(&c->look, c->den, k, empty);
         if (u == 1) CNT(ev_rows_u1, 1);
-        else CNT(ev_rows_refined, 1);
-        refine(c, u); /* visits rows 0..D-1 and the new row R in a split */
+        else CNT(ev_rows_unrefined, 1);
         SK_RESERVE(c->rows, c->D, c->rows_cap, 16);
         d2_row *r = &c->rows[k];
         r->len = r->cap = c->R.len;
@@ -439,7 +612,7 @@ sk_status sk_d2_enter(sk_d2 *c, sk_int m, sk_int d, sk_handle *out) {
     }
     sk_int g = sk_gcd(m, d);
     sk_int e = sk_divexact(d, g);
-    return store(c, sk_divexact(m, g), e, false, e, out); /* R empty, u = e */
+    return store(c, sk_divexact(m, g), e, false, e, out); /* R empty, u = e: no gcd against the base */
 }
 
 /* spec §8.4 add; subtraction is addition of the negated second operand */
@@ -457,7 +630,8 @@ static sk_status addsub(sk_d2 *c, sk_phase op, sk_handle x, sk_handle y, sk_hand
         sk_int u = sk_divexact(c->den[i], h);
         return store(c, sk_divexact(t, h), u, false, u, out); /* R empty, u = d_i/h */
     }
-    sk_int rx = 1, ry = 1, pw;
+    meet(c, i, j);
+    sk_int rx = c->u[i], ry = c->u[j], pw;
     walk w = {&c->rows[i], &c->rows[j], 0, 0};
     uint32_t q, va, vb;
     while (walk_next(&w, &q, &va, &vb)) {
@@ -493,7 +667,8 @@ static sk_status addsub(sk_d2 *c, sk_phase op, sk_handle x, sk_handle y, sk_hand
         }
         L_add(c, c->eq[k].q, c->eq[k].a, c->eq[k].p, h);
     }
-    return store(c, t, e, true, 0, out);
+    /* u_i u_j divides e: each is coprime to the other denominator and to the other remainder (spec §8.7) */
+    return store(c, t, e, true, umul(c->u[i], c->u[j]), out);
 }
 
 sk_status sk_d2_add(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) { return addsub(c, SK_PH_ADD, x, y, out); }
@@ -511,7 +686,7 @@ sk_status sk_d2_mul(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) {
         for (uint32_t k = 0; k < ri->len; k++) row_append(&c->R, ri->e[k].q, 2 * ri->e[k].nu);
         if (sk_mul(mx, my, &n)) OVF("multiply: m_x*m_y");
         if (sk_mul(c->den[i], c->den[i], &e)) OVF("multiply: d_i*d_i");
-        return store(c, n, e, false, 1, out); /* R = row i doubled, u = 1 */
+        return store(c, n, e, false, umul(c->u[i], c->u[i]), out); /* R = row i doubled, u = u_i^2 */
     }
     sk_int g1 = 1, g2 = 1, p;
     walk w = {&c->rows[i], &c->rows[j], 0, 0};
@@ -538,9 +713,27 @@ sk_status sk_d2_mul(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) {
         if (sk_mul(*G, h, G)) OVF("multiply: G*h");
         L_add(c, q, nn, p, h);
     }
+    /* then the remainders, with the numerators as already divided: gcd(m_y, u_i) and gcd(m_x, u_j) */
+    sk_int ui = c->u[i], uj = c->u[j];
+    if (ui != 1) {
+        sk_int h = sk_gcd(my, ui);
+        if (h != 1) {
+            my = sk_divexact(my, h);
+            ui = sk_divexact(ui, h);
+            if (sk_mul(g2, h, &g2)) OVF("multiply: G*h");
+        }
+    }
+    if (uj != 1) {
+        sk_int h = sk_gcd(mx, uj);
+        if (h != 1) {
+            mx = sk_divexact(mx, h);
+            uj = sk_divexact(uj, h);
+            if (sk_mul(g1, h, &g1)) OVF("multiply: G*h");
+        }
+    }
     if (sk_mul(sk_divexact(c->den[i], g2), sk_divexact(c->den[j], g1), &e)) OVF("multiply: e = (d_i/g_2)*(d_j/g_1)");
     if (sk_mul(mx, my, &n)) OVF("multiply: m_x*m_y");
-    return store(c, n, e, true, 0, out);
+    return store(c, n, e, true, umul(ui, uj), out);
 }
 
 sk_status sk_d2_div(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) {
@@ -561,7 +754,8 @@ sk_status sk_d2_div(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) {
         sk_int u = sk_divexact(t, g1);
         return store(c, n, u, false, u, out); /* R empty, u = t/g_1 = e */
     }
-    sk_int rx = 1, ry = 1, pw;
+    meet(c, i, j);
+    sk_int rx = c->u[i], ry = c->u[j], pw;
     walk w = {&c->rows[i], &c->rows[j], 0, 0};
     uint32_t q, va, vb;
     while (walk_next(&w, &q, &va, &vb)) {
@@ -582,7 +776,7 @@ sk_status sk_d2_div(sk_d2 *c, sk_handle x, sk_handle y, sk_handle *out) {
     sk_int u = sk_divexact(t, g1);
     if (sk_mul(a, ry, &n)) OVF("divide: s*(m_x/g_1)*r_y");
     if (sk_mul(rx, u, &e)) OVF("divide: r_x*(t/g_1)");
-    return store(c, n, e, false, u, out); /* R = valuations of d_i/g_2, u = t/g_1 */
+    return store(c, n, e, false, umul(c->u[i], u), out); /* R = the pieces of d_i/g_2; u = u_i * t/g_1 */
 }
 
 sk_status sk_d2_read(const sk_d2 *c, sk_handle x, sk_int *m, sk_int *d) {
@@ -608,6 +802,7 @@ void sk_d2_memory(const sk_d2 *c, sk_memory *r) {
     }
     sk_memory_add(r, "exponent rows", used * sizeof(d2_ent) + (uint64_t)c->D * sizeof(d2_row),
                   alloc * sizeof(d2_ent) + (uint64_t)c->rows_cap * sizeof(d2_row));
+    sk_memory_add(r, "remainders", (uint64_t)c->D * w, (uint64_t)c->Dcap * w);
     sk_memory_finish(r, c->N);
 }
 
@@ -644,21 +839,22 @@ static const char *check_values(const sk_d2 *c, uint32_t from) {
     return NULL;
 }
 
+/* row k: sorted, every nu >= 1, every index below C, u >= 1, and (known part) * u = d_k */
 static const char *check_row(const sk_d2 *c, uint32_t k) {
     const d2_row *r = &c->rows[k];
-    sk_int prod = 1;
+    if (c->u[k] < 1) return "row: remainder below 1";
+    sk_int prod = c->u[k];
     for (uint32_t t = 0; t < r->len; t++) {
         if (r->e[t].q >= c->C) return "row: piece index not below C";
         if (t > 0 && r->e[t].q <= r->e[t - 1].q) return "row: not sorted by piece index";
         if (r->e[t].nu < 1) return "row: a valuation below 1";
         for (uint32_t s = 0; s < r->e[t].nu; s++)
-            if (sk_mul_raw(prod, c->base[r->e[t].q], &prod)) return "row: product of q^nu overflows";
+            if (sk_mul_raw(prod, c->base[r->e[t].q], &prod)) return "row: product of q^nu times u overflows";
     }
-    if (prod != c->den[k]) return "row: product of q^nu is not the denominator";
+    if (prod != c->den[k]) return "row: product of q^nu times u is not the denominator";
     return NULL;
 }
 
-/* piece p: greater than 1 and coprime to every other piece (C gcds) */
 static const char *check_piece(const sk_d2 *c, uint32_t p) {
     if (c->base[p] <= 1) return "base: a piece is not greater than 1";
     for (uint32_t s = 0; s < c->C; s++)
@@ -673,12 +869,13 @@ static const char *check_changed_pieces(const sk_d2 *c) {
     return NULL;
 }
 
+/* The full audit.  capped: the scheduled audit, which above SK_LARGE_BASE pieces checks pairwise coprimality
+ * only for the pieces changed since the last audit (spec §13.3 item 2). */
 static const char *full(const sk_d2 *c, bool capped) {
     const char *f;
     if ((f = check_values(c, 0))) return f;
     if ((f = sk_lookup_audit_full(&c->look, c->den, c->D))) return f;
     if (capped && c->C > SK_LARGE_BASE) {
-        /* large base: pairwise coprimality incrementally only; every piece still greater than 1 */
         for (uint32_t p = 0; p < c->C; p++)
             if (c->base[p] <= 1) return "base: a piece is not greater than 1";
         if ((f = check_changed_pieces(c))) return f;
@@ -770,6 +967,7 @@ uint32_t sk_d2_t_D(const sk_d2 *c) { return c->D; }
 uint32_t sk_d2_t_C(const sk_d2 *c) { return c->C; }
 sk_int sk_d2_t_piece(const sk_d2 *c, uint32_t p) { return c->base[p]; }
 sk_int sk_d2_t_den(const sk_d2 *c, uint32_t k) { return c->den[k]; }
+sk_int sk_d2_t_u(const sk_d2 *c, uint32_t k) { return c->u[k]; }
 uint32_t sk_d2_t_den_index(const sk_d2 *c, sk_handle x) { return c->nk[x]; }
 uint32_t sk_d2_t_row_len(const sk_d2 *c, uint32_t k) { return c->rows[k].len; }
 void sk_d2_t_row_entry(const sk_d2 *c, uint32_t k, uint32_t t, uint32_t *q, uint32_t *nu) {
@@ -780,6 +978,10 @@ void sk_d2_t_row_entry(const sk_d2 *c, uint32_t k, uint32_t t, uint32_t *q, uint
 /* test build only: break an invariant, so the tests can check that the audits find it */
 void sk_d2_t_corrupt_nu(sk_d2 *c, uint32_t k, uint32_t t, uint32_t nu) {
     c->rows[k].e[t].nu = nu;
+    NOTE_ROW(k);
+}
+void sk_d2_t_corrupt_u(sk_d2 *c, uint32_t k, sk_int u) {
+    c->u[k] = u;
     NOTE_ROW(k);
 }
 void sk_d2_t_corrupt_piece(sk_d2 *c, uint32_t p, sk_int v) {

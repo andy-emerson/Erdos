@@ -104,9 +104,43 @@ def parse_reps(lines, kind=("calib", "rep")):
     return out
 
 
+def parse_rep_cpu(lines, kind=("calib", "rep")):
+    """[(cpu_ns, span_ns) or None] from calib or rep lines, in the order of parse_reps: the measured process's own CPU
+    time (CLOCK_PROCESS_CPUTIME_ID) and the CLOCK_MONOTONIC time over the same whole rep (rule-r2 item 4, revision of
+    Oct 29, 2026: reported only). None for a line without them."""
+    out = []
+    for l in lines:
+        t = l.split()
+        if t and t[0] in kind:
+            kv = dict(x.split("=", 1) for x in t[6:] if "=" in x)
+            out.append((int(kv["cpu"]), int(kv["span"])) if "cpu" in kv and "span" in kv else None)
+    return out
+
+
 def host_allowance(rate, seconds):
-    """rule-r2 item 5.2: over a block of L seconds a host process may use at most 5 + ceil(2 R_h L) ticks."""
+    """rule-r2 item 5.2 (revision of Oct 29, 2026, approved by the author): over a block of L seconds a host process may
+    use at most 5 + ceil(2 R_h L) ticks, with R_h its rate from the pilot (host_rates)."""
     return C.HOST_BASE_TICKS + math.ceil(C.HOST_FACTOR * rate * seconds)
+
+
+def host_rates(checks):
+    """rule-r2 item 5.1: from the pilot's disturbance checks, ({pid: measured}, {pid: R_h}). measured is each host's
+    highest rate over the blocks; R_h is that rate, but at least 1 tick over the longest pilot block, the finest rate
+    the pilot can resolve (a host with no tick in the pilot is not taken to use none). The ceiling applies to the
+    measured rate."""
+    measured = {}
+    for d in checks:
+        for pid, h in d["hosts"].items():
+            measured[pid] = max(measured.get(pid, 0.0), h["rate"])
+    longest = max((d["seconds"] for d in checks if d.get("seconds")), default=None)
+    floor = C.HOST_RATE_MIN_TICKS / longest if longest else 0.0
+    return measured, {pid: max(r, floor) for pid, r in measured.items()}
+
+
+def other_limit(seconds):
+    """rule-r2 item 5: the ticks a process other than the runner, a host or a new one may use over a block of L seconds
+    before the block is disturbed: 5 + ceil(1 x L) (a floor plus a rate of 1 tick per second)."""
+    return C.DIST_OTHER_TICKS + math.ceil(C.DIST_OTHER_RATE * seconds)
 
 
 def pilot_projection(elapsed_s, p_s, p_prof_s):

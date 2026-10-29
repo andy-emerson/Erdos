@@ -18,11 +18,16 @@ RESULTS = HERE / "results-r2"                        # round 2 writes only here 
 
 # The fixed rule (rule-r2.md as approved by the author, Oct 29, 2026). The harness refuses a measured run unless the
 # file on disk has exactly this sha256, and while it holds the word "PROPOSED" (rule-r2.md, "Fixing the rule").
-RULE_SHA256 = "44baa5f1db601571d538116d37b1b8859fbf0eb99fe149baaa9ba655879e5f66"
+# Re-pinned for the revision of Oct 29, 2026 (the disturbance check), with its numbers approved by the author on Oct 29,
+# 2026 and the independent review's minor fixes (was 44baa5f1..., the rule fixed at ba3f647; then 698ee612..., the
+# revision while its numbers were PROPOSED).
+RULE_SHA256 = "9b47ea0ffdbbe719f70e5ee3356db829393864f8158cf293142e68d9975e5b1d"
 PROPOSAL_MARK = "PROPOSED"
 
-# The official data of round 1 (rule-r2, Harness: the official data). Round 2 never writes or deletes there; the sha256
-# of every file is checked before and after the run.
+# The official data (rule-r2, Harness: the official data): round 1's, and the record of the stopped first round-2 run
+# (results-r2/ as committed at 193ae57, copied unchanged). Round 2 never writes or deletes there; the sha256 of every
+# file is checked before and after the run.
+RESULTS_STOPPED = HERE / "results-r2-stopped-193ae57"
 PROTECTED = {
     HERE / "results": {
         "counters.csv": "690e2105b8cdfd99c0b425a8256997d7c62d270d53bf702258f9d31459defb5a",
@@ -47,6 +52,14 @@ PROTECTED = {
         "state.json": "707e3327f4e279d436e6229d45a20039843c29c98a6b708894e8c885a7b201e3",
         "verdicts.csv": "25c12c4ee4cf62e6ff25293511de9782a45d1e27cac678f4893a1cdda77a4bcb",
     },
+    RESULTS_STOPPED: {
+        "counters.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "results.md": "9fc7a29a3b612041aedbe0e4e1ac90a9f65519343869ba8e9830fd52e06ae94b",
+        "rounds.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.log": "9e1637593170b619a4fa2b662104dfd7380eb5413d710b430ddd0c5d9b6dbff8",
+        "state.json": "5185faa97d4ab4f31988ad0327748ba964d6f7d2a0562241a453795d3153ecb7",
+        "verdicts.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    },
 }
 # Round 1's workloads, pinned in its Q32 run's state.json (itself pinned above): round 2's must be byte-identical
 # (rule-r2, Workloads).
@@ -64,12 +77,14 @@ COUNT_REPEAT_JOBS = (3, 10)                           # item 2
 HARD_STOP_S = 30 * 60                                 # the author's: 30 minutes
 OPERATOR_TIMEOUT_MIN = 35                             # item 5: the operator's background command, at least 35 min
 TIMED_CORE, HARNESS_CORE = 1, 0                       # item 4
-# item 5: the disturbance check
-DIST_OTHER_TICKS = 5                                  # any other process: more than 5 ticks over the block
+# item 5: the disturbance check (revision of Oct 29, 2026: new processes by process (TGID), not by thread; the fork
+# counter is reported only; the host allowance and ceiling approved by the author, Oct 29, 2026)
+DIST_OTHER_TICKS = 5                                  # any other process: more than 5 + ceil(1 x L) ticks over a block
+DIST_OTHER_RATE = 1.0                                 #   of L seconds (a floor plus a rate: 1 tick/s, 1% of one core)
 DIST_NEW_TICKS = 1                                    # a new process with at least 1 tick
-DIST_FORKS = 0                                        # more than 0 unexplained forks
-HOST_BASE_TICKS, HOST_FACTOR = 5, 2                   # host allowance: 5 + ceil(2 R_h L)
-HOST_RATE_MAX = 1.0                                   # ticks per second: a busy host stops the run after the pilot
+HOST_BASE_TICKS, HOST_FACTOR = 5, 2                   # host allowance 5 + ceil(2 R_h L)
+HOST_RATE_MIN_TICKS = 1                               # R_h: at least 1 tick over the longest pilot block
+HOST_RATE_CEILING = 4.0                               # ticks per second; a host measured above it stops the run
 RUNNER_TICKS_MAX = 2                                  # the runner's own ticks per block: more is a harness bug
 # item 6: the idle machine
 IDLE_SAMPLE_S = 2.0
@@ -176,7 +191,7 @@ def archive_check():
 
 
 def protected(path):
-    """True if path is, or is inside, a folder of round 1's official data."""
+    """True if path is, or is inside, a folder of the official data (round 1's, or the stopped round-2 run's)."""
     p = Path(path).resolve()
     return any(p == q.resolve() or q.resolve() in p.parents for q in PROTECTED)
 

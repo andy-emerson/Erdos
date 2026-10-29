@@ -9,7 +9,7 @@ as a check, not a verdict (G(Q32)/G(TC), exactly 1, with G per operation); the p
 slowdown of every invocation, batch times per operation, each phase's share raw and corrected and its estimated
 nanoseconds per operation, per job phase and per case, and Q32 - TC per phase, indicative only); the strata, with no
 overall winner; and the reported items of item 13. A run that stopped (the pilot, a gate, the hard stop) is reported
-with what it has and no verdict. Never writes into round 1's official data.
+with what it has and no verdict. Never writes into the official data (round 1's, and the stopped round-2 run's).
 """
 import csv
 import io
@@ -295,7 +295,7 @@ def profile_summary(st, job, row):
 def report(outdir):
     outdir = Path(outdir)
     if C.protected(outdir):
-        raise SystemExit(f"{outdir} holds round 1's official data: no report is written there")
+        raise SystemExit(f"{outdir} holds official data (round 1's, or the stopped round-2 run's): no report is written there")
     st = json.loads((outdir / "state.json").read_text())
     d = Data(st)
     head = (outdir / "results.md").read_text() if (outdir / "results.md").exists() else ""
@@ -320,7 +320,8 @@ def report(outdir):
     (outdir / "results.md").write_text("\n".join(md) + "\n")
     write_csv(outdir / "verdicts.csv", rows_csv)
     write_csv(outdir / "rounds.csv", [{k: r.get(k) for k in ("job", "row", "round", "pos", "r", "reps", "total", "entry",
-                                                              "ops", "read", "overcap")}
+                                                              "ops", "read", "overcap", "cpu_ns", "span_ns",
+                                                              "cpu_share")}
                                       for r in st.get("records", []) if r.get("role") == "round"])
     write_csv(outdir / "counters.csv", counter_rows(st))
 
@@ -360,7 +361,7 @@ def run_section(st):
          ("**stopped**: " + st["run_stopped"]["reason"] if st.get("run_stopped") else "unfinished"))
     md += [f"- Started {st.get('started')}; {status}.",
            f"- Run time {st.get('elapsed_saved', 0) / 60:.1f} minutes (hard stop {C.HARD_STOP_S // 60}).",
-           f"- Rule sha256 `{st.get('rule_sha256')}`; round 1's official data after the run: "
+           f"- Rule sha256 `{st.get('rule_sha256')}`; the official data after the run: "
            f"{st.get('archive_after', NA)}.",
            f"- Host processes (the runner's ancestors): " + ", ".join(f"{n}[{p}]" for p, n in st.get("hosts", {}).items())]
     for s in st.get("code_sessions", []):
@@ -557,20 +558,57 @@ def reported_sections(d, st, jobs):
                   f"{fmt(bytes_used(d, job, 'TC', 'end'), 2)} | {fmt(bytes_heap(d, job, 'Q32', 'end'), 2)} | "
                   f"{fmt(bytes_heap(d, job, 'TC', 'end'), 2)} |")
     md += ["", "### The idle and disturbance checks", "",
-           "| job | block | attempt | seconds | disturbed | runner ticks | spawns | forks | unexplained | host ticks |",
-           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+           "Processes are told apart by process (thread-group id), not by thread; the fork counter counts threads too "
+           "and is reported only (rule-r2 item 5, revision of Oct 29, 2026). Host ticks are given as ticks / allowance "
+           "(none in the pilot) and threads before -> after. Other processes may use 5 + ceil(1 x L) ticks over a block "
+           "of L seconds (the limit column). Credited: the ticks, before the block, of children that existed at its "
+           "start and were reaped during it, taken off their parent's rise.", "",
+           "| job | block | attempt | seconds | disturbed | runner ticks | spawns | forks (reported) | forks less "
+           "spawns (reported) | new processes under 1 tick (reported) | other limit | credited | host ticks |",
+           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for x in st.get("disturbance_checks", []):
-        hosts = ", ".join(f"{h['name']} {h['ticks']}" for h in x["hosts"].values())
+        hosts = ", ".join(f"{h['name']} {h['ticks']}" + (f"/{h['allowance']}" if "allowance" in h else "") +
+                          (f" ({h['threads'][0]}->{h['threads'][1]} threads)" if "threads" in h else "")
+                          for h in x["hosts"].values())
+        unattr = x.get("forks_unattributed", x.get("unexplained_forks"))
+        quiet = ", ".join(f"{q['name']}[{q['pid']}]" for q in x.get("new_quiet", [])) or "none"
+        cred = ", ".join(f"{c['name']}[{p}] {c['ticks']}" for p, c in x.get("credited", {}).items()) or "none"
         md.append(f"| {x['job']} | {x['label']} {x['kind']} | {x['attempt']} | {x['seconds']} | "
                   f"{'yes: ' + '; '.join(x['reasons']) if x['disturbed'] else 'no'} | {x['runner_ticks']} | "
-                  f"{x['spawns']} | {x['forks_rise']} | {x['unexplained_forks']} | {hosts} |")
+                  f"{x['spawns']} | {x['forks_rise']} | {unattr} | {quiet} | {x.get('other_limit', C.DIST_OTHER_TICKS)} | "
+                  f"{cred} | {hosts} |")
+    md += cpu_time_section(st)
     md += ["", f"Idle checks: {len(st.get('idle_checks', []))} (" +
            f"{sum(1 for c in st.get('idle_checks', []) if not c['idle'])} busy). Host rates R_h: "
-           f"{st.get('host_rates', {})}.", "",
+           f"{st.get('host_rates', {})} (measured: {st.get('host_rates_measured', {})}; R_h is at least 1 tick over "
+           f"the longest pilot block).", "",
            "### Round 1, for reference only", "",
            "Round 1's verdicts per job are in [`../results-q64-b3b88b6/results.md`](../results-q64-b3b88b6/results.md) "
            "(Q64, official) and [`../results-q32/results.md`](../results-q32/results.md) (the Q32 run). Round 1 enters "
            "no round-2 measure.", ""]
+    return md
+
+
+def cpu_time_section(st):
+    """rule-r2 item 4 (revision of Oct 29, 2026): each timed rep's own process CPU time beside its time, reported only.
+    Per job and row, over the rounds' kept reps: the median and the lowest CPU share (CPU time over the CLOCK_MONOTONIC
+    span of the same whole rep), and the median CPU time per run beside the median total."""
+    recs = [r for r in st.get("records", []) if r.get("role") == "round" and r.get("cpu_share") is not None]
+    if not recs:
+        return []
+    md = ["", "### The measured process's own CPU time (reported only; enters no verdict)", "",
+          "CPU share: the timed process's CPU time (CLOCK_PROCESS_CPUTIME_ID) over the CLOCK_MONOTONIC time of the "
+          "same whole rep (create and destroy included), for the rep kept in each round. A share well below 1 means "
+          "the process lost its core during the rep.", "",
+          "| job | row | rounds | CPU share, median | CPU share, lowest | CPU ns per run, median | total ns per run, "
+          "median |", "| --- | --- | --- | --- | --- | --- | --- |"]
+    for job in sorted({r["job"] for r in recs}):
+        for row in C.ROWS:
+            x = [r for r in recs if r["job"] == job and r["row"] == row]
+            if x:
+                md.append(f"| {job} | {row} | {len(x)} | {median([r['cpu_share'] for r in x]):.4f} | "
+                          f"{min(r['cpu_share'] for r in x):.4f} | {median([r['cpu_ns'] for r in x]):.0f} | "
+                          f"{median([r['total'] for r in x]):.0f} |")
     return md
 
 

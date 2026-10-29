@@ -1,0 +1,993 @@
+{
+"started": "2026-10-29T13:12:24-05:00",
+"elapsed_before": 0.0,
+"toy": false,
+"jobs": [
+1,
+2,
+3,
+4,
+8,
+9,
+10,
+11
+],
+"rule_sha256": "44baa5f1db601571d538116d37b1b8859fbf0eb99fe149baaa9ba655879e5f66",
+"rule_text": "# Design 3, round 2: measurement rule\n\nOct 29, 2026 \u00b7 **Fixed: approved by the author, Oct 29, 2026.** Revised after the first independent review (spec v0.2 \u00a717): items 5, 7, 9 and 10 and the pilot. This rule measures the two textbook baselines of [spec v0.2](../v0.2.md): **Q32** and **TC**.\n\nThree points are the author's (Oct 29, 2026):\n- the two rows;\n- the 30-minute hard stop;\n- no background process of the runner's own during timed phases.\n\n**Every other threshold, count and limit is approved by the author, Oct 29, 2026**, and each is marked so where it is stated. Round 1's rule, [`rule.md`](rule.md), stays as archived, unchanged. Its text is pinned by hash in the round-1 results.\n\n**Fixing the rule.** The author approved the rule on Oct 29, 2026. Every threshold the draft proposed now carries the mark \"approved by the author, Oct 29, 2026\", and the rule is fixed. The harness writes it verbatim into its results file before the first trial. It refuses a measured run unless this file has that text (by sha256, pinned in the harness), **and while any mark of a proposal awaiting approval remains in it**. A change after the first trial is a revision, dated and explained at the top.\n\nResults are reported **per measure only, with no overall winner** (item 11). The CPU profile is **reported, not judged** (item 10).\n\n**Scope of the comparison.** Both rows follow one pseudocode and make the same known-answer skips. Their arithmetic is identical, call for call (spec v0.2 \u00a714.1 item 3). They differ only in structure:\n- Q32 compares indices, reads whole numbers through them, and looks up every new result's whole numbers;\n- TC compares 64-bit values and stores a pair.\n\nSo a time difference between the rows is the cost or the saving of the structure, at 64 bits. Neither row is optimized beyond the textbook (spec v0.2 \u00a70, decision 5).\n\n## Measurement rule\n\n1. **Rows.** Each job runs three rows:\n   - **Q32**: layer 1 with 16-bit index fields (spec v0.2 \u00a7\u00a75, 7);\n   - **Q32-null**: the same binary as Q32, run as a separate row, as the null control (item 8);\n   - **TC**: the textbook control (spec v0.2 \u00a7\u00a75, 8).\n\n   Retired, and not run: L1 and L1-opt at both widths, the 08 control `ctl`, fmpq, mpq and fz (spec v0.2 \u00a716).\n\n2. **Builds.**\n   - Q32, TC and the driver are built by one compiler with one set of flags (`gcc -std=c11 -O2`), with the 08 integer module unchanged (its sha256 recorded and checked before every run).\n   - Each row has the four builds of spec v0.2 \u00a76 item 4: timing, counting, test and profiling.\n   - The timing build carries no counters, audits, probes or allocation hooks.\n   - The **counting build** gives the counts and memory reports, from one complete run per row and job. In it, the driver reads both rows' counters after every call, untimed (spec v0.2 \u00a714.1 item 3).\n   - The **memory run** (item 7) gives the heap figures.\n   - Counts and memory figures are deterministic. On jobs 3 and 10, every counting and memory run is repeated, and the second MUST be identical (**approved by the author, Oct 29, 2026**: the two jobs of round 1's repeat set that fit Q32).\n   - Each counting or memory run has a limit of **10 minutes** (**approved by the author, Oct 29, 2026**). A run that does not finish gives n/a, with the reason.\n   - Q32-null shares Q32's gates, counting and memory runs.\n\n3. **Gates before the measured run.** In the test build, Q32 and TC MUST pass their unit tests (spec v0.2 \u00a714.3), with the capacity tests and both switches. On every job, each MUST pass the gate (v0.1 \u00a714.3 item 2) and the exact checks of spec v0.2 \u00a714.1:\n   - every stored value against `fractions`;\n   - Q32's $W$, after entry and at the end;\n   - every case count and every K counter against the generator's prediction;\n   - Q32's lookups against the prediction.\n\n   The counting runs MUST pass the call-for-call check: Q32's per-call arithmetic equal to TC's (spec v0.2 \u00a714.1 item 3). A row that fails a gate is fixed and the gate is re-run; no measured run starts until every gate passes. Gates are untimed. They MAY run two at a time, one per core, but **only before the timed steps begin**: the worker pool is shut down before step 6 (item 5).\n\n4. **Timing** (as round 1, rule.md item 4; every number **approved by the author, Oct 29, 2026**, as carried over):\n   - **Rounds.** Each job runs **12 interleaved rounds**. In each round, each row runs once as its own process, in an order rotated by one row per round. Each invocation reads the job's workload file, then runs its reps.\n   - **A rep** runs the whole job **r** times, each on a new, empty class destroyed untimed after its read-out. The rep's time is its total divided by $r$. **r** is the smallest power of two for which one rep lasts at least **50 ms**.\n   - **Reps per invocation.** If the calibration rep lasts at least **1 s**, the row runs 1 rep per invocation. Otherwise it runs **3 reps**: the first is discarded, and its time is the minimum of the other two.\n   - **Calibration**, per job, immediately before its round 1, in the timing build, on core 1: $r$ for Q32 and TC, by one invocation that times a rep at $r = 1, 2, 4, \\ldots$ until one lasts at least 50 ms. Q32-null uses Q32's $r$. There is no form calibration, since there are no library rows. Calibration times enter no measure.\n   - **The time** of a row in a round is its **total**: entry + operations + read-out of every stored value. The three parts are also reported. Creating and destroying a class and reading the workload are not timed.\n   - **Pinning.** Every timed invocation (calibration, rounds, the pilot's rounds and profiling run, the profile runs) runs pinned to **core 1**, one at a time, by the start of item 5.2. The runner is pinned to **core 0**. Jobs run in job order, each with its calibration and all 12 rounds before the next.\n   - **Time cap.** A timed rep that lasts more than **10 s** ends that row's timing on that job. The row is **over cap**, a reported finding.\n\n5. **Nothing of the runner's own runs during a timed phase** (the author's requirement). A **timed phase** is every timed invocation: calibration, rounds, the pilot's rounds and profiling run, and the profile runs. From the start of a job's timed block to its end, the only process that runs is the timed invocation. Everything else of the run is **blocked in the kernel**, not polling.\n\n   **The runner** (the harness process) MUST:\n   1. be single-threaded during timed phases: no worker pool, watchdog thread, timer thread or logger thread exists from step 6 on (the pool of steps 4\u20135 is shut down and joined first);\n   2. start each timed invocation by **`fork` and then `exec`**, with **no extra process** (no shell and no `taskset` wrapper). Between the two, the child:\n      1. pins itself to core 1 with `sched_setaffinity`, **before `exec`**, so the timed program never runs on another core;\n      2. opens its output file and redirects stdout and stderr **to that file** with `dup2`, not to a pipe, so no pipe wakes the runner;\n      3. calls `exec`, and if `exec` fails, exits at once with status 127.\n\n      In Python this is `os.fork`, then in the child `os.sched_setaffinity(0, {1})`, `os.open`, `os.dup2`, `os.execv` and `os._exit(127)`. `posix_spawn` (Python's `os.posix_spawn`) MUST NOT be used: it cannot set the affinity before `exec`. Nor may `subprocess`, which may use `posix_spawn` or `vfork` and opens an internal pipe;\n   3. wait for it with one **blocking `waitpid`**, with no timeout argument and no polling loop (Python's `Popen.wait(timeout=\u2026)` and `communicate(timeout=\u2026)` poll, and MUST NOT be used);\n   4. enforce the hard stop with a **kernel timer**: `setitimer(ITIMER_REAL)` set to the time left before the hard stop, whose `SIGALRM` handler kills the child and ends the run. The timer runs no code until it fires;\n   5. write no log line, state file or result between the start and the end of an invocation. It reads the child's output file and writes its records only after `waitpid` returns.\n\n   **The operator** (the person or agent that starts the run, and any tool or session acting for them) MUST:\n   1. start the runner **once**, with one command that returns only when the runner exits: a foreground command, or the session's background-command facility that notifies the operator when the command exits (for Claude Code, the Bash tool with `run_in_background`, with a timeout of at least **35 minutes**, **approved by the author, Oct 29, 2026**);\n   2. run **nothing else** on the machine until that exit notice: no polling or waiting loop, no `sleep`, `watch`, `tail -f`, file check, Monitor or until-loop, no other tool call, build, test or edit, and no detached (`nohup`, `&`) process. A parent shell that is blocked in `wait` is allowed; anything that wakes periodically is not.\n\n   **Check, after each timed block** (untimed, between blocks). Just before and just after the block, the runner takes two snapshots:\n   - **Ticks.** For every process, `utime + stime + cutime + cstime` from `/proc/<pid>/stat` (fields 14\u201317). `cutime + cstime` holds the ticks of the children a process has waited for, so a short-lived child that started and exited within the block is charged to its parent. For the runner itself only `utime + stime` counts, since its `cutime + cstime` are its timed children's.\n   - **Forks.** The fork counter, the `processes` line of `/proc/stat`, which counts every process and thread created since boot. The runner also counts its own spawns in the block (one per timed invocation). The block's **unexplained forks** are the rise of the counter, less the runner's spawns, less the new kernel threads present in the second snapshot. They catch a process that started and exited within the block whatever its parent, even one that was never waited for.\n\n   Excluded from the tick tests are the runner itself (reported separately), the block's timed children, kernel threads (children of `kthreadd`: reported, never flag) and the host processes (below), which have their own allowance. The block is **disturbed** if any of these holds:\n   - any other process used more than **5 clock ticks** (50 ms at 100 Hz) over the block (**approved by the author, Oct 29, 2026**);\n   - any new process, other than the runner's timed children, started during the block and used at least one tick (**approved by the author, Oct 29, 2026**);\n   - the block had more than **0 unexplained forks** (**approved by the author, Oct 29, 2026**);\n   - a host process used more than its allowance.\n\n   **Host processes.** An ancestor of the runner that cannot be stopped during the run is a **host process**: for example, the session process that hosts the operator's background command, and process 1. At start, the runner finds its ancestors by following `PPid` to process 1, and lists them in the results. A parent blocked in `wait` uses no ticks. The others are measured, not assumed:\n   1. **The pilot records the baseline** (Run plan step 3). For each host process $h$, it records the ticks (all four fields) over each of the pilot's timed blocks, as a rate in ticks per second. $R_h$ is the highest rate over those blocks. During the pilot, host ticks are recorded and do not flag; every other test applies.\n   2. **The allowance is then fixed**, before step 6, by this formula (**approved by the author, Oct 29, 2026**): over a block of $L$ seconds, host process $h$ may use at most $5 + \\lceil 2\\,R_h\\,L \\rceil$ ticks. The values of $R_h$ and of each block's allowance are written to the results.\n   3. **A busy host stops the run.** If any $R_h$ exceeds **1 tick per second** (1% of one core at 100 Hz; **approved by the author, Oct 29, 2026**), the run stops after the pilot and is reported to the author before any further step: the machine is not quiet enough to time on.\n\n   The ticks of the runner's ancestors are thus all counted, and an operator's polling loop would be caught: by its own ticks, by its children's ticks in its `cutime + cstime`, or by the forks of the commands it starts. A disturbed block is discarded, logged with the processes, their ticks and the forks, and **re-run once** (calibration and all rounds; the time counts on the run's clock). A second disturbance of the same job stops the run, which is reported to the author. The runner's own ticks per block are reported. More than **2 ticks** per block (**approved by the author, Oct 29, 2026**) is a harness bug.\n\n6. **Idle machine** (the round-1 check, with a changed criterion: **approved by the author, Oct 29, 2026**). Before each job's timed block (the pilot's, step 6's and step 7's), the runner takes a **2-second** sample (**approved by the author, Oct 29, 2026**). The machine is idle when both of these hold (**approved by the author, Oct 29, 2026**):\n   - no process outside the runner used more than **5%** of one core over the sample (the round-1 threshold);\n   - core 1 was busy for at most **2%** of the sample, from `/proc/stat`.\n\n   If the machine is busy, the runner re-checks every **15 s**, logging each check. After **10 minutes** it refuses to time and stops the run. The waits count on the run's clock.\n\n   *Why the criterion changes.* Round 1 required the 1-minute load average to be at most 0.5. Right after a timed block, the run's own child had raised that average, which then decays over about a minute. In the Q32 run, about 5 of its 10.9 minutes were spent waiting for the average to fall from the run's own work ([`../test/results-q32/run.log`](../test/results-q32/run.log), lines 6\u201362). The average is now recorded with every check but does not gate.\n\n7. **Measures**, per job, Q32 against TC:\n   - **Time.** **T(TC) / T(Q32)**, with T the median of the row's per-round totals. Above 1, Q32 is faster. Its 95% interval [lo, hi] runs from the 2.5th to the 97.5th percentile of the same ratio over **10,000 bootstrap resamples** of the rounds, using the same draw for both rows to keep the pairing (seed 20261029; **approved by the author, Oct 29, 2026**, as round 1). Entry, operations and read-out are each reported with their ratio and interval, without a verdict.\n   - **Bytes per rational, accounted (B_used).** **B_used(Q32) / B_used(TC)**, from the memory reports: Q32 $4 + (8W + 2S)/N$, TC 16 (spec v0.2 \u00a713.2).\n   - **Bytes per rational, heap (B_heap).** **B_heap(Q32) / B_heap(TC)**: the growth of the C library's in-use heap (`mallinfo2`: `uordblks + hblkhd`) from just before `create` to the measuring point, divided by $N$. `mallopt` sets `M_MMAP_THRESHOLD` and `M_TRIM_THRESHOLD` to $2^{30}$ in both rows (as round 1).\n   - Both memory figures come from one **memory run** per row and job (timing build), taken **after entry** and **at the end** (before read-out). Verdicts use the end figures, and the after-entry figures are reported beside them.\n   - **Gcd work: a check, not a verdict** (approved by the author, Oct 29, 2026). **G(Q32) / G(TC)**, with G the counting build's sum over every gcd of entry and operations of the bit length of the larger operand (08 rule item 6). *By the call-for-call check of item 3 it is exactly 1 on every job*: the rows make the same gcds, so it is equal by construction and cannot be won or lost. It is reported as a **check**, with the absolute G per operation beside it, and gets no verdict. A value other than 1 is a bug (item 12), not a finding.\n\n8. **Null control.** Q32 against Q32-null on the same job, by item 7. The job's **null spread** is max(1 \u2212 lo, hi \u2212 1, 0), and the time band's half-width is **h = max(5%, null spread)** (**approved by the author, Oct 29, 2026**, as round 1). TC has no null copy of its own. It is timed in the same rounds by the same driver, and its verdict uses the same h.\n\n9. **Verdict per job and measure, with its magnitude** (thresholds **approved by the author, Oct 29, 2026**, as round 1):\n\n   | Measure | Q32 wins | Q32 loses | Tie | Magnitude reported |\n   | --- | --- | --- | --- | --- |\n   | Time | lo > 1 + h | hi < 1 \u2212 h | otherwise | T(TC)/T(Q32), [lo, hi], h; entry, operations, read-out |\n   | Bytes, B_used (end) | ratio \u2264 0.90 | ratio \u2265 1.10 | otherwise | the ratio after entry and at the end; W, N, S, W/N |\n   | Bytes, B_heap (end) | ratio \u2264 0.90 | ratio \u2265 1.10 | otherwise | the ratio after entry and at the end |\n\n   Gcd work has no row here: it is a check (item 7), reported per job as **passed** (ratio exactly 1) with G(Q32)/G(TC) and G per operation.\n\n   - A memory ratio of at least **2.0** at the end raises the **severe-memory-loss flag** (**approved by the author, Oct 29, 2026**, as round 1), reported beside the verdict.\n   - A row over cap has the time verdict **over cap**.\n   - A measure that is n/a has no verdict.\n   - A verdict is never reported without its magnitude.\n\n10. **The profile: reported, not judged.** After the rounds (step 7), each row's profiling build (spec v0.2 \u00a713.4) runs on each job. It probes one call in **K = 32** (**approved by the author, Oct 29, 2026**), chosen with random gaps (spec v0.2 \u00a713.4 item 3), and times every part in batches. Per job, the rows alternate Q32, TC, Q32, TC, Q32, TC: **3 invocations per row** (**approved by the author, Oct 29, 2026**), at the timing build's calibrated $r$, 3 reps each with the first discarded. Each runs pinned to core 1, one at a time, under items 5 and 6. Each figure is the median over the 3 invocations. The report gives, per row and job:\n    - the **slowdown** of each invocation: its batch total over the timing build's median total for the same row and job. It MUST be at most **1.5** (**approved by the author, Oct 29, 2026**). An invocation over the limit is marked **over the slowdown limit**, with its slowdown, and its phase figures are withheld;\n    - the batch time per operation of entry, operations and read-out;\n    - for each profile phase (F, C, A.gcd, A.rest, I, S, M and U): its share of the sampled calls' time, raw and corrected, and its estimated nanoseconds per operation (spec v0.2 \u00a713.4 item 7);\n    - the probe cost, K, and the number of sampled calls;\n    - the same per job phase (entry, add, sub, mul, div, read-out), and the shares per case for cases with at least **100 sampled calls** (**approved by the author, Oct 29, 2026**);\n    - **Q32 \u2212 TC per phase**, in estimated nanoseconds per operation, labelled **indicative only**. The fences of a sampled call stop one phase's latency from overlapping the next phase's work, as it does in the timing build, so a phase's sampled time is not its time there (spec v0.2 \u00a713.4 item 9).\n\n    No verdict, band or flag is attached to any profile figure.\n\n11. **Strata, and no overall winner.**\n    - The strata are **MONEY** (jobs 1\u20132), **SMALL** (3\u20134) and **CHAINS** (8\u201311). MOD (5\u20136) and NEW (7) have no job within Q32's capacity (Workloads).\n    - For each stratum and measure, the report gives the counts of wins, ties, losses, over-cap and n/a, the median ratio, and the number of severe-memory-loss flags. The per-job verdicts and magnitudes are listed beneath.\n    - The rule combines no measures, scores no strata, and names no row as the better one.\n\n12. **Checks, and bugs after the gates.** Every stored value of every invocation (rounds, calibration, counting, memory and profile runs) is compared with the exact value from `fractions`. After the gates, any of the following is a **bug**:\n    - a check failure;\n    - an overflow;\n    - a failed exact check of spec v0.2 \u00a714.1;\n    - a non-repeating count;\n    - Q32 reaching its capacity;\n    - gcd work that differs between the rows.\n\n    A bug is handled as in round 1 (rule.md item 5): the row's measured run stops, the bug is fixed under review and logged, and the row is re-run in full. A fix to `q32.c` re-runs Q32 and Q32-null; a fix to `tc.c` re-runs TC. The report lists every bug.\n\n13. **Also reported:**\n    - **Realized reuse** per job (from the generator, and equal to Q32's figures by the exact checks): N, W, W/N and 2N/W, after entry and at the end; the share of operations in each case of spec v0.2 \u00a79, per algorithm; the share of operands that are earlier results.\n    - **Counts per operation**, per row: gcds, gcd work, multiplications, additions and exact divisions, which are equal between the rows. For Q32 also: lookup searches and probes, interned found and appended, and whole-number reads. Every counter per phase, core and store goes in a CSV.\n    - **The known-answer skips**, per job and row: each K counter of spec v0.2 \u00a713.1 with its prediction, and the share of the work it removes (divisions, gcds, lookups, reads).\n    - **Memory against reuse:** the jobs sorted by W/N at the end, with both rows' B_used and B_heap.\n    - **The idle checks and the disturbance checks** (items 5 and 6): every check, the runner's own ticks per block, the unexplained forks per block, and the host processes with their rates $R_h$ and their ticks and allowance per block.\n    - **Round 1, for reference only:** for each job, a link to its round-1 verdicts. Round 1 enters no round-2 measure.\n\n## Workloads\n\nThe workloads are **as in round 1** ([`rule.md`](rule.md), Workloads): the same generator, master seed 20261029, job $n$ seeded 20261029 + $n$, the same inputs, operations and chains, and the same size bound. Since the generator is unchanged, every workload file is byte-identical to round 1's, and the harness checks this by sha256 against round 1's `state.json`.\n\n**Only the jobs that fit Q32 are run** (capacity 32,768 whole numbers; $W$ at the end, from the generator, as reported in round 1):\n\n| Job | Name | Stratum | $W$ at the end | Run |\n| --- | --- | --- | --- | --- |\n| 1 | MONEY-wide | MONEY | 29,866 (91% of capacity) | yes |\n| 2 | MONEY-catalog | MONEY | 15,403 | yes |\n| 3 | SMALL8 | SMALL | 350 | yes |\n| 4 | SMALL64 | SMALL | 21,346 | yes |\n| 5 | MOD-mixed | MOD | 40,849 | **no: over capacity** |\n| 6 | MOD-muldiv | MOD | 40,798 | **no: over capacity** |\n| 7 | NEW-add | NEW | 50,795 | **no: over capacity** |\n| 8 | CH-money | CHAINS | 27,881 (85%) | yes |\n| 9 | CH-closed | CHAINS | 28,379 (87%) | yes |\n| 10 | CH-small | CHAINS | 10,945 | yes |\n| 11 | CH-mixed | CHAINS | 12,682 | yes |\n\nThe spec's known-answer skips change no stored value, so $W$ is unchanged. Neither row runs on jobs 5\u20137. They are reported as **over capacity for Q32**, with $W$. TC could run on them, but it would have nothing to be paired with.\n\n## Run plan\n\n1. Build every row in its four builds, check the 08 module's hashes, and generate or verify the workloads, references and predictions.\n2. Unit tests of Q32 and TC (test build; spec v0.2 \u00a714.3), including the sanitizer build.\n3. **Pilot:** jobs **1, 3 and 10** (**approved by the author, Oct 29, 2026**: round 1's pilot jobs that fit Q32), with every row, $r$ calibration and **2 rounds**, timed under items 4\u20136. It ends with **one profiling-build run**: one invocation of each row's profiling build on **job 1** (**approved by the author, Oct 29, 2026**: the largest job that fits), as in item 10, in its own timed block. Its results are discarded, except for what it records for the run:\n   - the host processes' rates $R_h$ (item 5), from which the host allowance is fixed before step 6;\n   - the profiling run's slowdown for each row (item 10);\n   - its wall time, in two parts: $P_\\text{prof}$, the profiling run's block, and $P$, the rest of the pilot.\n\n   **Stop rule.** The projection is the elapsed run time, plus the remaining work outside the profile, plus the profile:\n   $$\\text{projection} = \\text{elapsed} + 5\\ \\text{min} \\times \\max(1,\\ P / 0.5\\ \\text{min}) + 36 \\times P_\\text{prof}.$$\n   The 5 minutes and 0.5 minutes are **approved by the author, Oct 29, 2026** (below). The factor 36 (**approved by the author, Oct 29, 2026**) is 24, since step 7 makes 48 profile invocations against the pilot's 2, with half again for margin.\n   - **If the projection exceeds 22 minutes (approved by the author, Oct 29, 2026), the run stops and is reported to the author before anything else runs.** That leaves a quarter of the hard stop for re-runs under item 12, as in round 1.\n   - **The run also stops after the pilot**, and is reported to the author, if any host rate $R_h$ exceeds 1 tick per second (item 5), or if either row's profiling slowdown exceeds 1.5 (item 10), so that K can be reconsidered.\n4. Gates (item 3), two at a time on both cores.\n5. Counting runs and memory runs (items 2 and 7), two at a time on both cores. The worker pool is then shut down and joined (item 5).\n6. Per job, in job order: the idle check, then calibration and the 12 rounds, one timed invocation at a time on core 1, then the disturbance check.\n7. Per job, in job order: the idle check, then the profile runs (item 10), then the disturbance check.\n8. Analysis and report. This step is untimed and runs after the last timed block.\n\n**Hard stop at 30 minutes (the author's).** The run's own wall time, from step 1 to the end of step 7, re-runs included, is limited to 30 minutes, summed over its sessions. Time spent fixing a bug under review, between sessions, is not counted. The limit is enforced by the kernel timer of item 5. When it is reached, the run stops at once, writes what it has, marked **stopped**, and reports to the author. No verdict is reported from a stopped run.\n\n*Non-normative estimate*, from round 1's Q32 run (`test/results-q32/run.log`: about 0.24 s per timed invocation, and builds, generation and unit tests in about 20 s):\n- **Rounds:** 3 rows \u00d7 8 jobs \u00d7 12 rounds = 288 invocations, about 1.2\u20132 minutes. Calibration is 16 invocations, under 0.2 minutes.\n- **Profile:** 2 rows \u00d7 3 invocations \u00d7 8 jobs = 48 invocations of a build at most 1.5 times slower, about 0.2\u20130.4 minutes.\n- **Gates, counting and memory runs:** 16 gate runs, and 32 counting and memory runs with 4 repeats, under 1 minute on two cores.\n- **Idle checks:** 2 s per check, 20 checks (4 pilot blocks, 8 timed blocks, 8 profile blocks), about 0.7 minutes, plus any waits.\n- **Pilot:** 18 invocations and 6 calibrations, about 0.2\u20130.3 minutes, and 2 profiling invocations, about 0.02 minutes.\n- **The whole run: about 3\u20136 minutes** without waits. The 5-minute estimate of step 3 is the upper end of steps 4\u20137 without the profile, about 3.4 minutes, with half again for margin. The profile is projected separately, from the pilot's profiling run.\n\n## Limitations, reported with the results\n\n- **Textbook only.** Neither row is optimized (spec v0.2 \u00a70, decision 5). The verdicts compare two plain baselines. They do not compare the designs at their best.\n- **Every result is kept**, in both rows, as in round 1. Chains do not update in place.\n- **64-bit arithmetic only.** At this width a gcd is cheap, so time differences come mostly from structure. The gcd work is equal by construction, and is reported to make that visible.\n- **The profile perturbs what it measures** (spec v0.2 \u00a713.4 items 8 and 9). Its fences stop the overlap between phases, so its shares and its per-phase differences between the rows are indicative only. They are meant to guide the next step, not to predict a saving.\n- **Jobs 5\u20137 are not run.** Round 2 says nothing about the low-reuse jobs beyond Q32's capacity.\n\n## Harness\n\nThe round-1 harness (`test/gen.py`, `l1model.py`, `runner.py`, `analyze.py`, `bench.c`, `api.h`) is the starting point, with these changes:\n- `l1model.py` models spec v0.2: case `zero`, the K counters, Q32's lookups and reads;\n- `bench.c` drives Q32 and TC only, and adds a `prof` mode;\n- `runner.py` implements items 5 and 6, has no library rows or forms, and enforces the hard stop by kernel timer;\n- `analyze.py` reports items 7\u201313.\n\n**The official data.** Round 2 writes only to **`test/results-r2/`**. The harness refuses to start if its output folder is `test/results/`, `test/results-q64-b3b88b6/` or `test/results-q32/`. It never writes or deletes there, and it checks the sha256 of every file in those three folders before and after the run. Decisions the builder makes go in `test/DECISIONS.md`, under a round-2 heading, pending the author's review.\n",
+"vendor08_sha256": {
+"common.c": "8f1d177ec1c5cd5db9ce9927f1260354b8aaa216554788a72d89c3d097f58043",
+"ctl.c": "34bb98fd7e6a6e83bb92aa55912cd1263acb715bdb17e0b024e8b96a7f14d3e4",
+"sk_common.h": "f608a67b018792b9ee9fbe98d7589d2e6c4e0fef87bc04d4dc385962c7e83dab",
+"sk_ctl.h": "9414e8e10f126b4432eb61de09282a8268cc61f47c14c322a0f01cd56a730aa5",
+"sk_internal.h": "166eba893b7ecd288193ec2fd37ee303c44e3e20c77226beda76795a19b17854"
+},
+"operator": {
+"timeout_min_at_least": 35,
+"instruction": "start once; run nothing else until the exit notice (rule-r2 item 5)"
+},
+"code_sessions": [
+{
+"time": "2026-10-29T13:12:24-05:00",
+"code": {
+"Q32": "95cd925fa596a088ec0c6b8286b1ad2edf2edc2cef270de854a5e8c8d6a6574b",
+"TC": "9471c1318b141589a9f2a0190cd9e9ad3fbc391d7166d7e81af4c20b7dbe7254"
+}
+}
+],
+"hosts": {
+"7691": "bash",
+"91": "claude",
+"84": "environment-man",
+"79": "sh",
+"1": "process_api"
+},
+"gen": {
+"1": {
+"job": 1,
+"name": "MONEY-wide",
+"toy": false,
+"workload_sha256": "15ff08a6c22634071b892805db7ef9d63df9f5d2b5366e892172e5d4a8395133",
+"round1_sha256": "15ff08a6c22634071b892805db7ef9d63df9f5d2b5366e892172e5d4a8395133",
+"identical_to_round1": true,
+"W_end_round1_model": 29866,
+"over_capacity": false,
+"n": 30000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"sub": 10055,
+"add": 9945
+},
+"mix": "addsub",
+"H_max_bits": 25
+},
+"2": {
+"job": 2,
+"name": "MONEY-catalog",
+"toy": false,
+"workload_sha256": "bd5db510726a68cde61fdd6fb96c3afcc8dbb233af03ac17cec96ab6ad104e8f",
+"round1_sha256": "bd5db510726a68cde61fdd6fb96c3afcc8dbb233af03ac17cec96ab6ad104e8f",
+"identical_to_round1": true,
+"W_end_round1_model": 15403,
+"over_capacity": false,
+"n": 30000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"sub": 9962,
+"add": 10038
+},
+"mix": "addsub",
+"H_max_bits": 19
+},
+"3": {
+"job": 3,
+"name": "SMALL8",
+"toy": false,
+"workload_sha256": "f4512095de56ec463cdd7359b54ad387c85d5ffe1289145365f5ed1ea6c4751e",
+"round1_sha256": "f4512095de56ec463cdd7359b54ad387c85d5ffe1289145365f5ed1ea6c4751e",
+"identical_to_round1": true,
+"W_end_round1_model": 350,
+"over_capacity": false,
+"n": 30000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"mul": 9902,
+"div": 10098
+},
+"mix": "muldiv",
+"H_max_bits": 44
+},
+"4": {
+"job": 4,
+"name": "SMALL64",
+"toy": false,
+"workload_sha256": "2d2dfc67130b2befc3a1d094e65487bb6d81f37de03fc97cb6340c06f16755a7",
+"round1_sha256": "2d2dfc67130b2befc3a1d094e65487bb6d81f37de03fc97cb6340c06f16755a7",
+"identical_to_round1": true,
+"W_end_round1_model": 21346,
+"over_capacity": false,
+"n": 30000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"div": 9998,
+"mul": 10002
+},
+"mix": "muldiv",
+"H_max_bits": 45
+},
+"5": {
+"job": 5,
+"name": "MOD-mixed",
+"toy": false,
+"workload_sha256": "f8471765f96f499859bb6966a6efc315caf45fc02962336dad48320c903fa905",
+"round1_sha256": "f8471765f96f499859bb6966a6efc315caf45fc02962336dad48320c903fa905",
+"identical_to_round1": true,
+"W_end_round1_model": 40849,
+"over_capacity": true
+},
+"6": {
+"job": 6,
+"name": "MOD-muldiv",
+"toy": false,
+"workload_sha256": "93c98f5959b3a2954656df8424a8c5fa9b81ce8f3a9c810dd4affb7d391c64fe",
+"round1_sha256": "93c98f5959b3a2954656df8424a8c5fa9b81ce8f3a9c810dd4affb7d391c64fe",
+"identical_to_round1": true,
+"W_end_round1_model": 40798,
+"over_capacity": true
+},
+"7": {
+"job": 7,
+"name": "NEW-add",
+"toy": false,
+"workload_sha256": "6e9349cfbef9d1bf1404a3d0d6e9fe0cb018c74363ec9493ffedad39f7b9c13b",
+"round1_sha256": "6e9349cfbef9d1bf1404a3d0d6e9fe0cb018c74363ec9493ffedad39f7b9c13b",
+"identical_to_round1": true,
+"W_end_round1_model": 50795,
+"over_capacity": true
+},
+"8": {
+"job": 8,
+"name": "CH-money",
+"toy": false,
+"workload_sha256": "eb5a5e588702c6adfd8fd3205afb8ababd539dfd99427ad53111d05ff2180d56",
+"round1_sha256": "eb5a5e588702c6adfd8fd3205afb8ababd539dfd99427ad53111d05ff2180d56",
+"identical_to_round1": true,
+"W_end_round1_model": 27881,
+"over_capacity": false,
+"n": 42000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"sub": 15916,
+"add": 16084
+},
+"mix": "addsub",
+"H_max_bits": 21
+},
+"9": {
+"job": 9,
+"name": "CH-closed",
+"toy": false,
+"workload_sha256": "9653ffd84c5537083709b7b4c46ec3e0c2cae5f6a43174cf95321183c83641a8",
+"round1_sha256": "9653ffd84c5537083709b7b4c46ec3e0c2cae5f6a43174cf95321183c83641a8",
+"identical_to_round1": true,
+"W_end_round1_model": 28379,
+"over_capacity": false,
+"n": 42000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"add": 15965,
+"sub": 16035
+},
+"mix": "addsub",
+"H_max_bits": 23
+},
+"10": {
+"job": 10,
+"name": "CH-small",
+"toy": false,
+"workload_sha256": "688db033875361ee58128f20f7eeb20ab3e1cb43d12d53d82d5cad933bf06259",
+"round1_sha256": "688db033875361ee58128f20f7eeb20ab3e1cb43d12d53d82d5cad933bf06259",
+"identical_to_round1": true,
+"W_end_round1_model": 10945,
+"over_capacity": false,
+"n": 18000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"mul": 4018,
+"div": 3982
+},
+"mix": "muldiv",
+"H_max_bits": 44
+},
+"11": {
+"job": 11,
+"name": "CH-mixed",
+"toy": false,
+"workload_sha256": "a7723bc3a837e826f317ee5e9031b6f8ae3a0ac5780786391f7072486fa97872",
+"round1_sha256": "a7723bc3a837e826f317ee5e9031b6f8ae3a0ac5780786391f7072486fa97872",
+"identical_to_round1": true,
+"W_end_round1_model": 12682,
+"over_capacity": false,
+"n": 18000,
+"n_in": 10000,
+"phase_counts": {
+"entry": 10000,
+"sub": 1968,
+"mul": 2111,
+"add": 2032,
+"div": 1889
+},
+"mix": "mixed",
+"H_max_bits": 48
+}
+},
+"over_capacity": {
+"5": 40849,
+"6": 40798,
+"7": 50795
+},
+"elapsed_saved": 26.74853001299971,
+"unit_tests": {
+"r2_unit": {
+"rc": 0,
+"out": "r2_unit: 489645 checks, 0 failures\n",
+"wall": 0.33
+},
+"r2_diff": {
+"rc": 0,
+"out": "r2_diff: 300 seeds, 233379 operations (8210 divisions by zero, 19460 overflows), every case and K-skip met; 977113 checks, 0 failures\n",
+"wall": 0.86
+},
+"r2_unit-asan": {
+"rc": 0,
+"out": "r2_unit: 489645 checks, 0 failures\n",
+"wall": 2.39
+},
+"r2_diff-asan": {
+"rc": 0,
+"out": "r2_diff: 60 seeds, 46345 operations (1630 divisions by zero, 3765 overflows), every case and K-skip met; 194197 checks, 0 failures\n",
+"wall": 0.73
+}
+},
+"pilot_calibration": {},
+"idle_checks": [
+{
+"busy": [],
+"core1": 0.0,
+"load1": 0.39,
+"where": "pilot block of job 1",
+"time": "2026-10-29T13:12:46-05:00",
+"idle": true,
+"waited_s": 2.0
+},
+{
+"busy": [],
+"core1": 0.005,
+"load1": 0.44,
+"where": "pilot block of job 1 (re-run)",
+"time": "2026-10-29T13:12:49-05:00",
+"idle": true,
+"waited_s": 2.0
+}
+],
+"disturbance_checks": [
+{
+"seconds": 1.597,
+"runner_ticks": 1,
+"kthreads": {},
+"hosts": {
+"1": {
+"name": "process_api",
+"ticks": 1,
+"rate": 0.6261338003462457
+},
+"79": {
+"name": "sh",
+"ticks": 0,
+"rate": 0.0
+},
+"84": {
+"name": "environment-man",
+"ticks": 0,
+"rate": 0.0
+},
+"91": {
+"name": "claude",
+"ticks": 2,
+"rate": 1.2522676006924913
+},
+"7691": {
+"name": "bash",
+"ticks": 0,
+"rate": 0.0
+}
+},
+"others": [],
+"new": [],
+"forks_rise": 10,
+"spawns": 8,
+"new_kthreads": 0,
+"reasons": [
+"2 unexplained forks"
+],
+"unexplained_forks": 2,
+"disturbed": true,
+"job": 1,
+"kind": "rounds",
+"label": "pilot",
+"attempt": 1,
+"time": "2026-10-29T13:12:47-05:00",
+"idle_check": "2026-10-29T13:12:46-05:00"
+},
+{
+"seconds": 1.601,
+"runner_ticks": 1,
+"kthreads": {},
+"hosts": {
+"1": {
+"name": "process_api",
+"ticks": 0,
+"rate": 0.0
+},
+"79": {
+"name": "sh",
+"ticks": 0,
+"rate": 0.0
+},
+"84": {
+"name": "environment-man",
+"ticks": 0,
+"rate": 0.0
+},
+"91": {
+"name": "claude",
+"ticks": 1,
+"rate": 0.6244478487717869
+},
+"7691": {
+"name": "bash",
+"ticks": 0,
+"rate": 0.0
+}
+},
+"others": [],
+"new": [],
+"forks_rise": 9,
+"spawns": 8,
+"new_kthreads": 0,
+"reasons": [
+"1 unexplained forks"
+],
+"unexplained_forks": 1,
+"disturbed": true,
+"job": 1,
+"kind": "rounds",
+"label": "pilot",
+"attempt": 2,
+"time": "2026-10-29T13:12:51-05:00",
+"idle_check": "2026-10-29T13:12:49-05:00"
+}
+],
+"discarded_blocks": [
+{
+"job": 1,
+"label": "pilot",
+"records": [
+{
+"job": 1,
+"row": "Q32",
+"kind": "calib",
+"args": [],
+"rc": 0,
+"wall": 0.1631,
+"block": "pilot",
+"overcap": false,
+"r": 32,
+"rep_ns": 80386340,
+"reps": 3,
+"role": "calibration"
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "calib",
+"args": [],
+"rc": 0,
+"wall": 0.1096,
+"block": "pilot",
+"overcap": false,
+"r": 32,
+"rep_ns": 53305016,
+"reps": 3,
+"role": "calibration"
+},
+{
+"job": 1,
+"row": "Q32",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2457,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 0,
+"r": 32,
+"reps": 3,
+"total": 2509256.875,
+"entry": 608696.53125,
+"ops": 1834578.8125,
+"read": 65981.53125,
+"reps_out": [
+[
+0,
+80757142,
+19648062,
+58874821,
+2234259
+],
+[
+1,
+80591513,
+19539996,
+58859175,
+2192342
+],
+[
+2,
+80296220,
+19478289,
+58706522,
+2111409
+]
+]
+},
+{
+"job": 1,
+"row": "Q32-null",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2481,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 1,
+"r": 32,
+"reps": 3,
+"total": 2525566.8125,
+"entry": 618905.0625,
+"ops": 1839671.15625,
+"read": 66990.59375,
+"reps_out": [
+[
+0,
+82352840,
+20456503,
+59595940,
+2300397
+],
+[
+1,
+81002538,
+19647981,
+59222609,
+2131948
+],
+[
+2,
+80818138,
+19804962,
+58869477,
+2143699
+]
+]
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.1646,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 2,
+"r": 32,
+"reps": 3,
+"total": 1663405.0,
+"entry": 397914.78125,
+"ops": 1217006.75,
+"read": 48483.46875,
+"reps_out": [
+[
+0,
+53994270,
+12865766,
+39448718,
+1679786
+],
+[
+1,
+53228960,
+12733273,
+38944216,
+1551471
+],
+[
+2,
+53535676,
+12812655,
+39141862,
+1581159
+]
+]
+},
+{
+"job": 1,
+"row": "Q32-null",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2473,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 0,
+"r": 32,
+"reps": 3,
+"total": 2522915.71875,
+"entry": 619734.65625,
+"ops": 1836702.46875,
+"read": 66478.59375,
+"reps_out": [
+[
+0,
+81559855,
+20150374,
+59170750,
+2238731
+],
+[
+1,
+81041798,
+19762894,
+59149053,
+2129851
+],
+[
+2,
+80733303,
+19831509,
+58774479,
+2127315
+]
+]
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.1656,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 1,
+"r": 32,
+"reps": 3,
+"total": 1657029.125,
+"entry": 396872.5625,
+"ops": 1211538.75,
+"read": 48617.8125,
+"reps_out": [
+[
+0,
+54758226,
+12775838,
+40175026,
+1807362
+],
+[
+1,
+53472246,
+12822149,
+39064822,
+1585275
+],
+[
+2,
+53024932,
+12699922,
+38769240,
+1555770
+]
+]
+},
+{
+"job": 1,
+"row": "Q32",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2493,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 2,
+"r": 32,
+"reps": 3,
+"total": 2544817.03125,
+"entry": 619106.125,
+"ops": 1857891.53125,
+"read": 67819.375,
+"reps_out": [
+[
+0,
+81539040,
+19833378,
+59445241,
+2260421
+],
+[
+1,
+81434145,
+19811396,
+59452529,
+2170220
+],
+[
+2,
+82351273,
+20013453,
+60037995,
+2299825
+]
+]
+}
+]
+},
+{
+"job": 1,
+"label": "pilot",
+"records": [
+{
+"job": 1,
+"row": "Q32",
+"kind": "calib",
+"args": [],
+"rc": 0,
+"wall": 0.1646,
+"block": "pilot",
+"overcap": false,
+"r": 32,
+"rep_ns": 81074558,
+"reps": 3,
+"role": "calibration"
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "calib",
+"args": [],
+"rc": 0,
+"wall": 0.1149,
+"block": "pilot",
+"overcap": false,
+"r": 32,
+"rep_ns": 53845264,
+"reps": 3,
+"role": "calibration"
+},
+{
+"job": 1,
+"row": "Q32",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2487,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 0,
+"r": 32,
+"reps": 3,
+"total": 2532086.25,
+"entry": 619184.03125,
+"ops": 1846514.875,
+"read": 66387.34375,
+"reps_out": [
+[
+0,
+82340261,
+20211287,
+59683341,
+2445633
+],
+[
+1,
+81613824,
+19966003,
+59529219,
+2118602
+],
+[
+2,
+81026760,
+19813889,
+59088476,
+2124395
+]
+]
+},
+{
+"job": 1,
+"row": "Q32-null",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2492,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 1,
+"r": 32,
+"reps": 3,
+"total": 2530424.0,
+"entry": 622519.78125,
+"ops": 1836392.8125,
+"read": 71511.40625,
+"reps_out": [
+[
+0,
+81593895,
+19846025,
+59428282,
+2319588
+],
+[
+1,
+82130038,
+20340532,
+59528805,
+2260701
+],
+[
+2,
+80973568,
+19920633,
+58764570,
+2288365
+]
+]
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.1643,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 1,
+"pos": 2,
+"r": 32,
+"reps": 3,
+"total": 1659694.03125,
+"entry": 400660.03125,
+"ops": 1209195.15625,
+"read": 49838.84375,
+"reps_out": [
+[
+0,
+53900854,
+13001066,
+39197272,
+1702516
+],
+[
+1,
+53110209,
+12821121,
+38694245,
+1594843
+],
+[
+2,
+53372766,
+12820407,
+38936969,
+1615390
+]
+]
+},
+{
+"job": 1,
+"row": "Q32-null",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2464,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 0,
+"r": 32,
+"reps": 3,
+"total": 2521630.4375,
+"entry": 609901.03125,
+"ops": 1844427.03125,
+"read": 67302.375,
+"reps_out": [
+[
+0,
+81171031,
+19884745,
+59008314,
+2277972
+],
+[
+1,
+80692174,
+19516833,
+59021665,
+2153676
+],
+[
+2,
+80844800,
+19688258,
+59014322,
+2142220
+]
+]
+},
+{
+"job": 1,
+"row": "TC",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.1635,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 1,
+"r": 32,
+"reps": 3,
+"total": 1661550.59375,
+"entry": 397269.0625,
+"ops": 1212701.09375,
+"read": 51580.4375,
+"reps_out": [
+[
+0,
+53579587,
+12842770,
+39073654,
+1663163
+],
+[
+1,
+53260370,
+12788998,
+38889970,
+1581402
+],
+[
+2,
+53169619,
+12712610,
+38806435,
+1650574
+]
+]
+},
+{
+"job": 1,
+"row": "Q32",
+"kind": "time",
+"args": [
+"32",
+"3"
+],
+"rc": 0,
+"wall": 0.2469,
+"block": "pilot",
+"overcap": false,
+"role": "round",
+"round": 2,
+"pos": 2,
+"r": 32,
+"reps": 3,
+"total": 2524777.875,
+"entry": 617676.8125,
+"ops": 1838325.3125,
+"read": 68775.75,
+"reps_out": [
+[
+0,
+81278236,
+19835985,
+59148054,
+2294197
+],
+[
+1,
+81059401,
+19634487,
+59268873,
+2156041
+],
+[
+2,
+80792892,
+19765658,
+58826410,
+2200824
+]
+]
+}
+]
+}
+],
+"run_stopped": {
+"step": "step 3",
+"reason": "job 1: the pilot block was disturbed twice (rule-r2 item 5)",
+"elapsed_s": 26.74483544299983
+},
+"archive_after": "unchanged"
+}

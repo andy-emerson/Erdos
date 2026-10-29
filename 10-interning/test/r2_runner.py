@@ -28,8 +28,8 @@ check; 8 the analysis.
 During timed phases (rule-r2 item 5) the runner is single-threaded; it starts each timed invocation by fork and exec
 (pinned to core 1 before exec, its output redirected to a file), waits with one blocking waitpid, writes nothing between
 the start and the end of an invocation, and enforces the 30-minute hard stop with a kernel timer (setitimer). Before
-and after each timed block it snapshots every process's ticks and the kernel's fork counter; a disturbed block is
-re-run once. It never imports numpy (test/DECISIONS.md R2-H3).
+and after each timed block it snapshots every process (by thread-group id) with its ticks, and the kernel's fork
+counter (reported only); a disturbed block is re-run once. It never imports numpy (test/DECISIONS.md R2-H3).
 """
 import argparse
 import concurrent.futures as cf
@@ -64,19 +64,21 @@ def stamp():
 
 # ------------------------------------------------------------------------------------------------------- /proc
 def read_stat(pid):
-    """(name, ppid, utime, stime, cutime, cstime, starttime) of a process from /proc/<pid>/stat (fields 4, 14-17 and
-    22), or None."""
+    """(name, ppid, utime, stime, cutime, cstime, starttime, num_threads) of a process from /proc/<pid>/stat (fields
+    4, 14-17, 22 and 20), or None. For a process, utime and stime are the sums over all its threads, the exited ones
+    included."""
     try:
         raw = Path(f"/proc/{pid}/stat").read_text()
     except OSError:
         return None
     name = raw[raw.find("(") + 1:raw.rfind(")")]
     f = raw[raw.rfind(")") + 2:].split()
-    return (name, int(f[1]), int(f[11]), int(f[12]), int(f[13]), int(f[14]), int(f[19]))
+    return (name, int(f[1]), int(f[11]), int(f[12]), int(f[13]), int(f[14]), int(f[19]), int(f[17]))
 
 
 def fork_counter():
-    """The kernel's fork counter: the "processes" line of /proc/stat (every process and thread created since boot)."""
+    """The kernel's fork counter: the "processes" line of /proc/stat (every process and thread created since boot).
+    Reported only (rule-r2 item 5, revision of Oct 29, 2026): it cannot tell a thread from a process."""
     for line in Path("/proc/stat").read_text().splitlines():
         if line.startswith("processes "):
             return int(line.split()[1])
@@ -126,23 +128,56 @@ def ticks4(st):
     return st[2] + st[3] + st[4] + st[5]
 
 
+def threads_of(st):
+    """The thread count of a snapshot entry (field 20), or None for an entry without it."""
+    return st[7] if len(st) > 7 else None
+
+
 def disturbance(s0, s1, runner, spawns, hosts, allowance=None):
-    """rule-r2 item 5, the check after a timed block, from its two snapshots. runner: the runner's pid; spawns: the
-    timed invocations it started in the block; hosts: the host processes' pids; allowance: {pid: ticks} after the
-    pilot, None in the pilot (host ticks are recorded and do not flag). Returns the record, with "disturbed" and the
-    reasons."""
+    """rule-r2 item 5 (revision of Oct 29, 2026), the check after a timed block, from its two snapshots. runner: the
+    runner's pid; spawns: the timed invocations it started in the block; hosts: the host processes' pids; allowance:
+    {pid: ticks} after the pilot, None in the pilot (host ticks are recorded and do not flag). Returns the record, with
+    "disturbed" and the reasons.
+
+    Processes are told apart by process (thread-group id: the entries of /proc, each with its start time), never by
+    thread. A thread created by a process present in both snapshots (a host, the runner, or any other) belongs to that
+    process: the kernel sums the CPU time of every thread of a group, exited threads included, into the process's
+    utime + stime, so its ticks are charged to that process and to nothing else. Per process, the ticks over the block
+    are the rise of utime + stime + cutime + cstime; cutime + cstime hold the CPU time of the children the process has
+    waited for (and of theirs), so a short-lived child that started and exited within the block is charged to the
+    process that reaped it, against that process's limit:
+      - the runner: its own utime + stime only, reported (its cutime + cstime are its timed children's);
+      - a host process: its allowance (5 + ceil(2 R_h L) ticks); in the pilot, recorded only;
+      - any other process present in both snapshots: at most 5 + ceil(1 x L) ticks over a block of L seconds;
+      - a new process (in the second snapshot only, a zombie included; not a kernel thread): fewer than 1 tick.
+    A child that existed at the first snapshot and is gone at the second was reaped during the block, and the kernel
+    added its whole lifetime's ticks to its reaper's cutime + cstime. Only its ticks during the block are charged: its
+    ticks at the first snapshot are credited back to its parent at the first snapshot, if that parent is present in
+    both, and at most the rise of that parent's cutime + cstime (a parent that ignores SIGCHLD gains nothing there, so
+    nothing is credited against its own time). Without such a parent (an orphan, reaped elsewhere), nothing is credited
+    and its whole lifetime is charged to its reaper. Kernel threads (children of kthreadd) are reported and never flag.
+    The fork counter of /proc/stat counts threads too, so its rise is reported only (forks_rise, and
+    forks_unattributed: less the runner's spawns and the new kernel threads); it flags nothing."""
     L_s = max(s1["t"] - s0["t"], 1e-9)
     p0, p1 = s0["procs"], s1["procs"]
+    other_limit = K.other_limit(L_s)
     rec = {"seconds": round(L_s, 3), "runner_ticks": None, "kthreads": {}, "hosts": {}, "others": [], "new": [],
-           "forks_rise": s1["forks"] - s0["forks"], "spawns": spawns, "new_kthreads": 0, "reasons": []}
+           "new_quiet": [], "forks_rise": s1["forks"] - s0["forks"], "spawns": spawns, "new_kthreads": 0,
+           "other_limit": other_limit, "credited": {}, "reasons": []}
     if runner in p0 and runner in p1:                       # the runner: its own ticks only (its children are timed)
         rec["runner_ticks"] = (p1[runner][2] + p1[runner][3]) - (p0[runner][2] + p0[runner][3])
+
+    def same(pid):                                          # present in both snapshots, as the same process
+        return pid in p0 and pid in p1 and p0[pid][6] == p1[pid][6]
+    exited = {}                                             # parent pid: the pre-block ticks of its children gone since
+    for pid, st in p0.items():
+        if same(pid) or is_kthread(pid, st) or not same(st[1]) or st[1] == runner:
+            continue
+        exited[st[1]] = exited.get(st[1], 0) + ticks4(st)
     for pid, st in p1.items():
         if pid == runner:
             continue
-        before = p0.get(pid)
-        if before is not None and before[6] != st[6]:
-            before = None                                   # a reused pid (another start time): a new process
+        before = p0.get(pid) if same(pid) else None         # a reused pid (another start time): a new process
         d = ticks4(st) - (ticks4(before) if before else 0)
         if is_kthread(pid, st):
             if before is None:
@@ -150,22 +185,32 @@ def disturbance(s0, s1, runner, spawns, hosts, allowance=None):
             if d:
                 rec["kthreads"][str(pid)] = {"name": st[0], "ticks": d}
             continue
-        if pid in hosts:
-            rec["hosts"][str(pid)] = {"name": st[0], "ticks": d, "rate": d / L_s}
-            if allowance is not None and d > allowance.get(pid, C.HOST_BASE_TICKS):
-                rec["reasons"].append(f"host process {st[0]}[{pid}] used {d} ticks, over its allowance "
-                                      f"{allowance.get(pid, C.HOST_BASE_TICKS)}")
+        if before is not None and pid in exited:            # children present before the block, reaped in it
+            credit = min(exited[pid], max((st[4] + st[5]) - (before[4] + before[5]), 0))
+            if credit:
+                d -= credit
+                rec["credited"][str(pid)] = {"name": st[0], "ticks": credit}
+        if pid in hosts and before is not None:
+            h = {"name": st[0], "ticks": d, "rate": d / L_s}
+            if threads_of(before) is not None and threads_of(st) is not None:
+                h["threads"] = [threads_of(before), threads_of(st)]   # reported: its threads are its own
+            if allowance is not None:
+                h["allowance"] = allowance.get(pid, C.HOST_BASE_TICKS)
+                if d > h["allowance"]:
+                    rec["reasons"].append(f"host process {st[0]}[{pid}] used {d} ticks, over its allowance "
+                                          f"{h['allowance']}")
+            rec["hosts"][str(pid)] = h
             continue
         if before is None:
             if d >= C.DIST_NEW_TICKS:
-                rec["new"].append({"pid": pid, "name": st[0], "ticks": d})
-                rec["reasons"].append(f"new process {st[0]}[{pid}] used {d} ticks")
-        elif d > C.DIST_OTHER_TICKS:
+                rec["new"].append({"pid": pid, "name": st[0], "ppid": st[1], "ticks": d})
+                rec["reasons"].append(f"new process {st[0]}[{pid}] (parent {st[1]}) used {d} ticks")
+            else:
+                rec["new_quiet"].append({"pid": pid, "name": st[0], "ppid": st[1]})   # reported only
+        elif d > other_limit:
             rec["others"].append({"pid": pid, "name": st[0], "ticks": d})
-            rec["reasons"].append(f"process {st[0]}[{pid}] used {d} ticks (over {C.DIST_OTHER_TICKS})")
-    rec["unexplained_forks"] = rec["forks_rise"] - spawns - rec["new_kthreads"]
-    if rec["unexplained_forks"] > C.DIST_FORKS:
-        rec["reasons"].append(f"{rec['unexplained_forks']} unexplained forks")
+            rec["reasons"].append(f"process {st[0]}[{pid}] used {d} ticks (over {other_limit})")
+    rec["forks_unattributed"] = rec["forks_rise"] - spawns - rec["new_kthreads"]   # reported only: threads included
     rec["disturbed"] = bool(rec["reasons"])
     return rec
 
@@ -477,6 +522,8 @@ class Runner:
             bad = K.readout_check(rec["readout"], self.ref(rec["job"]))
             if bad:
                 rec["bug"] = bad
+        if rec["kind"] in ("calib", "time"):                 # every timed rep's own CPU time (rule-r2 item 4)
+            rec["reps_cpu"] = K.parse_rep_cpu(lines, (rec["kind"] if rec["kind"] == "calib" else "rep",))
         if "bug" not in rec:
             if rec["kind"] == "time" and not rec.get("overcap"):
                 r, reps = int(rec["args"][0]), int(rec["args"][1])
@@ -485,6 +532,10 @@ class Runner:
                 best = min(kept, key=lambda x: x[1])         # the rep of minimum total; its parts go with it
                 rec.update(r=r, reps=reps, total=best[1] / r, entry=best[2] / r, ops=best[3] / r, read=best[4] / r,
                            reps_out=out)
+                cpu = rec["reps_cpu"]                        # reported only (rule-r2 item 4, revision)
+                if len(cpu) == len(out) and cpu[out.index(best)] is not None:
+                    c, s = cpu[out.index(best)]
+                    rec.update(cpu_ns=c / r, span_ns=s / r, cpu_share=c / s if s else None)
             elif rec["kind"] == "prof":
                 r = int(rec["args"][0])
                 p = K.parse_prof(lines)
@@ -628,7 +679,8 @@ class Runner:
                 if "bug" in rec:
                     self.bug(C.ROW_IMPL[rec["row"]], job, "pilot", rec["bug"])
                 if rec.get("role") == "calibration":
-                    pcal[f"{job}:{rec['row']}"] = {k: rec.get(k) for k in ("r", "reps", "rep_ns", "overcap")}
+                    pcal[f"{job}:{rec['row']}"] = {k: rec.get(k) for k in ("r", "reps", "rep_ns", "overcap",
+                                                                           "reps_cpu")}
                     if rec["row"] == "Q32":
                         pcal[f"{job}:Q32-null"] = dict(pcal[f"{job}:Q32"], shared_from="Q32")
             self.state.setdefault("pilot_records", []).extend(recs)
@@ -642,13 +694,10 @@ class Runner:
             if "bug" in rec:
                 self.bug(C.ROW_IMPL[rec["row"]], pj, "pilot profiling run", rec["bug"])
         self.state["pilot_records"].extend(precs)
-        # the host rates R_h: the highest rate over the pilot's blocks
-        rates = {}
-        for d in self.state.get("disturbance_checks", []):
-            if d.get("label") == "pilot":
-                for pid, h in d["hosts"].items():
-                    rates[pid] = max(rates.get(pid, 0.0), h["rate"])
+        # the host rates R_h: the highest rate over the pilot's blocks, at least 1 tick over the longest pilot block
+        measured, rates = K.host_rates([d for d in self.state.get("disturbance_checks", []) if d.get("label") == "pilot"])
         self.state["host_rates"] = rates
+        self.state["host_rates_measured"] = measured
         # the profiling run's slowdown, against the pilot rounds' median total
         slow = {}
         for rec in precs:
@@ -660,7 +709,8 @@ class Runner:
                 slow[rec["row"]] = {"slowdown": s, "within": ok}
         proj = K.pilot_projection(self.elapsed(), P, P_prof)
         self.state["pilot"] = {"jobs": jobs, "prof_job": pj, "P_s": P, "P_prof_s": P_prof, "elapsed_s": self.elapsed(),
-                               "projected_s": proj, "limit_s": C.PILOT_LIMIT_S, "host_rates": rates, "slowdown": slow,
+                               "projected_s": proj, "limit_s": C.PILOT_LIMIT_S, "host_rates": rates,
+                               "host_rates_measured": measured, "slowdown": slow,
                                "discarded": "the pilot's results are discarded (rule-r2, Run plan step 3)"}
         self.save()
         self.log(f"pilot: P {P:.1f} s, P_prof {P_prof:.1f} s, projection {proj / 60:.1f} min (limit "
@@ -668,9 +718,9 @@ class Runner:
         reasons = []
         if proj > C.PILOT_LIMIT_S:
             reasons.append(f"projected total {proj / 60:.1f} min exceeds {C.PILOT_LIMIT_S / 60:g} minutes")
-        busy = {p: r for p, r in rates.items() if r > C.HOST_RATE_MAX}
+        busy = {p: r for p, r in measured.items() if r > C.HOST_RATE_CEILING}
         if busy:
-            reasons.append(f"host processes over {C.HOST_RATE_MAX} tick per second: {busy}")
+            reasons.append(f"host processes over the ceiling of {C.HOST_RATE_CEILING:g} ticks per second: {busy}")
         over = {r: s["slowdown"] for r, s in slow.items() if not s["within"]}
         if over:
             reasons.append(f"profiling slowdown over {C.PROF_SLOWDOWN_MAX}: {over}")
@@ -825,7 +875,8 @@ class Runner:
             recs = self.timed_block(job, "rounds", "measured", rows=rows)
             for rec in recs:
                 if rec.get("role") == "calibration":
-                    cal[f"{job}:{rec['row']}"] = {k: rec.get(k) for k in ("r", "reps", "rep_ns", "overcap", "bug")}
+                    cal[f"{job}:{rec['row']}"] = {k: rec.get(k) for k in ("r", "reps", "rep_ns", "overcap", "bug",
+                                                                          "reps_cpu")}
                     if rec["row"] == "Q32":
                         cal[f"{job}:Q32-null"] = dict(cal[f"{job}:Q32"], shared_from="Q32")
             for rec in recs:
@@ -880,9 +931,10 @@ class Runner:
             raise SystemExit(f"the 08 module changed (spec v0.2 §5): {bad}")
         bad = C.archive_check()
         if bad:
-            raise SystemExit(f"round 1's official data changed: {bad}")
+            raise SystemExit(f"the official data changed: {bad}")
         if C.protected(self.out):
-            raise SystemExit(f"{self.out} holds round 1's official data: refusing to write there")
+            raise SystemExit(f"{self.out} holds official data (round 1's, or the stopped round-2 run's): refusing to "
+                             "write there")
         if not self.toy:
             if len(os.sched_getaffinity(0)) < 2 or (os.cpu_count() or 0) < 2:
                 raise SystemExit("the rule needs 2 cores (rule-r2 item 4)")
@@ -892,7 +944,8 @@ class Runner:
 
     def start(self):
         if C.protected(self.out):
-            raise SystemExit(f"{self.out} holds round 1's official data: refusing to write there")
+            raise SystemExit(f"{self.out} holds official data (round 1's, or the stopped round-2 run's): refusing to "
+                             "write there")
         self.out.mkdir(parents=True, exist_ok=True)
         self.tmp.mkdir(parents=True, exist_ok=True)
         if self.a.resume or self.a.rerun:
@@ -960,7 +1013,7 @@ class Runner:
             self.save()
             bad = C.archive_check()
             if bad:
-                self.log(f"WARNING: round 1's official data changed during the run: {bad}")
+                self.log(f"WARNING: the official data changed during the run: {bad}")
             self.state["archive_after"] = bad or "unchanged"
             self.save()
             import r2_analyze                              # step 8, after the last timed block

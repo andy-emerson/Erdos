@@ -19,7 +19,9 @@
  * between calls): entry = the calls that enter, operations = the other calls, read-out = reading every stored value.
  * create/destroy and reading the workload are not timed.  A rep runs the job r times and prints the sums.
  *
- * stdout:  calib <r> <total> <entry> <ops> <read>     rep <i> <total> <entry> <ops> <read>     overcap <total>
+ * stdout:  calib <r> <total> <entry> <ops> <read> row=.. cpu=.. span=..
+ *          rep <i> <total> <entry> <ops> <read> row=.. cpu=.. span=..     overcap <total>
+ *          (cpu: the process's CPU time over the whole rep; span: CLOCK_MONOTONIC over the same rep; reported only)
  *          ctr/xctr/mem/memN/wholes/memrun lines    prof lines (pf, pfcalls, pfm, prep, probe_cost, tsc_hz)
  *          ok ...
  * failures: error call=<i> op=<op> code=<c> step=<...>  exit 2       auditfail call=<i> ...  exit 3
@@ -286,15 +288,31 @@ static void run(uint64_t t[3]) {
     API(destroy)(c);
 }
 
+/* The process's own CPU time over a whole rep, and CLOCK_MONOTONIC over the same span (rule-r2 item 4, revision of
+ * Oct 29, 2026: reported only, no verdict).  Both are read once before and once after the rep's r runs, outside every
+ * timed part, so the timed parts are read exactly as before; the span includes create, destroy and the untimed
+ * memory reports, so cpu / span near 1 says the process held its core for the rep. */
+static uint64_t REP_CPU, REP_SPAN;
+
+static uint64_t cpu_ns(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+    return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
+}
+
 static void rep(uint64_t r, uint64_t t[3]) {
     t[0] = t[1] = t[2] = 0;
+    uint64_t s0 = now_ns(), c0 = cpu_ns();
     for (uint64_t i = 0; i < r; i++) run(t);
+    uint64_t c1 = cpu_ns(), s1 = now_ns();
+    REP_CPU = c1 - c0;
+    REP_SPAN = s1 - s0;
 }
 
 static void line(const char *kind, uint64_t a, uint64_t t[3]) {
     uint64_t tot = t[0] + t[1] + t[2];
-    printf("%s %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " row=%s\n", kind, a, tot, t[0], t[1], t[2],
-           IMPL_NAME);
+    printf("%s %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " row=%s cpu=%" PRIu64 " span=%" PRIu64 "\n",
+           kind, a, tot, t[0], t[1], t[2], IMPL_NAME, REP_CPU, REP_SPAN);
 }
 
 #ifdef SK_PROFILE

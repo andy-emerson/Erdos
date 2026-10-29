@@ -1,0 +1,11 @@
+[     0.0s] step 1: build, workloads, exact references and predicted figures
+[    15.2s] workloads byte-identical to round 1's
+[    15.2s] step 2: unit tests, the differential test, and both under the sanitizers (test build)
+[    19.5s] unit tests pass: r2_unit: 489645 checks, 0 failures; r2_diff: 300 seeds, 233379 operations (8210 divisions by zero, 19460 overflows), every case and K-skip met; 977113 checks, 0 failures; r2_unit: 489645 checks, 0 failures; r2_diff: 60 seeds, 46345 operations (1630 divisions by zero, 3765 overflows), every case and K-skip met; 194197 checks, 0 failures
+[    19.5s] step 3: pilot
+[    21.5s] machine idle before pilot block of job 1 (core 1 0.0%, load 0.39)
+[    23.1s] job 1 pilot: block DISTURBED (2 unexplained forks); discarded
+[    25.1s] machine idle before pilot block of job 1 (re-run) (core 1 0.5%, load 0.44)
+[    26.7s] job 1 pilot: block DISTURBED (1 unexplained forks); discarded
+[    26.7s] RUN STOPPED in step 3: job 1: the pilot block was disturbed twice (rule-r2 item 5)
+[    26.8s] results: /home/claude/erdos/10-interning/test/results-r2/results.md

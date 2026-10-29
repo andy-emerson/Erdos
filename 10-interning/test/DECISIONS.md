@@ -270,3 +270,95 @@ Each choice is **pending the author's review**.
   stand-in driver script; the profiling build is run only for its results and accounting; the disturbance detector
   is shown a real short-lived process started inside a snapshot pair (caught by the fork counter and its parent's
   cutime).
+
+## Revision of Oct 29, 2026: the disturbance check (rule-r2 item 5; the author's option 3)
+
+The first round-2 run stopped in its pilot (`results-r2/`, committed at `193ae57`). Job 1's pilot block counted 2
+unexplained forks, and its re-run 1, against a limit of 0. The fork counter of `/proc/stat` also counts the
+short-lived threads of the host `claude`. No other process used a tick, and no new process was seen. The author chose
+option 3 on Oct 29, 2026. `research/rule-r2.md` carries the dated revision. An independent review found it sound, with
+minor fixes (R2-H15). The author approved its numbers on Oct 29, 2026: the host floor of 5 ticks per block, the margin
+of 2 times the pilot's peak rate times the block length, and a host ceiling of 4 ticks per second (the reviewer's
+recommendation, replacing the proposed 10). No timed measurement was run for this change. Each choice below is
+**pending the author's review** except those numbers.
+
+- **R2-H10. New processes by process, not by thread** (`r2_runner.disturbance`). This replaces R2-H5's fork test.
+  - **Snapshots.** These list the entries of `/proc`, one per thread group, each keyed by its id and start time.
+  - **Threads.** A thread of a process present in both snapshots belongs to that process. Its CPU time is in the
+    group's `utime + stime`. Each host's thread count is recorded before and after.
+  - **The fork counter** is kept, reported only: `forks_rise`, and `forks_unattributed`, which is the rise less the
+    runner's spawns and the new kernel threads. It flags nothing.
+  - **Flags.** A block is disturbed by:
+    - another process present in both snapshots over 5 ticks;
+    - a new process (in the second snapshot only, a zombie included) of at least 1 tick;
+    - a host over its allowance.
+
+    Each count is of `utime + stime + cutime + cstime`, unchanged. A new process under 1 tick is listed as
+    `new_quiet`, reported only. The approved 1-tick threshold is kept.
+  - **Short-lived processes** are caught by their CPU time. It lands in the `cutime + cstime` of the process that
+    reaped them, against that process's limit: a host's allowance, another process's 5 ticks, or a new process's
+    1 tick. Orphans are reaped by process 1, a host.
+  - **The limit, stated in the rule.** A process that exits within the block and adds less than its reaper's
+    remaining limit is not flagged, for example `/bin/true` started by a host. A child process of a host is not
+    attributed to the host while it lives: it counts as a new process. Only its CPU time after it is reaped counts in
+    the host's allowance.
+- **R2-H11. The host allowance and ceiling** (`r2_common`; approved by the author, Oct 29, 2026).
+  - The allowance is `5 + ceil(2 R_h L)` ticks, as before. `R_h` comes from the pilot's blocks (`K.host_rates`; R2-H15
+    (c)). The floor of 5 and the factor 2 are approved.
+  - Each block's allowance is now written into its record.
+  - The stop after the pilot at 1 tick per second is replaced by `HOST_RATE_CEILING` = 4 ticks per second, applied to
+    the measured rate.
+- **R2-H12. The measured process's CPU time** (`bench_r2.c`; reported only).
+  - `rep()` reads `CLOCK_PROCESS_CPUTIME_ID` and `CLOCK_MONOTONIC` once before and once after a rep's r runs. Both
+    reads are outside every timed part. `calib` and `rep` lines gain `cpu=` and `span=` after `row=`. The parsers
+    read only fields 1-5, so they are unaffected.
+  - The runner stores the kept rep's `cpu_ns`, `span_ns` (per run) and `cpu_share` = cpu / span, and every rep's pair.
+    These go into `rounds.csv` and into a report table: per job and row, the median and lowest share, and the median
+    CPU time beside the median total.
+  - The timing build reads `CLOCK_MONOTONIC`, not a cycle counter. Only the profiling build reads the TSC. So the CPU
+    time stands beside the CLOCK_MONOTONIC time of the same rep. Its span includes create and destroy, which the
+    timed total excludes.
+- **R2-H13. The pin** (R2-H1). `RULE_SHA256` is pinned to the revised file with the author's approval in place of the
+  PROPOSED marks and the review's fixes (was `698ee612...` while the marks remained). `test_rule_fixed_and_pinned`
+  covers both states.
+- **R2-H14. Self-tests** (R2-H9 amended), all untimed:
+  - `test_disturbance_synthetic` is updated: a fork no snapshot saw, and 500 host forks with a rise in its threads,
+    do not flag; a host's reaped child over the allowance flags; a new process under 1 tick is reported; a new
+    process that reaped a child flags.
+  - `test_host_threads_do_not_disturb`: a real host process creates 60 short-lived threads within the snapshot pair.
+    The block is not disturbed, the fork counter rises by at least 60 (reported), and no thread appears as a process.
+    The threads' ticks are charged to the host, and a zero allowance would flag them.
+  - `test_disturbance_catches_short_lived_process`: within the snapshot pair, an outside process starts a 0.3 s child
+    that exits, and another starts a child that stays alive. The first is caught in its reaper's `cutime`, both as
+    another process and when its reaper is a host with a tight allowance. The second is caught as a new process.
+  - `test_host_allowance_from_pilot`: `R_h` comes from four stand-in pilot blocks, and the allowance follows from it
+    (claude at 1.25 ticks per second gives 30 ticks over 10 s). It is applied at 30 and 31 ticks.
+  - `test_pilot_stops`: the ceiling is applied, and 1.25 ticks per second no longer stops the run.
+  - The stand-in driver prints `cpu=` and `span=`, and `test_timed_block_machinery` checks the kept rep's figures.
+    The real driver's new `rep()` runs in the gate, counting and memory modes of the tests, which do not print it;
+    no timing mode was run.
+- **R2-H15. The independent review's minor fixes** (Oct 29, 2026).
+  - (a) **Undetected: a child of a process that ignores `SIGCHLD`.** The kernel reaps it without adding to its
+    parent's `cutime + cstime`, so one that starts and exits within a block is charged nowhere. Stated in rule-r2 item
+    5 ("Limits") and in its Limitations. Not detected.
+  - (b) **A child that existed before the block and is reaped during it** (`r2_runner.disturbance`). Its reaper's
+    `cutime + cstime` gains its whole lifetime. Its four tick fields at the first snapshot are now taken off the rise
+    of its parent at the first snapshot, when that parent is present in both snapshots, and at most the rise of that
+    parent's `cutime + cstime` (so a parent that ignores `SIGCHLD` loses none of its own time). An orphaned child (its
+    parent gone at the second snapshot) gets nothing taken off: its reaper is charged its whole lifetime, the
+    conservative side. Children of the runner are skipped (its `cutime` is ignored). The ticks taken off are
+    recorded per process (`credited`) and reported. Test: `test_existing_child_exit_charged_for_the_block_only`
+    (synthetic cases, and a real child of about 30 ticks that exits during the block).
+  - (c) **Resolution and scaling.** `R_h` is the highest measured rate, but at least `HOST_RATE_MIN_TICKS` = 1 tick
+    over the longest pilot block (the finest rate the pilot resolves; the longest, so a short block does not inflate
+    it). The ceiling of 4 ticks per second applies to the measured rate, so the floor alone cannot stop the run. Both
+    are recorded (`host_rates`, `host_rates_measured`). The limit of another process is now `5 + ceil(1 x L)` ticks
+    over a block of L seconds (`K.other_limit`, `DIST_OTHER_RATE` = 1 tick per second, 1% of one core). **The rate of
+    1 tick per second is the builder's choice**, taken from the host stop the author approved before the revision; it
+    is not among the numbers the author approved on Oct 29, 2026 for this revision, and is flagged for review.
+  - (d) **CPU time for every timed rep.** `finish` now stores `reps_cpu` (cpu and span per rep) for every calibration
+    and every timed invocation, over-cap ones included, and the calibration records in `state.json` carry it.
+  - (e) The rule's header now says it is fixed with the revision approved.
+  - (f) **The stopped run's record.** `results-r2/` as committed at `193ae57` is copied unchanged (each file from git,
+    checked equal to the working copy) to `results-r2-stopped-193ae57/`. It is added to `PROTECTED` with each file's
+    sha256, so the runner and the analysis refuse to write there, and the files are checked before and after a run.

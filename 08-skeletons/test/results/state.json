@@ -1,0 +1,3512 @@
+{
+"started": "2026-10-28T23:49:53-05:00",
+"elapsed_before": 0.0,
+"toy": false,
+"stub": false,
+"jobs": [
+1,
+2,
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15,
+16,
+17,
+18,
+19,
+20,
+21,
+22,
+23,
+24,
+25,
+26,
+27
+],
+"rule_sha256": "0706ef56080c993520de1c0950d784a4e7b1bf566043cd678c5e567c3cbd11cd",
+"rule_text": "# Skeleton baselines: pre-registered measurement rule\n\nOct 28, 2026 \u00b7 **Fixed.** Every item of this rule, including every item formerly marked PROPOSED, is approved by the author, Oct 28, 2026; the rule is fixed before any measurement. Approved earlier the same day: the per-measure thresholds (the time band, memory and gcd-work bands, the severe-memory-loss flag) and the 12 interleaved rounds. Revised at the author's direction after the second review, Oct 28, 2026: the rep rule (item 4), the null control's repetition count, counter determinism on a subset (item 2), the use of two cores, the gate schedule (item 3), the trimmed run plan with its pilot and 4-hour stop, and the arrival twin (G4). Revised at the author's direction after the third review, Oct 28, 2026: the LG family is constructed directly, with no redraw (G1); the 4-hour limit is also a hard stop on the whole run; a gate pilot on job 20; Design 2's large-base audits (item 3); timed rounds on one core, one row at a time (item 4); and the calibration of r, stated exactly (item 4). Every item proposed in that revision is now approved, so this file is fixed before any measurement: the harness writes the rule into its results file before the first trial, and refuses a measured run unless this file holds the rule verbatim. A change after that is a revision, dated and explained at the top, and allowed only while nothing has been measured.\n\nIt states how Design 1 (common divisors) and Design 2 (the coprime base) of [spec v0.1](../v0.1.md) are measured against the control and against each other, at their baselines, and how the results are reported: **per measure only, with no overall winner** (item 11).\n\n**This comparison does not end the debate.** It compares two skeletons, each the plainest correct form of its design, with every improvement left out on purpose. A design that does worse here may have more room to improve: the note lists improvements for each, and they are not equal in size.\n\n## Measurement rule\n\n1. **Rows.** Each job runs these rows:\n   - **ctl**: the control;\n   - **ctl-null**: a second copy of the control, the same binary run as a separate row;\n   - **D1** and **D2**;\n   - **ceil**, the shared-denominator ceiling, only on the jobs marked \"ceil\" in the run plan.\n\n2. **Builds.** All rows are built by one compiler with one set of flags (`-O2`), at width 64 (width 32 for the W32 jobs). The timing build carries no counters or audits. The counting build gives the counts and the memory reports, from one complete run per row and job. Counts are deterministic: on the fixed subset of jobs 3, 9, 14, 18, 19 and 23, every row's counting run is repeated, and the second run MUST give identical counts, or it is a bug, handled by item 5. Every counting run has a limit of **10 minutes**; a run that does not finish within it gives no counts, and its gcd work and memory are reported as **n/a**, with the reason. The test build gives the audits.\n\n3. **Gates before the measured run.** In the test build, every row MUST pass the unit tests and, on every job, the gate of [spec \u00a713.3](../v0.1.md#133-tests): one complete run, with a full audit after each of the first 200 calls, then after every 64th call, and after the last call; entries are calls and are audited on the same schedule; between full audits, an incremental audit of what changed MAY run after every call. A row that fails a gate is fixed and the gate re-run; no measured run starts until every gate passes. Gates are not timed, so they run two at a time, one per core, but never while a timed row runs (item 4).\n   - **Large base (Design 2).** Design 2's full audit checks the base pairwise, $C(C-1)/2$ gcds, which would make the gate quadratic in C at every scheduled audit. So once Design 2's base has more than **1,024 pieces**, each scheduled full audit before the last checks pairwise coprimality incrementally only: `audit_changed` MUST then run after every call, testing each piece created or rewritten by that call against every other piece; everything else of the full audit is still checked in full, and the full audit after the last call is complete, the pairwise check included ([spec \u00a713.3](../v0.1.md#133-tests)). So no full audit but the last takes more than $1{,}024 \\cdot 1{,}023 / 2 = 523{,}776$ coprimality gcds, and every pair of pieces is still checked: when the later of the two was created or last rewritten. Every other audit is linear in the structures and is not capped.\n\n4. **Rounds.** Each job runs **12 interleaved rounds**. In every round, each row runs once, as its own process, in an order rotated by one row per round, so the rows of a round are paired. Each invocation reads the job's workload file, then runs its reps in one process.\n   - **A rep** runs the whole job **r** times in sequence, each time on a new, empty class, destroyed after its read-out. The rep's time is its total divided by r.\n   - **r** is the smallest power of two for which one rep of that row on that job lasts at least **50 ms**. n stays 20,000 operations per job.\n   - **Calibration.** r is found by one **calibration invocation** per job and row (ctl, D1, D2 and, where it runs, ceil), run in the timing build, on the job's workload file, on core 1, immediately before that job's round 1 (for the arrival pair, before their shared round 1). The invocation reads the workload file, then times one rep at r = 1, 2, 4, \u2026 in turn, each on new classes as above, and stops at the first r whose rep lasts at least 50 ms; that r is the row's r, and that rep is the **calibration's rep**. Before round 1, the harness writes into the results file, for each row and job, r, the calibration's rep time and the reps per invocation below; they are then **fixed for all 12 rounds** and never changed. Calibration times enter no measure. The pilot's calibration is discarded with the pilot and is not reused.\n   - **Reps per invocation.** If the calibration's rep lasts at least **1 s**, the row runs **1 rep** per invocation, and its time is that rep's. Otherwise it runs **3 reps**, the first is discarded, and its time is the minimum of the remaining 2.\n   - **ctl-null** uses ctl's r and ctl's number of reps on the same job, and has no calibration of its own.\n   - A row's time in a round is that of its **total**: entry + operations + read-out of every stored value as a numerator and denominator in lowest terms. Entry, operations and read-out are also reported separately. Reading the workload file is not timed.\n   - **One timed row at a time.** The machine has 2 cores. Every timed invocation (calibration, rounds, and the pilot's timed part) runs on **core 1**, pinned to it, one invocation at a time; the harness runs on **core 0**, pinned to it, and does nothing but start invocations, wait, and record. No other work runs while a timed invocation runs, so nothing that depends on the design or the job runs beside a timed row, and ctl-null's spread measures the remaining noise. Untimed work (workload generation and references, unit tests, gates, counting runs) MAY use both cores, two processes at a time, but only in the steps before the timed rounds (Order of work), never alongside a timed invocation.\n   - **Order of jobs.** Jobs run one after another, in job order; each job runs its calibration and all 12 rounds before the next job starts. The arrival pair is the exception: jobs 19 and 20 are calibrated together and share their rounds, each round running the rows of both jobs (8 invocations) in an order rotated by one per round, so that round k of job 19 and round k of job 20 are paired (item 12).\n   - **Time cap.** A timed rep of a row that lasts more than **10 s**, in calibration or in any round, ends that row's timing on that job: the row is recorded as **over cap at this size**, which is a reported finding, and is not timed again on that job; its earlier rounds are reported but enter no measure. Its gcd work and memory still come from its counting run, under item 2's limit.\n\n   An earlier experiment made runs long enough to time by raising the number of operations to 200,000. Here n stays 20,000 and r is raised instead: at V = 1 almost every result brings a new denominator, and at n = 200,000 Design 1's pair table alone would reach about $D^2/16 \\approx 2.8$ GB, with $D \\approx 210{,}000$.\n\n5. **Checks, and bugs after the gates.** Every stored value of every run is compared with the exact value computed by Python's `fractions` from the workload file. The workloads make overflow impossible (see Size bound), so **a check failure or an overflow after the gates is a bug**, and is handled as follows:\n   - the measured run of the affected design stops;\n   - the bug is fixed under review ([spec \u00a711](../v0.1.md#11-instructions-to-builders-and-reviewers)), and the fix is **logged** in the change log, with the job, invocation, operation and step where it appeared;\n   - the affected design is **re-run in full**: its gates, its counting runs and every round of every job; its earlier results are discarded. A bug in the control re-runs ctl and ctl-null; a fix to the shared integer routines re-runs every row.\n\n   The report lists every such bug beside the per-stratum tables of item 10.\n\n6. **Measures**, per job and row (X is D1, D2 or ceil):\n   - **Time.** The ratio **T(ctl) / T(X)**, T being the median of the row's per-round totals; above 1, X is faster. Its 95% interval [lo, hi] is the 2.5th\u201397.5th percentile of the same ratio over **10,000 bootstrap resamples** of the rounds (rounds drawn with replacement, the same draw for both rows, so the pairing is kept; seed 20261028).\n   - **Gcd work.** **G(X) / G(ctl)**, where G is the counting build's sum, over every gcd call of the job (entry and operations), of the bit length of the larger operand.\n   - **Memory.** **B(X) / B(ctl)**, where B is the used bytes per rational ([spec \u00a712.2](../v0.1.md#122-memory)). B is reported **twice**: **after entry** (when the last entered value is stored) and **at the end of the job**. The memory verdict and the severe-memory-loss flag of item 8 use the end-of-job figure; the after-entry figure is reported beside it.\n\n   **Design 1's pair table and the flag.** Design 1's pair table grows with $D^2/16$ bytes, and D counts result denominators as well as entered ones. On jobs with many denominators, Design 1 may therefore raise the severe-memory-loss flag (\u2265 4.0) at the end of the job. That is a finding about the Design 1 skeleton, which this rule is meant to expose, not a flaw of the rule.\n\n   Also reported for every job: every counter of spec \u00a712.1 per phase; entry, operation and read-out times; allocated bytes per rational; the per-structure memory breakdown, after entry and at the end.\n\n7. **Null control.** ctl against ctl-null on the same job, by 6. The job's **null spread** is max(1 \u2212 lo, hi \u2212 1, 0) over that interval. The time band's half-width is **h = max(5%, null spread)** (approved by the author, Oct 28, 2026).\n\n8. **Verdict per job and measure, with its magnitude**, for X against the control (approved by the author, Oct 28, 2026):\n\n   | Measure | Win | Loss | Tie | Magnitude reported |\n   | --- | --- | --- | --- | --- |\n   | Time | lo > 1 + h | hi < 1 \u2212 h | otherwise | T(ctl) / T(X) and its interval [lo, hi], with h |\n   | Gcd work | ratio \u2264 0.90 | ratio \u2265 1.10 | otherwise | G(X) / G(ctl) |\n   | Memory (end of job) | ratio \u2264 0.90 | ratio \u2265 1.10 | otherwise | B(X) / B(ctl), after entry and at the end |\n\n   Gcd work and memory are deterministic, so they have fixed bands and no interval. A memory ratio \u2265 4.0 at the end of the job raises the **severe-memory-loss flag**, which is reported beside the verdict; it is a flag, not a veto, and changes no other verdict. Every verdict is always reported **together with its magnitude**: a verdict alone is never reported.\n\n   A row **over cap** on a job (item 4) has the time verdict **over cap** there, reported with the time of the rep that passed the cap; it is not a win, loss or tie. A job that is not constructible (see Workloads) is **n/a** for every row and enters no stratum; so is a measure whose counts are n/a (item 2).\n\n9. **Head to head.** D1 against D2 on every job, per measure, by 6 to 8 with D2 in the place of the control: time ratio T(D2) / T(D1) with the paired bootstrap interval and the same band h as the job's null control; gcd work G(D1) / G(D2); memory B(D1) / B(D2), after entry and at the end, with the severe-memory-loss flag at \u2265 4.0. A \"win\" is a win for D1. If one design is over cap on a job, the time verdict names it (\"D1 over cap\" or \"D2 over cap\"); if both are, it is n/a. Each verdict is reported with its ratio and, for time, its interval.\n\n10. **Verdict jobs and strata.** The **verdict jobs** are jobs 1\u201318 (the matrix) and 21\u201325 (the chains). The arrival pair (jobs 19 and 20) is reported by item 12, and W32 (jobs 26 and 27) separately, also by item 12. The verdict jobs fall into seven strata:\n    - **ALL**, **P75**, **P50**, **P25**, **NONE** and **LG**: three matrix jobs each, one per operation mix;\n    - **CHAINS**: jobs 21\u201325.\n\n    For each stratum, each comparison (D1 against ctl, D2 against ctl, D1 against D2) and each measure (time, memory, gcd work), the report gives the **counts of wins, ties, losses and over-cap results**, the **median ratio** over the stratum's jobs, and the number of severe-memory-loss flags. The per-job verdicts and magnitudes of items 8\u20139 are listed beneath.\n\n11. **No overall winner.** The rule combines no measures, scores no strata, and names no design as beating the control or as the better baseline. Choosing an overall winner is left to discussion of these per-measure results, since a narrow win on one measure and a large win on another are not comparable by counting.\n\n12. **Also reported:**\n    - **Ceiling gap.** On the ceil jobs, T(ceil) / T(X) with its interval, and B(X) / B(ceil), which is deterministic and has no interval: how far each row is from the best possible on fully shared data.\n    - **Operation time alone**, entry excluded, with verdicts and magnitudes by 8, to show where entry cost weighs.\n    - **Arrival.** For the arriving job 19 and its early twin, job 20 (G4): the verdicts and magnitudes of items 8\u20139 on each; and, per row, T(19) / T(20), with the paired bootstrap interval over the rounds (the two jobs share their rounds, item 4), G(19) / G(20) and B(19) / B(20). Since the twin runs the same operand pairs in the same order, these ratios measure the effect of arrival alone.\n    - **Width 32** (W32, jobs 26 and 27): verdicts and magnitudes by 8\u20139, and whether the ordering of D1, D2 and ctl on each measure matches that of the width-64 matrix job of the same sharing level and mix.\n    - **Entry against operations**, per design: the share of total time and of gcd work spent in entry, and, within operations, in `store`.\n    - **Results as operands**, per job: the realized share of result operands, and the number of distinct result denominators used as operands (G3).\n    - **Gcd work against time**: a design that removes gcd work but not time at 64 bits is a candidate for wider-number tests, where gcds cost more.\n\n## Deferred: the index-valued pair table\n\nThe note's variant of Design 1, a pair table whose cells name the column of the pair's gcd instead of holding 1 bit, is **deferred**. It is a later variant test, run against the Design 1 baseline after this round, and is **not part of this round**: no row, job or verdict here measures it, and the spec keeps it outside the skeleton ([spec \u00a710](../v0.1.md#10-the-skeletons-boundary)).\n\n## Workloads\n\nAll workloads are written to files by one generator (Python, seeded), before any measured run. **Master seed 20261028**; job number n (from the run plan) uses seed 20261028 + n, except the early twin, which is built from job 19's workload. Every workload parameter is approved by the author, Oct 28, 2026: those of the reviewed draft that remain, and those added in the revision: B = 20 in place of 30, and $|m| < 2^B$ (Size bound); the cap $B - 6$ on s and the redraw of s with u (G1); the LG family, its pool of 57 elements and its direct construction (G1); V = 10 for the matrix, and the mul/div mix (run plan); the result share \u03c1 = 1/2 and the result operations (G3, G4); the arrival pair at P50, V = 1, mixed (G4); CH-open at V = 100, CH-muldiv and CH-none (G5); the ceiling's two vector operations on its ALL job; and W32 at B = 9 with its two jobs.\n\n**Size bound.** For a value $x = m/d$ write $H(x) = \\max(|m|, d)$. The generator keeps every operation of every job within the **operand rule** $H(x) \\cdot H(y) \\le (2^{31} - 1)^2$ at width 64. Every full-width intermediate of every row (spec \u00a76\u2013\u00a79, including Design 2's $d_i \\cdot r_y$, powers of pieces and leftovers) is at most one operand's height, a product of a quantity at most $H(x)$ with one at most $H(y)$, or a sum or difference of two such products. So every product is at most $(2^{31} - 1)^2 = 2^{62} - 2^{32} + 1$, and every sum at most $2(2^{31} - 1)^2 = 2^{63} - 2^{33} + 2$, about $2^{63} - 2^{33}$. That is below $2^{63} - 1$, the largest magnitude of spec \u00a74.3 item 2, so **no overflow can occur within the generator limits**. At width 32 the rule is $H(x) \\cdot H(y) \\le (2^{15} - 1)^2$, and the same argument gives products up to $2^{30} - 2^{16} + 1$ and sums up to $2^{31} - 2^{17} + 2 < 2^{31} - 1$.\n\n**The ceiling's common denominator fits.** On ALL data every vector's denominator E divides a power of the one denominator d: E divides d after an addition or subtraction, $d^2$ after a multiplication of two input vectors, and $d^3$ after a multiplication of a result vector by an input vector. So $E \\le d^3 < 2^{60}$, since $d < 2^{20}$: **E fits the width.** On the run plan's ceiling jobs it is smaller still: on ALL-add (job 1) $E \\le d < 2^{20}$, and on CH-all (job 22), whose steps are all additions, $E \\le d < 2^{24}$. The ceiling's numerators $n_k = E \\cdot (\\text{element})$ are bounded by the operand rule like every other intermediate.\n\nThe families keep the rule as follows. An entered value has $H < 2^B$, and a result of two entered values has $H < 2^{2B+1}$. So with B = 20 at width 64, such a result meets an entered value with $H(x) \\cdot H(y) < 2^{61}$, and with B = 9 at width 32, below $2^{28}$. Chain values stay below $2^{31}$ by construction or by the redraw rule (G6), and so do their inputs.\n\n**G1. Denominators, `den(D, \u03c3, B)`.** D distinct denominators of about B bits (B = 20 at width 64), with sharing level \u03c3:\n- **\u03c3 = 0 (NONE):** D distinct primes drawn uniformly from $[2^{B-1}, 2^{B})$. Pairwise coprime.\n- **\u03c3 in {0.25, 0.50, 0.75} (P25, P50, P75):** each $d = s \\cdot u$.\n  - The **shared part** s: multiply primes drawn uniformly from the pool {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}, stopping at the first draw that would take s above $\\min(\\text{round}(\\sigma B),\\ B - 6)$ bits. The cap $B - 6$ leaves u room to be at least 41.\n  - The **private part** u: uniform in $[2^{a-1}, 2^{a})$ with $a = B - \\text{bits}(s) \\ge 6$, redrawn until it has no prime factor at or below 37.\n- **LG (large shared factors):** each $d = s \\cdot u$, **constructed directly, with no redraw**:\n  - The **pool** of shared parts is fixed, the same for every LG job: the **19 primes** of $K = \\{41, 43, \\ldots, 127\\}$, the primes in $[41, 127]$, and the **38 products** $p \\cdot q$ of two distinct primes of K below $2^{12}$ (3 of 11 bits and 35 of 12 bits, from $41 \\cdot 43 = 1{,}763$ to $61 \\cdot 67 = 4{,}087$): **57** elements.\n  - The **private part** u of an element s is a **prime above 127** in $[2^{a-1}, 2^{a})$, with $a = B - \\text{bits}(s)$. Each element's admissible u are listed in advance: 872 primes for a 6-bit prime s ($a = 14$), 464 for a 7-bit prime ($a = 13$), 43 for an 11-bit product ($a = 9$) and 23 for a 12-bit product ($a = 8$); 12,198 denominators in all.\n  - **Construction.** The D denominators are divided among the 57 elements as evenly as possible: each element gets $\\lfloor D / 57 \\rfloor$, and $D \\bmod 57$ elements, chosen uniformly at random, get one more (17 or 18 at D = 1,000, with 31 elements at 18). Each element draws its u uniformly **without replacement** from its list, and the D denominators $s \\cdot u$ are shuffled.\n  - **No collision and no exhaustion.** In $d = s \\cdot u$, s is the part of d made of primes of K and u is a prime outside K, so d determines s and u: distinct draws give distinct denominators, with no test. The shortest list (23) is longer than the largest allotment (18), so no list runs out. The generator still counts **failures**: one for each denominator whose element has no unused u left when it is drawn, out of the D denominators of the job. By the two facts above the count is 0 on every LG job; a nonzero count is a generator bug, and stops generation.\n\n  *Calculation.* For a prime p of K, let $n_p$ be the number of pool elements it divides (13 for 41, down to 1 for each prime from 101 to 127, which has no product below $2^{12}$). Over ordered pairs of pool elements, those that share a prime number $\\sum_p n_p^2 = 763$, less the 38 pairs of an equal product, which share two primes and were counted twice: $725$ of $57^2 = 3{,}249$. The even division makes the shared parts nearly uniform over the pool, so they share a factor with probability about $0.223$. The private parts add a little: two 8- or 9-bit u of different products can be the same prime. The realized fraction is about $0.23$ to $0.24$ (below), between P25 (about $0.10$) and P50 (about $0.38$), with gcds of 6 to 12 bits.\n\n  *Bounds.* Every element has at most 12 bits, so $a \\ge 8$, $d < 2^{\\text{bits}(s)} \\cdot 2^{a} = 2^{20}$, and the result rule above holds at B = 20. *Capacity.* At D = 10,000 the allotment would be 175 or 176, more than a product's list holds, so LG runs only at D = 1,000. A product s shares one prime with other elements, so Design 2 must split composite pieces.\n- **ALL:** one denominator, drawn as for P50.\n- In NONE and P25\u2013P75, a denominator equal to an earlier one is redrawn (s and u). The generator counts the redraws of each denominator; if any one denominator reaches 1,000 redraws, the job is **not constructible**, and is reported as such. LG needs no redraw (above).\n\n**Realized sharing.** Next to each label (P25, P50, P75, NONE, LG, ALL), the report gives the job's realized sharing, measured over 10,000 random pairs of distinct entered denominators:\n- the **fraction of pairs with gcd > 1**;\n- the **mean gcd size**, the mean of $\\text{bits}(\\gcd(d_i, d_j))$ over those pairs;\n- the mean of $\\text{bits}(\\gcd(d_i, d_j)) / \\text{bits}(\\min(d_i, d_j))$ over all pairs.\n\n*Non-normative:* trial generations at B = 20 and D = 1,000, over five seeds, gave fractions of 0.09\u20130.10 (P25), 0.37\u20130.39 (P50), 0.63\u20130.65 (P75), 0 (NONE) and 0.23\u20130.24 (LG, by the direct construction), with a mean gcd size of about 4 to 5 bits for P25\u2013P75 and about 6.7 bits for LG; P50 at D = 10,000 (the arrival pair) gave 0.40.\n\n**G2. Values, `vals(dens, V)`.** Each denominator carries exactly V values. Numerators are uniform in $[-(2^{B} - 1),\\ 2^{B} - 1]$, redrawn until nonzero and coprime to the denominator, so every input is already in lowest terms and D and V are exact. The values are shuffled; entry order is the shuffled order. $N_{\\text{in}} = 10{,}000$, so $D = 10{,}000 / V$.\n\n**G3. Operations, `ops(n, mix, \u03c1)`.** n = 20,000 operations. Each picks its operation from the mix: **add** (addition only), **muldiv** (multiplication or division, each with probability 1/2) or **mixed** (each of add, sub, mul and div with probability 1/4). Subtraction alone is not a mix: it takes addition's path exactly ($x - y = x + (-y)$, spec \u00a74.2), so an add-only job measures it. Each operation is of one of two kinds:\n- a **result operation**, with probability **\u03c1 = 1/2**: its first operand is drawn uniformly from the results of the earlier two-input operations, and its second uniformly from the entered values;\n- otherwise a **two-input operation**: both operands drawn uniformly, with replacement, from the entered values.\n\nThe first operation of every job is a two-input operation. So **half of all operations, and a quarter of all operands, are earlier results**, and every result operation brings a result's denominator back as an operand. The share is limited by the size bound: a result of a result operation can have about 3B bits (61 at B = 20), too large to meet any further operand, so it is stored and read out but never an operand. The result is always the first operand, so sub and div compute result \u2212 entered value and result \u00f7 entered value.\n\nG3 applies to every job with operations, in every family. The chains (G5) meet it by construction: every step's first operand is a result, so half of all operands are results.\n\n**G4. Arrival: job 19 and its early twin, job 20.** Both are proper jobs with the same values and the **same operations, with the same operand pairs in the same order**; only when the denominators are entered differs.\n- **Job 19 (arriving)** is generated as follows, from P50 values with V = 1 (D = 10,000) and the mixed mix. The denominators are split into 20 equal batches in order of first appearance, each with all its values, and the operations into 20 segments of 1,000. Segment t runs after batch t is entered. In segment t, a two-input operation takes one operand from batch t and the other uniformly from batches 1 to t; a result operation takes its result as in G3, from the two-input operations before it, and its entered value from batch t.\n- **Job 20 (early twin)** is built from job 19's workload file: it enters all 20 batches first, in the same order, then runs the same 20,000 operations in the same order. Every operand is entered before it is used in both jobs, so the twin is a valid workload, and its results are the same values.\n\nThe twin is a separate job, rather than an S-family job of the same parameters, because an S job draws its operand pairs without the batch structure, so a comparison with it would confound arrival with which pairs meet.\n\n**G5. Chains.** 1,000 chains, run round-robin, so every chain's result is an operand of its next step. Chain c starts from an input $x_0$; step k computes $x_{k} = x_{k-1} \\circ y_{k}$, with $y_k$ drawn uniformly from the inputs.\n- **CH-closed:** K = 32 steps of add or sub (each with probability 1/2). Inputs: 10,000 values over uniformly drawn divisors of $L = 720{,}720 = 2^4 \\cdot 3^2 \\cdot 5 \\cdot 7 \\cdot 11 \\cdot 13$, with $|m| < d$. Every denominator divides L and every value is below 33 in magnitude, so the size bound holds with no redraw.\n- **CH-all:** as CH-closed, but every input is over one denominator drawn as ALL with B = 24; every numerator is below $33 \\cdot 2^{24} < 2^{31}$.\n- **CH-open:** K = 8 steps, each of the four operations with probability 1/4. Inputs: 10,000 values by G2 with B = 12, \u03c3 = 0.5, V = 100 (D = 100; V = 10 is not constructible at 12 bits), $|m| < 2^{12}$. The redraw rule applies.\n- **CH-muldiv:** as CH-open, but each step is mul or div, each with probability 1/2. The redraw rule applies.\n- **CH-none:** as CH-open, but with \u03c3 = 0 (NONE): 100 distinct 12-bit primes, V = 100. The redraw rule applies.\n\n**G6. Redraw rule** (CH-open, CH-muldiv, CH-none). If a step's exact result has $|m|$ or d at or above $2^{31}$, or is a division by zero, $y_k$ is redrawn, up to 16 times; then the chain restarts from a fresh input, and the restart is counted and reported. The generator simulates every chain exactly to apply the rule, so every row runs the same operations.\n\n**Ceiling jobs.** The ceiling runs where every operand shares one denominator and every result of a job shares one: ALL-add (job 1) and CH-all (job 22). On ALL-add, it enters the inputs as one vector; gathers the operands of the two-input operations into two vectors and runs one vector operation, whose result vector holds the results that G3 reuses; then gathers the operands of the result operations, the first from that result vector and the second from the input vector, and runs a second vector operation. Gathering is timed, as operations. On CH-all, it holds the 1,000 chains as one vector; each step gathers the 1,000 $y_k$, negated where the step subtracts, and runs one vector addition. Gathered vectors are working copies and are not counted in its bytes per rational ([spec \u00a712.2](../v0.1.md#122-memory)). It does not run ALL-muldiv (the quotients' common denominator, an lcm of numerators, does not fit), ALL-mixed (no single vector operation), or any other job.\n\n**Width 32 run.** B = 9 and $|m| < 2^9$, with the width-32 operand rule; G3 applies. B = 9 is the largest B at which a result of two entered values can meet an entered value, and at 9 bits only small D is constructible, so W32 runs two jobs, mixed: P50 at V = 1,000 (D = 10) and ALL; reported by item 12.\n\n## Run plan\n\nRows ctl, ctl-null, D1, D2 on every job; ceil where marked. Width 64, B = 20 unless stated. Every job has n = 20,000 operations, except the chains. One job per sharing level and operation mix, plus the chains, the arrival pair and two W32 jobs: 27 jobs.\n\n| Jobs | Family | Parameters | Count |\n| --- | --- | --- | --- |\n| 1\u201318 | **Matrix** | level in {ALL, P75, P50, P25, NONE, LG} \u00d7 mix in {add, muldiv, mixed}; V = 10 (D = 1,000), except ALL (V = 10,000, D = 1); ceil on ALL-add (job 1) | 18 |\n| 19\u201320 | **Arrival** | P50, V = 1 (D = 10,000), mixed: 19 arriving, 20 its early twin (G4) | 2 |\n| 21 | **CH-closed** | G5 | 1 |\n| 22 | **CH-all** | G5; ceil | 1 |\n| 23 | **CH-open** | G5, G6 | 1 |\n| 24 | **CH-muldiv** | G5, G6 | 1 |\n| 25 | **CH-none** | G5, G6 | 1 |\n| 26\u201327 | **W32** (width 32, B = 9; reported only) | P50 at V = 1,000, and ALL; mixed | 2 |\n\nWithin the matrix, jobs are numbered in the order level, then mix, as listed: job $1 + 3\\ell + k$ for level $\\ell$ = 0 (ALL) to 5 (LG) and mix $k$ = 0 (add), 1 (muldiv), 2 (mixed). Coverage of the asked axes: sharing at six levels (\u03c3, LG and ALL); few against many denominators (D = 1 for ALL, 1,000 for the matrix, 10,000 for the arrival pair, Case B of the note, growing with results); early against arriving (job 19 against job 20); each operation family alone and mixed; results reused as operands (G3) and chains (CH).\n\n**Order of work.**\n1. Generate the workloads and the exact references.\n2. Unit tests, in the test build, at widths 64 and 32.\n3. **Pilot**, in two parts:\n   - **Timed pilot.** The mixed job of each sharing level (jobs 3, 6, 9, 12, 15 and 18), rows ctl, ctl-null, D1 and D2, in the timing build, with calibration and **2 rounds**, one timed invocation at a time on core 1 as in item 4. Its results and its calibration are discarded.\n   - **Gate pilot.** The gate (item 3) of **job 20**, whose Design 2 base is the largest of the run (10,000 to 15,000 pieces, all present from its entry phase on), for every row, in the test build, untimed, two rows at a time, after the timed pilot has finished. It is job 20's gate: if every row passes, it is not run again in step 4.\n\n   The harness projects the whole run from the two parts, using the upper figures of the estimate below: the projected total is the time elapsed so far, plus the timed rounds' 35 minutes times the timed pilot's wall time over 2 minutes, plus the remaining gates' 10 minutes times the gate pilot's wall time over 2 minutes, plus the counting runs' 3 minutes times the larger of those two ratios. **If the projected total exceeds 4 hours, the run stops and is reported to the author before anything else runs.**\n4. Gates (item 3), two at a time on both cores.\n5. Counting runs (item 2), two at a time on both cores.\n6. Calibration and the 12 rounds (item 4), job by job, one timed invocation at a time on core 1, with nothing else running.\n\n**Hard stop at 4 hours.** The whole run, from the start of step 1 to the end of the last round, has a hard limit of **4 hours** of wall time: the gates and their audits, the counting runs, the pilot and any re-run under item 5 all count. The harness starts its clock at step 1 and checks it between invocations and, through a timeout on every process, during them. When the limit is reached, it stops whatever is running at once, writes what it has, with the run marked **stopped at 4 hours**, the step and job it was in, and reports to the author. No verdict is reported from a stopped run, and nothing more runs until the author decides.\n\n*Non-normative estimate,* to be confirmed by the pilot. A gcd of pieces or residuals is taken to cost 30\u201360 ns.\n- **Memory.** On the arrival pair, D counts the 10,000 entered denominators and up to 20,000 result denominators, so Design 1's pair table reaches about $D^2/16 \\approx 56$ MB; on the matrix, D reaches about 20,000 and the table about 25 MB.\n- **One complete run of a job (r = 1).**\n  - ctl, every job: 10\u201320 ms, so r is 4 or 8, and an invocation (3 reps of 50\u2013100 ms, and process start) takes 0.2\u20130.35 s.\n  - D2, matrix: add 0.05\u20130.2 s, since addition now refines only leftovers; muldiv 1.5\u20133 s, since each of 10,000 divisions refines its numerator part in one scan of up to $C \\approx 10^4$ pieces, about $5 \\times 10^7$ gcds in all; mixed 0.5\u20131 s. Arrival: 4\u20137 s (10,000 entries, one scan each, about $5 \\times 10^7$ gcds, then the divisions).\n  - D1, matrix: 0.1\u20131.5 s, mostly incidence shifts after divisor insertions; arrival: 1\u20135 s.\n  - Chains, W32 and the ceiling: under 0.5 s each.\n\n  No row is expected to reach the 10 s cap.\n- **One round,** summed over the 27 jobs, one invocation at a time: ctl and ctl-null 11\u201319 s (54 invocations); D2 28\u201364 s (matrix add 1\u20134 s at 3 reps, muldiv 9\u201318 s at 1 rep, mixed 9\u201318 s at 3 reps, arrival 8\u201314 s at 1 rep, chains and W32 1\u201310 s); D1 8\u201374 s (matrix 5\u201354 s, arrival 2\u201310 s, chains and W32 1\u201310 s); ceil about 1 s; process start and workload reading for about 110 invocations, 3\u20135 s: **50\u2013165 s.** Calibration adds about half a round. **Calibration and 12 rounds: 10\u201335 minutes.**\n- **Gates.** About 670 full audits per job and row, each linear in the structures (values, lookup, rows, pair bits; Design 2's pairwise check capped by item 3), 1\u201310 ms each on the larger jobs: 1\u201313 minutes over all jobs and rows. Design 2's incremental coprimality checks and its complete last audit on the jobs with $C \\approx 10^4$ to $1.5 \\times 10^4$ (the muldiv, mixed and arrival jobs): about $C^2/2$ gcds each, 3\u201314 s per job, 1\u20133 minutes in all. With the test-build runs themselves (under a minute), 3\u201317 minutes of CPU, **2\u201310 minutes** on two cores.\n- **Pilot:** timed part 1\u20132 minutes (calibration and 2 rounds of 14\u201341 s); gate pilot 1\u20132 minutes. **Counting runs,** with the repeated subset: **2\u20133 minutes.** **Generation, references and unit tests:** about 10 minutes.\n- **The whole run: about 25 to 65 minutes**, the timed rounds being the largest part. If gcds cost twice the assumed time and Design 1 inserts three times as many divisors, a round takes up to about 6.5 minutes, the timed part up to about 80 minutes and the whole run about 2 to 2.5 hours. That is below 3 hours, so no reps or rounds are reduced, and below the 4-hour stop.\n",
+"code_sessions": [
+{
+"time": "2026-10-28T23:49:53-05:00",
+"code": {
+"ctl": "8d447bff474d224f71b8096fa78d2d7e70e348f20ed8b5ea12246db22be24b15",
+"D1": "a43cd629f85c686ad7deba44730c9d8d045bf482fcebe9efb21a8eac62cc58cd",
+"D2": "c18dbcf25175bb9c7378140c050b5dc3b2ba59dd13929f72ce6529d54b370415",
+"ceil": "1f15b15b5f8cf9831879ce141462c194122dbba430556810f46d9d42800459ac"
+},
+"int": "73d017d2a566507f832ccf0576ce81065d972c3ac07f2a2ba6cb8560984a39e1"
+}
+],
+"gen": {
+"1": {
+"job": 1,
+"name": "ALL-add",
+"seed": 20261029,
+"D": 1,
+"V": 10000,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"sharing": {
+"pairs": 0,
+"note": "fewer than two distinct denominators: no pairs"
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9960,
+"result_operand_share": 0.249,
+"distinct_result_dens_as_operands": 5,
+"of_which_not_entered_dens": 4
+},
+"constructible": true,
+"toy": false
+},
+"2": {
+"job": 2,
+"name": "ALL-muldiv",
+"seed": 20261030,
+"D": 1,
+"V": 10000,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"sharing": {
+"pairs": 0,
+"note": "fewer than two distinct denominators: no pairs"
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9908,
+"result_operand_share": 0.2477,
+"distinct_result_dens_as_operands": 2355,
+"of_which_not_entered_dens": 2355
+},
+"constructible": true,
+"toy": false
+},
+"3": {
+"job": 3,
+"name": "ALL-mixed",
+"seed": 20261031,
+"D": 1,
+"V": 10000,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"sharing": {
+"pairs": 0,
+"note": "fewer than two distinct denominators: no pairs"
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9976,
+"result_operand_share": 0.2494,
+"distinct_result_dens_as_operands": 1222,
+"of_which_not_entered_dens": 1221
+},
+"constructible": true,
+"toy": false
+},
+"4": {
+"job": 4,
+"name": "P75-add",
+"seed": 20261032,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 68,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.6319,
+"mean_gcd_bits": 5.010128184839373,
+"mean_rel_gcd_bits": 0.18249736842103984
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10010,
+"result_operand_share": 0.25025,
+"distinct_result_dens_as_operands": 5017,
+"of_which_not_entered_dens": 5016
+},
+"constructible": true,
+"toy": false
+},
+"5": {
+"job": 5,
+"name": "P75-muldiv",
+"seed": 20261033,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 71,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.6422,
+"mean_gcd_bits": 5.066801619433198,
+"mean_rel_gcd_bits": 0.18651131578946148
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10092,
+"result_operand_share": 0.2523,
+"distinct_result_dens_as_operands": 5028,
+"of_which_not_entered_dens": 5028
+},
+"constructible": true,
+"toy": false
+},
+"6": {
+"job": 6,
+"name": "P75-mixed",
+"seed": 20261034,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 72,
+"redraws_max": 3,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.6331,
+"mean_gcd_bits": 5.0988785341968095,
+"mean_rel_gcd_bits": 0.1858544736841985
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10003,
+"result_operand_share": 0.250075,
+"distinct_result_dens_as_operands": 4986,
+"of_which_not_entered_dens": 4986
+},
+"constructible": true,
+"toy": false
+},
+"7": {
+"job": 7,
+"name": "P50-add",
+"seed": 20261035,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 32,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.3792,
+"mean_gcd_bits": 4.285601265822785,
+"mean_rel_gcd_bits": 0.11603736842104624
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10014,
+"result_operand_share": 0.25035,
+"distinct_result_dens_as_operands": 4981,
+"of_which_not_entered_dens": 4977
+},
+"constructible": true,
+"toy": false
+},
+"8": {
+"job": 8,
+"name": "P50-muldiv",
+"seed": 20261036,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 23,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.3919,
+"mean_gcd_bits": 4.26103597856596,
+"mean_rel_gcd_bits": 0.11754631578946717
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9946,
+"result_operand_share": 0.24865,
+"distinct_result_dens_as_operands": 4989,
+"of_which_not_entered_dens": 4989
+},
+"constructible": true,
+"toy": false
+},
+"9": {
+"job": 9,
+"name": "P50-mixed",
+"seed": 20261037,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 21,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.3785,
+"mean_gcd_bits": 4.211624834874504,
+"mean_rel_gcd_bits": 0.11442447368420423
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9999,
+"result_operand_share": 0.249975,
+"distinct_result_dens_as_operands": 4978,
+"of_which_not_entered_dens": 4976
+},
+"constructible": true,
+"toy": false
+},
+"10": {
+"job": 10,
+"name": "P25-add",
+"seed": 20261038,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 4,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.1044,
+"mean_gcd_bits": 3.7557471264367814,
+"mean_rel_gcd_bits": 0.0668115789473654
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9861,
+"result_operand_share": 0.246525,
+"distinct_result_dens_as_operands": 4922,
+"of_which_not_entered_dens": 4918
+},
+"constructible": true,
+"toy": false
+},
+"11": {
+"job": 11,
+"name": "P25-muldiv",
+"seed": 20261039,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 9,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.1018,
+"mean_gcd_bits": 3.8280943025540277,
+"mean_rel_gcd_bits": 0.06652684210525973
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10060,
+"result_operand_share": 0.2515,
+"distinct_result_dens_as_operands": 5026,
+"of_which_not_entered_dens": 5026
+},
+"constructible": true,
+"toy": false
+},
+"12": {
+"job": 12,
+"name": "P25-mixed",
+"seed": 20261040,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 10,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.1007,
+"mean_gcd_bits": 4.001986097318769,
+"mean_rel_gcd_bits": 0.06742736842104982
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10027,
+"result_operand_share": 0.250675,
+"distinct_result_dens_as_operands": 5017,
+"of_which_not_entered_dens": 5014
+},
+"constructible": true,
+"toy": false
+},
+"13": {
+"job": 13,
+"name": "NONE-add",
+"seed": 20261041,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 11,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.0,
+"mean_gcd_bits": null,
+"mean_rel_gcd_bits": 0.05000000000000794
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10034,
+"result_operand_share": 0.25085,
+"distinct_result_dens_as_operands": 4997,
+"of_which_not_entered_dens": 4994
+},
+"constructible": true,
+"toy": false
+},
+"14": {
+"job": 14,
+"name": "NONE-muldiv",
+"seed": 20261042,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 15,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.0,
+"mean_gcd_bits": null,
+"mean_rel_gcd_bits": 0.05000000000000794
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10096,
+"result_operand_share": 0.2524,
+"distinct_result_dens_as_operands": 4966,
+"of_which_not_entered_dens": 4966
+},
+"constructible": true,
+"toy": false
+},
+"15": {
+"job": 15,
+"name": "NONE-mixed",
+"seed": 20261043,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 10,
+"redraws_max": 1,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.0,
+"mean_gcd_bits": null,
+"mean_rel_gcd_bits": 0.05000000000000794
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10023,
+"result_operand_share": 0.250575,
+"distinct_result_dens_as_operands": 5000,
+"of_which_not_entered_dens": 4998
+},
+"constructible": true,
+"toy": false
+},
+"16": {
+"job": 16,
+"name": "LG-add",
+"seed": 20261044,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"lg_failures": 0,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.233,
+"mean_gcd_bits": 6.673390557939914,
+"mean_rel_gcd_bits": 0.11957315789472366
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10061,
+"result_operand_share": 0.251525,
+"distinct_result_dens_as_operands": 4973,
+"of_which_not_entered_dens": 4969
+},
+"constructible": true,
+"toy": false
+},
+"17": {
+"job": 17,
+"name": "LG-muldiv",
+"seed": 20261045,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"lg_failures": 0,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.2283,
+"mean_gcd_bits": 6.734559789750328,
+"mean_rel_gcd_bits": 0.1189099999999873
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10061,
+"result_operand_share": 0.251525,
+"distinct_result_dens_as_operands": 4961,
+"of_which_not_entered_dens": 4961
+},
+"constructible": true,
+"toy": false
+},
+"18": {
+"job": 18,
+"name": "LG-mixed",
+"seed": 20261046,
+"D": 1000,
+"V": 10,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 0,
+"redraws_max": 0,
+"lg_failures": 0,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.2373,
+"mean_gcd_bits": 6.693636746734092,
+"mean_rel_gcd_bits": 0.12105710526314402
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10029,
+"result_operand_share": 0.250725,
+"distinct_result_dens_as_operands": 5032,
+"of_which_not_entered_dens": 5030
+},
+"constructible": true,
+"toy": false
+},
+"19": {
+"job": 19,
+"name": "ARR-arriving",
+"seed": 20261047,
+"D": 10000,
+"V": 1,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 3196,
+"redraws_max": 11,
+"operands": {
+"operands": 40000,
+"result_operands": 10122,
+"result_operand_share": 0.25305,
+"distinct_result_dens_as_operands": 4953,
+"of_which_not_entered_dens": 4951
+},
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.4132,
+"mean_gcd_bits": 3.9482090997095836,
+"mean_rel_gcd_bits": 0.11462973684209904
+},
+"constructible": true,
+"toy": false
+},
+"20": {
+"job": 20,
+"name": "ARR-early-twin",
+"seed": 20261047,
+"D": 10000,
+"V": 1,
+"B": 20,
+"n_in": 10000,
+"nops": 20000,
+"width": 64,
+"redraws_total": 3196,
+"redraws_max": 11,
+"built_from": "job 19's workload: the same batches, all entered first, then the same operations",
+"operands": {
+"operands": 40000,
+"result_operands": 10122,
+"result_operand_share": 0.25305,
+"distinct_result_dens_as_operands": 4953,
+"of_which_not_entered_dens": 4951
+},
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.4132,
+"mean_gcd_bits": 3.9482090997095836,
+"mean_rel_gcd_bits": 0.11462973684209904
+},
+"constructible": true,
+"toy": false
+},
+"21": {
+"job": 21,
+"name": "CH-closed",
+"seed": 20261049,
+"n_in": 10000,
+"chains": 1000,
+"K": 32,
+"width": 64,
+"D_entered": 240,
+"g6_redraws": 0,
+"restarts": 0,
+"nops": 32000,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.9358,
+"mean_gcd_bits": 6.0552468476170125,
+"mean_rel_gcd_bits": 0.694650014087222
+},
+"operands": {
+"operands": 64000,
+"result_operands": 31000,
+"result_operand_share": 0.484375,
+"distinct_result_dens_as_operands": 226,
+"of_which_not_entered_dens": 0
+},
+"constructible": true,
+"toy": false
+},
+"22": {
+"job": 22,
+"name": "CH-all",
+"seed": 20261050,
+"n_in": 10000,
+"chains": 1000,
+"K": 32,
+"width": 64,
+"D_entered": 1,
+"g6_redraws": 0,
+"restarts": 0,
+"nops": 32000,
+"sharing": {
+"pairs": 0,
+"note": "fewer than two distinct denominators: no pairs"
+},
+"operands": {
+"operands": 64000,
+"result_operands": 31000,
+"result_operand_share": 0.484375,
+"distinct_result_dens_as_operands": 12,
+"of_which_not_entered_dens": 11
+},
+"constructible": true,
+"toy": false
+},
+"23": {
+"job": 23,
+"name": "CH-open",
+"seed": 20261051,
+"n_in": 10000,
+"chains": 1000,
+"K": 8,
+"width": 64,
+"redraws_total": 35,
+"redraws_max": 4,
+"D": 100,
+"V": 100,
+"B": 12,
+"g6_redraws": 57798,
+"restarts": 2351,
+"nops": 8000,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.1588,
+"mean_gcd_bits": 4.373425692695214,
+"mean_rel_gcd_bits": 0.1356045454545372
+},
+"operands": {
+"operands": 16000,
+"result_operands": 4649,
+"result_operand_share": 0.2905625,
+"distinct_result_dens_as_operands": 4058,
+"of_which_not_entered_dens": 4045
+},
+"constructible": true,
+"toy": false
+},
+"24": {
+"job": 24,
+"name": "CH-muldiv",
+"seed": 20261052,
+"n_in": 10000,
+"chains": 1000,
+"K": 8,
+"width": 64,
+"redraws_total": 24,
+"redraws_max": 5,
+"D": 100,
+"V": 100,
+"B": 12,
+"g6_redraws": 54986,
+"restarts": 2209,
+"nops": 8000,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.1535,
+"mean_gcd_bits": 4.009120521172639,
+"mean_rel_gcd_bits": 0.12846287878787344
+},
+"operands": {
+"operands": 16000,
+"result_operands": 4791,
+"result_operand_share": 0.2994375,
+"distinct_result_dens_as_operands": 4554,
+"of_which_not_entered_dens": 4547
+},
+"constructible": true,
+"toy": false
+},
+"25": {
+"job": 25,
+"name": "CH-none",
+"seed": 20261053,
+"n_in": 10000,
+"chains": 1000,
+"K": 8,
+"width": 64,
+"redraws_total": 40,
+"redraws_max": 6,
+"D": 100,
+"V": 100,
+"B": 12,
+"g6_redraws": 93753,
+"restarts": 4741,
+"nops": 8000,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.0,
+"mean_gcd_bits": null,
+"mean_rel_gcd_bits": 0.08333333333334328
+},
+"operands": {
+"operands": 16000,
+"result_operands": 2259,
+"result_operand_share": 0.1411875,
+"distinct_result_dens_as_operands": 1854,
+"of_which_not_entered_dens": 1831
+},
+"constructible": true,
+"toy": false
+},
+"26": {
+"job": 26,
+"name": "W32-P50-mixed",
+"seed": 20261054,
+"D": 10,
+"V": 1000,
+"B": 9,
+"n_in": 10000,
+"nops": 20000,
+"width": 32,
+"redraws_total": 3,
+"redraws_max": 2,
+"sharing": {
+"pairs": 10000,
+"frac_gcd_gt1": 0.0229,
+"mean_gcd_bits": 2.0,
+"mean_rel_gcd_bits": 0.12696388888888774
+},
+"operands": {
+"operands": 40000,
+"result_operands": 9953,
+"result_operand_share": 0.248825,
+"distinct_result_dens_as_operands": 1115,
+"of_which_not_entered_dens": 1105
+},
+"constructible": true,
+"toy": false
+},
+"27": {
+"job": 27,
+"name": "W32-ALL-mixed",
+"seed": 20261055,
+"D": 1,
+"V": 10000,
+"B": 9,
+"n_in": 10000,
+"nops": 20000,
+"width": 32,
+"redraws_total": 0,
+"redraws_max": 0,
+"sharing": {
+"pairs": 0,
+"note": "fewer than two distinct denominators: no pairs"
+},
+"operands": {
+"operands": 40000,
+"result_operands": 10027,
+"result_operand_share": 0.250675,
+"distinct_result_dens_as_operands": 432,
+"of_which_not_entered_dens": 431
+},
+"constructible": true,
+"toy": false
+}
+},
+"workload_sha256": {
+"1": "5df9cd42ba895ac50af7c40652912b43365abb091d15a4caf5b9dd429787604a",
+"2": "d7206b28305de82c7176a0c5ea41eb6d3ab1c92128b5405fc7ce0403ae585625",
+"3": "4bbece83baa80eecf1a634f7a312539074df8fba1cef67aab733fdf7453f0e14",
+"4": "54cf1faf6cca977d07826dac98ef34ebddc35e237d4662ca64f5c03ca2f1b51e",
+"5": "385f3d241f348862fc76105467e0b55a88ec53e2cfe84628a56d4102c9c5b4cc",
+"6": "91ffaab7a5c3dc552a4cc776e8fbb4e3fd736371c6925b141cb6741ed5cae9b1",
+"7": "c142f6b06ccdf8981ec8f56cfbb1878dce7f1d5557f26fab7801214f146ee49d",
+"8": "e92dfd0acc8e59dd86669366d8bb37705de5e6bf41492867b4b8f92131329c74",
+"9": "5deb25cea952f1f0a7b02f4cec07d9cb7b623d698eaaf83a0264be00386f36db",
+"10": "654db46f8173785b075dd5f8a9b382a8ad8adf44e721c109ad0215442a249cdd",
+"11": "c2329e1245cf306f0a82133fc5119cf685e020498cccafe2fe5d9284160c9860",
+"12": "5b05edfb056a3e75fe53eb117a36e0562de28f32af7f2e18ba151022caa309eb",
+"13": "321710ccc6c5bc72e5a3f8e73a00a0c9313eb0f6489460a2a778f95374f3c3c4",
+"14": "0fe49b052c180bb7c8812e65a55d244008f1d6e5786b74c27b8c120fe6364461",
+"15": "1228557c96a2faf7ad9c5454cf733b662de121c2508ed532e2830518e1827aee",
+"16": "90e3a39c437d8dd010738a1e8b1350388ce8d651137a31cec07d4b16bdaf0696",
+"17": "54beb62a88d872e23323431b7d20235166490e1d2a635ad2190531c966b4b10f",
+"18": "3b70ad396a4325add16442e7538052f01537e8c3acb70bf42ad44fa415beb84c",
+"19": "195fa17e4ff5cdc385e61242c0b27ab1a276805c2d805ae1fb96d3feb927ccb4",
+"20": "f9b10016002db23684894b5cf24e60f958b2e3a2599b3ead041b40dba5de6c76",
+"21": "a9e1cc2b28ddc96d795fc2aae3ef8dfb8a9040830813997ddcadf3979b2b6024",
+"22": "1b80034b6a84b282b7455db72333568fa1292d90a9bfb9eec80deb158c39517f",
+"23": "fd032e0e34ef6ace700d979043dd51a4d125d36fceab6b8f1fb7c1a148f83cbc",
+"24": "b27b3161d494294876182def2a4ff6197d674330469214d13e9741ab5f72488b",
+"25": "58d0197fc4864662bb9927bbfc24e21aeea00f37874c03452095cb3b623504eb",
+"26": "2715e024fd84d0ad024bcea146ae2612e0af378422f63ba6e58704229bb943e9",
+"27": "5cc5e3ffa93d05d3255c485b9ebeaebed77a2cf906a86ac80d61e54eec7a4d28"
+},
+"not_constructible": [],
+"elapsed_saved": 52.116157472999475,
+"unit_tests": {
+"unit-0-w64": {
+"rc": 0,
+"out": "unit (width 64): 3379 checks, 0 failures\n"
+},
+"unit-0-w32": {
+"rc": 0,
+"out": "unit (width 32): 3379 checks, 0 failures\n"
+}
+},
+"pilot_records": [
+{
+"job": 3,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.15717783400032204,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+2772527,
+761759,
+1822404,
+188364
+],
+[
+2,
+5087096,
+1455143,
+3508538,
+123415
+],
+[
+4,
+9721444,
+2771722,
+6766593,
+183129
+],
+[
+8,
+19580635,
+5646258,
+13577743,
+356634
+],
+[
+16,
+39163760,
+11136396,
+27308380,
+718984
+],
+[
+32,
+78080014,
+22467625,
+54158791,
+1453598
+]
+],
+"r": 32,
+"rep_ns": 78080014,
+"reps": 3
+},
+{
+"job": 3,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.10564453000006324,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+4738498,
+792060,
+3728575,
+217863
+],
+[
+2,
+6584892,
+1521590,
+4940980,
+122322
+],
+[
+4,
+12766824,
+2927763,
+9597748,
+241313
+],
+[
+8,
+25646878,
+5838808,
+19322501,
+485569
+],
+[
+16,
+51207104,
+11881621,
+38348089,
+977394
+]
+],
+"r": 16,
+"rep_ns": 51207104,
+"reps": 3
+},
+{
+"job": 3,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.2181912830001238,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+215462520,
+779604,
+214476867,
+206049
+]
+],
+"r": 1,
+"rep_ns": 215462520,
+"reps": 3
+},
+{
+"job": 3,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.24175857200043538,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+79148602,
+22802072,
+54762761,
+1583769
+],
+[
+1,
+80973673,
+23627118,
+55796623,
+1549932
+],
+[
+2,
+78322146,
+22539893,
+54342482,
+1439771
+]
+],
+"r": 32,
+"reps": 3,
+"total": 2447567.0625,
+"entry": 704371.65625,
+"ops": 1698202.5625,
+"read": 44992.84375,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.28204008499960764,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+87687511,
+24766178,
+61154380,
+1766953
+],
+[
+1,
+105544704,
+30886737,
+72584234,
+2073733
+],
+[
+2,
+85833990,
+23827651,
+60396849,
+1609490
+]
+],
+"r": 32,
+"reps": 3,
+"total": 2682312.1875,
+"entry": 744614.09375,
+"ops": 1887401.53125,
+"read": 50296.5625,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.15566069499982405,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+50402197,
+11887274,
+37425508,
+1089415
+],
+[
+1,
+50154535,
+12139062,
+37173832,
+841641
+],
+[
+2,
+49326541,
+12179798,
+36300042,
+846701
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3082908.8125,
+"entry": 761237.375,
+"ops": 2268752.625,
+"read": 52918.8125,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 0.6516073490001872,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+218322302,
+774500,
+217365970,
+181832
+],
+[
+1,
+215934681,
+718778,
+215159314,
+56589
+],
+[
+2,
+214220341,
+718209,
+213444097,
+58035
+]
+],
+"r": 1,
+"reps": 3,
+"total": 214220341.0,
+"entry": 718209.0,
+"ops": 213444097.0,
+"read": 58035.0,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.23952511900006357,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+79563436,
+22869347,
+55173574,
+1520515
+],
+[
+1,
+78247428,
+22536272,
+54296216,
+1414940
+],
+[
+2,
+78704771,
+22577126,
+54702528,
+1425117
+]
+],
+"r": 32,
+"reps": 3,
+"total": 2445232.125,
+"entry": 704258.5,
+"ops": 1696756.75,
+"read": 44216.875,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.15364196799964702,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+50163990,
+11926342,
+37212476,
+1025172
+],
+[
+1,
+48617843,
+11899960,
+35856841,
+861042
+],
+[
+2,
+49095397,
+12012512,
+36145910,
+936975
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3038615.1875,
+"entry": 743747.5,
+"ops": 2241052.5625,
+"read": 53815.125,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 0.653565379999236,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+219357723,
+764708,
+218415305,
+177710
+],
+[
+1,
+214910047,
+719870,
+214136276,
+53901
+],
+[
+2,
+216118363,
+737451,
+215325387,
+55525
+]
+],
+"r": 1,
+"reps": 3,
+"total": 214910047.0,
+"entry": 719870.0,
+"ops": 214136276.0,
+"read": 53901.0,
+"label": "pilot"
+},
+{
+"job": 3,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.269819840999844,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+78808345,
+22630625,
+54682691,
+1495029
+],
+[
+1,
+85999799,
+23544765,
+60695667,
+1759367
+],
+[
+2,
+101717461,
+29609477,
+69862646,
+2245338
+]
+],
+"r": 32,
+"reps": 3,
+"total": 2687493.71875,
+"entry": 735773.90625,
+"ops": 1896739.59375,
+"read": 54980.21875,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.11466345899953012,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+3859572,
+827165,
+2893385,
+139022
+],
+[
+2,
+7175014,
+1470905,
+5612311,
+91798
+],
+[
+4,
+14429842,
+2879869,
+11377746,
+172227
+],
+[
+8,
+28842159,
+5926498,
+22563601,
+352060
+],
+[
+16,
+57449299,
+11592757,
+45133398,
+723144
+]
+],
+"r": 16,
+"rep_ns": 57449299,
+"reps": 3
+},
+{
+"job": 6,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.16466439199939487,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+33737082,
+921443,
+32631058,
+184581
+],
+[
+2,
+43760009,
+1698467,
+41938364,
+123178
+],
+[
+4,
+80052359,
+3382781,
+76450414,
+219164
+]
+],
+"r": 4,
+"rep_ns": 80052359,
+"reps": 3
+},
+{
+"job": 6,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.24169714799973008,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+238316334,
+2504874,
+235626508,
+184952
+]
+],
+"r": 1,
+"rep_ns": 238316334,
+"reps": 3
+},
+{
+"job": 6,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.174563562000003,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+57390626,
+11541451,
+45041305,
+807870
+],
+[
+1,
+57159693,
+11629623,
+44832869,
+697201
+],
+[
+2,
+57080298,
+11511363,
+44865730,
+703205
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3567518.625,
+"entry": 719460.1875,
+"ops": 2804108.125,
+"read": 43950.3125,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.17454280299989477,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+57396466,
+11585233,
+45017543,
+793690
+],
+[
+1,
+57154043,
+11677466,
+44784577,
+692000
+],
+[
+2,
+57170413,
+11526301,
+44944947,
+699165
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3572127.6875,
+"entry": 729841.625,
+"ops": 2799036.0625,
+"read": 43250.0,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.26657318500019755,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+97800486,
+3493111,
+93940397,
+366978
+],
+[
+1,
+80742602,
+3420943,
+77089693,
+231966
+],
+[
+2,
+80210011,
+3288099,
+76689641,
+232271
+]
+],
+"r": 4,
+"reps": 3,
+"total": 20052502.75,
+"entry": 822024.75,
+"ops": 19172410.25,
+"read": 58067.75,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 0.715573110999685,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+236999689,
+2497049,
+234320173,
+182467
+],
+[
+1,
+238867921,
+2470446,
+236341989,
+55486
+],
+[
+2,
+235451169,
+2452909,
+232940365,
+57895
+]
+],
+"r": 1,
+"reps": 3,
+"total": 235451169.0,
+"entry": 2452909.0,
+"ops": 232940365.0,
+"read": 57895.0,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.17398237499946845,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+57439518,
+11624297,
+44971542,
+843679
+],
+[
+1,
+56892966,
+11508809,
+44673795,
+710362
+],
+[
+2,
+56812477,
+11429552,
+44638326,
+744599
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3550779.8125,
+"entry": 714347.0,
+"ops": 2789895.375,
+"read": 46537.4375,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.2668204310002693,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+97703662,
+3397939,
+93934454,
+371269
+],
+[
+1,
+80801234,
+3366822,
+77205439,
+228973
+],
+[
+2,
+80562880,
+3374885,
+76957699,
+230296
+]
+],
+"r": 4,
+"reps": 3,
+"total": 20140720.0,
+"entry": 843721.25,
+"ops": 19239424.75,
+"read": 57574.0,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 0.7110417730000336,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+236174705,
+2519572,
+233459848,
+195285
+],
+[
+1,
+235485294,
+2398417,
+233027333,
+59544
+],
+[
+2,
+235105367,
+2447862,
+232598085,
+59420
+]
+],
+"r": 1,
+"reps": 3,
+"total": 235105367.0,
+"entry": 2447862.0,
+"ops": 232598085.0,
+"read": 59420.0,
+"label": "pilot"
+},
+{
+"job": 6,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.17526667800029827,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+57608803,
+11682981,
+45121805,
+804017
+],
+[
+1,
+57466033,
+11519087,
+45238902,
+708044
+],
+[
+2,
+57033503,
+11553202,
+44777412,
+702889
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3564593.9375,
+"entry": 722075.125,
+"ops": 2798588.25,
+"read": 43930.5625,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.11244134899970959,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+3832203,
+750549,
+2940069,
+141585
+],
+[
+2,
+7017863,
+1413740,
+5516671,
+87452
+],
+[
+4,
+14142117,
+2848961,
+11110152,
+183004
+],
+[
+8,
+28175272,
+5793871,
+22028023,
+353378
+],
+[
+16,
+56361877,
+11456565,
+44180282,
+725030
+]
+],
+"r": 16,
+"rep_ns": 56361877,
+"reps": 3
+},
+{
+"job": 9,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.17589844800022547,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+27892092,
+928765,
+26781401,
+181926
+],
+[
+2,
+22292076,
+1685895,
+20497380,
+108801
+],
+[
+4,
+39751432,
+3303639,
+36230550,
+217243
+],
+[
+8,
+77124398,
+6700530,
+69989219,
+434649
+]
+],
+"r": 8,
+"rep_ns": 77124398,
+"reps": 3
+},
+{
+"job": 9,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.263272164999762,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+259723123,
+10047809,
+249477275,
+198039
+]
+],
+"r": 1,
+"rep_ns": 259723123,
+"reps": 3
+},
+{
+"job": 9,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.17234983399976045,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+56823367,
+11634806,
+44402397,
+786164
+],
+[
+1,
+56356731,
+11486282,
+44188107,
+682342
+],
+[
+2,
+56189063,
+11485974,
+44018231,
+684858
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3511816.4375,
+"entry": 717873.375,
+"ops": 2751139.4375,
+"read": 42803.625,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.17207100599989644,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+56574470,
+11494539,
+44246198,
+833733
+],
+[
+1,
+56227858,
+11420771,
+44098400,
+708687
+],
+[
+2,
+56243154,
+11446308,
+44049310,
+747536
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3514241.125,
+"entry": 713798.1875,
+"ops": 2756150.0,
+"read": 44292.9375,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.2581633330000841,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+97658603,
+6896153,
+90137824,
+624626
+],
+[
+1,
+74429366,
+6690610,
+67291199,
+447557
+],
+[
+2,
+74327021,
+6652999,
+67227803,
+446219
+]
+],
+"r": 8,
+"reps": 3,
+"total": 9290877.625,
+"entry": 831624.875,
+"ops": 8403475.375,
+"read": 55777.375,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 0.7849196150000353,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+261540110,
+10116032,
+251224598,
+199480
+],
+[
+1,
+259267279,
+10012231,
+249194094,
+60954
+],
+[
+2,
+259614068,
+10026131,
+249527872,
+60065
+]
+],
+"r": 1,
+"reps": 3,
+"total": 259267279.0,
+"entry": 10012231.0,
+"ops": 249194094.0,
+"read": 60954.0,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.1728756960001192,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+57059460,
+11579421,
+44664444,
+815595
+],
+[
+1,
+56511268,
+11495175,
+44278665,
+737428
+],
+[
+2,
+56432882,
+11489233,
+44208718,
+734931
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3527055.125,
+"entry": 718077.0625,
+"ops": 2763044.875,
+"read": 45933.1875,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.2587391150000258,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+98176522,
+6719153,
+90817605,
+639764
+],
+[
+1,
+74389427,
+6716098,
+67222722,
+450607
+],
+[
+2,
+74526698,
+6671459,
+67405936,
+449303
+]
+],
+"r": 8,
+"reps": 3,
+"total": 9298678.375,
+"entry": 839512.25,
+"ops": 8402840.25,
+"read": 56325.875,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 0.7826428969992776,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+259873030,
+10048383,
+249622453,
+202194
+],
+[
+1,
+259126880,
+10033970,
+249034091,
+58819
+],
+[
+2,
+259336427,
+10004211,
+249273140,
+59076
+]
+],
+"r": 1,
+"reps": 3,
+"total": 259126880.0,
+"entry": 10033970.0,
+"ops": 249034091.0,
+"read": 58819.0,
+"label": "pilot"
+},
+{
+"job": 9,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.17255439600012323,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+56867653,
+11604875,
+44455897,
+806881
+],
+[
+1,
+56478991,
+11564665,
+44183276,
+731050
+],
+[
+2,
+56319003,
+11513417,
+44088492,
+717094
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3519937.6875,
+"entry": 719588.5625,
+"ops": 2755530.75,
+"read": 44818.375,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.10874407099981909,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+3680214,
+757965,
+2780238,
+142011
+],
+[
+2,
+6864017,
+1431785,
+5339461,
+92771
+],
+[
+4,
+13727654,
+2875301,
+10673870,
+178483
+],
+[
+8,
+27318751,
+5714839,
+21249368,
+354544
+],
+[
+16,
+54496976,
+11503603,
+42276545,
+716828
+]
+],
+"r": 16,
+"rep_ns": 54496976,
+"reps": 3
+},
+{
+"job": 12,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.14745851099996798,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+21076749,
+940293,
+19947217,
+189239
+],
+[
+2,
+24710908,
+1688582,
+22912675,
+109651
+],
+[
+4,
+31217187,
+3290787,
+27709415,
+216985
+],
+[
+8,
+62971694,
+6674713,
+55861399,
+435582
+]
+],
+"r": 8,
+"rep_ns": 62971694,
+"reps": 3
+},
+{
+"job": 12,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.333851334999963,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+330539883,
+20817235,
+309512312,
+210336
+]
+],
+"r": 1,
+"rep_ns": 330539883,
+"reps": 3
+},
+{
+"job": 12,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.16619635299957736,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+54625536,
+11476081,
+42340527,
+808928
+],
+[
+1,
+54488212,
+11337998,
+42452383,
+697831
+],
+[
+2,
+54287451,
+11298178,
+42304155,
+685118
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3392965.6875,
+"entry": 706136.125,
+"ops": 2644009.6875,
+"read": 42819.875,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.16707862200019008,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55008205,
+11489412,
+42716370,
+802423
+],
+[
+1,
+54832794,
+11682736,
+42411460,
+738598
+],
+[
+2,
+54421436,
+11386138,
+42343465,
+691833
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3401339.75,
+"entry": 711633.625,
+"ops": 2646466.5625,
+"read": 43239.5625,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.23103206500036322,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+86825224,
+6819652,
+79371624,
+633948
+],
+[
+1,
+67613050,
+6847479,
+60334622,
+430949
+],
+[
+2,
+66530308,
+6685740,
+59415108,
+429460
+]
+],
+"r": 8,
+"reps": 3,
+"total": 8316288.5,
+"entry": 835717.5,
+"ops": 7426888.5,
+"read": 53682.5,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 1.0327514330001577,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+330368786,
+20909710,
+309259816,
+199260
+],
+[
+1,
+350711989,
+20862750,
+329759005,
+90234
+],
+[
+2,
+347200760,
+24712998,
+322426007,
+61755
+]
+],
+"r": 1,
+"reps": 3,
+"total": 347200760.0,
+"entry": 24712998.0,
+"ops": 322426007.0,
+"read": 61755.0,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.18250128799991217,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55014816,
+11601942,
+42602530,
+810344
+],
+[
+1,
+54657291,
+11362796,
+42576488,
+718007
+],
+[
+2,
+69738078,
+15431717,
+53127363,
+1178998
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3416080.6875,
+"entry": 710174.75,
+"ops": 2661030.5,
+"read": 44875.4375,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.28265058800025145,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+121562085,
+8233559,
+112471897,
+856629
+],
+[
+1,
+75770155,
+6813529,
+68461860,
+494766
+],
+[
+2,
+74184556,
+6777492,
+66926884,
+480180
+]
+],
+"r": 8,
+"reps": 3,
+"total": 9273069.5,
+"entry": 847186.5,
+"ops": 8365860.5,
+"read": 60022.5,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 1.0273307629995543,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+331962872,
+20833632,
+310923256,
+205984
+],
+[
+1,
+343434858,
+20752743,
+322617335,
+64780
+],
+[
+2,
+347133804,
+20726913,
+326347476,
+59415
+]
+],
+"r": 1,
+"reps": 3,
+"total": 343434858.0,
+"entry": 20752743.0,
+"ops": 322617335.0,
+"read": 64780.0,
+"label": "pilot"
+},
+{
+"job": 12,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.19973850800033688,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+58123453,
+12111436,
+44923051,
+1088966
+],
+[
+1,
+67269424,
+13804987,
+51900143,
+1564294
+],
+[
+2,
+71268040,
+13632111,
+56207835,
+1428094
+]
+],
+"r": 16,
+"reps": 3,
+"total": 4204339.0,
+"entry": 862811.6875,
+"ops": 3243758.9375,
+"read": 97768.375,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.12556823599970812,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+4430310,
+855453,
+3332183,
+242674
+],
+[
+2,
+9024779,
+1809417,
+7041380,
+173982
+],
+[
+4,
+17782975,
+3375939,
+14060268,
+346768
+],
+[
+8,
+34630366,
+6988524,
+26940505,
+701337
+],
+[
+16,
+56515550,
+11707827,
+44001802,
+805921
+]
+],
+"r": 16,
+"rep_ns": 56515550,
+"reps": 3
+},
+{
+"job": 15,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.16199174699977448,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+22222662,
+923892,
+21089935,
+208835
+],
+[
+2,
+26544746,
+1738341,
+24687322,
+119083
+],
+[
+4,
+37763395,
+3375391,
+34153226,
+234778
+],
+[
+8,
+68348677,
+6643359,
+61233162,
+472156
+]
+],
+"r": 8,
+"rep_ns": 68348677,
+"reps": 3
+},
+{
+"job": 15,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.5488252960003592,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+545241178,
+30882937,
+514154809,
+203432
+]
+],
+"r": 1,
+"rep_ns": 545241178,
+"reps": 3
+},
+{
+"job": 15,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.165552559000389,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+54532918,
+11522005,
+42172503,
+838410
+],
+[
+1,
+54088606,
+11329556,
+42059909,
+699141
+],
+[
+2,
+54017803,
+11381126,
+41939035,
+697642
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3376112.6875,
+"entry": 711320.375,
+"ops": 2621189.6875,
+"read": 43602.625,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.16513902399947256,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+54517538,
+11482785,
+42212772,
+821981
+],
+[
+1,
+53977279,
+11479458,
+41727749,
+770072
+],
+[
+2,
+53959124,
+11364171,
+41883283,
+711670
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3372445.25,
+"entry": 710260.6875,
+"ops": 2617705.1875,
+"read": 44479.375,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.22517207199962286,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+85251864,
+6734038,
+77908176,
+609650
+],
+[
+1,
+65494232,
+6700292,
+58365086,
+428854
+],
+[
+2,
+65962504,
+6767605,
+58749559,
+445340
+]
+],
+"r": 8,
+"reps": 3,
+"total": 8186779.0,
+"entry": 837536.5,
+"ops": 7295635.75,
+"read": 53606.75,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 1.577912355999615,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+526227579,
+32004602,
+494020979,
+201998
+],
+[
+1,
+524551688,
+31148821,
+493341679,
+61188
+],
+[
+2,
+523113090,
+30788348,
+492264702,
+60040
+]
+],
+"r": 1,
+"reps": 3,
+"total": 523113090.0,
+"entry": 30788348.0,
+"ops": 492264702.0,
+"read": 60040.0,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.1665949569996883,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+54920589,
+11774727,
+42307602,
+838260
+],
+[
+1,
+54567873,
+11352699,
+42495295,
+719879
+],
+[
+2,
+54131331,
+11453109,
+41970595,
+707627
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3383208.1875,
+"entry": 715819.3125,
+"ops": 2623162.1875,
+"read": 44226.6875,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.2273031639997498,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+86365803,
+6854232,
+78906768,
+604803
+],
+[
+1,
+66430398,
+6714917,
+59222737,
+492744
+],
+[
+2,
+65687802,
+6660655,
+58596207,
+430940
+]
+],
+"r": 8,
+"reps": 3,
+"total": 8210975.25,
+"entry": 832581.875,
+"ops": 7324525.875,
+"read": 53867.5,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 1.5834437570001683,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+525561456,
+31166201,
+494185454,
+209801
+],
+[
+1,
+525471774,
+30727840,
+494686504,
+57430
+],
+[
+2,
+528403447,
+30897034,
+497443979,
+62434
+]
+],
+"r": 1,
+"reps": 3,
+"total": 525471774.0,
+"entry": 30727840.0,
+"ops": 494686504.0,
+"read": 57430.0,
+"label": "pilot"
+},
+{
+"job": 15,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.16778868100027466,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55049299,
+11940458,
+42287991,
+820850
+],
+[
+1,
+54607102,
+11397224,
+42504678,
+705200
+],
+[
+2,
+55082982,
+11498670,
+42831318,
+752994
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3412943.875,
+"entry": 712326.5,
+"ops": 2656542.375,
+"read": 44075.0,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "ctl",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.1106562800005122,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+3729282,
+743260,
+2808506,
+177516
+],
+[
+2,
+6897683,
+1429593,
+5380481,
+87609
+],
+[
+4,
+13852909,
+2856478,
+10823826,
+172605
+],
+[
+8,
+28099862,
+5732589,
+22009070,
+358203
+],
+[
+16,
+55261678,
+11297981,
+43263218,
+700479
+]
+],
+"r": 16,
+"rep_ns": 55261678,
+"reps": 3
+},
+{
+"job": 18,
+"row": "D1",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.15956799700052215,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+22536944,
+944008,
+21402151,
+190785
+],
+[
+2,
+20042352,
+1628610,
+18285154,
+128588
+],
+[
+4,
+36381229,
+3322157,
+32798701,
+260371
+],
+[
+8,
+72548456,
+6743115,
+65358233,
+447108
+]
+],
+"r": 8,
+"rep_ns": 72548456,
+"reps": 3
+},
+{
+"job": 18,
+"row": "D2",
+"kind": "calib",
+"round": null,
+"pos": null,
+"wall": 0.25656410600004165,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+1,
+253436329,
+5039888,
+248230562,
+165879
+]
+],
+"r": 1,
+"rep_ns": 253436329,
+"reps": 3
+},
+{
+"job": 18,
+"row": "ctl",
+"kind": "time",
+"round": 1,
+"pos": 0,
+"wall": 0.1697495179996622,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55956318,
+11491499,
+43668827,
+795992
+],
+[
+1,
+55372717,
+11414437,
+43254422,
+703858
+],
+[
+2,
+55634506,
+11575715,
+43330297,
+728494
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3460794.8125,
+"entry": 713402.3125,
+"ops": 2703401.375,
+"read": 43991.125,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "ctl-null",
+"kind": "time",
+"round": 1,
+"pos": 1,
+"wall": 0.18226551099996868,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+56313517,
+11488976,
+44005496,
+819045
+],
+[
+1,
+56210723,
+12073668,
+43422054,
+715001
+],
+[
+2,
+67064258,
+11410042,
+54933763,
+720453
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3513170.1875,
+"entry": 754604.25,
+"ops": 2713878.375,
+"read": 44687.5625,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "D1",
+"kind": "time",
+"round": 1,
+"pos": 2,
+"wall": 0.2296147019997079,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+84268505,
+8051597,
+75546371,
+670537
+],
+[
+1,
+67293313,
+6628317,
+60233699,
+431297
+],
+[
+2,
+67489972,
+6611269,
+60446928,
+431775
+]
+],
+"r": 8,
+"reps": 3,
+"total": 8411664.125,
+"entry": 828539.625,
+"ops": 7529212.375,
+"read": 53912.125,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "D2",
+"kind": "time",
+"round": 1,
+"pos": 3,
+"wall": 0.760779134000586,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+252754610,
+4906063,
+247652054,
+196493
+],
+[
+1,
+252239969,
+4765694,
+247414925,
+59350
+],
+[
+2,
+251585736,
+4788798,
+246741720,
+55218
+]
+],
+"r": 1,
+"reps": 3,
+"total": 251585736.0,
+"entry": 4788798.0,
+"ops": 246741720.0,
+"read": 55218.0,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "ctl-null",
+"kind": "time",
+"round": 2,
+"pos": 0,
+"wall": 0.16920994199972483,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55568081,
+11410500,
+43337705,
+819876
+],
+[
+1,
+55351628,
+11328353,
+43347426,
+675849
+],
+[
+2,
+55185193,
+11361146,
+43150063,
+673984
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3449074.5625,
+"entry": 710071.625,
+"ops": 2696878.9375,
+"read": 42124.0,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "D1",
+"kind": "time",
+"round": 2,
+"pos": 1,
+"wall": 0.23230743400017673,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+83558127,
+6774549,
+76218986,
+564592
+],
+[
+1,
+69195045,
+6753893,
+62018117,
+423035
+],
+[
+2,
+68998713,
+6683399,
+61890860,
+424454
+]
+],
+"r": 8,
+"reps": 3,
+"total": 8624839.125,
+"entry": 835424.875,
+"ops": 7736357.5,
+"read": 53056.75,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "D2",
+"kind": "time",
+"round": 2,
+"pos": 2,
+"wall": 0.762250134000169,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+252664175,
+4868112,
+247638822,
+157241
+],
+[
+1,
+252900934,
+4837631,
+248009045,
+54258
+],
+[
+2,
+252318491,
+4779195,
+247487292,
+52004
+]
+],
+"r": 1,
+"reps": 3,
+"total": 252318491.0,
+"entry": 4779195.0,
+"ops": 247487292.0,
+"read": 52004.0,
+"label": "pilot"
+},
+{
+"job": 18,
+"row": "ctl",
+"kind": "time",
+"round": 2,
+"pos": 3,
+"wall": 0.16946760000064387,
+"rc": 0,
+"overcap": false,
+"reps_out": [
+[
+0,
+55847524,
+11374544,
+43645512,
+827468
+],
+[
+1,
+55306642,
+11319453,
+43295259,
+691930
+],
+[
+2,
+55369880,
+11404504,
+43284421,
+680955
+]
+],
+"r": 16,
+"reps": 3,
+"total": 3456665.125,
+"entry": 707465.8125,
+"ops": 2705953.6875,
+"read": 43245.625,
+"label": "pilot"
+}
+],
+"gates": {
+"ctl:20": {
+"impl": "ctl",
+"job": 20,
+"wall": 0.713979420999749,
+"rc": 0,
+"code": "8d447bff474d224f71b8096fa78d2d7e70e348f20ed8b5ea12246db22be24b15",
+"int": "73d017d2a566507f832ccf0576ce81065d972c3ac07f2a2ba6cb8560984a39e1",
+"audits": "audits full=666 changed=30000"
+},
+"D1:20": {
+"impl": "D1",
+"job": 20,
+"wall": 2.0711118120007086,
+"rc": 0,
+"code": "a43cd629f85c686ad7deba44730c9d8d045bf482fcebe9efb21a8eac62cc58cd",
+"int": "73d017d2a566507f832ccf0576ce81065d972c3ac07f2a2ba6cb8560984a39e1",
+"audits": "audits full=666 changed=30000"
+},
+"D2:20": {
+"impl": "D2",
+"job": 20,
+"wall": 2.673781682000481,
+"rc": 0,
+"code": "c18dbcf25175bb9c7378140c050b5dc3b2ba59dd13929f72ce6529d54b370415",
+"int": "73d017d2a566507f832ccf0576ce81065d972c3ac07f2a2ba6cb8560984a39e1",
+"audits": "audits full=666 changed=30000"
+}
+},
+"gate_pilot_passed": true,
+"pilot": {
+"timed_wall_s": 21.936556003000078,
+"gate_wall_s": 3.3937416400003713,
+"timed_ratio": 0.182804633358334,
+"gate_ratio": 0.028281180333336427,
+"elapsed_s": 52.1146407719998,
+"projected_s": 485.87790984700314,
+"discarded": "the pilot's results and calibration are discarded (rule step 3)"
+}
+}

@@ -1,0 +1,5 @@
+build/
+__pycache__/
+# the runner's working state and log (runner.py); the run's report and CSVs in results/ are the record
+results/run.log
+results/state.json

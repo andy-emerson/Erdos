@@ -1,0 +1,98 @@
+item,job,row,time_ratio,lo,hi,mem_ratio,mem_entry_ratio,gcd_ratio,note
+ceiling gap,1,ctl,0.9513278652066935,0.9483686718999343,0.9539741659132057,1.9994001799460162,1.9994001799460162,,
+ceiling gap,1,D1,0.8952020895349619,0.8931984690543598,0.8973902670630424,1.5018994301709487,1.5009497150854745,,
+ceiling gap,1,D2,0.8686825086280268,0.866252022413016,0.8715987290302147,1.5010496850944717,1.5007497750674799,,
+ceiling gap,22,ctl,1.0530034519512592,1.049771841664011,1.054792792974533,1.9952968003990592,1.9994001799460162,,
+ceiling gap,22,D1,0.9549463463813042,0.9535493013319544,0.9573710157272932,1.5002137818000425,1.5009497150854745,,
+ceiling gap,22,D2,0.6367027814110444,0.6335111828446461,0.6402447672071011,1.4990142283664694,1.5007497750674799,,
+arrival 19/20,19,ctl,1.0017036337398673,0.9990382572244518,1.0031239289591065,1.0,1.0,1.0,
+arrival 19/20,19,ctl-null,0.9989191455579839,0.9975299613950698,1.0035776561131096,1.0,1.0,1.0,
+arrival 19/20,19,D1,0.9977655540908936,0.9927698785284313,1.0033965224127261,1.0,1.1650884273712356,1.0,
+arrival 19/20,19,D2,1.0012733183375728,0.9917233970692455,1.0076790949389207,1.0,1.1112748147947769,1.0,
+w32 ordering,26,time,,,,,,,"['ctl', 'D1', 'D2'] vs ['ctl', 'D1', 'D2']: yes"
+w32 ordering,26,gcd,,,,,,,"['D1', 'D2', 'ctl'] vs ['D1', 'ctl', 'D2']: no"
+w32 ordering,26,mem,,,,,,,"['ctl', 'D2', 'D1'] vs ['ctl', 'D1', 'D2']: no"
+w32 ordering,27,time,,,,,,,"['ctl', 'D2', 'D1'] vs ['ctl', 'D1', 'D2']: no"
+w32 ordering,27,gcd,,,,,,,"['D2', 'D1', 'ctl'] vs ['D1', 'D2', 'ctl']: no"
+w32 ordering,27,mem,,,,,,,"['ctl', 'D2', 'D1'] vs ['ctl', 'D2', 'D1']: yes"
+entry vs operations,1,ctl,0.29163112530847296,,,,,0.3201224148114239,store share of operations' gcd work 0.0
+entry vs operations,1,D1,0.28811708839046357,,,,,0.3302395392497948,store share of operations' gcd work 0.0
+entry vs operations,1,D2,0.28402546632843845,,,,,0.32052103900100004,store share of operations' gcd work 0.0
+entry vs operations,2,ctl,0.23135159194628638,,,,,0.22856633920022876,store share of operations' gcd work 0.0
+entry vs operations,2,D1,0.19126188380050813,,,,,0.2778248637869022,store share of operations' gcd work 0.0
+entry vs operations,2,D2,0.21541164560671064,,,,,0.33347581513840685,store share of operations' gcd work 0.0
+entry vs operations,3,ctl,0.2521614268768762,,,,,0.2761633549392555,store share of operations' gcd work 0.0
+entry vs operations,3,D1,0.2241181089090409,,,,,0.3292434712254216,store share of operations' gcd work 0.0
+entry vs operations,3,D2,0.2191537448693505,,,,,0.315262976578838,store share of operations' gcd work 0.0
+entry vs operations,4,ctl,0.1677175132951611,,,,,0.14283962258025654,store share of operations' gcd work 0.0
+entry vs operations,4,D1,0.0817680214999318,,,,,0.14520486663684298,store share of operations' gcd work 0.0
+entry vs operations,4,D2,0.0566348173818094,,,,,0.07716756450019993,store share of operations' gcd work 0.0
+entry vs operations,5,ctl,0.1637574872863149,,,,,0.1511190840999408,store share of operations' gcd work 0.0
+entry vs operations,5,D1,0.0984229205131549,,,,,0.15211578948176926,store share of operations' gcd work 0.0
+entry vs operations,5,D2,0.05864576635750867,,,,,0.0683280943642355,store share of operations' gcd work 0.0
+entry vs operations,6,ctl,0.16389236575734437,,,,,0.14936543234284083,store share of operations' gcd work 0.0
+entry vs operations,6,D1,0.08965633414616979,,,,,0.15106216058634805,store share of operations' gcd work 0.0
+entry vs operations,6,D2,0.056999704790598835,,,,,0.07305309177658179,store share of operations' gcd work 0.0
+entry vs operations,7,ctl,0.18495436361424036,,,,,0.16389387912494383,store share of operations' gcd work 0.0
+entry vs operations,7,D1,0.09846198884181144,,,,,0.16573115974408278,store share of operations' gcd work 0.0
+entry vs operations,7,D2,0.06699349407253519,,,,,0.07802493822958424,store share of operations' gcd work 0.0
+entry vs operations,8,ctl,0.16230084992488744,,,,,0.1497851010988762,store share of operations' gcd work 0.0
+entry vs operations,8,D1,0.1082277163123455,,,,,0.15040070568533692,store share of operations' gcd work 0.0
+entry vs operations,8,D2,0.07176847073603235,,,,,0.07630645675647779,store share of operations' gcd work 0.0
+entry vs operations,9,ctl,0.1691315071343549,,,,,0.157800676437789,store share of operations' gcd work 0.0
+entry vs operations,9,D1,0.10076659218225646,,,,,0.15901255630739178,store share of operations' gcd work 0.0
+entry vs operations,9,D2,0.06514443746912878,,,,,0.07604616634558686,store share of operations' gcd work 0.0
+entry vs operations,10,ctl,0.22613747616897467,,,,,0.21681570352420587,store share of operations' gcd work 0.0
+entry vs operations,10,D1,0.12689367938692256,,,,,0.21784902223271016,store share of operations' gcd work 0.0
+entry vs operations,10,D2,0.10163990049062452,,,,,0.11247598145127544,store share of operations' gcd work 0.0
+entry vs operations,11,ctl,0.15927962514824126,,,,,0.14753099948265863,store share of operations' gcd work 0.0
+entry vs operations,11,D1,0.12019026114419257,,,,,0.14768005850222368,store share of operations' gcd work 0.0
+entry vs operations,11,D2,0.10127432849535702,,,,,0.10251579624578223,store share of operations' gcd work 0.0
+entry vs operations,12,ctl,0.1829608334829616,,,,,0.17530147189217946,store share of operations' gcd work 0.0
+entry vs operations,12,D1,0.12250202658108648,,,,,0.175720283847297,store share of operations' gcd work 0.0
+entry vs operations,12,D2,0.09769653836410397,,,,,0.10714707664426228,store share of operations' gcd work 0.0
+entry vs operations,13,ctl,0.24935075732589573,,,,,0.25078873055760365,store share of operations' gcd work 0.0
+entry vs operations,13,D1,0.15508618052496984,,,,,0.25164418016213436,store share of operations' gcd work 0.0
+entry vs operations,13,D2,0.20960389767156998,,,,,0.24863870310052463,store share of operations' gcd work 0.0
+entry vs operations,14,ctl,0.15852134624865172,,,,,0.1464306789844154,store share of operations' gcd work 0.0
+entry vs operations,14,D1,0.1309597751832478,,,,,0.14649449656800018,store share of operations' gcd work 0.0
+entry vs operations,14,D2,0.1538669489325602,,,,,0.14630460179179247,store share of operations' gcd work 0.0
+entry vs operations,15,ctl,0.1893260634618289,,,,,0.18414798868963053,store share of operations' gcd work 0.0
+entry vs operations,15,D1,0.14039772193082153,,,,,0.18436782117796288,store share of operations' gcd work 0.0
+entry vs operations,15,D2,0.17532542901006387,,,,,0.18394069016386355,store share of operations' gcd work 0.0
+entry vs operations,16,ctl,0.2069319838404439,,,,,0.19042479436296209,store share of operations' gcd work 0.0
+entry vs operations,16,D1,0.10916201308711308,,,,,0.19284977287822752,store share of operations' gcd work 0.0
+entry vs operations,16,D2,0.08415090671507476,,,,,0.10701084311213614,store share of operations' gcd work 0.0
+entry vs operations,17,ctl,0.16069872049341774,,,,,0.1486575764461152,store share of operations' gcd work 0.0
+entry vs operations,17,D1,0.11179023833271416,,,,,0.14919179436852492,store share of operations' gcd work 0.0
+entry vs operations,17,D2,0.08491664550128006,,,,,0.09198031571689598,store share of operations' gcd work 0.0
+entry vs operations,18,ctl,0.1763075242181693,,,,,0.16774475147374912,store share of operations' gcd work 0.0
+entry vs operations,18,D1,0.11091822532104231,,,,,0.1690521940316066,store share of operations' gcd work 0.0
+entry vs operations,18,D2,0.08121174544172602,,,,,0.09654968263234283,store share of operations' gcd work 0.0
+entry vs operations,19,ctl,0.17011879002597752,,,,,0.1555370996915234,store share of operations' gcd work 0.0
+entry vs operations,19,D1,0.12605469763065838,,,,,0.1556149862939825,store share of operations' gcd work 0.0
+entry vs operations,19,D2,0.07801879532975234,,,,,0.07655138436217557,store share of operations' gcd work 0.0
+entry vs operations,20,ctl,0.16956424483335655,,,,,0.1555370996915234,store share of operations' gcd work 0.0
+entry vs operations,20,D1,0.1328393781382827,,,,,0.1556149862939825,store share of operations' gcd work 0.0
+entry vs operations,20,D2,0.085002833454438,,,,,0.07655138436217557,store share of operations' gcd work 0.0
+entry vs operations,21,ctl,0.11813273976142598,,,,,0.08488152167628864,store share of operations' gcd work 0.0
+entry vs operations,21,D1,0.06267300830414065,,,,,0.13196504284896157,store share of operations' gcd work 0.0
+entry vs operations,21,D2,0.06452492765564605,,,,,0.07564919243831954,store share of operations' gcd work 0.0
+entry vs operations,22,ctl,0.17892587746944347,,,,,0.1533971465462966,store share of operations' gcd work 0.0
+entry vs operations,22,D1,0.17027115502735246,,,,,0.23298476786106814,store share of operations' gcd work 0.0
+entry vs operations,22,D2,0.11399853844761816,,,,,0.12660576012171768,store share of operations' gcd work 0.0
+entry vs operations,23,ctl,0.3206648201110561,,,,,0.2899418763390211,store share of operations' gcd work 0.0
+entry vs operations,23,D1,0.1836076179720639,,,,,0.2957796664182494,store share of operations' gcd work 0.0
+entry vs operations,23,D2,0.15900219318155026,,,,,0.23296007019929327,store share of operations' gcd work 0.0
+entry vs operations,24,ctl,0.31842292253683646,,,,,0.28263063976768776,store share of operations' gcd work 0.0
+entry vs operations,24,D1,0.20543898958125273,,,,,0.28479697646054986,store share of operations' gcd work 0.0
+entry vs operations,24,D2,0.15586193167861243,,,,,0.20192877907225146,store share of operations' gcd work 0.0
+entry vs operations,25,ctl,0.37393937961995194,,,,,0.37151587765982147,store share of operations' gcd work 0.0
+entry vs operations,25,D1,0.2483745055388183,,,,,0.39267658175035586,store share of operations' gcd work 0.0
+entry vs operations,25,D2,0.27129037618922996,,,,,0.36167019295104796,store share of operations' gcd work 0.0
+entry vs operations,26,ctl,0.1734954272199445,,,,,0.1905703247759273,store share of operations' gcd work 0.0
+entry vs operations,26,D1,0.1373191018070226,,,,,0.27255506385768496,store share of operations' gcd work 0.0
+entry vs operations,26,D2,0.12430705577351292,,,,,0.25070669175482796,store share of operations' gcd work 0.0
+entry vs operations,27,ctl,0.22081112921248586,,,,,0.28995064959851674,store share of operations' gcd work 0.0
+entry vs operations,27,D1,0.21445121500276404,,,,,0.34145274446531493,store share of operations' gcd work 0.0
+entry vs operations,27,D2,0.22453760331874179,,,,,0.37910351988093277,store share of operations' gcd work 0.0

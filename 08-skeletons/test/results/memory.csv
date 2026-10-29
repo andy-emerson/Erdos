@@ -1,0 +1,873 @@
+job,impl,when,structure,used,alloc
+1,D1,after_entry,numerators,120000,196608
+1,D1,after_entry,denominators,8,128
+1,D1,after_entry,lookup,64,64
+1,D1,after_entry,divisors,12,192
+1,D1,after_entry,pair set,0,0
+1,D1,after_entry,incidence rows,28,268
+1,D1,after_entry,N,10000,
+1,D1,end,numerators,360000,393216
+1,D1,end,denominators,48,128
+1,D1,end,lookup,64,64
+1,D1,end,divisors,60,192
+1,D1,end,pair set,128,128
+1,D1,end,incidence rows,264,460
+1,D1,end,N,30000,
+1,D2,after_entry,numerators,120000,196608
+1,D2,after_entry,denominators,8,128
+1,D2,after_entry,lookup,64,64
+1,D2,after_entry,base,0,0
+1,D2,after_entry,exponent rows,16,256
+1,D2,after_entry,remainders,8,128
+1,D2,after_entry,N,10000,
+1,D2,end,numerators,360000,393216
+1,D2,end,denominators,48,128
+1,D2,end,lookup,64,64
+1,D2,end,base,24,128
+1,D2,end,exponent rows,176,416
+1,D2,end,remainders,48,128
+1,D2,end,N,30000,
+1,ceil,after_entry,stored vectors,80024,80384
+1,ceil,after_entry,N,10000,
+1,ceil,end,stored vectors,240072,240384
+1,ceil,end,N,30000,
+1,ctl,after_entry,values,160000,262144
+1,ctl,after_entry,N,10000,
+1,ctl,end,values,480000,524288
+1,ctl,end,N,30000,
+2,D1,after_entry,numerators,120000,196608
+2,D1,after_entry,denominators,8,128
+2,D1,after_entry,lookup,64,64
+2,D1,after_entry,divisors,12,192
+2,D1,after_entry,pair set,0,0
+2,D1,after_entry,incidence rows,28,268
+2,D1,after_entry,N,10000,
+2,D1,end,numerators,360000,393216
+2,D1,end,denominators,87696,131072
+2,D1,end,lookup,131072,131072
+2,D1,end,divisors,24,192
+2,D1,end,pair set,32768,32768
+2,D1,end,incidence rows,306960,393712
+2,D1,end,N,30000,
+2,D2,after_entry,numerators,120000,196608
+2,D2,after_entry,denominators,8,128
+2,D2,after_entry,lookup,64,64
+2,D2,after_entry,base,0,0
+2,D2,after_entry,exponent rows,16,256
+2,D2,after_entry,remainders,8,128
+2,D2,after_entry,N,10000,
+2,D2,end,numerators,360000,393216
+2,D2,end,denominators,87696,131072
+2,D2,end,lookup,131072,131072
+2,D2,end,base,8,128
+2,D2,end,exponent rows,207464,294264
+2,D2,end,remainders,87696,131072
+2,D2,end,N,30000,
+2,ctl,after_entry,values,160000,262144
+2,ctl,after_entry,N,10000,
+2,ctl,end,values,480000,524288
+2,ctl,end,N,30000,
+3,D1,after_entry,numerators,120000,196608
+3,D1,after_entry,denominators,8,128
+3,D1,after_entry,lookup,64,64
+3,D1,after_entry,divisors,12,192
+3,D1,after_entry,pair set,0,0
+3,D1,after_entry,incidence rows,28,268
+3,D1,after_entry,N,10000,
+3,D1,end,numerators,360000,393216
+3,D1,end,denominators,45944,65536
+3,D1,end,lookup,65536,65536
+3,D1,end,divisors,60,192
+3,D1,end,pair set,32768,32768
+3,D1,end,incidence rows,160900,200120
+3,D1,end,N,30000,
+3,D2,after_entry,numerators,120000,196608
+3,D2,after_entry,denominators,8,128
+3,D2,after_entry,lookup,64,64
+3,D2,after_entry,base,0,0
+3,D2,after_entry,exponent rows,16,256
+3,D2,after_entry,remainders,8,128
+3,D2,after_entry,N,10000,
+3,D2,end,numerators,360000,393216
+3,D2,end,denominators,45944,65536
+3,D2,end,lookup,65536,65536
+3,D2,end,base,24,128
+3,D2,end,exponent rows,134256,173624
+3,D2,end,remainders,45944,65536
+3,D2,end,N,30000,
+3,ctl,after_entry,values,160000,262144
+3,ctl,after_entry,N,10000,
+3,ctl,end,values,480000,524288
+3,ctl,end,N,30000,
+4,D1,after_entry,numerators,120000,196608
+4,D1,after_entry,denominators,8000,8192
+4,D1,after_entry,lookup,8192,8192
+4,D1,after_entry,divisors,12,192
+4,D1,after_entry,pair set,0,0
+4,D1,after_entry,incidence rows,28000,28384
+4,D1,after_entry,N,10000,
+4,D1,end,numerators,360000,393216
+4,D1,end,denominators,166808,262144
+4,D1,end,lookup,262144,262144
+4,D1,end,divisors,10176,12288
+4,D1,end,pair set,524288,524288
+4,D1,end,incidence rows,777808,1026776
+4,D1,end,N,30000,
+4,D2,after_entry,numerators,120000,196608
+4,D2,after_entry,denominators,8000,8192
+4,D2,after_entry,lookup,8192,8192
+4,D2,after_entry,base,0,0
+4,D2,after_entry,exponent rows,16000,16384
+4,D2,after_entry,remainders,8000,8192
+4,D2,after_entry,N,10000,
+4,D2,end,numerators,360000,393216
+4,D2,end,denominators,166808,262144
+4,D2,end,lookup,262144,262144
+4,D2,end,base,544,1024
+4,D2,end,exponent rows,1333120,1558576
+4,D2,end,remainders,166808,262144
+4,D2,end,N,30000,
+4,ctl,after_entry,values,160000,262144
+4,ctl,after_entry,N,10000,
+4,ctl,end,values,480000,524288
+4,ctl,end,N,30000,
+5,D1,after_entry,numerators,120000,196608
+5,D1,after_entry,denominators,8000,8192
+5,D1,after_entry,lookup,8192,8192
+5,D1,after_entry,divisors,12,192
+5,D1,after_entry,pair set,0,0
+5,D1,after_entry,incidence rows,28000,28384
+5,D1,after_entry,N,10000,
+5,D1,end,numerators,360000,393216
+5,D1,end,denominators,167880,262144
+5,D1,end,lookup,262144,262144
+5,D1,end,divisors,6144,6144
+5,D1,end,pair set,262144,262144
+5,D1,end,incidence rows,694932,917336
+5,D1,end,N,30000,
+5,D2,after_entry,numerators,120000,196608
+5,D2,after_entry,denominators,8000,8192
+5,D2,after_entry,lookup,8192,8192
+5,D2,after_entry,base,0,0
+5,D2,after_entry,exponent rows,16000,16384
+5,D2,after_entry,remainders,8000,8192
+5,D2,after_entry,N,10000,
+5,D2,end,numerators,360000,393216
+5,D2,end,denominators,167880,262144
+5,D2,end,lookup,262144,262144
+5,D2,end,base,472,512
+5,D2,end,exponent rows,864672,1081008
+5,D2,end,remainders,167880,262144
+5,D2,end,N,30000,
+5,ctl,after_entry,values,160000,262144
+5,ctl,after_entry,N,10000,
+5,ctl,end,values,480000,524288
+5,ctl,end,N,30000,
+6,D1,after_entry,numerators,120000,196608
+6,D1,after_entry,denominators,8000,8192
+6,D1,after_entry,lookup,8192,8192
+6,D1,after_entry,divisors,12,192
+6,D1,after_entry,pair set,0,0
+6,D1,after_entry,incidence rows,28000,28384
+6,D1,after_entry,N,10000,
+6,D1,end,numerators,360000,393216
+6,D1,end,denominators,167544,262144
+6,D1,end,lookup,262144,262144
+6,D1,end,divisors,8028,12288
+6,D1,end,pair set,262144,262144
+6,D1,end,incidence rows,732876,966368
+6,D1,end,N,30000,
+6,D2,after_entry,numerators,120000,196608
+6,D2,after_entry,denominators,8000,8192
+6,D2,after_entry,lookup,8192,8192
+6,D2,after_entry,base,0,0
+6,D2,after_entry,exponent rows,16000,16384
+6,D2,after_entry,remainders,8000,8192
+6,D2,after_entry,N,10000,
+6,D2,end,numerators,360000,393216
+6,D2,end,denominators,167544,262144
+6,D2,end,lookup,262144,262144
+6,D2,end,base,408,512
+6,D2,end,exponent rows,1098472,1319552
+6,D2,end,remainders,167544,262144
+6,D2,end,N,30000,
+6,ctl,after_entry,values,160000,262144
+6,ctl,after_entry,N,10000,
+6,ctl,end,values,480000,524288
+6,ctl,end,N,30000,
+7,D1,after_entry,numerators,120000,196608
+7,D1,after_entry,denominators,8000,8192
+7,D1,after_entry,lookup,8192,8192
+7,D1,after_entry,divisors,12,192
+7,D1,after_entry,pair set,0,0
+7,D1,after_entry,incidence rows,28000,28384
+7,D1,after_entry,N,10000,
+7,D1,end,numerators,360000,393216
+7,D1,end,denominators,167224,262144
+7,D1,end,lookup,262144,262144
+7,D1,end,divisors,3228,6144
+7,D1,end,pair set,524288,524288
+7,D1,end,incidence rows,694292,908264
+7,D1,end,N,30000,
+7,D2,after_entry,numerators,120000,196608
+7,D2,after_entry,denominators,8000,8192
+7,D2,after_entry,lookup,8192,8192
+7,D2,after_entry,base,0,0
+7,D2,after_entry,exponent rows,16000,16384
+7,D2,after_entry,remainders,8000,8192
+7,D2,after_entry,N,10000,
+7,D2,end,numerators,360000,393216
+7,D2,end,denominators,167224,262144
+7,D2,end,lookup,262144,262144
+7,D2,end,base,616,1024
+7,D2,end,exponent rows,1007976,1223992
+7,D2,end,remainders,167224,262144
+7,D2,end,N,30000,
+7,ctl,after_entry,values,160000,262144
+7,ctl,after_entry,N,10000,
+7,ctl,end,values,480000,524288
+7,ctl,end,N,30000,
+8,D1,after_entry,numerators,120000,196608
+8,D1,after_entry,denominators,8000,8192
+8,D1,after_entry,lookup,8192,8192
+8,D1,after_entry,divisors,12,192
+8,D1,after_entry,pair set,0,0
+8,D1,after_entry,incidence rows,28000,28384
+8,D1,after_entry,N,10000,
+8,D1,end,numerators,360000,393216
+8,D1,end,denominators,167824,262144
+8,D1,end,lookup,262144,262144
+8,D1,end,divisors,2028,3072
+8,D1,end,pair set,262144,262144
+8,D1,end,incidence rows,650276,853736
+8,D1,end,N,30000,
+8,D2,after_entry,numerators,120000,196608
+8,D2,after_entry,denominators,8000,8192
+8,D2,after_entry,lookup,8192,8192
+8,D2,after_entry,base,0,0
+8,D2,after_entry,exponent rows,16000,16384
+8,D2,after_entry,remainders,8000,8192
+8,D2,after_entry,N,10000,
+8,D2,end,numerators,360000,393216
+8,D2,end,denominators,167824,262144
+8,D2,end,lookup,262144,262144
+8,D2,end,base,320,512
+8,D2,end,exponent rows,673232,891016
+8,D2,end,remainders,167824,262144
+8,D2,end,N,30000,
+8,ctl,after_entry,values,160000,262144
+8,ctl,after_entry,N,10000,
+8,ctl,end,values,480000,524288
+8,ctl,end,N,30000,
+9,D1,after_entry,numerators,120000,196608
+9,D1,after_entry,denominators,8000,8192
+9,D1,after_entry,lookup,8192,8192
+9,D1,after_entry,divisors,12,192
+9,D1,after_entry,pair set,0,0
+9,D1,after_entry,incidence rows,28000,28384
+9,D1,after_entry,N,10000,
+9,D1,end,numerators,360000,393216
+9,D1,end,denominators,167616,262144
+9,D1,end,lookup,262144,262144
+9,D1,end,divisors,2640,3072
+9,D1,end,pair set,262144,262144
+9,D1,end,incidence rows,672852,881552
+9,D1,end,N,30000,
+9,D2,after_entry,numerators,120000,196608
+9,D2,after_entry,denominators,8000,8192
+9,D2,after_entry,lookup,8192,8192
+9,D2,after_entry,base,0,0
+9,D2,after_entry,exponent rows,16000,16384
+9,D2,after_entry,remainders,8000,8192
+9,D2,after_entry,N,10000,
+9,D2,end,numerators,360000,393216
+9,D2,end,denominators,167616,262144
+9,D2,end,lookup,262144,262144
+9,D2,end,base,448,512
+9,D2,end,exponent rows,848400,1064776
+9,D2,end,remainders,167616,262144
+9,D2,end,N,30000,
+9,ctl,after_entry,values,160000,262144
+9,ctl,after_entry,N,10000,
+9,ctl,end,values,480000,524288
+9,ctl,end,N,30000,
+10,D1,after_entry,numerators,120000,196608
+10,D1,after_entry,denominators,8000,8192
+10,D1,after_entry,lookup,8192,8192
+10,D1,after_entry,divisors,12,192
+10,D1,after_entry,pair set,0,0
+10,D1,after_entry,incidence rows,28000,28384
+10,D1,after_entry,N,10000,
+10,D1,end,numerators,360000,393216
+10,D1,end,denominators,166904,262144
+10,D1,end,lookup,262144,262144
+10,D1,end,divisors,1380,1536
+10,D1,end,pair set,524288,524288
+10,D1,end,incidence rows,620320,815576
+10,D1,end,N,30000,
+10,D2,after_entry,numerators,120000,196608
+10,D2,after_entry,denominators,8000,8192
+10,D2,after_entry,lookup,8192,8192
+10,D2,after_entry,base,0,0
+10,D2,after_entry,exponent rows,16000,16384
+10,D2,after_entry,remainders,8000,8192
+10,D2,after_entry,N,10000,
+10,D2,end,numerators,360000,393216
+10,D2,end,denominators,166904,262144
+10,D2,end,lookup,262144,262144
+10,D2,end,base,664,1024
+10,D2,end,exponent rows,639272,860480
+10,D2,end,remainders,166904,262144
+10,D2,end,N,30000,
+10,ctl,after_entry,values,160000,262144
+10,ctl,after_entry,N,10000,
+10,ctl,end,values,480000,524288
+10,ctl,end,N,30000,
+11,D1,after_entry,numerators,120000,196608
+11,D1,after_entry,denominators,8000,8192
+11,D1,after_entry,lookup,8192,8192
+11,D1,after_entry,divisors,12,192
+11,D1,after_entry,pair set,0,0
+11,D1,after_entry,incidence rows,28000,28384
+11,D1,after_entry,N,10000,
+11,D1,end,numerators,360000,393216
+11,D1,end,denominators,167824,262144
+11,D1,end,lookup,262144,262144
+11,D1,end,divisors,780,1536
+11,D1,end,pair set,262144,262144
+11,D1,end,incidence rows,609092,799952
+11,D1,end,N,30000,
+11,D2,after_entry,numerators,120000,196608
+11,D2,after_entry,denominators,8000,8192
+11,D2,after_entry,lookup,8192,8192
+11,D2,after_entry,base,0,0
+11,D2,after_entry,exponent rows,16000,16384
+11,D2,after_entry,remainders,8000,8192
+11,D2,after_entry,N,10000,
+11,D2,end,numerators,360000,393216
+11,D2,end,denominators,167824,262144
+11,D2,end,lookup,262144,262144
+11,D2,end,base,408,512
+11,D2,end,exponent rows,467264,683648
+11,D2,end,remainders,167824,262144
+11,D2,end,N,30000,
+11,ctl,after_entry,values,160000,262144
+11,ctl,after_entry,N,10000,
+11,ctl,end,values,480000,524288
+11,ctl,end,N,30000,
+12,D1,after_entry,numerators,120000,196608
+12,D1,after_entry,denominators,8000,8192
+12,D1,after_entry,lookup,8192,8192
+12,D1,after_entry,divisors,12,192
+12,D1,after_entry,pair set,0,0
+12,D1,after_entry,incidence rows,28000,28384
+12,D1,after_entry,N,10000,
+12,D1,end,numerators,360000,393216
+12,D1,end,denominators,167504,262144
+12,D1,end,lookup,262144,262144
+12,D1,end,divisors,1044,1536
+12,D1,end,pair set,262144,262144
+12,D1,end,incidence rows,614464,806588
+12,D1,end,N,30000,
+12,D2,after_entry,numerators,120000,196608
+12,D2,after_entry,denominators,8000,8192
+12,D2,after_entry,lookup,8192,8192
+12,D2,after_entry,base,0,0
+12,D2,after_entry,exponent rows,16000,16384
+12,D2,after_entry,remainders,8000,8192
+12,D2,after_entry,N,10000,
+12,D2,end,numerators,360000,393216
+12,D2,end,denominators,167504,262144
+12,D2,end,lookup,262144,262144
+12,D2,end,base,512,512
+12,D2,end,exponent rows,545656,765944
+12,D2,end,remainders,167504,262144
+12,D2,end,N,30000,
+12,ctl,after_entry,values,160000,262144
+12,ctl,after_entry,N,10000,
+12,ctl,end,values,480000,524288
+12,ctl,end,N,30000,
+13,D1,after_entry,numerators,120000,196608
+13,D1,after_entry,denominators,8000,8192
+13,D1,after_entry,lookup,8192,8192
+13,D1,after_entry,divisors,12,192
+13,D1,after_entry,pair set,0,0
+13,D1,after_entry,incidence rows,28000,28384
+13,D1,after_entry,N,10000,
+13,D1,end,numerators,360000,393216
+13,D1,end,denominators,166856,262144
+13,D1,end,lookup,262144,262144
+13,D1,end,divisors,288,384
+13,D1,end,pair set,524288,524288
+13,D1,end,incidence rows,584548,775124
+13,D1,end,N,30000,
+13,D2,after_entry,numerators,120000,196608
+13,D2,after_entry,denominators,8000,8192
+13,D2,after_entry,lookup,8192,8192
+13,D2,after_entry,base,0,0
+13,D2,after_entry,exponent rows,16000,16384
+13,D2,after_entry,remainders,8000,8192
+13,D2,after_entry,N,10000,
+13,D2,end,numerators,360000,393216
+13,D2,end,denominators,166856,262144
+13,D2,end,lookup,262144,262144
+13,D2,end,base,184,256
+13,D2,end,exponent rows,337416,529096
+13,D2,end,remainders,166856,262144
+13,D2,end,N,30000,
+13,ctl,after_entry,values,160000,262144
+13,ctl,after_entry,N,10000,
+13,ctl,end,values,480000,524288
+13,ctl,end,N,30000,
+14,D1,after_entry,numerators,120000,196608
+14,D1,after_entry,denominators,8000,8192
+14,D1,after_entry,lookup,8192,8192
+14,D1,after_entry,divisors,12,192
+14,D1,after_entry,pair set,0,0
+14,D1,after_entry,incidence rows,28000,28384
+14,D1,after_entry,N,10000,
+14,D1,end,numerators,360000,393216
+14,D1,end,denominators,167848,262144
+14,D1,end,lookup,262144,262144
+14,D1,end,divisors,108,192
+14,D1,end,pair set,262144,262144
+14,D1,end,incidence rows,587660,776252
+14,D1,end,N,30000,
+14,D2,after_entry,numerators,120000,196608
+14,D2,after_entry,denominators,8000,8192
+14,D2,after_entry,lookup,8192,8192
+14,D2,after_entry,base,0,0
+14,D2,after_entry,exponent rows,16000,16384
+14,D2,after_entry,remainders,8000,8192
+14,D2,after_entry,N,10000,
+14,D2,end,numerators,360000,393216
+14,D2,end,denominators,167848,262144
+14,D2,end,lookup,262144,262144
+14,D2,end,base,64,128
+14,D2,end,exponent rows,336504,525480
+14,D2,end,remainders,167848,262144
+14,D2,end,N,30000,
+14,ctl,after_entry,values,160000,262144
+14,ctl,after_entry,N,10000,
+14,ctl,end,values,480000,524288
+14,ctl,end,N,30000,
+15,D1,after_entry,numerators,120000,196608
+15,D1,after_entry,denominators,8000,8192
+15,D1,after_entry,lookup,8192,8192
+15,D1,after_entry,divisors,12,192
+15,D1,after_entry,pair set,0,0
+15,D1,after_entry,incidence rows,28000,28384
+15,D1,after_entry,N,10000,
+15,D1,end,numerators,360000,393216
+15,D1,end,denominators,167424,262144
+15,D1,end,lookup,262144,262144
+15,D1,end,divisors,108,192
+15,D1,end,pair set,262144,262144
+15,D1,end,incidence rows,586176,775616
+15,D1,end,N,30000,
+15,D2,after_entry,numerators,120000,196608
+15,D2,after_entry,denominators,8000,8192
+15,D2,after_entry,lookup,8192,8192
+15,D2,after_entry,base,0,0
+15,D2,after_entry,exponent rows,16000,16384
+15,D2,after_entry,remainders,8000,8192
+15,D2,after_entry,N,10000,
+15,D2,end,numerators,360000,393216
+15,D2,end,denominators,167424,262144
+15,D2,end,lookup,262144,262144
+15,D2,end,base,64,128
+15,D2,end,exponent rows,336104,525928
+15,D2,end,remainders,167424,262144
+15,D2,end,N,30000,
+15,ctl,after_entry,values,160000,262144
+15,ctl,after_entry,N,10000,
+15,ctl,end,values,480000,524288
+15,ctl,end,N,30000,
+16,D1,after_entry,numerators,120000,196608
+16,D1,after_entry,denominators,8000,8192
+16,D1,after_entry,lookup,8192,8192
+16,D1,after_entry,divisors,12,192
+16,D1,after_entry,pair set,0,0
+16,D1,after_entry,incidence rows,28000,28384
+16,D1,after_entry,N,10000,
+16,D1,end,numerators,360000,393216
+16,D1,end,denominators,166176,262144
+16,D1,end,lookup,262144,262144
+16,D1,end,divisors,2760,3072
+16,D1,end,pair set,524288,524288
+16,D1,end,incidence rows,653004,861380
+16,D1,end,N,30000,
+16,D2,after_entry,numerators,120000,196608
+16,D2,after_entry,denominators,8000,8192
+16,D2,after_entry,lookup,8192,8192
+16,D2,after_entry,base,0,0
+16,D2,after_entry,exponent rows,16000,16384
+16,D2,after_entry,remainders,8000,8192
+16,D2,after_entry,N,10000,
+16,D2,end,numerators,360000,393216
+16,D2,end,denominators,166176,262144
+16,D2,end,lookup,262144,262144
+16,D2,end,base,432,512
+16,D2,end,exponent rows,850784,1069080
+16,D2,end,remainders,166176,262144
+16,D2,end,N,30000,
+16,ctl,after_entry,values,160000,262144
+16,ctl,after_entry,N,10000,
+16,ctl,end,values,480000,524288
+16,ctl,end,N,30000,
+17,D1,after_entry,numerators,120000,196608
+17,D1,after_entry,denominators,8000,8192
+17,D1,after_entry,lookup,8192,8192
+17,D1,after_entry,divisors,12,192
+17,D1,after_entry,pair set,0,0
+17,D1,after_entry,incidence rows,28000,28384
+17,D1,after_entry,N,10000,
+17,D1,end,numerators,360000,393216
+17,D1,end,denominators,167696,262144
+17,D1,end,lookup,262144,262144
+17,D1,end,divisors,1800,3072
+17,D1,end,pair set,262144,262144
+17,D1,end,incidence rows,625288,821672
+17,D1,end,N,30000,
+17,D2,after_entry,numerators,120000,196608
+17,D2,after_entry,denominators,8000,8192
+17,D2,after_entry,lookup,8192,8192
+17,D2,after_entry,base,0,0
+17,D2,after_entry,exponent rows,16000,16384
+17,D2,after_entry,remainders,8000,8192
+17,D2,after_entry,N,10000,
+17,D2,end,numerators,360000,393216
+17,D2,end,denominators,167696,262144
+17,D2,end,lookup,262144,262144
+17,D2,end,base,368,512
+17,D2,end,exponent rows,584264,798984
+17,D2,end,remainders,167696,262144
+17,D2,end,N,30000,
+17,ctl,after_entry,values,160000,262144
+17,ctl,after_entry,N,10000,
+17,ctl,end,values,480000,524288
+17,ctl,end,N,30000,
+18,D1,after_entry,numerators,120000,196608
+18,D1,after_entry,denominators,8000,8192
+18,D1,after_entry,lookup,8192,8192
+18,D1,after_entry,divisors,12,192
+18,D1,after_entry,pair set,0,0
+18,D1,after_entry,incidence rows,28000,28384
+18,D1,after_entry,N,10000,
+18,D1,end,numerators,360000,393216
+18,D1,end,denominators,167272,262144
+18,D1,end,lookup,262144,262144
+18,D1,end,divisors,2352,3072
+18,D1,end,pair set,262144,262144
+18,D1,end,incidence rows,641396,842084
+18,D1,end,N,30000,
+18,D2,after_entry,numerators,120000,196608
+18,D2,after_entry,denominators,8000,8192
+18,D2,after_entry,lookup,8192,8192
+18,D2,after_entry,base,0,0
+18,D2,after_entry,exponent rows,16000,16384
+18,D2,after_entry,remainders,8000,8192
+18,D2,after_entry,N,10000,
+18,D2,end,numerators,360000,393216
+18,D2,end,denominators,167272,262144
+18,D2,end,lookup,262144,262144
+18,D2,end,base,392,512
+18,D2,end,exponent rows,723864,939864
+18,D2,end,remainders,167272,262144
+18,D2,end,N,30000,
+18,ctl,after_entry,values,160000,262144
+18,ctl,after_entry,N,10000,
+18,ctl,end,values,480000,524288
+18,ctl,end,N,30000,
+19,D1,after_entry,numerators,348000,393216
+19,D1,after_entry,denominators,231952,262144
+19,D1,after_entry,lookup,262144,262144
+19,D1,after_entry,divisors,2700,3072
+19,D1,after_entry,pair set,262144,262144
+19,D1,after_entry,incidence rows,957764,1047404
+19,D1,after_entry,N,29000,
+19,D1,end,numerators,360000,393216
+19,D1,end,denominators,239952,262144
+19,D1,end,lookup,262144,262144
+19,D1,end,divisors,2748,3072
+19,D1,end,pair set,262144,262144
+19,D1,end,incidence rows,993300,1068392
+19,D1,end,N,30000,
+19,D2,after_entry,numerators,348000,393216
+19,D2,after_entry,denominators,231952,262144
+19,D2,after_entry,lookup,262144,262144
+19,D2,after_entry,base,472,512
+19,D2,after_entry,exponent rows,765872,969392
+19,D2,after_entry,remainders,231952,262144
+19,D2,after_entry,N,29000,
+19,D2,end,numerators,360000,393216
+19,D2,end,denominators,239952,262144
+19,D2,end,lookup,262144,262144
+19,D2,end,base,472,512
+19,D2,end,exponent rows,797416,992416
+19,D2,end,remainders,239952,262144
+19,D2,end,N,30000,
+19,ctl,after_entry,values,464000,524288
+19,ctl,after_entry,N,29000,
+19,ctl,end,values,480000,524288
+19,ctl,end,N,30000,
+20,D1,after_entry,numerators,120000,196608
+20,D1,after_entry,denominators,80000,131072
+20,D1,after_entry,lookup,131072,131072
+20,D1,after_entry,divisors,12,192
+20,D1,after_entry,pair set,0,0
+20,D1,after_entry,incidence rows,280000,382144
+20,D1,after_entry,N,10000,
+20,D1,end,numerators,360000,393216
+20,D1,end,denominators,239952,262144
+20,D1,end,lookup,262144,262144
+20,D1,end,divisors,2748,3072
+20,D1,end,pair set,262144,262144
+20,D1,end,incidence rows,993300,1068392
+20,D1,end,N,30000,
+20,D2,after_entry,numerators,120000,196608
+20,D2,after_entry,denominators,80000,131072
+20,D2,after_entry,lookup,131072,131072
+20,D2,after_entry,base,0,0
+20,D2,after_entry,exponent rows,160000,262144
+20,D2,after_entry,remainders,80000,131072
+20,D2,after_entry,N,10000,
+20,D2,end,numerators,360000,393216
+20,D2,end,denominators,239952,262144
+20,D2,end,lookup,262144,262144
+20,D2,end,base,472,512
+20,D2,end,exponent rows,797416,992416
+20,D2,end,remainders,239952,262144
+20,D2,end,N,30000,
+20,ctl,after_entry,values,160000,262144
+20,ctl,after_entry,N,10000,
+20,ctl,end,values,480000,524288
+20,ctl,end,N,30000,
+21,D1,after_entry,numerators,120000,196608
+21,D1,after_entry,denominators,1920,2048
+21,D1,after_entry,lookup,2048,2048
+21,D1,after_entry,divisors,12,192
+21,D1,after_entry,pair set,0,0
+21,D1,after_entry,incidence rows,6720,6976
+21,D1,after_entry,N,10000,
+21,D1,end,numerators,504000,786432
+21,D1,end,denominators,1920,2048
+21,D1,end,lookup,2048,2048
+21,D1,end,divisors,2868,3072
+21,D1,end,pair set,262144,262144
+21,D1,end,incidence rows,83556,111676
+21,D1,end,N,42000,
+21,D2,after_entry,numerators,120000,196608
+21,D2,after_entry,denominators,1920,2048
+21,D2,after_entry,lookup,2048,2048
+21,D2,after_entry,base,0,0
+21,D2,after_entry,exponent rows,3840,4096
+21,D2,after_entry,remainders,1920,2048
+21,D2,after_entry,N,10000,
+21,D2,end,numerators,504000,786432
+21,D2,end,denominators,1920,2048
+21,D2,end,lookup,2048,2048
+21,D2,end,base,48,128
+21,D2,end,exponent rows,10496,13216
+21,D2,end,remainders,1920,2048
+21,D2,end,N,42000,
+21,ctl,after_entry,values,160000,262144
+21,ctl,after_entry,N,10000,
+21,ctl,end,values,672000,1048576
+21,ctl,end,N,42000,
+22,D1,after_entry,numerators,120000,196608
+22,D1,after_entry,denominators,8,128
+22,D1,after_entry,lookup,64,64
+22,D1,after_entry,divisors,12,192
+22,D1,after_entry,pair set,0,0
+22,D1,after_entry,incidence rows,28,268
+22,D1,after_entry,N,10000,
+22,D1,end,numerators,504000,786432
+22,D1,end,denominators,104,128
+22,D1,end,lookup,128,128
+22,D1,end,divisors,144,192
+22,D1,end,pair set,256,256
+22,D1,end,incidence rows,628,724
+22,D1,end,N,42000,
+22,D2,after_entry,numerators,120000,196608
+22,D2,after_entry,denominators,8,128
+22,D2,after_entry,lookup,64,64
+22,D2,after_entry,base,0,0
+22,D2,after_entry,exponent rows,16,256
+22,D2,after_entry,remainders,8,128
+22,D2,after_entry,N,10000,
+22,D2,end,numerators,504000,786432
+22,D2,end,denominators,104,128
+22,D2,end,lookup,128,128
+22,D2,end,base,32,128
+22,D2,end,exponent rows,488,664
+22,D2,end,remainders,104,128
+22,D2,end,N,42000,
+22,ceil,after_entry,stored vectors,80024,80384
+22,ceil,after_entry,N,10000,
+22,ceil,end,stored vectors,336792,337536
+22,ceil,end,N,42000,
+22,ctl,after_entry,values,160000,262144
+22,ctl,after_entry,N,10000,
+22,ctl,end,values,672000,1048576
+22,ctl,end,N,42000,
+23,D1,after_entry,numerators,120000,196608
+23,D1,after_entry,denominators,800,1024
+23,D1,after_entry,lookup,1024,1024
+23,D1,after_entry,divisors,12,192
+23,D1,after_entry,pair set,0,0
+23,D1,after_entry,incidence rows,2800,3248
+23,D1,after_entry,N,10000,
+23,D1,end,numerators,216000,393216
+23,D1,end,denominators,56544,65536
+23,D1,end,lookup,65536,65536
+23,D1,end,divisors,2472,3072
+23,D1,end,pair set,131072,131072
+23,D1,end,incidence rows,238836,259976
+23,D1,end,N,18000,
+23,D2,after_entry,numerators,120000,196608
+23,D2,after_entry,denominators,800,1024
+23,D2,after_entry,lookup,1024,1024
+23,D2,after_entry,base,0,0
+23,D2,after_entry,exponent rows,1600,2048
+23,D2,after_entry,remainders,800,1024
+23,D2,after_entry,N,10000,
+23,D2,end,numerators,216000,393216
+23,D2,end,denominators,56544,65536
+23,D2,end,lookup,65536,65536
+23,D2,end,base,464,512
+23,D2,end,exponent rows,300048,330152
+23,D2,end,remainders,56544,65536
+23,D2,end,N,18000,
+23,ctl,after_entry,values,160000,262144
+23,ctl,after_entry,N,10000,
+23,ctl,end,values,288000,524288
+23,ctl,end,N,18000,
+24,D1,after_entry,numerators,120000,196608
+24,D1,after_entry,denominators,800,1024
+24,D1,after_entry,lookup,1024,1024
+24,D1,after_entry,divisors,12,192
+24,D1,after_entry,pair set,0,0
+24,D1,after_entry,incidence rows,2800,3248
+24,D1,after_entry,N,10000,
+24,D1,end,numerators,216000,393216
+24,D1,end,denominators,61624,65536
+24,D1,end,lookup,65536,65536
+24,D1,end,divisors,2412,3072
+24,D1,end,pair set,65536,65536
+24,D1,end,incidence rows,239984,248504
+24,D1,end,N,18000,
+24,D2,after_entry,numerators,120000,196608
+24,D2,after_entry,denominators,800,1024
+24,D2,after_entry,lookup,1024,1024
+24,D2,after_entry,base,0,0
+24,D2,after_entry,exponent rows,1600,2048
+24,D2,after_entry,remainders,800,1024
+24,D2,after_entry,N,10000,
+24,D2,end,numerators,216000,393216
+24,D2,end,denominators,61624,65536
+24,D2,end,lookup,65536,65536
+24,D2,end,base,520,1024
+24,D2,end,exponent rows,265392,283512
+24,D2,end,remainders,61624,65536
+24,D2,end,N,18000,
+24,ctl,after_entry,values,160000,262144
+24,ctl,after_entry,N,10000,
+24,ctl,end,values,288000,524288
+24,ctl,end,N,18000,
+25,D1,after_entry,numerators,120000,196608
+25,D1,after_entry,denominators,800,1024
+25,D1,after_entry,lookup,1024,1024
+25,D1,after_entry,divisors,12,192
+25,D1,after_entry,pair set,0,0
+25,D1,after_entry,incidence rows,2800,3248
+25,D1,after_entry,N,10000,
+25,D1,end,numerators,216000,393216
+25,D1,end,denominators,43008,65536
+25,D1,end,lookup,65536,65536
+25,D1,end,divisors,1212,1536
+25,D1,end,pair set,131072,131072
+25,D1,end,incidence rows,164232,210260
+25,D1,end,N,18000,
+25,D2,after_entry,numerators,120000,196608
+25,D2,after_entry,denominators,800,1024
+25,D2,after_entry,lookup,1024,1024
+25,D2,after_entry,base,0,0
+25,D2,after_entry,exponent rows,1600,2048
+25,D2,after_entry,remainders,800,1024
+25,D2,after_entry,N,10000,
+25,D2,end,numerators,216000,393216
+25,D2,end,denominators,43008,65536
+25,D2,end,lookup,65536,65536
+25,D2,end,base,800,1024
+25,D2,end,exponent rows,138656,193440
+25,D2,end,remainders,43008,65536
+25,D2,end,N,18000,
+25,ctl,after_entry,values,160000,262144
+25,ctl,after_entry,N,10000,
+25,ctl,end,values,288000,524288
+25,ctl,end,N,18000,
+26,D1,after_entry,numerators,80000,131072
+26,D1,after_entry,denominators,40,64
+26,D1,after_entry,lookup,128,128
+26,D1,after_entry,divisors,8,128
+26,D1,after_entry,pair set,0,0
+26,D1,after_entry,incidence rows,240,336
+26,D1,after_entry,N,10000,
+26,D1,end,numerators,240000,262144
+26,D1,end,denominators,22576,32768
+26,D1,end,lookup,65536,65536
+26,D1,end,divisors,144,256
+26,D1,end,pair set,65536,65536
+26,D1,end,incidence rows,139224,180552
+26,D1,end,N,30000,
+26,D2,after_entry,numerators,80000,131072
+26,D2,after_entry,denominators,40,64
+26,D2,after_entry,lookup,128,128
+26,D2,after_entry,base,0,0
+26,D2,after_entry,exponent rows,160,256
+26,D2,after_entry,remainders,40,64
+26,D2,after_entry,N,10000,
+26,D2,end,numerators,240000,262144
+26,D2,end,denominators,22576,32768
+26,D2,end,lookup,65536,65536
+26,D2,end,base,52,64
+26,D2,end,exponent rows,175912,218088
+26,D2,end,remainders,22576,32768
+26,D2,end,N,30000,
+26,ctl,after_entry,values,80000,131072
+26,ctl,after_entry,N,10000,
+26,ctl,end,values,240000,262144
+26,ctl,end,N,30000,
+27,D1,after_entry,numerators,80000,131072
+27,D1,after_entry,denominators,4,64
+27,D1,after_entry,lookup,64,64
+27,D1,after_entry,divisors,8,128
+27,D1,after_entry,pair set,0,0
+27,D1,after_entry,incidence rows,24,264
+27,D1,after_entry,N,10000,
+27,D1,end,numerators,240000,262144
+27,D1,end,denominators,5952,8192
+27,D1,end,lookup,16384,16384
+27,D1,end,divisors,16,128
+27,D1,end,pair set,8192,8192
+27,D1,end,incidence rows,35728,44688
+27,D1,end,N,30000,
+27,D2,after_entry,numerators,80000,131072
+27,D2,after_entry,denominators,4,64
+27,D2,after_entry,lookup,64,64
+27,D2,after_entry,base,0,0
+27,D2,after_entry,exponent rows,16,256
+27,D2,after_entry,remainders,4,64
+27,D2,after_entry,N,10000,
+27,D2,end,numerators,240000,262144
+27,D2,end,denominators,5952,8192
+27,D2,end,lookup,16384,16384
+27,D2,end,base,4,64
+27,D2,end,exponent rows,27296,36304
+27,D2,end,remainders,5952,8192
+27,D2,end,N,30000,
+27,ctl,after_entry,values,80000,131072
+27,ctl,after_entry,N,10000,
+27,ctl,end,values,240000,262144
+27,ctl,end,N,30000,

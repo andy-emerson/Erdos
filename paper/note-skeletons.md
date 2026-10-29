@@ -138,20 +138,20 @@ Two more, so five in all.
 | # | Structure | Shape | Each entry stores |
 | --- | --- | --- | --- |
 | 4 | Base | list of $C$ | a piece; no two pieces share a factor |
-| 5 | Exponents | one row per denominator, of varying length | (piece index, exponent) pairs, sorted by piece index, for the pieces that divide it |
+| 5 | Exponents | one row per denominator, of varying length | (piece index, $\nu_q(d)$) pairs, sorted by piece index, for the pieces $q$ that divide $d$ |
 
 When a piece is split, the first new piece takes the old piece's index, and the others are appended to the end of the base. The affected rows are then re-sorted. The skeleton keeps no list of which rows use a piece: a split scans every row.
 
-So $d = \prod p_c^{e_c}$ over the pairs in its row. Most pieces do not divide a given denominator, so each row lists only those that do.
+Here $\nu_q(d)$ is the exponent of the piece $q$ in $d$, and $d = \prod_q q^{\nu_q(d)}$ over the pairs in its row. Most pieces do not divide a given denominator, so each row lists only those that do.
 
-There is no pair table and no residual list. For any two rows $\alpha$ and $\beta$:
-- **gcd:** for each piece, the smaller exponent;
-- **residuals:** for each piece, the exponent minus the gcd's;
-- **lcm:** for each piece, the larger exponent.
+There is no pair table and no residual list. For any two denominators $d_i$ and $d_j$, and for every piece $q$:
+- **gcd:** $\nu_q(\gcd(d_i, d_j)) = \min(\nu_q(d_i), \nu_q(d_j))$;
+- **residuals:** $\nu_q(r_i) = \nu_q(d_i) - \min(\nu_q(d_i), \nu_q(d_j))$, and likewise for $r_j$;
+- **lcm:** $\nu_q(\text{lcm}(d_i, d_j)) = \max(\nu_q(d_i), \nu_q(d_j))$.
 
 Each is computed by walking the two sorted rows together.
 
-**Sizes.** Exponents are small numbers, at most the width in bits. Only the base and the two value lists hold full-width numbers.
+**Sizes.** The values $\nu_q(d)$ are small numbers, at most the width in bits. Only the base and the two value lists hold full-width numbers.
 
 ### Entering a new denominator
 
@@ -169,11 +169,11 @@ function enter(d)
         set g to gcd(rest, q)
         if g is q then
             divide rest by q as many times as it goes, counting k
-            add k to the exponent of q in the new row
+            add k to ν_q in the new row
         else
             split q into pairwise coprime pieces built from g and q / g
-            for each row, including the new row, that contains q with exponent t do
-                replace q by each new piece r, with exponent t · f, where q is the product of r^f
+            for each row, including the new row, that holds q with ν_q = t do
+                for each new piece s, set ν_s of that row's denominator to t · ν_s(q)
             end for
         end if
     end repeat
@@ -198,11 +198,11 @@ function add(m_x over d_i, m_y over d_j)
         return store((sum / h) over (d_i / h))
     end if
     set r_x to 1, set r_y to 1, and set "equal" to empty
-    walk rows i and j together; for each piece p with exponents a and b do
-        multiply r_x by p^(a − min(a, b))
-        multiply r_y by p^(b − min(a, b))
+    walk rows i and j together; for each piece q with a = ν_q(d_i) and b = ν_q(d_j) do
+        multiply r_x by q^(a − min(a, b))
+        multiply r_y by q^(b − min(a, b))
         if a equals b and a is not 0 then
-            add p^a to the list "equal"
+            add q^a to the list "equal"
         end if
     end walk
     set sum to m_x · r_y + m_y · r_x
@@ -217,22 +217,22 @@ function add(m_x over d_i, m_y over d_j)
 end function
 ```
 
-Only the pieces held to *equal* powers can cancel (the explainer, §6, gives the reason). When there are none, no gcd at all is computed.
+Only the pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$ can cancel (the explainer, §6, gives the reason). When there are none, no gcd at all is computed.
 
 ### Example
 
-The same denominators. Entering them:
+The same denominators. A row is written $\{q{:}\nu_q(d), \ldots\}$. Entering them:
 - $12$: the base is empty, so $12$ becomes a piece. The base is $[12]$, and row $12$ is $\{12{:}1\}$.
-- $18$: $\gcd(18, 12) = 6$, which splits $12$ into $2$ and $3$, with $12 = 2^2 \cdot 3$. Row $12$ becomes $\{2{:}2, 3{:}1\}$. Then $18 = 2^1 \cdot 3^2$, so row $18$ is $\{2{:}1, 3{:}2\}$. The base is $[2, 3]$.
-- $30$: $2^1 \cdot 3^1$, with $5$ left over, which becomes a new piece. Row $30$ is $\{2{:}1, 3{:}1, 5{:}1\}$, and the base is $[2, 3, 5]$.
+- $18$: $\gcd(18, 12) = 6$, which splits $12$ into $2$ and $3$, with $\nu_2(12) = 2$ and $\nu_3(12) = 1$. Row $12$ becomes $\{2{:}2, 3{:}1\}$. Then $\nu_2(18) = 1$ and $\nu_3(18) = 2$, so row $18$ is $\{2{:}1, 3{:}2\}$. The base is $[2, 3]$.
+- $30$: $\nu_2(30) = 1$ and $\nu_3(30) = 1$, with $5$ left over, which becomes a new piece. Row $30$ is $\{2{:}1, 3{:}1, 5{:}1\}$, and the base is $[2, 3, 5]$.
 
 Adding:
-- **$\tfrac{1}{12} + \tfrac{5}{18}$.** Exponents of $2$ are $2$ and $1$, and of $3$ are $1$ and $2$. So $r_x = 3$, $r_y = 2$, and no exponent is equal. The sum is $1 \cdot 3 + 5 \cdot 2 = 13$ over $12 \cdot 3 = 36$, with no gcd needed. Result: $13/36$.
-- **$\tfrac{1}{18} + \tfrac{1}{30}$.** Exponents of $2$ are $1$ and $1$, which are equal, so $2^1$ goes on the list. Exponents of $3$ are $2$ and $1$, and of $5$ are $0$ and $1$. So $r_x = 3$ and $r_y = 5$. The sum is $1 \cdot 5 + 1 \cdot 3 = 8$ over $18 \cdot 5 = 90$. Checking only the piece $2$: $\gcd(8, 2) = 2$. Result: $4/45$.
+- **$\tfrac{1}{12} + \tfrac{5}{18}$.** $\nu_2$ is $2$ and $1$, and $\nu_3$ is $1$ and $2$. So $r_x = 2$, $r_y = 3$, and no piece has equal valuations. The sum is $1 \cdot 3 + 5 \cdot 2 = 13$ over $12 \cdot 3 = 36$, with no gcd needed. Result: $13/36$.
+- **$\tfrac{1}{18} + \tfrac{1}{30}$.** $\nu_2$ is $1$ and $1$, which are equal, so $2^1$ goes on the list. $\nu_3$ is $2$ and $1$, and $\nu_5$ is $0$ and $1$. So $r_x = 3$ and $r_y = 5$. The sum is $1 \cdot 5 + 1 \cdot 3 = 8$ over $18 \cdot 5 = 90$. Checking only the piece $2$: $\gcd(8, 2) = 2$. Result: $4/45$.
 
 ### Properties
 
-- **Exponent rows change when a piece splits, but are always checkable:** the product of a row must equal its denominator.
+- **Exponent rows change when a piece splits, but are always checkable:** the product of $q^{\nu_q(d)}$ over a row must equal its denominator $d$.
 - **No pair storage.** Nothing grows with $D^2$.
 - **Entry is the expensive moment.** A new denominator is compared with every piece, and a split rewrites the rows that used that piece.
 - **Each addition multiplies pieces** to form the residuals, where Design 1 reads stored ones.
@@ -243,11 +243,11 @@ Adding:
 | --- | --- | --- |
 | Structures | 7 | 5 |
 | Full-width values stored | numerators, denominators, divisors, residuals | numerators, denominators, base pieces |
-| Index or bit storage | pair table: $D^2/2$ cells of $\lceil \log_2(C+1) \rceil$ bits; incidence: $D \cdot C$ bits | exponent rows: one small (index, exponent) pair per piece per denominator |
+| Index or bit storage | pair table: $D^2/2$ cells of $\lceil \log_2(C+1) \rceil$ bits; incidence: $D \cdot C$ bits | exponent rows: one small (index, $\nu_q(d)$) pair per piece $q$ dividing each denominator $d$ |
 | At entry of a denominator | append only; no gcds | a gcd with every piece; possible splits |
 | Gcd of a pair | a lookup if compared; otherwise AND plus scan, then one gcd on residuals | always read from the rows; never computed per pair |
 | Residuals | stored, read by popcount | multiplied out from pieces on each addition |
-| Reduction | $\gcd(\text{sum}, g)$ on all of $g$ | only against pieces at equal powers, often none |
+| Reduction | $\gcd(\text{sum}, g)$ on all of $g$ | only against pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$, often none |
 | Expensive moment | inserting a new divisor, which shifts incidence rows and renumbers the pair table | splitting a piece, which rewrites the rows that use it |
 | Grows with | $D^2$ (small cells) and $D \cdot C$ (bits) | the pieces actually used by each denominator |
 
@@ -257,15 +257,15 @@ Notation as in the paper (v0.3, §1 and §4):
 - $n$ is the size of the numbers in bits;
 - $\gamma$ is the size of $g$;
 - $u$ is the larger size of the residuals;
-- $s$ is the size of the part shared at equal power, made of $e$ pieces;
+- $s$ is the size of the part shared at equal valuation, the product of $q^{\nu_q(d_i)}$ over the $e$ pieces $q$ with $\nu_q(d_i) = \nu_q(d_j) > 0$, and $s_i$ is the size of the $i$-th such factor $q^{\nu_q(d_i)}$;
 - $\pi$ is the size of the largest piece;
 - $\rho$ is the number of pieces the two rows use;
-- $\lambda \le n$ is the sum of a denominator's exponents.
+- $\lambda \le n$ is the sum of $\nu_q(d)$ over a denominator's pieces $q$.
 
 Also:
 - $D$ is the number of denominators. To avoid a clash, the paper's division cost $D(\cdot)$ is written $\text{Div}(\cdot)$ here;
 - $C$ the number of divisors (Design 1) or pieces (Design 2);
-- $E$ the total number of (piece, exponent) entries over all rows;
+- $E$ the total number of (piece, $\nu_q(d)$) entries over all rows;
 - $\kappa$ the size of $c$.
 
 Where a cell gives three forms, they are symbolic; schoolbook; fastest.

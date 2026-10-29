@@ -17,7 +17,7 @@
 >
 > **Gcd work check:** passed on all 8 jobs (G(Q32)/G(TC) = 1.000000; call for call equal).
 >
-> **Profile (indicative only).** Q32's extra time in the operations is 21–46 ns/op: mostly **interning lookup (I) 10–28**, operand fetch (F) 8–10, record write (S) 4–6, growth (M) 0–5, compare (C) 0–2 and unattributed −1 to 5; gcd and other arithmetic are 2–7 ns *lower* in Q32. At entry the extra 12–25 ns is mostly I (9–16) and S (4–6). Read-out differs by 0.5 ns.
+> **Profile (indicative only).** Q32's extra time in the operations is 21–46 ns/op: mostly **interning lookup (I) 10–28**, operand fetch (F) 8–10, record write (S) 4–6, growth (M) 0–5, shortcut checks (C) 0–2 and unattributed −1 to 5; gcd and other arithmetic are 2–7 ns *lower* in Q32. At entry the extra 12–25 ns is mostly I (9–16) and S (4–6). Read-out differs by 0.5 ns.
 >
 > **Process CPU time cross-check:** median CPU share 0.998–1.000 for every job and row (lowest 0.950, job 9 Q32); CPU and total ns per run agree.
 >

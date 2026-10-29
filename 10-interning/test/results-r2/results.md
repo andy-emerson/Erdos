@@ -1,15 +1,25 @@
 # Design 3, round 2: results
 
-Run started 2026-10-29T13:12:24-05:00.
+Run started 2026-10-29T16:37:06-05:00.
 
 ## The measurement rule (research/rule-r2.md, verbatim, written before the first trial)
 
-sha256 `44baa5f1db601571d538116d37b1b8859fbf0eb99fe149baaa9ba655879e5f66`
+sha256 `9b47ea0ffdbbe719f70e5ee3356db829393864f8158cf293142e68d9975e5b1d`
 
 <!-- rule begins -->
 # Design 3, round 2: measurement rule
 
-Oct 29, 2026 · **Fixed: approved by the author, Oct 29, 2026.** Revised after the first independent review (spec v0.2 §17): items 5, 7, 9 and 10 and the pilot. This rule measures the two textbook baselines of [spec v0.2](../v0.2.md): **Q32** and **TC**.
+Oct 29, 2026 · **Fixed: approved by the author, Oct 29, 2026, with the revision of Oct 29, 2026 below, whose numbers the author approved the same day.** Revised after the first independent review (spec v0.2 §17): items 5, 7, 9 and 10 and the pilot. This rule measures the two textbook baselines of [spec v0.2](../v0.2.md): **Q32** and **TC**.
+
+**Revision of Oct 29, 2026 (the disturbance check; the author's option 3, approved Oct 29, 2026), made after the stopped pilot and before any measured round (step 6). Its numbers were approved by the author, Oct 29, 2026, after an independent review that found it sound; the review's minor fixes are included.** The first round-2 run stopped in its pilot. Its record ([`../test/results-r2/`](../test/results-r2/), as committed at `193ae57`) is kept unchanged in [`../test/results-r2-stopped-193ae57/`](../test/results-r2-stopped-193ae57/). Its first timed block counted 2 unexplained forks, and the re-run counted 1, against a limit of 0. The fork counter of `/proc/stat` counts threads as well as processes, and the host process `claude` (which cannot be stopped in this environment) creates short-lived threads. No other process used a tick, and no new process was seen. The host also ran at about 1.25 ticks per second, against the fixed stop of 1. What changes:
+- **Item 5, the check.** New processes are identified by process (thread-group id), from the two snapshots, not by thread. A thread of an existing process belongs to that process. The fork counter is reported only. The `cutime + cstime` of every process still charge a short-lived child's CPU time to the process that reaped it, against that process's limit. A child that existed before the block and is reaped during it is charged only its ticks during the block. The limit of another process is a floor plus a rate, $5 + \lceil L \rceil$ ticks over a block of $L$ seconds. The check, and what it cannot see (a child of a process that ignores `SIGCHLD`), are stated precisely below.
+- **Item 5, the host allowance.** The allowance comes from the pilot, $5 + \lceil 2\,R_h\,L \rceil$ (the floor of 5 ticks and the margin 2, **approved by the author, Oct 29, 2026**). $R_h$ is at least 1 tick over the longest pilot block. The stop at 1 tick per second is replaced by a stop above a ceiling of **4 ticks per second** (**approved by the author, Oct 29, 2026**, as the review recommended). The null control's spread (item 8) remains the safeguard on the timings.
+- **Item 4, the process's own CPU time.** It is recorded for every timed rep, calibration included, reported only.
+- **Item 13 and Run plan step 3** follow these changes.
+
+- **Harness, the official data.** The stopped run's record is protected like round 1's.
+
+Nothing else changes. The harness pins this file's hash as approved.
 
 Three points are the author's (Oct 29, 2026):
 - the two rows;
@@ -63,6 +73,7 @@ So a time difference between the rows is the cost or the saving of the structure
    - **The time** of a row in a round is its **total**: entry + operations + read-out of every stored value. The three parts are also reported. Creating and destroying a class and reading the workload are not timed.
    - **Pinning.** Every timed invocation (calibration, rounds, the pilot's rounds and profiling run, the profile runs) runs pinned to **core 1**, one at a time, by the start of item 5.2. The runner is pinned to **core 0**. Jobs run in job order, each with its calibration and all 12 rounds before the next.
    - **Time cap.** A timed rep that lasts more than **10 s** ends that row's timing on that job. The row is **over cap**, a reported finding.
+   - **The process's own CPU time** (revision of Oct 29, 2026: **reported only**). For every timed rep (calibration and rounds), the timing build also reads the process's own CPU time (`CLOCK_PROCESS_CPUTIME_ID`) and `CLOCK_MONOTONIC` once before the rep's $r$ runs and once after. Both reads are outside every timed part, so the timed parts are read as before. Its **CPU share** is the CPU time over the `CLOCK_MONOTONIC` time of the same whole rep, create and destroy included. A share well below 1 means the process lost its core during the rep. Both figures of every timed rep, calibration reps included, are stored in the results (`state.json`). For the rep kept in each round, the share and the CPU time per run are reported beside the time. They enter no measure, band or verdict.
 
 5. **Nothing of the runner's own runs during a timed phase** (the author's requirement). A **timed phase** is every timed invocation: calibration, rounds, the pilot's rounds and profiling run, and the profile runs. From the start of a job's timed block to its end, the only process that runs is the timed invocation. Everything else of the run is **blocked in the kernel**, not polling.
 
@@ -82,22 +93,24 @@ So a time difference between the rows is the cost or the saving of the structure
    1. start the runner **once**, with one command that returns only when the runner exits: a foreground command, or the session's background-command facility that notifies the operator when the command exits (for Claude Code, the Bash tool with `run_in_background`, with a timeout of at least **35 minutes**, **approved by the author, Oct 29, 2026**);
    2. run **nothing else** on the machine until that exit notice: no polling or waiting loop, no `sleep`, `watch`, `tail -f`, file check, Monitor or until-loop, no other tool call, build, test or edit, and no detached (`nohup`, `&`) process. A parent shell that is blocked in `wait` is allowed; anything that wakes periodically is not.
 
-   **Check, after each timed block** (untimed, between blocks). Just before and just after the block, the runner takes two snapshots:
-   - **Ticks.** For every process, `utime + stime + cutime + cstime` from `/proc/<pid>/stat` (fields 14–17). `cutime + cstime` holds the ticks of the children a process has waited for, so a short-lived child that started and exited within the block is charged to its parent. For the runner itself only `utime + stime` counts, since its `cutime + cstime` are its timed children's.
-   - **Forks.** The fork counter, the `processes` line of `/proc/stat`, which counts every process and thread created since boot. The runner also counts its own spawns in the block (one per timed invocation). The block's **unexplained forks** are the rise of the counter, less the runner's spawns, less the new kernel threads present in the second snapshot. They catch a process that started and exited within the block whatever its parent, even one that was never waited for.
+   **Check, after each timed block** (untimed, between blocks; revision of Oct 29, 2026). Just before and just after the block, the runner takes two snapshots:
+   - **Processes, by process.** The set of processes is the numbered entries of `/proc`, one per thread group: a thread is never an entry. Each process is identified by its id and its start time (field 22), so a reused id is a new process. A process in the second snapshot only is **new**. A thread created during the block by a process present in both snapshots (a host, the runner, or any other) **belongs to that process**: the kernel sums the CPU time of every thread of a group, exited threads included, into the group's `utime + stime`. Its time is charged to that process, and nothing else counts it. Each host's thread count (field 20) is reported before and after.
+   - **Ticks.** For every process, `utime + stime + cutime + cstime` from `/proc/<pid>/stat` (fields 14–17). A process's **ticks over the block** are the rise of that sum, or the whole sum for a new process. For the runner itself only `utime + stime` counts, since its `cutime + cstime` are its timed children's.
+   - **Short-lived processes.** A process that starts and exits within the block is in neither snapshot. When a process reaps a child, the kernel adds the child's CPU time, and that of the child's own reaped children, to the reaper's `cutime + cstime`. So the short-lived process's CPU time is charged to the process that reaped it, against **that process's limit** below: a host's allowance, the limit of any other process, or the 1 tick of a new process. A child never reaped is still listed at the second snapshot, as a zombie with its own times, and counts as new. An orphan is reaped by its subreaper or by process 1, a host, and is charged there. The runner reaps only its timed children. **Limits:** a short-lived process is caught by its CPU time only. One that exits within the block and adds less than its reaper's remaining limit is not flagged. For a child of a host, its CPU time counts in the host's allowance. **A child of a process that ignores `SIGCHLD`** (or sets `SA_NOCLDWAIT`) is reaped by the kernel without adding to its parent's `cutime + cstime`. If it starts and exits within the block, it is in neither snapshot and its CPU time is charged nowhere, so it **goes undetected**.
+   - **A child that existed before the block and is reaped during it.** It is in the first snapshot only. The kernel adds its whole lifetime's ticks to its reaper's `cutime + cstime`, but only its ticks during the block are charged. Its ticks at the first snapshot (all four fields) are taken off the rise of its parent at the first snapshot, if that parent is present in both snapshots, and at most the rise of that parent's `cutime + cstime` (a parent that ignores `SIGCHLD` gains nothing there, so nothing is taken off its own time). A zombie at the first snapshot is thus charged nothing. If that parent is gone at the second snapshot, the child was orphaned and reaped elsewhere, nothing is taken off, and its whole lifetime is charged to its reaper (the conservative side). The ticks taken off are reported per process.
+   - **The fork counter** (reported only). The `processes` line of `/proc/stat` counts every process **and thread** created since boot. So it cannot tell a host's threads from new processes, and it no longer flags. Its rise over the block, and that rise less the runner's spawns and the new kernel threads, are reported.
 
    Excluded from the tick tests are the runner itself (reported separately), the block's timed children, kernel threads (children of `kthreadd`: reported, never flag) and the host processes (below), which have their own allowance. The block is **disturbed** if any of these holds:
-   - any other process used more than **5 clock ticks** (50 ms at 100 Hz) over the block (**approved by the author, Oct 29, 2026**);
-   - any new process, other than the runner's timed children, started during the block and used at least one tick (**approved by the author, Oct 29, 2026**);
-   - the block had more than **0 unexplained forks** (**approved by the author, Oct 29, 2026**);
-   - a host process used more than its allowance.
+   - any other process present in both snapshots used more than $5 + \lceil 1 \cdot L \rceil$ **clock ticks** over a block of $L$ seconds, its reaped children's included: a floor of **5 ticks** (50 ms at 100 Hz; **approved by the author, Oct 29, 2026**) plus a rate of **1 tick per second** (1% of one core, the rate the author approved, Oct 29, 2026, for the earlier host stop; set under the review's fix of Oct 29, 2026, so that the limit scales with the block's length);
+   - any new process, other than the runner's timed children, used at least one tick, its reaped children's included (**approved by the author, Oct 29, 2026**). A new process under one tick is reported;
+   - a host process used more than its allowance, its threads' and its reaped children's ticks included.
 
    **Host processes.** An ancestor of the runner that cannot be stopped during the run is a **host process**: for example, the session process that hosts the operator's background command, and process 1. At start, the runner finds its ancestors by following `PPid` to process 1, and lists them in the results. A parent blocked in `wait` uses no ticks. The others are measured, not assumed:
-   1. **The pilot records the baseline** (Run plan step 3). For each host process $h$, it records the ticks (all four fields) over each of the pilot's timed blocks, as a rate in ticks per second. $R_h$ is the highest rate over those blocks. During the pilot, host ticks are recorded and do not flag; every other test applies.
-   2. **The allowance is then fixed**, before step 6, by this formula (**approved by the author, Oct 29, 2026**): over a block of $L$ seconds, host process $h$ may use at most $5 + \lceil 2\,R_h\,L \rceil$ ticks. The values of $R_h$ and of each block's allowance are written to the results.
-   3. **A busy host stops the run.** If any $R_h$ exceeds **1 tick per second** (1% of one core at 100 Hz; **approved by the author, Oct 29, 2026**), the run stops after the pilot and is reported to the author before any further step: the machine is not quiet enough to time on.
+   1. **The pilot records the baseline** (Run plan step 3). For each host process $h$, it records the ticks (all four fields) over each of the pilot's timed blocks, as a rate in ticks per second. Its **measured rate** is the highest rate over those blocks. $R_h$ is the measured rate, but at least **1 tick** over the longest pilot block (**approved by the author, Oct 29, 2026**): a tick is the pilot's resolution, so a host with no tick in the pilot is not taken to use none. During the pilot, host ticks are recorded and do not flag; every other test applies.
+   2. **The allowance is then fixed** before step 6, from the pilot's measurement (revision of Oct 29, 2026). Over a block of $L$ seconds, host process $h$ may use at most $5 + \lceil 2\,R_h\,L \rceil$ ticks: a floor of **5 ticks** (**approved by the author, Oct 29, 2026**) plus **2 times** (**approved by the author, Oct 29, 2026**) its rate $R_h$ over the block. The values of $R_h$, of the measured rates and of each block's allowance are written to the results. *Example:* the stopped run's highest host rate was 1.25 ticks per second (2 ticks in a pilot block of 1.6 s). Over a block of 10 s, that host would be allowed $5 + \lceil 25 \rceil = 30$ ticks.
+   3. **Only a very busy host stops the run.** If any host's measured rate exceeds a ceiling of **4 ticks per second** (4% of one core at 100 Hz; **approved by the author, Oct 29, 2026**), the run stops after the pilot and is reported to the author before any further step: the machine is not quiet enough to time on. Below the ceiling, a host is held to its allowance. The timings are guarded by the null control (item 8): a host that disturbs the timings shows in the null spread, which widens the band $h$.
 
-   The ticks of the runner's ancestors are thus all counted, and an operator's polling loop would be caught: by its own ticks, by its children's ticks in its `cutime + cstime`, or by the forks of the commands it starts. A disturbed block is discarded, logged with the processes, their ticks and the forks, and **re-run once** (calibration and all rounds; the time counts on the run's clock). A second disturbance of the same job stops the run, which is reported to the author. The runner's own ticks per block are reported. More than **2 ticks** per block (**approved by the author, Oct 29, 2026**) is a harness bug.
+   The ticks of the runner's ancestors are thus all counted, threads included. An operator's polling loop is caught by its own ticks, by its children's ticks in its `cutime + cstime`, or by a command it starts that is alive at the second snapshot. Since the fork counter no longer flags, a light loop whose commands exit within the block, under a host and within that host's allowance, is not caught by the check. The operator's duty (above) is unchanged. A disturbed block is discarded, logged with the processes, their ticks and the forks, and **re-run once** (calibration and all rounds; the time counts on the run's clock). A second disturbance of the same job stops the run, which is reported to the author. The runner's own ticks per block are reported. More than **2 ticks** per block (**approved by the author, Oct 29, 2026**) is a harness bug.
 
 6. **Idle machine** (the round-1 check, with a changed criterion: **approved by the author, Oct 29, 2026**). Before each job's timed block (the pilot's, step 6's and step 7's), the runner takes a **2-second** sample (**approved by the author, Oct 29, 2026**). The machine is idle when both of these hold (**approved by the author, Oct 29, 2026**):
    - no process outside the runner used more than **5%** of one core over the sample (the round-1 threshold);
@@ -161,7 +174,8 @@ So a time difference between the rows is the cost or the saving of the structure
     - **Counts per operation**, per row: gcds, gcd work, multiplications, additions and exact divisions, which are equal between the rows. For Q32 also: lookup searches and probes, interned found and appended, and whole-number reads. Every counter per phase, core and store goes in a CSV.
     - **The known-answer skips**, per job and row: each K counter of spec v0.2 §13.1 with its prediction, and the share of the work it removes (divisions, gcds, lookups, reads).
     - **Memory against reuse:** the jobs sorted by W/N at the end, with both rows' B_used and B_heap.
-    - **The idle checks and the disturbance checks** (items 5 and 6): every check, the runner's own ticks per block, the unexplained forks per block, and the host processes with their rates $R_h$ and their ticks and allowance per block.
+    - **The idle checks and the disturbance checks** (items 5 and 6): every check, the runner's own ticks per block, the fork counter's rise per block (reported only), the new processes under one tick, the limit of other processes and the ticks taken off for children reaped in the block, and the host processes with their rates $R_h$, and their ticks, allowance and thread counts per block.
+    - **The process's own CPU time** (item 4, reported only): per job and row, the median and lowest CPU share of the kept reps, and the median CPU time per run beside the median total.
     - **Round 1, for reference only:** for each job, a link to its round-1 verdicts. Round 1 enters no round-2 measure.
 
 ## Workloads
@@ -199,7 +213,7 @@ The spec's known-answer skips change no stored value, so $W$ is unchanged. Neith
    $$\text{projection} = \text{elapsed} + 5\ \text{min} \times \max(1,\ P / 0.5\ \text{min}) + 36 \times P_\text{prof}.$$
    The 5 minutes and 0.5 minutes are **approved by the author, Oct 29, 2026** (below). The factor 36 (**approved by the author, Oct 29, 2026**) is 24, since step 7 makes 48 profile invocations against the pilot's 2, with half again for margin.
    - **If the projection exceeds 22 minutes (approved by the author, Oct 29, 2026), the run stops and is reported to the author before anything else runs.** That leaves a quarter of the hard stop for re-runs under item 12, as in round 1.
-   - **The run also stops after the pilot**, and is reported to the author, if any host rate $R_h$ exceeds 1 tick per second (item 5), or if either row's profiling slowdown exceeds 1.5 (item 10), so that K can be reconsidered.
+   - **The run also stops after the pilot**, and is reported to the author, if any host's measured rate exceeds the ceiling of 4 ticks per second (item 5; **approved by the author, Oct 29, 2026**), or if either row's profiling slowdown exceeds 1.5 (item 10), so that K can be reconsidered.
 4. Gates (item 3), two at a time on both cores.
 5. Counting runs and memory runs (items 2 and 7), two at a time on both cores. The worker pool is then shut down and joined (item 5).
 6. Per job, in job order: the idle check, then calibration and the 12 rounds, one timed invocation at a time on core 1, then the disturbance check.
@@ -223,6 +237,7 @@ The spec's known-answer skips change no stored value, so $W$ is unchanged. Neith
 - **64-bit arithmetic only.** At this width a gcd is cheap, so time differences come mostly from structure. The gcd work is equal by construction, and is reported to make that visible.
 - **The profile perturbs what it measures** (spec v0.2 §13.4 items 8 and 9). Its fences stop the overlap between phases, so its shares and its per-phase differences between the rows are indicative only. They are meant to guide the next step, not to predict a saving.
 - **Jobs 5–7 are not run.** Round 2 says nothing about the low-reuse jobs beyond Q32's capacity.
+- **The disturbance check cannot see every process** (item 5). A short-lived process is caught only by its CPU time in its reaper's `cutime + cstime`. A child of a process that ignores `SIGCHLD` is reaped without adding to `cutime`, so one that starts and exits within a block goes undetected. One whose reaper stays within its limit is not flagged either. The null control (item 8) remains the safeguard on the timings.
 
 ## Harness
 
@@ -232,22 +247,29 @@ The round-1 harness (`test/gen.py`, `l1model.py`, `runner.py`, `analyze.py`, `be
 - `runner.py` implements items 5 and 6, has no library rows or forms, and enforces the hard stop by kernel timer;
 - `analyze.py` reports items 7–13.
 
-**The official data.** Round 2 writes only to **`test/results-r2/`**. The harness refuses to start if its output folder is `test/results/`, `test/results-q64-b3b88b6/` or `test/results-q32/`. It never writes or deletes there, and it checks the sha256 of every file in those three folders before and after the run. Decisions the builder makes go in `test/DECISIONS.md`, under a round-2 heading, pending the author's review.
+**The official data.** Round 2 writes only to **`test/results-r2/`**. The harness refuses to start if its output folder is `test/results/`, `test/results-q64-b3b88b6/`, `test/results-q32/` or `test/results-r2-stopped-193ae57/` (the stopped first round-2 run's record, copied unchanged from `test/results-r2/` as committed at `193ae57`, before any new run can overwrite it). It never writes or deletes there, and it checks the sha256 of every file in those four folders before and after the run. Decisions the builder makes go in `test/DECISIONS.md`, under a round-2 heading, pending the author's review.
 <!-- rule ends -->
 
 ## The run
 
-- Started 2026-10-29T13:12:24-05:00; **stopped**: job 1: the pilot block was disturbed twice (rule-r2 item 5).
-- Run time 0.4 minutes (hard stop 30).
-- Rule sha256 `44baa5f1db601571d538116d37b1b8859fbf0eb99fe149baaa9ba655879e5f66`; round 1's official data after the run: unchanged.
-- Host processes (the runner's ancestors): bash[7691], claude[91], environment-man[84], sh[79], process_api[1]
-- Code at 2026-10-29T13:12:24-05:00: Q32 `95cd925fa596`, TC `9471c1318b14`
+- Started 2026-10-29T16:37:06-05:00; **stopped**: harness bug: the runner used 5 ticks in the measured block of job 1 (rule-r2 item 5: more than 2 is a harness bug).
+- Run time 0.8 minutes (hard stop 30).
+- Rule sha256 `9b47ea0ffdbbe719f70e5ee3356db829393864f8158cf293142e68d9975e5b1d`; the official data after the run: unchanged.
+- Host processes (the runner's ancestors): bash[1096], claude[92], environment-man[85], sh[79], process_api[1]
+- Code at 2026-10-29T16:37:06-05:00: Q32 `a00bd4454820`, TC `d35c102d1098`
 - Unit tests: r2_unit: r2_unit: 489645 checks, 0 failures; r2_diff: r2_diff: 300 seeds, 233379 operations (8210 divisions by zero, 19460 overflows), every case and K-skip met; 977113 checks, 0 failures; r2_unit-asan: r2_unit: 489645 checks, 0 failures; r2_diff-asan: r2_diff: 60 seeds, 46345 operations (1630 divisions by zero, 3765 overflows), every case and K-skip met; 194197 checks, 0 failures
 - **Over capacity for Q32** (not run): job 5 (MOD-mixed, W = 40849), job 6 (MOD-muldiv, W = 40798), job 7 (NEW-add, W = 50795)
+- **Bug**: {'what': 'the runner used 5 ticks in a timed block (more than 2)', 'job': 1, 'label': 'measured', 'time': '2026-10-29T16:37:54-05:00'}
+
+## The pilot (discarded, except what it records for the run)
+
+- Jobs [1, 3, 10], profiling run on job 1; P = 11.2 s, P_prof = 2.6 s; projection 7.1 min (limit 22).
+- Host rates R_h (ticks per second): {'1': 0.5500550055005501, '79': 0.5500550055005501, '85': 0.6207443031462708, '92': 0.5500550055005501, '1096': 0.5500550055005501}.
+- Profiling slowdown: Q32 1.226, TC 1.255.
 
 ## Verdicts
 
-**No verdict is reported: the run did not finish** (stopped in step 3: job 1: the pilot block was disturbed twice (rule-r2 item 5)).
+**No verdict is reported: the run did not finish** (stopped in steps 4-7: harness bug: the runner used 5 ticks in the measured block of job 1 (rule-r2 item 5: more than 2 is a harness bug)).
 
 ## Also reported (rule-r2 item 13)
 
@@ -279,35 +301,132 @@ Case shares per algorithm:
 
 | job | row | gcd | gcd work | mul | add | exact div | lookup searches | probes | found | appended | reads |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Q32 | 1.479 | 25.067 | 1.504 | 0.667 | 1.929 | 3.073 | 4.077 | 0.985 | 0.996 | 2.501 |
+| 1 | TC | 1.479 | 25.067 | 1.504 | 0.667 | 1.929 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 2 | Q32 | 1.473 | 18.485 | 1.498 | 0.666 | 1.907 | 2.526 | 3.001 | 1.466 | 0.513 | 2.496 |
+| 2 | TC | 1.473 | 18.485 | 1.498 | 0.666 | 1.907 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 3 | Q32 | 1.224 | 20.070 | 1.021 | 0.000 | 0.567 | 1.807 | 2.348 | 1.778 | 0.012 | 2.189 |
+| 3 | TC | 1.224 | 20.070 | 1.021 | 0.000 | 0.567 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 4 | Q32 | 1.627 | 31.875 | 1.307 | 0.000 | 0.634 | 3.074 | 4.264 | 1.270 | 0.712 | 2.629 |
+| 4 | TC | 1.627 | 31.875 | 1.307 | 0.000 | 0.634 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 8 | Q32 | 1.545 | 19.895 | 1.737 | 0.762 | 2.048 | 2.759 | 3.308 | 1.315 | 0.664 | 2.864 |
+| 8 | TC | 1.545 | 19.895 | 1.737 | 0.762 | 2.048 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 9 | Q32 | 1.748 | 28.783 | 2.275 | 0.762 | 2.199 | 2.780 | 3.311 | 1.324 | 0.676 | 3.044 |
+| 9 | TC | 1.748 | 28.783 | 2.275 | 0.762 | 2.199 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 10 | Q32 | 1.437 | 16.686 | 0.884 | 0.000 | 0.629 | 2.906 | 3.463 | 1.388 | 0.608 | 1.770 |
+| 10 | TC | 1.437 | 16.686 | 0.884 | 0.000 | 0.629 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 11 | Q32 | 1.313 | 16.660 | 1.105 | 0.222 | 0.509 | 2.908 | 3.485 | 1.293 | 0.705 | 1.771 |
+| 11 | TC | 1.313 | 16.660 | 1.105 | 0.222 | 0.509 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
 
 ### The known-answer skips (counting build, with the generator's prediction from the gates)
 
 | job | skip | operations | gcds | gcd work | divisions | multiplications | additions |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | K-1 | 3993 | 0 | 0 | 7986 (12.1%) | 0 | 0 |
+| 1 | K-3 | 585 | 0 | 0 | 1170 (2.0%) | 0 | 0 |
+| 1 | K-6 | 676 | 676 (1.5%) | 14592 (1.9%) | 2704 (4.5%) | 0 | 0 |
+| 1 | K-7 | 10173 | 0 | 0 | 20346 (26.0%) | 0 | 0 |
+| 1 | K-13 | 20000 | 0 | 0 | 0 | 40000 (47.0%) | 0 |
+| 1 | K-14 | 30000 | 0 | 0 | 0 | 0 | 0 |
+| 1 | K-Q1, K-Q2 | lookups skipped 585 (0.010 of lookups) | reads made 75042, skipped 4958 (K-Q3) | | | | |
+| 2 | K-1 | 3970 | 0 | 0 | 7940 (12.2%) | 0 | 0 |
+| 2 | K-2 | 21 | 21 (0.0%) | 119 (0.0%) | 42 (0.1%) | 0 | 21 (0.1%) |
+| 2 | K-3 | 610 | 0 | 0 | 1220 (2.1%) | 0 | 0 |
+| 2 | K-6 | 754 | 754 (1.7%) | 11325 (2.0%) | 3016 (5.0%) | 0 | 0 |
+| 2 | K-7 | 10261 | 0 | 0 | 20522 (26.4%) | 0 | 0 |
+| 2 | K-13 | 19979 | 0 | 0 | 0 | 39958 (47.1%) | 0 |
+| 2 | K-14 | 30000 | 0 | 0 | 0 | 0 | 0 |
+| 2 | K-Q1, K-Q2 | lookups skipped 610 (0.010 of lookups) | reads made 74893, skipped 5107 (K-Q3) | | | | |
+| 3 | K-1 | 10000 | 0 | 0 | 20000 (54.0%) | 0 | 0 |
+| 3 | K-8 | 907 | 0 | 0 | 1814 (9.6%) | 0 | 0 |
+| 3 | K-9 | 5477 | 0 | 0 | 16200 (48.8%) | 0 | 0 |
+| 3 | K-10 | 928 | 0 | 0 | 1856 (9.8%) | 0 | 0 |
+| 3 | K-11 | 5565 | 0 | 0 | 16594 (49.4%) | 0 | 0 |
+| 3 | K-12 | 367 | 0 | 0 | 0 | 0 | 0 |
+| 3 | K-13 | 20000 | 0 | 0 | 0 | 20000 (39.5%) | 0 |
+| 3 | K-14 | 30000 | 0 | 0 | 0 | 0 | 0 |
+| 3 | K-15 | 1132 | 0 | 0 | 0 | 0 | 0 |
+| 3 | K-Q1, K-Q2 | lookups skipped 6301 (0.105 of lookups) | reads made 65674, skipped 14326 (K-Q3) | | | | |
+| 4 | K-1 | 10000 | 0 | 0 | 20000 (51.3%) | 0 | 0 |
+| 4 | K-8 | 132 | 0 | 0 | 264 (1.4%) | 0 | 0 |
+| 4 | K-9 | 9177 | 0 | 0 | 28974 (60.4%) | 0 | 0 |
+| 4 | K-10 | 128 | 0 | 0 | 256 (1.3%) | 0 | 0 |
+| 4 | K-11 | 9213 | 0 | 0 | 29096 (60.5%) | 0 | 0 |
+| 4 | K-12 | 5 | 0 | 0 | 0 | 0 | 0 |
+| 4 | K-13 | 20000 | 0 | 0 | 0 | 20000 (33.8%) | 0 |
+| 4 | K-14 | 30000 | 0 | 0 | 0 | 0 | 0 |
+| 4 | K-15 | 20 | 0 | 0 | 0 | 0 | 0 |
+| 4 | K-Q1, K-Q2 | lookups skipped 565 (0.009 of lookups) | reads made 78877, skipped 1123 (K-Q3) | | | | |
+| 8 | K-1 | 3876 | 0 | 0 | 7752 (8.3%) | 0 | 0 |
+| 8 | K-2 | 8 | 8 (0.0%) | 53 (0.0%) | 16 (0.0%) | 0 | 8 (0.0%) |
+| 8 | K-3 | 907 | 0 | 0 | 1814 (2.1%) | 0 | 0 |
+| 8 | K-6 | 1418 | 1418 (2.1%) | 23340 (2.7%) | 5672 (6.2%) | 0 | 0 |
+| 8 | K-7 | 15677 | 0 | 0 | 31354 (26.7%) | 0 | 0 |
+| 8 | K-13 | 31992 | 0 | 0 | 0 | 63984 (46.7%) | 0 |
+| 8 | K-14 | 42000 | 0 | 0 | 0 | 0 | 0 |
+| 8 | K-Q1, K-Q2 | lookups skipped 907 (0.011 of lookups) | reads made 120293, skipped 7707 (K-Q3) | | | | |
+| 9 | K-1 | 10000 | 0 | 0 | 20000 (17.8%) | 0 | 0 |
+| 9 | K-3 | 7 | 0 | 0 | 14 (0.0%) | 0 | 0 |
+| 9 | K-4 | 2 | 2 (0.0%) | 15 (0.0%) | 8 (0.0%) | 0 | 0 |
+| 9 | K-6 | 407 | 407 (0.6%) | 6478 (0.5%) | 1628 (1.7%) | 0 | 0 |
+| 9 | K-7 | 16826 | 0 | 0 | 33652 (26.7%) | 0 | 0 |
+| 9 | K-13 | 32000 | 0 | 0 | 0 | 64000 (40.1%) | 0 |
+| 9 | K-14 | 42000 | 0 | 0 | 0 | 0 | 0 |
+| 9 | K-Q1, K-Q2 | lookups skipped 7 (0.000 of lookups) | reads made 127838, skipped 162 (K-Q3) | | | | |
+| 10 | K-1 | 10000 | 0 | 0 | 20000 (63.9%) | 0 | 0 |
+| 10 | K-8 | 15 | 0 | 0 | 30 (0.3%) | 0 | 0 |
+| 10 | K-9 | 3510 | 0 | 0 | 10220 (47.4%) | 0 | 0 |
+| 10 | K-10 | 19 | 0 | 0 | 38 (0.3%) | 0 | 0 |
+| 10 | K-11 | 3465 | 0 | 0 | 10116 (47.2%) | 0 | 0 |
+| 10 | K-13 | 8000 | 0 | 0 | 0 | 8000 (33.5%) | 0 |
+| 10 | K-14 | 18000 | 0 | 0 | 0 | 0 | 0 |
+| 10 | K-15 | 3 | 0 | 0 | 0 | 0 | 0 |
+| 10 | K-Q1, K-Q2 | lookups skipped 74 (0.002 of lookups) | reads made 31868, skipped 132 (K-Q3) | | | | |
+| 11 | K-1 | 10000 | 0 | 0 | 20000 (68.6%) | 0 | 0 |
+| 11 | K-2 | 1 | 1 (0.0%) | 3 (0.0%) | 2 (0.0%) | 0 | 1 (0.0%) |
+| 11 | K-3 | 9 | 0 | 0 | 18 (0.2%) | 0 | 0 |
+| 11 | K-4 | 7 | 7 (0.0%) | 41 (0.0%) | 28 (0.3%) | 0 | 0 |
+| 11 | K-5 | 3 | 0 | 0 | 6 (0.1%) | 0 | 0 |
+| 11 | K-6 | 2238 | 2238 (8.6%) | 48726 (14.0%) | 8952 (49.4%) | 0 | 0 |
+| 11 | K-7 | 1381 | 0 | 0 | 2762 (23.2%) | 0 | 0 |
+| 11 | K-8 | 8 | 0 | 0 | 16 (0.2%) | 0 | 0 |
+| 11 | K-9 | 1937 | 0 | 0 | 5624 (38.0%) | 0 | 0 |
+| 11 | K-10 | 8 | 0 | 0 | 16 (0.2%) | 0 | 0 |
+| 11 | K-11 | 1737 | 0 | 0 | 5178 (36.1%) | 0 | 0 |
+| 11 | K-12 | 2 | 0 | 0 | 0 | 0 | 0 |
+| 11 | K-13 | 7999 | 0 | 0 | 0 | 11998 (37.6%) | 0 |
+| 11 | K-14 | 18000 | 0 | 0 | 0 | 0 | 0 |
+| 11 | K-15 | 3 | 0 | 0 | 0 | 0 | 0 |
+| 11 | K-Q1, K-Q2 | lookups skipped 49 (0.001 of lookups) | reads made 31877, skipped 123 (K-Q3) | | | | |
 
-The gates checked every counter above against the generator's prediction (spec v0.2 §14.1 item 2): 
+The gates checked every counter above against the generator's prediction (spec v0.2 §14.1 item 2): TC:1 pass, Q32:1 pass, Q32:2 pass, TC:2 pass, Q32:3 pass, TC:3 pass, Q32:4 pass, TC:4 pass, TC:8 pass, Q32:8 pass, TC:9 pass, Q32:9 pass, Q32:10 pass, TC:10 pass, Q32:11 pass, TC:11 pass
 
 ### Memory against reuse (jobs sorted by W/N at the end)
 
 | job | W/N | B_used Q32 | B_used TC | B_heap Q32 | B_heap TC |
 | --- | --- | --- | --- | --- | --- |
-| 3 | 0.012 | n/a | n/a | n/a | n/a |
-| 2 | 0.513 | n/a | n/a | n/a | n/a |
-| 10 | 0.608 | n/a | n/a | n/a | n/a |
-| 8 | 0.664 | n/a | n/a | n/a | n/a |
-| 9 | 0.676 | n/a | n/a | n/a | n/a |
-| 11 | 0.705 | n/a | n/a | n/a | n/a |
-| 4 | 0.712 | n/a | n/a | n/a | n/a |
-| 1 | 0.996 | n/a | n/a | n/a | n/a |
+| 3 | 0.012 | 4.16 | 16.00 | 4.71 | 17.48 |
+| 2 | 0.513 | 10.29 | 16.00 | 11.12 | 17.48 |
+| 10 | 0.608 | 12.51 | 16.00 | 18.47 | 29.13 |
+| 8 | 0.664 | 12.43 | 16.00 | 15.75 | 24.97 |
+| 9 | 0.676 | 12.53 | 16.00 | 15.75 | 24.97 |
+| 11 | 0.705 | 13.28 | 16.00 | 18.47 | 29.13 |
+| 4 | 0.712 | 14.06 | 16.00 | 17.63 | 17.48 |
+| 1 | 0.996 | 16.33 | 16.00 | 17.69 | 17.48 |
 
 ### The idle and disturbance checks
 
-| job | block | attempt | seconds | disturbed | runner ticks | spawns | forks | unexplained | host ticks |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | pilot rounds | 1 | 1.597 | yes: 2 unexplained forks | 1 | 8 | 10 | 2 | process_api 1, sh 0, environment-man 0, claude 2, bash 0 |
-| 1 | pilot rounds | 2 | 1.601 | yes: 1 unexplained forks | 1 | 8 | 9 | 1 | process_api 0, sh 0, environment-man 0, claude 1, bash 0 |
+Processes are told apart by process (thread-group id), not by thread; the fork counter counts threads too and is reported only (rule-r2 item 5, revision of Oct 29, 2026). Host ticks are given as ticks / allowance (none in the pilot) and threads before -> after. Other processes may use 5 + ceil(1 x L) ticks over a block of L seconds (the limit column). Credited: the ticks, before the block, of children that existed at its start and were reaped during it, taken off their parent's rise.
 
-Idle checks: 2 (0 busy). Host rates R_h: {}.
+| job | block | attempt | seconds | disturbed | runner ticks | spawns | forks (reported) | forks less spawns (reported) | new processes under 1 tick (reported) | other limit | credited | host ticks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | pilot rounds | 1 | 1.611 | no | 1 | 8 | 8 | 0 | none | 7 | none | process_api 0 (6->6 threads), sh 0 (1->1 threads), environment-man 1 (7->7 threads), claude 0 (8->8 threads), bash 0 (1->1 threads) |
+| 3 | pilot rounds | 1 | 1.729 | no | 0 | 8 | 8 | 0 | none | 7 | none | process_api 0 (6->6 threads), sh 0 (1->1 threads), environment-man 0 (7->7 threads), claude 0 (8->8 threads), bash 0 (1->1 threads) |
+| 10 | pilot rounds | 1 | 1.818 | no | 1 | 8 | 9 | 0 | none | 7 | none | process_api 0 (6->6 threads), sh 0 (1->1 threads), environment-man 0 (7->7 threads), claude 0 (8->8 threads), bash 0 (1->1 threads) |
+| 1 | pilot prof | 1 | 0.563 | no | 1 | 2 | 2 | 0 | none | 6 | none | process_api 0 (6->6 threads), sh 0 (1->1 threads), environment-man 0 (7->7 threads), claude 0 (8->8 threads), bash 0 (1->1 threads) |
+| 1 | measured rounds | 1 | 8.379 | no | 5 | 38 | 38 | 0 | none | 14 | none | process_api 0/15 (6->6 threads), sh 0/15 (1->1 threads), environment-man 0/16 (7->7 threads), claude 1/15 (8->7 threads), bash 0/15 (1->1 threads) |
+
+Idle checks: 5 (0 busy). Host rates R_h: {'1': 0.5500550055005501, '79': 0.5500550055005501, '85': 0.6207443031462708, '92': 0.5500550055005501, '1096': 0.5500550055005501} (measured: {'1': 0.0, '79': 0.0, '85': 0.6207443031462708, '92': 0.0, '1096': 0.0}; R_h is at least 1 tick over the longest pilot block).
 
 ### Round 1, for reference only
 

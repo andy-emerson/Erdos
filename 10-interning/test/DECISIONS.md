@@ -244,7 +244,7 @@ Each choice is **pending the author's review**.
   asserts it is single-threaded before every timed block.
 - **R2-H5. The disturbance check** compares process start times to recognize a reused pid, counts new kernel threads
   as explained forks, and treats a runner over 2 ticks in a block as a harness bug that stops the run (the rule calls
-  it a bug but does not say what follows). Pilot blocks record host ticks without flagging; every other test applies,
+  it a bug but does not say what follows; the limit is replaced by 1 tick per launch plus 2, R2-H16). Pilot blocks record host ticks without flagging; every other test applies,
   and a disturbed pilot block is also re-run once.
 - **R2-H6. Calibration and rounds** are one timed block per job; Q32-null takes Q32's r; rounds rotate Q32,
   Q32-null, TC by one per round; the rep kept is the minimum of reps 2-3 (round 1's R-b).
@@ -362,3 +362,60 @@ recommendation, replacing the proposed 10). No timed measurement was run for thi
   - (f) **The stopped run's record.** `results-r2/` as committed at `193ae57` is copied unchanged (each file from git,
     checked equal to the working copy) to `results-r2-stopped-193ae57/`. It is added to `PROTECTED` with each file's
     sha256, so the runner and the analysis refuse to write there, and the files are checked before and after a run.
+
+## Second revision of Oct 29, 2026: the runner's own ticks (rule-r2 item 5)
+
+The second round-2 run (`results-r2/`, committed at `173fad1`) passed its pilot and stopped at the end of its first
+measured block (job 1, 38 launches). The runner used 5 ticks against the fixed limit of 2 per block (R2-H5). Nothing
+else disturbed the block. The pilot's blocks launched 2-8 invocations and used 0-1 tick (3 over 26 launches). So the
+runner's cost scales with its launches, about 0.12-0.13 tick per launch, and the fixed limit did not. The author
+approved the change on Oct 29, 2026: the runner's ticks are recorded and reported, not judged, with one sanity limit
+of more than 1 tick per launch (plus a fixed 2 per block, a minor fix found in review). `research/rule-r2.md` carries it as a dated second revision. No timed measurement was
+run for this change. The choices below are **pending the author's review**, except the approved limit.
+
+- **R2-H16. The runner's ticks, per launch** (`r2_checks.runner_ticks_check`, `r2_runner.disturbance` and
+  `timed_block`). This replaces R2-H5's limit of 2 ticks per block (`RUNNER_TICKS_MAX`, removed).
+  - **Recorded.** Each block's record gains `runner_ticks_per_launch` (its `utime + stime` over its `spawns`) and
+    `runner_over_limit`. The log line gives the ticks, the launches and the ticks per launch.
+  - **Limit.** The run stops as a harness bug only if `runner_ticks > 1 x spawns + 2`
+    (`RUNNER_TICKS_PER_LAUNCH_MAX` = 1.0, approved; `RUNNER_TICKS_BLOCK_ALLOWANCE` = 2, a minor fix found in
+    review: the block's two snapshots cost a fixed amount whatever its launches, so a 2-launch profile block could
+    otherwise stop the run at 3 ticks). A block over the limit is not re-run, since it is not a disturbance.
+  - **A block with no launch** is held to the allowance of 2 (more than 2 ticks stops the run). Its per-launch
+    figure is n/a. Such a block should not occur.
+- **R2-H17. Why the runner's ticks do not touch the timings**, checked against the code (`Spawner` docstring; rule
+  item 5).
+  - Each rep is timed inside `bench_r2` (`rep()`, after `exec` and the workload's read).
+  - While a rep runs, the runner is blocked in one `waitpid`. It has no other thread (asserted before every block),
+    no pipe and no polling, and `setitimer` runs no code until it fires.
+  - Its ticks fall in the `fork`, in the parsing of the output file after `waitpid` (`quick_parse`), in the next
+    launch, and in the two snapshots, which are taken before the first launch and after the last `waitpid`.
+  - The child's own work before `exec` (`sched_setaffinity`, `open`, `dup2`) is the child's ticks, not the runner's.
+  - **The one unordered piece**, reported in the rule rather than removed: two assignments in the parent between
+    `fork`'s return and `waitpid`. They run on core 0 and very likely complete before the child's timing starts,
+    since the child still has to `exec`, load and read its workload; any overlap is a few nanoseconds on the other
+    core, and the first rep is discarded (in a 3-rep invocation; calibration enters no measure).
+    No system call can order it without waking the runner.
+  - **Not changed:** the runner's cost per launch, which is mostly `fork` of the Python process.
+- **R2-H18. Reported** (`r2_analyze`). The disturbance table gains a column "runner ticks per launch" beside the
+  ticks and the spawns. A line under it gives the total over every block (ticks, launches, ticks per launch) and the
+  highest block's figure against the limit.
+- **R2-H19. The pin.** `RULE_SHA256` is re-pinned to the revised file (was `9b47ea0f...`, the rule of the run at
+  `173fad1`), and again after the review's minor fixes (`3ad56ffe...`).
+- **R2-H20. The second stopped run's record.** The six files of `results-r2/` as committed at `173fad1` are copied
+  unchanged to `results-r2-stopped-173fad1/`. Each is taken from git and checked byte-equal to the working copy. The
+  folder is added to `PROTECTED` (`RESULTS_STOPPED_2`) with each file's sha256, so the runner and the analysis refuse
+  to write there, and the files are checked before and after a run. `results-r2/` is then emptied, its files deleted
+  from the working tree (not committed), so the next run starts in a clean folder.
+- **R2-H21. Self-tests** (untimed; the stand-in driver runs in place of `bench_r2`).
+  - `test_runner_ticks_per_launch` covers the limit: the stopped block (5 over 38) passes, exactly 1 per launch
+    plus 2 (40 over 38) passes, and 41 over 38 stops. A 2-launch block passes at 3 and 4 ticks and stops at 5. A
+    block with no launch is held to the 2. The runner's ticks never set `disturbed`.
+  - **Many launches.** A real block of 38 launches at the runner's normal cost passes, with its per-launch figure
+    recorded and logged.
+  - **A busy runner.** The runner is made artificially busy, with 30 ms of CPU per launch, about 3 ticks. It stops
+    the run as a harness bug, with the figures in `harness_bugs`.
+  - `test_analysis` checks the per-block column and the summary line.
+  - `test_vendor08_and_official_data` covers the new archive.
+  - `test_block_rerun_once_and_harness_bug` is renamed `test_block_rerun_once`, since its harness-bug case moved to
+    the new test.

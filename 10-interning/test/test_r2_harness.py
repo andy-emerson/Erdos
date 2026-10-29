@@ -8,8 +8,10 @@
                                           29, 2026: synthetic; a host's short-lived threads do not disturb; a
                                           deliberately started short-lived outside process does; the host allowance
                                           computed from the pilot's data), the timed block's machinery with a stand-in
-                                          driver (re-run once, the harness-bug limit, over cap, a bug, the CPU time per
-                                          rep), and the analysis
+                                          driver (re-run once, over cap, a bug, the CPU time per rep), the runner's
+                                          ticks per launch (reported; the sanity limit of 1 tick per launch plus 2, with a
+                                          real block of many launches and an artificially busy runner), and the
+                                          analysis
     python3 test_r2_harness.py --full     also every gate and counting run on the full-size workloads of the 8 jobs
                                           (test and counting builds; untimed): every counter against the prediction,
                                           the read-outs, and Q32 against TC call for call
@@ -121,6 +123,8 @@ def test_vendor08_and_official_data():
             assert "official data" in str(e)
         else:
             raise AssertionError(f"the analysis would write into {d}")
+    assert C.RESULTS_STOPPED in C.PROTECTED and C.RESULTS_STOPPED_2 in C.PROTECTED   # both stopped runs' records
+    assert len(C.PROTECTED[C.RESULTS_STOPPED_2]) == 6
     assert not C.protected(C.RESULTS)
 
 
@@ -675,7 +679,7 @@ def test_timed_block_machinery():
         os.environ.pop("FAKE_CFG", None)
 
 
-def test_block_rerun_once_and_harness_bug():
+def test_block_rerun_once():
     real = RN.disturbance
     calls = []
 
@@ -700,15 +704,67 @@ def test_block_rerun_once_and_harness_bug():
                 assert "disturbed twice" in str(e)
             else:
                 raise AssertionError("a second disturbance did not stop the run")
-        RN.disturbance = lambda *a, **k: dict(real(*a, **k), disturbed=False, reasons=[], runner_ticks=3)
-        with tempfile.TemporaryDirectory() as t:
+    finally:
+        RN.disturbance = real
+        os.environ.pop("FAKE_CFG", None)
+
+
+def test_runner_ticks_per_launch():
+    """rule-r2 item 5 (second revision of Oct 29, 2026): the runner's ticks are recorded and reported, in total and per
+    launch, not judged; the one sanity limit is more than 1 tick per launch plus 2 over a block (a fixed allowance
+    for the block's own two snapshots; minor fix found in review). The stopped run's
+    measured block (5 ticks over 38 launches, against the old fixed limit of 2) now passes; a block with many launches
+    at the runner's normal cost passes; a 2-launch block at 3 or 4 ticks passes; an artificially busy runner (above
+    1 tick per launch plus 2) stops the run as a
+    harness bug; the per-launch figures are in the record, the log and the report. Nothing is timed: the stand-in
+    driver runs in place of bench_r2."""
+    assert C.RUNNER_TICKS_PER_LAUNCH_MAX == 1.0 and C.RUNNER_TICKS_BLOCK_ALLOWANCE == 2
+    assert not hasattr(C, "RUNNER_TICKS_MAX")
+    assert K.runner_ticks_check(5, 38) == (5 / 38, False)        # the stopped block of 173fad1
+    assert K.runner_ticks_check(40, 38) == (40 / 38, False)      # exactly 1 per launch plus 2: within
+    assert K.runner_ticks_check(41, 38)[1]                       # above 1 per launch plus 2: a harness bug
+    assert K.runner_ticks_check(3, 2) == (1.5, False) and K.runner_ticks_check(4, 2) == (2.0, False)  # 2-launch block
+    assert K.runner_ticks_check(5, 2)[1]
+    assert K.runner_ticks_check(2, 0) == (None, False) and K.runner_ticks_check(3, 0)[1]   # no launch: the 2 only
+    assert K.runner_ticks_check(None, 38) == (None, False)
+    me = 100
+    s0 = snap({me: ("python3", 1, 10, 5, 0, 0, 1)}, 0, 0.0)
+    for ticks, spawns, over in ((5, 38, False), (500, 600, False), (3, 2, False), (41, 38, True), (5, 2, True)):
+        d = RN.disturbance(s0, snap({me: ("python3", 1, 10 + ticks, 5, 0, 0, 1)}, spawns, 8.0), me, spawns, set(), {})
+        assert d["runner_ticks"] == ticks and d["runner_ticks_per_launch"] == ticks / spawns, d
+        assert d["runner_over_limit"] == over and not d["disturbed"], d          # never a disturbance of the timings
+    real = RN.disturbance
+
+    def others_ignored(*a, **k):                     # the runner's real ticks; other processes are not this test's
+        return dict(real(*a, **k), disturbed=False, reasons=[])
+    try:
+        RN.disturbance = others_ignored
+        with tempfile.TemporaryDirectory() as t:         # many launches at the runner's normal cost: passes
             r = fake_runner(Path(t))
+            recs = r.timed_block(3, "rounds", "measured")
+            d = r.state["disturbance_checks"][-1]
+            assert recs and d["spawns"] == 2 + 3 * C.ROUNDS and not d["runner_over_limit"], d
+            assert d["runner_ticks_per_launch"] == d["runner_ticks"] / d["spawns"] <= 1.0, d
+            assert "per launch" in (r.out / "run.log").read_text()
+        with tempfile.TemporaryDirectory() as t:         # an artificially busy runner: about 3 ticks per launch
+            r = fake_runner(Path(t))
+            parse = r.quick_parse
+
+            def busy(rec):
+                c = time.process_time()
+                while time.process_time() - c < 0.03:
+                    pass
+                return parse(rec)
+            r.quick_parse = busy
             try:
-                r.timed_block(10, "rounds", "measured")
+                r.timed_block(3, "rounds", "measured")
             except RN.RunStop as e:
-                assert "harness bug" in str(e) and r.state["harness_bugs"]
+                d = r.state["disturbance_checks"][-1]
+                assert "harness bug" in str(e) and "per launch" in str(e) and r.state["harness_bugs"], str(e)
+                assert d["runner_over_limit"] and d["runner_ticks"] > d["spawns"] + 2, d
+                assert d["spawns"] == 2 + 3 * C.ROUNDS, d
             else:
-                raise AssertionError("3 runner ticks in a block were not a harness bug")
+                raise AssertionError("a runner above 1 tick per launch plus 2 was not a harness bug")
     finally:
         RN.disturbance = real
         os.environ.pop("FAKE_CFG", None)
@@ -754,11 +810,19 @@ def test_analysis():
               "profiles": [{"job": 3, "row": row, "profile": prof, "r": 4, "tsc_hz": 2e9, "probe_cost": 30.0, "K": 32,
                             "total": 300.0, "entry": 30.0, "ops": 240.0, "read": 30.0, "slowdown": 1.1,
                             "within_limit": True} for row in C.PROF_ROWS for _ in range(3)]}
+        st["disturbance_checks"] = [{"job": 3, "label": "measured", "kind": "rounds", "attempt": 1, "seconds": 8.4,
+                                     "disturbed": False, "reasons": [], "runner_ticks": 5, "spawns": 38,
+                                     "forks_rise": 38, "forks_unattributed": 0, "hosts": {}, "other_limit": 14},
+                                    {"job": 3, "label": "profile", "kind": "prof", "attempt": 1, "seconds": 1.0,
+                                     "disturbed": False, "reasons": [], "runner_ticks": 1, "spawns": 6,
+                                     "forks_rise": 6, "forks_unattributed": 0, "hosts": {}, "other_limit": 6}]
         (t / "state.json").write_text(json.dumps(st))
         (t / "results.md").write_text("# head\n<!-- rule ends -->\nold tail\n")
         A.report(t)
         md = (t / "results.md").read_text()
         assert "old tail" not in md and "| 3 SMALL8 | win, 1.49" in md, md[:3000]
+        assert "| no | 5 | 38 | 0.132 | 38 |" in md and "| no | 1 | 6 | 0.167 | 6 |" in md   # per block, per launch
+        assert "6 ticks over 44 launches, 0.136 per launch; the highest block 0.167 per launch" in md
         assert "passed (G(Q32)/G(TC) = 1.000000" in md and "indicative only" in md
         v = list(csvrows(t / "verdicts.csv"))
         assert {(x["measure"], x["verdict"]) for x in v} >= {("time", "win"), ("B_used", "win"), ("B_heap", "win"),
@@ -825,7 +889,7 @@ TESTS = [test_rule_fixed_and_pinned, test_vendor08_and_official_data, test_workl
          test_spawner_affinity_before_exec, test_hard_stop_kernel_timer, test_idle_probe, test_disturbance_synthetic,
          test_host_threads_do_not_disturb, test_disturbance_catches_short_lived_process, test_host_allowance_from_pilot,
          test_existing_child_exit_charged_for_the_block_only,
-         test_timed_block_machinery, test_block_rerun_once_and_harness_bug,
+         test_timed_block_machinery, test_block_rerun_once, test_runner_ticks_per_launch,
          test_pool_is_joined, test_analysis, test_profile_m_per_run]
 
 

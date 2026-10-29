@@ -18,16 +18,19 @@ RESULTS = HERE / "results-r2"                        # round 2 writes only here 
 
 # The fixed rule (rule-r2.md as approved by the author, Oct 29, 2026). The harness refuses a measured run unless the
 # file on disk has exactly this sha256, and while it holds the word "PROPOSED" (rule-r2.md, "Fixing the rule").
-# Re-pinned for the revision of Oct 29, 2026 (the disturbance check), with its numbers approved by the author on Oct 29,
-# 2026 and the independent review's minor fixes (was 44baa5f1..., the rule fixed at ba3f647; then 698ee612..., the
-# revision while its numbers were PROPOSED).
-RULE_SHA256 = "9b47ea0ffdbbe719f70e5ee3356db829393864f8158cf293142e68d9975e5b1d"
+# Re-pinned for the second revision of Oct 29, 2026 (the runner's own ticks, per launch; approved by the author, Oct 29,
+# 2026), with the review's minor fixes (plus 2 per block; the assignments' wording). Earlier pins: 44fbe7b6..., that
+# revision before the review's minor fixes; 44baa5f1..., the rule fixed at ba3f647; 698ee612..., the first revision
+# (the disturbance check) while its numbers were PROPOSED; 9b47ea0f..., that revision approved (the rule of the
+# stopped run at 173fad1).
+RULE_SHA256 = "3ad56ffedffafe02aa7d32ab172270148bd0fa5b7b7258640c12f4078312cbf3"
 PROPOSAL_MARK = "PROPOSED"
 
-# The official data (rule-r2, Harness: the official data): round 1's, and the record of the stopped first round-2 run
-# (results-r2/ as committed at 193ae57, copied unchanged). Round 2 never writes or deletes there; the sha256 of every
-# file is checked before and after the run.
+# The official data (rule-r2, Harness: the official data): round 1's, and the records of the two stopped round-2 runs
+# (results-r2/ as committed at 193ae57, and as committed at 173fad1, each copied unchanged). Round 2 never writes or
+# deletes there; the sha256 of every file is checked before and after the run.
 RESULTS_STOPPED = HERE / "results-r2-stopped-193ae57"
+RESULTS_STOPPED_2 = HERE / "results-r2-stopped-173fad1"
 PROTECTED = {
     HERE / "results": {
         "counters.csv": "690e2105b8cdfd99c0b425a8256997d7c62d270d53bf702258f9d31459defb5a",
@@ -60,6 +63,14 @@ PROTECTED = {
         "state.json": "5185faa97d4ab4f31988ad0327748ba964d6f7d2a0562241a453795d3153ecb7",
         "verdicts.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     },
+    RESULTS_STOPPED_2: {
+        "counters.csv": "327ded80c032d7a91557ac7347e6b06d6809b0fcae6d0ae4fc90fadbd4ea9435",
+        "results.md": "5da5c00eafc30af0721d7410fe8126b7cc39eb3645b3c1e1b2a2a45f649ee166",
+        "rounds.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "run.log": "5db8b323ba1cc450b38f312833b8c50c60c0bdcdee63152b779474d57bc28280",
+        "state.json": "98b54e33f93acf7482b927af3ff6320db52e040fdda8cc8bfdfd8032827e502b",
+        "verdicts.csv": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    },
 }
 # Round 1's workloads, pinned in its Q32 run's state.json (itself pinned above): round 2's must be byte-identical
 # (rule-r2, Workloads).
@@ -85,7 +96,12 @@ DIST_NEW_TICKS = 1                                    # a new process with at le
 HOST_BASE_TICKS, HOST_FACTOR = 5, 2                   # host allowance 5 + ceil(2 R_h L)
 HOST_RATE_MIN_TICKS = 1                               # R_h: at least 1 tick over the longest pilot block
 HOST_RATE_CEILING = 4.0                               # ticks per second; a host measured above it stops the run
-RUNNER_TICKS_MAX = 2                                  # the runner's own ticks per block: more is a harness bug
+# the runner's own ticks (second revision of Oct 29, 2026): recorded and reported per block, in total and per launch,
+# not judged; one sanity limit: more than 1 tick per launch plus 2 over a block is a harness bug (approved by the
+# author, Oct 29, 2026; the allowance of 2 for the block's own two snapshots is a minor fix found in review).
+# Replaces the fixed limit of 2 ticks per block.
+RUNNER_TICKS_PER_LAUNCH_MAX = 1.0
+RUNNER_TICKS_BLOCK_ALLOWANCE = 2                      # fixed: the block's two snapshots, whatever its launches
 # item 6: the idle machine
 IDLE_SAMPLE_S = 2.0
 IDLE_PROC_CPU_MAX = 0.05                              # no other process above 5% of one core over the sample

@@ -166,6 +166,8 @@ def disturbance(s0, s1, runner, spawns, hosts, allowance=None):
            "other_limit": other_limit, "credited": {}, "reasons": []}
     if runner in p0 and runner in p1:                       # the runner: its own ticks only (its children are timed)
         rec["runner_ticks"] = (p1[runner][2] + p1[runner][3]) - (p0[runner][2] + p0[runner][3])
+    # reported, in total and per launch; judged only by the sanity limit, in timed_block (second revision of Oct 29)
+    rec["runner_ticks_per_launch"], rec["runner_over_limit"] = K.runner_ticks_check(rec["runner_ticks"], spawns)
 
     def same(pid):                                          # present in both snapshots, as the same process
         return pid in p0 and pid in p1 and p0[pid][6] == p1[pid][6]
@@ -240,7 +242,17 @@ def idle_probe(sample_s=None, me=None):
 # ------------------------------------------------------------------------------------------------------- spawning
 class Spawner:
     """rule-r2 item 5.2-5.3: fork, then in the child pin to the core with sched_setaffinity, redirect stdout and stderr
-    to the output file with dup2, and exec (exit 127 if exec fails); the parent waits with one blocking waitpid."""
+    to the output file with dup2, and exec (exit 127 if exec fails); the parent waits with one blocking waitpid.
+
+    Where the runner's own ticks fall (rule-r2 item 5, second revision of Oct 29, 2026). Each rep is timed inside the
+    measured program (bench_r2.c rep(), after exec and after it has read its workload). The runner's work per launch
+    is fork itself, two assignments, then waitpid, in which it is blocked until the child exits, its reps done; and,
+    after waitpid returns, the parsing of the output file (quick_parse) and the next launch. So its ticks fall between
+    reps. The only work not ordered by a system call is those two assignments between fork's return and waitpid: they
+    run on core 0 and very likely complete before the child's timing starts, since the child, on its way to core 1, has
+    still to exec, load and read its workload before its first rep; any overlap is a few nanoseconds on the other core,
+    and the first rep is discarded (in a 3-rep invocation; a calibration time enters no measure). The runner
+    has no other thread, and the hard-stop timer runs no code until it fires."""
 
     def __init__(self):
         self.child = None
@@ -579,16 +591,23 @@ class Runner:
             for rec in recs:
                 self.finish(rec)
             self.state.setdefault("disturbance_checks", []).append(d)
-            if d["runner_ticks"] is not None and d["runner_ticks"] > C.RUNNER_TICKS_MAX:
+            d["runner_ticks_per_launch"], d["runner_over_limit"] = K.runner_ticks_check(d["runner_ticks"], d["spawns"])
+            runner = (f"runner {d['runner_ticks']} ticks over {d['spawns']} launches" +
+                      (f", {d['runner_ticks_per_launch']:.3f} per launch" if d["runner_ticks_per_launch"] is not None
+                       else ""))
+            if d["runner_over_limit"]:                    # the one sanity limit (rule-r2 item 5, second revision)
                 self.state.setdefault("harness_bugs", []).append(
-                    {"what": f"the runner used {d['runner_ticks']} ticks in a timed block (more than "
-                             f"{C.RUNNER_TICKS_MAX})", "job": job, "label": label, "time": stamp()})
+                    {"what": f"the runner used {d['runner_ticks']} ticks over {d['spawns']} launches in a timed block "
+                             f"(more than {C.RUNNER_TICKS_PER_LAUNCH_MAX:g} per launch plus "
+                             f"{C.RUNNER_TICKS_BLOCK_ALLOWANCE})", "job": job, "label": label,
+                     "time": stamp()})
                 self.save()
-                raise RunStop(f"harness bug: the runner used {d['runner_ticks']} ticks in the {label} block of job "
-                              f"{job} (rule-r2 item 5: more than {C.RUNNER_TICKS_MAX} is a harness bug)")
+                raise RunStop(f"harness bug: {runner} in the {label} block of job {job} (rule-r2 item 5: more than "
+                              f"{C.RUNNER_TICKS_PER_LAUNCH_MAX:g} tick per launch plus "
+                              f"{C.RUNNER_TICKS_BLOCK_ALLOWANCE} is a harness bug)")
             if not d["disturbed"]:
-                self.log(f"job {job} {label}: block of {d['seconds']:.1f} s undisturbed (runner {d['runner_ticks']} "
-                         f"ticks, {d['spawns']} spawns, forks {d['forks_rise']})")
+                self.log(f"job {job} {label}: block of {d['seconds']:.1f} s undisturbed ({runner}, forks "
+                         f"{d['forks_rise']})")
                 self.save()
                 return recs
             self.log(f"job {job} {label}: block DISTURBED ({'; '.join(d['reasons'])}); discarded")

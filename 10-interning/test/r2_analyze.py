@@ -563,9 +563,16 @@ def reported_sections(d, st, jobs):
            "(none in the pilot) and threads before -> after. Other processes may use 5 + ceil(1 x L) ticks over a block "
            "of L seconds (the limit column). Credited: the ticks, before the block, of children that existed at its "
            "start and were reaped during it, taken off their parent's rise.", "",
-           "| job | block | attempt | seconds | disturbed | runner ticks | spawns | forks (reported) | forks less "
+           "The runner's own ticks (utime + stime) are reported in total and per launch (a launch: one timed invocation "
+           "it started in the block), not judged: each rep is timed inside the measured program, and the runner is "
+           "blocked in waitpid while it runs, so its ticks fall between reps. The one sanity limit is more than "
+           f"{C.RUNNER_TICKS_PER_LAUNCH_MAX:g} tick per launch plus {C.RUNNER_TICKS_BLOCK_ALLOWANCE} over a block (a fixed "
+           "allowance for the block's own two snapshots), a harness bug (rule-r2 item 5, "
+           "second revision of Oct 29, 2026).", "",
+           "| job | block | attempt | seconds | disturbed | runner ticks | spawns | runner ticks per launch | forks "
+           "(reported) | forks less "
            "spawns (reported) | new processes under 1 tick (reported) | other limit | credited | host ticks |",
-           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for x in st.get("disturbance_checks", []):
         hosts = ", ".join(f"{h['name']} {h['ticks']}" + (f"/{h['allowance']}" if "allowance" in h else "") +
                           (f" ({h['threads'][0]}->{h['threads'][1]} threads)" if "threads" in h else "")
@@ -575,8 +582,9 @@ def reported_sections(d, st, jobs):
         cred = ", ".join(f"{c['name']}[{p}] {c['ticks']}" for p, c in x.get("credited", {}).items()) or "none"
         md.append(f"| {x['job']} | {x['label']} {x['kind']} | {x['attempt']} | {x['seconds']} | "
                   f"{'yes: ' + '; '.join(x['reasons']) if x['disturbed'] else 'no'} | {x['runner_ticks']} | "
-                  f"{x['spawns']} | {x['forks_rise']} | {unattr} | {quiet} | {x.get('other_limit', C.DIST_OTHER_TICKS)} | "
+                  f"{x['spawns']} | {runner_per_launch(x)} | {x['forks_rise']} | {unattr} | {quiet} | {x.get('other_limit', C.DIST_OTHER_TICKS)} | "
                   f"{cred} | {hosts} |")
+    md += runner_summary(st)
     md += cpu_time_section(st)
     md += ["", f"Idle checks: {len(st.get('idle_checks', []))} (" +
            f"{sum(1 for c in st.get('idle_checks', []) if not c['idle'])} busy). Host rates R_h: "
@@ -587,6 +595,27 @@ def reported_sections(d, st, jobs):
            "(Q64, official) and [`../results-q32/results.md`](../results-q32/results.md) (the Q32 run). Round 1 enters "
            "no round-2 measure.", ""]
     return md
+
+
+def runner_per_launch(x):
+    """the runner's ticks per launch in a block (rule-r2 item 5, second revision): reported, n/a without a launch"""
+    t, n = x.get("runner_ticks"), x.get("spawns")
+    return f"{t / n:.3f}" if t is not None and n else "n/a"
+
+
+def runner_summary(st):
+    """rule-r2 items 5 and 13 (second revision of Oct 29, 2026): the runner's ticks over every block, in total and per
+    launch, and the highest block's figure against the sanity limit. Reported only."""
+    xs = [x for x in st.get("disturbance_checks", []) if x.get("runner_ticks") is not None]
+    if not xs:
+        return []
+    ticks, launches = sum(x["runner_ticks"] for x in xs), sum(x["spawns"] for x in xs)
+    per = [x["runner_ticks"] / x["spawns"] for x in xs if x["spawns"]]
+    return ["", f"The runner's own ticks over the {len(xs)} blocks: {ticks} ticks over {launches} launches, "
+                f"{ticks / launches if launches else float('nan'):.3f} per launch; the highest block "
+                f"{max(per) if per else float('nan'):.3f} per launch (sanity limit: more than "
+                f"{C.RUNNER_TICKS_PER_LAUNCH_MAX:g} per launch plus {C.RUNNER_TICKS_BLOCK_ALLOWANCE} per block). "
+                f"Reported only: they fall between reps, not in them."]
 
 
 def cpu_time_section(st):

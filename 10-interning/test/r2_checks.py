@@ -143,6 +143,19 @@ def other_limit(seconds):
     return C.DIST_OTHER_TICKS + math.ceil(C.DIST_OTHER_RATE * seconds)
 
 
+def runner_ticks_check(ticks, launches):
+    """rule-r2 item 5 (second revision of Oct 29, 2026): the runner's own ticks over a block are recorded and reported,
+    in total and per launch (the timed invocations it started in the block), and are not judged against the timings.
+    The one sanity limit: more than 1 tick per launch plus 2 over the block is a harness bug; the 2 are a fixed
+    allowance for the block's own two snapshots, which cost the same whatever its launches (minor fix found in
+    review). Returns (ticks per launch, or None for a block with no launch; True if over the limit). A block with no
+    launch is held to the allowance of 2 (such a block should not occur)."""
+    if ticks is None:
+        return None, False
+    per = ticks / launches if launches else None
+    return per, ticks > C.RUNNER_TICKS_PER_LAUNCH_MAX * launches + C.RUNNER_TICKS_BLOCK_ALLOWANCE
+
+
 def pilot_projection(elapsed_s, p_s, p_prof_s):
     """rule-r2, Run plan step 3: elapsed + 5 min x max(1, P / 0.5 min) + 36 x P_prof, in seconds."""
     return elapsed_s + C.PILOT_REST_MIN * 60 * max(1.0, p_s / (C.PILOT_NOMINAL_MIN * 60)) + C.PILOT_PROF_FACTOR * p_prof_s

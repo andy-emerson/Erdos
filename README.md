@@ -1,21 +1,33 @@
-> **Major issue: needs your decision** (Oct 29, 2026, 16:38 CDT)
+> **Milestone reached: round 2 run complete (textbook Q32 vs textbook control)** (Oct 29, 2026, 17:45 CDT)
 >
-> **What happened.** The round 2 measured run of [`10-interning`](10-interning/) (textbook Q32 vs textbook control) **stopped in step 6** after 47.4 s, at the end of its first measured block (job 1, calibration and 12 rounds, 8.4 s, 38 timed invocations). The runner itself used **5 ticks** in that block. The rule says more than 2 is a harness bug (rule-r2 item 5), and the harness stops the run on one (R2-H5). I did not retry. **No verdicts.** No rounds of jobs 2–11 and no profile ran.
+> The round 2 run of [`10-interning`](10-interning/) finished in **2.5 min** (hard stop 30), pilot and full run, with no stop: 20 timed blocks, 0 disturbed, 0 busy idle checks, 0 harness bugs. Rule sha256 `3ad56ffe…`. Jobs 5–7 are over Q32's capacity and not run. Per measure only, **no overall winner**.
 >
-> **What passed.** The build, workloads byte-identical to round 1, unit, differential and sanitizer tests (0 failures), and the **pilot**: 4 blocks, all undisturbed. The projection was 7.1 min (limit 22). The highest host rate was 0.62 ticks/s (ceiling 4). Profiling slowdowns were Q32 1.23 and TC 1.25 (limit 1.5). Then all 16 gates, and the counting and memory runs.
+> **Time**, T(TC)/T(Q32) [interval], null band h 0.050; below 1, Q32 is slower. **Bytes per rational** at the end (B_used Q32 / TC, ratio).
 >
-> **The stopping block was otherwise clean.** No other process used a tick, no new process appeared, and every host stayed within its allowance (`claude` used 1 tick against 15). The fork counter rose 38, matching the runner's 38 spawns. The block was not flagged as disturbed.
+> | job | time | B_used | B_heap ratio |
+> | --- | --- | --- | --- |
+> | 1 MONEY-wide | loss 0.655 [0.652, 0.665] | 16.33 / 16.00, tie 1.021 | tie 1.012 |
+> | 2 MONEY-catalog | loss 0.650 [0.648, 0.660] | 10.29 / 16.00, win 0.643 | win 0.636 |
+> | 3 SMALL8 | loss 0.730 [0.723, 0.734] | 4.16 / 16.00, win 0.260 | win 0.270 |
+> | 4 SMALL64 | loss 0.661 [0.657, 0.665] | 14.06 / 16.00, win 0.879 | tie 1.009 |
+> | 8 CH-money | loss 0.645 [0.643, 0.649] | 12.43 / 16.00, win 0.777 | win 0.631 |
+> | 9 CH-closed | loss 0.684 [0.674, 0.692] | 12.53 / 16.00, win 0.783 | win 0.631 |
+> | 10 CH-small | loss 0.610 [0.607, 0.615] | 12.51 / 16.00, win 0.782 | win 0.634 |
+> | 11 CH-mixed | loss 0.620 [0.616, 0.628] | 13.28 / 16.00, win 0.830 | win 0.634 |
 >
-> **Likely cause (a guess, not checked).** The runner's fixed limit of 2 ticks per block does not scale with the block. The pilot blocks had 2–8 spawns and the runner used 0–1 ticks. This block had 38 spawns and it used 5, about 0.13 ticks per spawn (fork, `waitpid`, output reads). The runner runs on core 0, and the timed child on core 1.
+> **Gcd work check:** passed on all 8 jobs (G(Q32)/G(TC) = 1.000000; call for call equal).
 >
-> **Options.**
-> 1. **Treat it as a harness bug** (rule-r2 item 12): cut the runner's per-spawn cost (for example, a smaller process to fork from), review the fix, and re-run. The fix may not get a 12-round block under 2 ticks.
-> 2. **Revise the rule** (dated, at the top): scale the runner's limit with the block, like the other limits. Examples: 2 + ⌈spawns / 8⌉, or a floor plus a rate per second, set from this run's record. Then update the harness pin under review and re-run.
-> 3. **Run from a quieter host or a faster machine:** this only helps if the per-spawn cost falls, so it is unlikely to fix the cause alone.
+> **Profile (indicative only).** Q32's extra time in the operations is 21–46 ns/op: mostly **interning lookup (I) 10–28**, operand fetch (F) 8–10, record write (S) 4–6, growth (M) 0–5, compare (C) 0–2 and unattributed −1 to 5; gcd and other arithmetic are 2–7 ns *lower* in Q32. At entry the extra 12–25 ns is mostly I (9–16) and S (4–6). Read-out differs by 0.5 ns.
 >
-> **Also:** paper v0.5 sections 1–2 and Appendix A are published ([paper/v0.5.md](paper/v0.5.md)). Still open for you: **R2-H7**, and the rate of 1 tick/s for other processes (R2-H15 (c)), in [test/DECISIONS.md](10-interning/test/DECISIONS.md).
+> **Process CPU time cross-check:** median CPU share 0.998–1.000 for every job and row (lowest 0.950, job 9 Q32); CPU and total ns per run agree.
 >
-> **Results (stopped run):** [results.md](10-interning/test/results-r2/results.md) · [run.log](10-interning/test/results-r2/run.log) · [state.json](10-interning/test/results-r2/state.json)
+> **Runner ticks:** 48 over 378 launches, 0.127 per launch; highest block 0.333 (limit: more than 1 per launch plus 2). Reported only.
+>
+> **Flags:** no severe flags. Q32's B_used is 2% above TC's on job 1 (W/N ≈ 1, no reuse), a tie.
+>
+> Paper v0.5 (sections 1–2 and Appendix A) is published ([paper/v0.5.md](paper/v0.5.md)).
+>
+> **Results:** [results.md](10-interning/test/results-r2/results.md) · [verdicts.csv](10-interning/test/results-r2/verdicts.csv) · [run.log](10-interning/test/results-r2/run.log) · [rule](10-interning/research/rule-r2.md) · [DECISIONS](10-interning/test/DECISIONS.md)
 
 # Erdos
 

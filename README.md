@@ -1,17 +1,19 @@
-> **Major issue: needs your decision** (Oct 29, 2026, 13:13 CDT)
+> **Major issue: needs your decision** (Oct 29, 2026, 16:38 CDT)
 >
-> **What happened.** The round 2 measured run of [`10-interning`](10-interning/) (textbook Q32 vs textbook control) stopped in **step 3, the pilot**, after 26.7 s, on its first timed block (job 1, calibration and 2 rounds). The block was **disturbed twice**: 2 unexplained forks, then 1 on the re-run. The rule allows 0 (rule-r2 item 5), and a second disturbance of one job stops the run. I did not retry. **No verdicts**, and nothing past the pilot ran: no gates, counting, memory, rounds or profile.
+> **What happened.** The round 2 measured run of [`10-interning`](10-interning/) (textbook Q32 vs textbook control) **stopped in step 6** after 47.4 s, at the end of its first measured block (job 1, calibration and 12 rounds, 8.4 s, 38 timed invocations). The runner itself used **5 ticks** in that block. The rule says more than 2 is a harness bug (rule-r2 item 5), and the harness stops the run on one (R2-H5). I did not retry. **No verdicts.** No rounds of jobs 2–11 and no profile ran.
 >
-> **What came before passed.** Build, workloads byte-identical to round 1, and unit tests, the differential test and both under the sanitizers (0 failures).
+> **What passed.** The build, workloads byte-identical to round 1, unit, differential and sanitizer tests (0 failures), and the **pilot**: 4 blocks, all undisturbed. The projection was 7.1 min (limit 22). The highest host rate was 0.62 ticks/s (ceiling 4). Profiling slowdowns were Q32 1.23 and TC 1.25 (limit 1.5). Then all 16 gates, and the counting and memory runs.
 >
-> **The record.** No other process used a tick, and no new process was seen (`others` and `new` are empty). The runner used 1 tick per block. The fork counter rose 10 and 9 against 8 spawns, with 0 new kernel threads. Host ticks over the blocks (1.6 s each): `claude` (the session process hosting the run) 2, then 1, about 1.25 and 0.62 ticks/s; `process_api` (pid 1) 1, then 0. These host ticks do not flag in the pilot, but the first block's `claude` rate is above the 1 tick/s that stops a run after the pilot (item 5.3). The record cannot name the forker. My guess is short-lived threads of a host process: the counter counts threads too, and those threads ran for no recorded tick. This is a guess, not checked.
+> **The stopping block was otherwise clean.** No other process used a tick, no new process appeared, and every host stayed within its allowance (`claude` used 1 tick against 15). The fork counter rose 38, matching the runner's 38 spawns. The block was not flagged as disturbed.
+>
+> **Likely cause (a guess, not checked).** The runner's fixed limit of 2 ticks per block does not scale with the block. The pilot blocks had 2–8 spawns and the runner used 0–1 ticks. This block had 38 spawns and it used 5, about 0.13 ticks per spawn (fork, `waitpid`, output reads). The runner runs on core 0, and the timed child on core 1.
 >
 > **Options.**
-> 1. **Re-run unchanged** in the same setup. Cheap, but likely to stop the same way, and even a clean pilot may trip the busy-host stop, since `claude` was at about 1.25 ticks/s.
-> 2. **Run from a quieter host:** start `python3 test/r2_runner.py` yourself in a plain terminal with no Claude session open, so the only hosts are a shell blocked in `wait` and pid 1.
-> 3. **Revise the rule** (dated, at the top): for example, explain forks by the host processes' own new threads (`/proc/<pid>/task`), or give the hosts a small fork allowance measured in the pilot like their ticks. The harness pin would then be updated under review.
+> 1. **Treat it as a harness bug** (rule-r2 item 12): cut the runner's per-spawn cost (for example, a smaller process to fork from), review the fix, and re-run. The fix may not get a 12-round block under 2 ticks.
+> 2. **Revise the rule** (dated, at the top): scale the runner's limit with the block, like the other limits. Examples: 2 + ⌈spawns / 8⌉, or a floor plus a rate per second, set from this run's record. Then update the harness pin under review and re-run.
+> 3. **Run from a quieter host or a faster machine:** this only helps if the per-spawn cost falls, so it is unlikely to fix the cause alone.
 >
-> **Still open, apart from the run.** Paper v0.5 sections 1–2 are drafted ([paper/v0.5.md](paper/v0.5.md)). For you to confirm: **R2-H7** in [test/DECISIONS.md](10-interning/test/DECISIONS.md): estimated times are reported only per part (entry, operations, read-out), as the spec gives them.
+> **Also:** paper v0.5 sections 1–2 and Appendix A are published ([paper/v0.5.md](paper/v0.5.md)). Still open for you: **R2-H7**, and the rate of 1 tick/s for other processes (R2-H15 (c)), in [test/DECISIONS.md](10-interning/test/DECISIONS.md).
 >
 > **Results (stopped run):** [results.md](10-interning/test/results-r2/results.md) · [run.log](10-interning/test/results-r2/run.log) · [state.json](10-interning/test/results-r2/state.json)
 

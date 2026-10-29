@@ -1,28 +1,50 @@
-# 09: Interning (Design 3, layer 1)
+# 10: Interning (Design 3, layer 1)
 
-Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5. Every distinct whole number is stored once, in one list with a value-to-index lookup. Each rational is a pair of indices, with a sign tag on the numerator, always in lowest terms. Every operation compares indices first and takes a shortcut from the paper's §5.2 table when one applies; otherwise it uses the refined gcd-first method.
+Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5. Every distinct whole number is stored once, in one list, with a lookup from value to index. Each rational is a pair of indices, with a sign tag on the numerator, and is always kept in lowest terms. Every operation compares indices first and takes a shortcut from the paper's §5.2 table when one applies. Otherwise it uses the gcd-first method.
 
-Design 3 is built as two rows:
-- **L1**, the baseline: the paper's design exactly as written, including a lookup of every whole number of every result. Deferred reduction, an inline small-value tag, partial sharing, clusters and garbage collection are all left out. A complex or axis tag is a possible later extension.
-- **L1-opt**, an optimized variant, built separately and run on the same tests. It adds production tricks, each with its own counter. The first, required by the author, skips the lookups whose index the operation already knows when its one gcd is 1. The others (O-2 to O-7) are approved by the author, Oct 29, 2026 (spec §17).
+## Round 2: two textbook baselines (approved Oct 29, 2026)
 
-Both are measured against four rows:
-- the 08 control (plain reduced rationals), which already takes the equal-denominator shortcut by comparing values;
-- FLINT `fmpq`;
-- GMP `mpq_t`;
-- on fully shared money jobs only, a FLINT shared-denominator ceiling.
+**Status: approved by the author, Oct 29, 2026; not built, not run.** An independent review (Oct 29, 2026) accepted the choices R2-1 to R2-10, two of them on conditions that the revision met (v0.2 §17). The author then approved every choice and every threshold, with gcd work as a check, not a verdict, and added the ±1 operand shortcut. The rule is fixed. Next come the build, its review, and the run.
 
-There are 11 jobs. Between them they vary reuse, from small sets of whole numbers down to additions that keep making new numerators. Results are reported per measure only (time, bytes per rational, counts, and gcds and multiplications per case), with no overall winner, and the realized reuse is given for every job.
+The author's decisions (Oct 29, 2026):
+- **Only two rows:**
+  - **Q32**: layer 1 with 16-bit index fields (a 15-bit index plus the sign bit), capacity 32,768 whole numbers;
+  - **TC**: the textbook control, plain rationals as two 64-bit values in lowest terms, by the gcd-first method.
+- **TC takes every value-comparison shortcut** of the paper's §5.2 table, in each of its three algorithms (addition and subtraction, multiplication, division). It has no structures, caching or lookups.
+- **Both rows follow the same principle: "correct programming, not clever engineering."** Work whose answer the operation already knows is not done in either row. That covers known indices, known 1s and x − x. The other former tricks stay out.
+- **A profiling build** breaks each row's time down by phase: operand fetch, shortcut checks, arithmetic, interning, memory management. It is there for the systematic optimization that comes later. It probes a sample of the calls (one in K), times every part in batches, and has a limit on its slowdown; its per-phase differences between the rows are indicative only.
+- **The ±1 operand shortcut**, added by the author, in both rows: multiplying or dividing by ±1 gives the other operand, with its sign changed for −1, and a dividend of ±1 gives the divisor's reciprocal. It is checked by value in TC and by index in Q32.
+- **Retired:** L1-opt and its tricks, the Q64 rows, FLINT `fmpq`, GMP `mpq` and the FLINT ceiling. Their code and results stay in the history and the archives, and they are not run.
 
-- [v0.1](v0.1.md): the specification. It covers the structures, the index checks and the order of cases, the operations, the library rows, the boundary, instrumentation and correctness checks. §16 lists the choices the paper leaves open, and §17 defines L1-opt and its tricks.
-- [research/rule.md](research/rule.md): the pre-registered measurement rule, workloads and run plan. The full run is estimated at 11–20 minutes with the Q32 rows. The pilot stops the run if it projects more than 45 minutes, and there is a hard stop at 60 minutes.
+The specification and the rule:
+- **[v0.2](v0.2.md):** the specification. It covers:
+  - the two rows, as new sources `lib/src/q32.c` and `lib/src/tc.c`, leaving every retired file unchanged;
+  - one pseudocode per algorithm, followed by both rows;
+  - every known-answer skip (§11);
+  - the profiling build (§13.4);
+  - the retirement (§16).
 
-**Status:** Oct 29, 2026, revised after the first review. Every threshold and choice is approved by the author, Oct 29, 2026: the thresholds, the 60-minute hard stop and 45-minute pilot limit, the 2.0 severe-memory flag, and all seven L1-opt tricks. The rule is fixed.
+  Both rows make the same arithmetic, call for call. They differ only in structure: index comparisons, lookups and indirection against value comparisons and pairs. §17 lists the choices, each approved by the author.
+- **[research/rule-r2.md](research/rule-r2.md):** the measurement rule. It covers:
+  - the 8 jobs that fit Q32 (1–4 and 8–11; jobs 5, 6 and 7 are over capacity and not run);
+  - per-measure verdicts on time and bytes per rational, with gcd work reported as a check (equal by construction) and the profile reported and not judged;
+  - round 1's timing method;
+  - a hard stop at 30 minutes, with a pilot that includes a profiling run and projects the run's time;
+  - **nothing of the runner's own running during timed phases**: timed programs started by `fork` and `exec`, pinned before `exec`; a blocking wait; a kernel timer for the hard stop; and an operator who runs nothing until the exit notice. This is checked after each timed block by every process's ticks, its waited-for children's included, and by the kernel's fork counter, with an allowance for the host processes that the pilot measures.
 
-**Reuses from 08** (unchanged): the shared integer module (`shared/partial-sharing-baseline/lib/src/sk_internal.h`, `common.c`), the hash lookup and the control (`ctl.c`). The harness is adapted from 08's harness and from the 07 M3 driver.
+  Every threshold is approved by the author, Oct 29, 2026, and the rule is fixed. The harness pins its sha256, and refuses a measured run if the file differs or still holds a mark of a proposal.
 
-**Order of work:** paper → spec and rule → review → build → review → run → results. Built Oct 29, 2026: [`lib/`](lib/) (L1 and L1-opt from one source, the 08 copies in `lib/vendor08/`; [`lib/DECISIONS.md`](lib/DECISIONS.md)) and [`test/`](test/) (generator, driver, runner, analysis; [`test/DECISIONS.md`](test/DECISIONS.md)). Independently reviewed Oct 29, 2026 (differential tests including FLINT and GMP, fidelity, fairness); only minor problems were found, and they are fixed: the analysis reports every item of rule item 12, the spec's wording of O-2, O-4 and O-5 is made exact, and the runner checks that the machine is idle before any timed run (a procedural revision of the rule, re-pinned by hash). The earlier pilot's results were cleared; the pilot and the full run are run later, alone on the machine.
+## Round 1 (archived)
 
-**Q32 rows (Oct 29, 2026, after the measured run of `b3b88b6`):** L1-Q32 and L1-opt-Q32, L1 and L1-opt with 16-bit index fields (4 bytes per rational, capacity 32,768 whole numbers), added as an exception the author approved to the rule's "only while nothing has been measured" (spec §18; rule, revision at the top). They were designed after the Q64 results had been seen. The Q64 results of `b3b88b6` stay official, archived unchanged in [`test/results-q64-b3b88b6/`](test/results-q64-b3b88b6/results.md) (with that run's raw `state.json` and `run.log`); the Q32 run writes only to `test/results-q32/` and the harness refuses to touch the archive. The Q64 rows re-run beside the Q32 rows serve only the paired comparison and the band h of the same run, and every Q64 verdict that changes is reported. The Q64 binaries are byte-identical to those measured. L1-Q32's lookup is its own translation unit, called as L1-Q64 calls `sk_lookup`, so the L1 pair differs in width, not inlining ([`lib/DECISIONS.md`](lib/DECISIONS.md) D-25). The pilot's projection is updated for the longer run (11.5 minutes remaining, 1.2-minute nominal pilot), and gcd work against time is reported for the Q32 rows. Built and tested at both widths (unit, differential, capacity, the lookup gate on every job, sanitizers); not yet measured.
+Round 1 measured L1 and L1-opt against the 08 control, FLINT `fmpq`, GMP `mpq` and a FLINT shared-denominator ceiling. Its later Q32 run added L1-Q32 and L1-opt-Q32. The record is kept unchanged:
+- **The specification:** [v0.1](v0.1.md), with §17 (L1-opt) and §18 (the Q32 rows).
+- **The rule:** [research/rule.md](research/rule.md), pinned by hash in the results.
+- **The code:** [`lib/`](lib/) ([`lib/DECISIONS.md`](lib/DECISIONS.md)) and [`test/`](test/) ([`test/DECISIONS.md`](test/DECISIONS.md)).
+- **The results:**
+  - [`test/results-q64-b3b88b6/`](test/results-q64-b3b88b6/results.md): the official Q64 verdicts;
+  - [`test/results-q32/`](test/results-q32/results.md): the Q32 run;
+  - [`test/results/`](test/results/results.md): the original `b3b88b6` output.
 
-**For the author's confirmation:** safeguard 2 now reads "the re-run Q64 rows are used only for the paired Q32-vs-Q64 comparison and for the band h of the same run". The band h must come from the re-run's own null control (L1 against L1-null), because h bands the verdicts of the rounds it comes from; this is recorded as a documented necessity, not as a change to the safeguard ([rule](research/rule.md), revision at the top; [`test/DECISIONS.md`](test/DECISIONS.md) A-6).
+**Reuses from 08,** kept in round 2 unchanged and hash-checked: the shared integer module (`lib/vendor08/sk_internal.h` and `common.c`, copied from [`shared/partial-sharing-baseline`](../shared/partial-sharing-baseline/)). The 08 control (`ctl.c`) is kept but is no longer a row.
+
+**Order of work:** paper → spec and rule → review → build → review → run → results.

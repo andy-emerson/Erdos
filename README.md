@@ -1,26 +1,19 @@
-> **Milestone reached: Q32 run complete; repository reorganized** (Oct 29, 2026, 10:06 CDT)
+> **Major issue: needs your decision** (Oct 29, 2026, 13:13 CDT)
 >
-> **Reorganization.** [`08-common-divisors`](08-common-divisors/) (Design 1), [`09-coprime-base`](09-coprime-base/) (Design 2), [`shared/partial-sharing-baseline`](shared/partial-sharing-baseline/) (their joint run), [`10-interning`](10-interning/) (Design 3, renamed from 09-interning; rule links changed, paths only, hash re-pinned).
+> **What happened.** The round 2 measured run of [`10-interning`](10-interning/) (textbook Q32 vs textbook control) stopped in **step 3, the pilot**, after 26.7 s, on its first timed block (job 1, calibration and 2 rounds). The block was **disturbed twice**: 2 unexplained forks, then 1 on the re-run. The rule allows 0 (rule-r2 item 5), and a second disturbance of one job stops the run. I did not retry. **No verdicts**, and nothing past the pilot ran: no gates, counting, memory, rounds or profile.
 >
-> **Q32 run** (per measure only, no overall winner). Pilot projected 12.7 min (limit 45); run took 10.9 min; gates 60 of 60; no bugs; null spreads at most 0.013, so h = 5% on every job.
-> - **Fit:** jobs 1–4 and 8–11 (1, 8, 9 near capacity). **Over capacity:** jobs 5, 6, 7 (W = 40,849, 40,798, 50,795).
-> - Time is T(other)/T(Q32 row), above 1 means the Q32 row is faster; bytes are B_used(Q32 row)/B_used(other) per rational at the end, below 1 means it uses less. Ranges over the 8 fitting jobs:
+> **What came before passed.** Build, workloads byte-identical to round 1, and unit tests, the differential test and both under the sanitizers (0 failures).
 >
-> | | vs its Q64 row | vs ctl | vs fmpq | vs mpq |
-> | --- | --- | --- | --- | --- |
-> | **L1-Q32**, time | 1.00–1.03 (8 ties) | 0.66–0.89 (8 losses) | 0.73–0.83 (8 losses) | 1.56–2.15 (8 wins) |
-> | **L1-Q32**, bytes | 0.51–0.66 (8 wins) | 0.26–1.02 (7 wins; tie on job 1) | 0.26–1.02 (7 wins; tie on job 1) | 0.07–0.31 (8 wins) |
-> | **L1-opt-Q32**, time | 0.98–1.00 (8 ties) | 0.63–0.95 (7 losses; tie on job 3) | 0.69–0.86 (8 losses) | 1.51–2.30 (8 wins) |
-> | **L1-opt-Q32**, bytes | 0.51–0.75 (8 wins) | 0.27–1.57 (win on job 3, tie on 2, 6 losses) | 0.27–1.57 (same as ctl) | 0.07–0.47 (8 wins) |
+> **The record.** No other process used a tick, and no new process was seen (`others` and `new` are empty). The runner used 1 tick per block. The fork counter rose 10 and 9 against 8 spawns, with 0 new kernel threads. Host ticks over the blocks (1.6 s each): `claude` (the session process hosting the run) 2, then 1, about 1.25 and 0.62 ticks/s; `process_api` (pid 1) 1, then 0. These host ticks do not flag in the pilot, but the first block's `claude` rate is above the 1 tick/s that stops a run after the pilot (item 5.3). The record cannot name the forker. My guess is short-lived threads of a host process: the counter counts threads too, and those threads ran for no recorded tick. This is a guess, not checked.
 >
-> - **Model vs B_heap:** B_used equals the model to the byte on every row and job (an accounting identity, so it tests the report only). B_heap / model at the end: L1-Q32 1.09–1.50 (highest on chains 10 and 11), L1-opt-Q32 1.04–1.14.
-> - **Q64 verdicts changed between runs:** none (0 of 348). The official Q64 verdicts stay those of `b3b88b6`.
+> **Options.**
+> 1. **Re-run unchanged** in the same setup. Cheap, but likely to stop the same way, and even a clean pilot may trip the busy-host stop, since `claude` was at about 1.25 ticks/s.
+> 2. **Run from a quieter host:** start `python3 test/r2_runner.py` yourself in a plain terminal with no Claude session open, so the only hosts are a shell blocked in `wait` and pid 1.
+> 3. **Revise the rule** (dated, at the top): for example, explain forks by the host processes' own new threads (`/proc/<pid>/task`), or give the hosts a small fork allowance measured in the pilot like their ticks. The harness pin would then be updated under review.
 >
-> **For you to confirm:** safeguard 2's wording now includes taking the band h from the re-run's own null control ([rule](10-interning/research/rule.md), top; marked pending).
+> **Still open, apart from the run.** Paper v0.5 sections 1–2 are drafted ([paper/v0.5.md](paper/v0.5.md)). For you to confirm: **R2-H7** in [test/DECISIONS.md](10-interning/test/DECISIONS.md): estimated times are reported only per part (entry, operations, read-out), as the spec gives them.
 >
-> **Notes.** (1) In the original measured runs (08 at `f39d34e`, 09 Q64 at `b3b88b6`), a small waiting loop of the runner's own (a 20-second file check) kept running in the background through both timed phases. Its CPU use was negligible, the idle checks passed and the null spreads stayed small (at most 0.019 and 0.013), but strictly "nothing else running" was not true. Both runs can be repeated in about 22 minutes if you want fully clean timing. (2) The same applies to this Q32 run: my own wait loop (a file check every 20 s) ran in the background through its timed phases. Its idle checks passed and its null spreads are at most 0.013. (3) `shared/checklinks.py` now skips the verbatim rule copies inside results files. Those copies are pinned data and keep the old `08-skeletons` links. With that, 0 links are broken.
->
-> **Results:** [results.md](10-interning/test/results-q32/results.md) · [verdicts.csv](10-interning/test/results-q32/verdicts.csv) · [Q64 re-run verdicts](10-interning/test/results-q32/q64_rerun_verdicts.csv) · [official Q64 archive](10-interning/test/results-q64-b3b88b6/results.md)
+> **Results (stopped run):** [results.md](10-interning/test/results-r2/results.md) · [run.log](10-interning/test/results-r2/run.log) · [state.json](10-interning/test/results-r2/state.json)
 
 # Erdos
 

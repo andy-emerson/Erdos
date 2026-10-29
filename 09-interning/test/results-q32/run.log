@@ -1,0 +1,65 @@
+[    12.7s] step 1: workloads, exact references and predicted figures
+[    16.2s] Q32 rows over capacity (W at the end > 32,768) on jobs 5 (W 40849), 6 (W 40798), 7 (W 50795)
+[    16.2s] step 2: unit tests (test build)
+[    19.3s] unit tests pass: unit-layer1: unit (Q64 rows): 1146105 checks, 0 failures; unit-layer1-q32: unit (Q32 rows): 1146105 checks, 0 failures; diff-layer1: checksum 7b6083446efe8a13; diff-layer1-q32: checksum 7b6083446efe8a13; q32-layer1: q32: 1416037 checks, 0 failures; unit-08: unit (width 64): 3379 checks, 0 failures
+[    19.3s] step 3: pilot
+[    20.4s] machine busy before the pilot (load 0.73 (max 0.5)); waiting 15 s
+[    36.4s] machine busy before the pilot (load 0.56 (max 0.5)); waiting 15 s
+[    52.4s] machine idle before the pilot (load 0.44, max 0.5), after waiting 33 s
+[    74.5s] pilot projection: 12.7 min (pilot 22.2 s, factor 1.00, elapsed 1.2 min; limit 45 min)
+[    74.5s] step 4: gates
+[    84.2s] step 5: counting runs and memory runs
+[    85.2s] step 6: calibration and rounds
+[    86.2s] machine busy before the calibration and rounds of job 1 (load 0.92 (max 0.5)); waiting 15 s
+[   102.2s] machine busy before the calibration and rounds of job 1 (load 0.71 (max 0.5)); waiting 15 s
+[   118.2s] machine busy before the calibration and rounds of job 1 (load 0.51 (max 0.5)); waiting 15 s
+[   134.2s] machine idle before the calibration and rounds of job 1 (load 0.4, max 0.5), after waiting 49 s
+[   134.2s] job 1: calibration
+[   135.5s] job 1: 12 rounds
+[   161.4s] machine busy before the calibration and rounds of job 2 (load 0.6 (max 0.5)); waiting 15 s
+[   177.4s] machine idle before the calibration and rounds of job 2 (load 0.47, max 0.5), after waiting 17 s
+[   177.4s] job 2: calibration
+[   178.8s] job 2: 12 rounds
+[   205.4s] machine busy before the calibration and rounds of job 3 (load 0.68 (max 0.5)); waiting 15 s
+[   221.4s] machine busy before the calibration and rounds of job 3 (load 0.53 (max 0.5)); waiting 15 s
+[   237.5s] machine idle before the calibration and rounds of job 3 (load 0.41, max 0.5), after waiting 33 s
+[   237.5s] job 3: calibration
+[   238.6s] job 3: 12 rounds
+[   259.6s] machine busy before the calibration and rounds of job 4 (load 0.67 (max 0.5)); waiting 15 s
+[   275.7s] machine busy before the calibration and rounds of job 4 (load 0.52 (max 0.5)); waiting 15 s
+[   291.7s] machine idle before the calibration and rounds of job 4 (load 0.41, max 0.5), after waiting 33 s
+[   291.7s] job 4: calibration
+[   293.1s] job 4: 12 rounds
+[   320.4s] machine busy before the calibration and rounds of job 5 (load 0.7 (max 0.5)); waiting 15 s
+[   336.5s] machine busy before the calibration and rounds of job 5 (load 0.54 (max 0.5)); waiting 15 s
+[   352.5s] machine idle before the calibration and rounds of job 5 (load 0.42, max 0.5), after waiting 33 s
+[   352.5s] job 5: calibration
+[   353.4s] job 5: 12 rounds
+[   370.9s] machine busy before the calibration and rounds of job 6 (load 0.65 (max 0.5)); waiting 15 s
+[   386.9s] machine busy before the calibration and rounds of job 6 (load 0.5 (max 0.5)); waiting 15 s
+[   402.9s] machine idle before the calibration and rounds of job 6 (load 0.39, max 0.5), after waiting 33 s
+[   402.9s] job 6: calibration
+[   403.9s] job 6: 12 rounds
+[   421.8s] machine busy before the calibration and rounds of job 7 (load 0.57 (max 0.5)); waiting 15 s
+[   437.8s] machine idle before the calibration and rounds of job 7 (load 0.44, max 0.5), after waiting 17 s
+[   437.8s] job 7: calibration
+[   438.7s] job 7: 12 rounds
+[   455.0s] machine busy before the calibration and rounds of job 8 (load 0.6 (max 0.5)); waiting 15 s
+[   471.0s] machine idle before the calibration and rounds of job 8 (load 0.47, max 0.5), after waiting 17 s
+[   471.0s] job 8: calibration
+[   472.6s] job 8: 12 rounds
+[   501.8s] machine busy before the calibration and rounds of job 9 (load 0.68 (max 0.5)); waiting 15 s
+[   517.8s] machine busy before the calibration and rounds of job 9 (load 0.53 (max 0.5)); waiting 15 s
+[   533.8s] machine idle before the calibration and rounds of job 9 (load 0.38, max 0.5), after waiting 33 s
+[   533.8s] job 9: calibration
+[   535.1s] job 9: 12 rounds
+[   557.9s] machine busy before the calibration and rounds of job 10 (load 0.71 (max 0.5)); waiting 15 s
+[   573.9s] machine busy before the calibration and rounds of job 10 (load 0.51 (max 0.5)); waiting 15 s
+[   589.9s] machine idle before the calibration and rounds of job 10 (load 0.4, max 0.5), after waiting 33 s
+[   589.9s] job 10: calibration
+[   591.1s] job 10: 12 rounds
+[   615.7s] machine busy before the calibration and rounds of job 11 (load 0.6 (max 0.5)); waiting 15 s
+[   631.7s] machine idle before the calibration and rounds of job 11 (load 0.47, max 0.5), after waiting 17 s
+[   631.7s] job 11: calibration
+[   632.9s] job 11: 12 rounds
+[   656.0s] results: /home/claude/erdos/09-interning/test/results-q32/results.md

@@ -1,33 +1,14 @@
-> **Milestone reached: round 2 run complete (textbook Q32 vs textbook control)** (Oct 29, 2026, 17:45 CDT)
+> **Milestone reached: round 3 run complete (Q32-index and Q32-hash vs textbook control)** (Oct 29, 2026, 20:51 CDT)
 >
-> The round 2 run of [`10-interning`](10-interning/) finished in **2.5 min** (hard stop 30), pilot and full run, with no stop: 20 timed blocks, 0 disturbed, 0 busy idle checks, 0 harness bugs. Rule sha256 `3ad56ffe…`. Jobs 5–7 are over Q32's capacity and not run. Per measure only, **no overall winner**.
+> The round 3 run of [`10-interning`](10-interning/) finished in **3.5 min** (hard stop 30), with no stop: 20 timed blocks, 0 disturbed. Rule sha256 `f4671f1f…`. Gcd work check passed on all 8 jobs. Jobs 5–7 are over capacity and not run. Per measure only, **no overall winner**.
 >
-> **Time**, T(TC)/T(Q32) [interval], null band h 0.050; below 1, Q32 is slower. **Bytes per rational** at the end (B_used Q32 / TC, ratio).
->
-> | job | time | B_used | B_heap ratio |
+> | pairing | operations time (T ref / T row; below 1 = row slower) | creation time | B_used (row / ref; below 1 = row smaller) |
 > | --- | --- | --- | --- |
-> | 1 MONEY-wide | loss 0.655 [0.652, 0.665] | 16.33 / 16.00, tie 1.021 | tie 1.012 |
-> | 2 MONEY-catalog | loss 0.650 [0.648, 0.660] | 10.29 / 16.00, win 0.643 | win 0.636 |
-> | 3 SMALL8 | loss 0.730 [0.723, 0.734] | 4.16 / 16.00, win 0.260 | win 0.270 |
-> | 4 SMALL64 | loss 0.661 [0.657, 0.665] | 14.06 / 16.00, win 0.879 | tie 1.009 |
-> | 8 CH-money | loss 0.645 [0.643, 0.649] | 12.43 / 16.00, win 0.777 | win 0.631 |
-> | 9 CH-closed | loss 0.684 [0.674, 0.692] | 12.53 / 16.00, win 0.783 | win 0.631 |
-> | 10 CH-small | loss 0.610 [0.607, 0.615] | 12.51 / 16.00, win 0.782 | win 0.634 |
-> | 11 CH-mixed | loss 0.620 [0.616, 0.628] | 13.28 / 16.00, win 0.830 | win 0.634 |
+> | Q32-index vs TC | loss on all 8, 0.011–0.494 | loss on all 8, 0.029–0.640 | win on all 8, 0.256–0.748 |
+> | Q32-hash vs TC | loss on all 8, 0.645–0.805 | loss on all 8, 0.800–0.873 | win on 6, 0.640–0.796; loss on jobs 10–11, 1.160 |
+> | Q32-hash vs Q32-index | win on all 8, 1.63–56.6 | win on all 8, 1.29–29.0 | loss or tie; severe memory flag on jobs 3 (3.11) and 10 (2.09) |
 >
-> **Gcd work check:** passed on all 8 jobs (G(Q32)/G(TC) = 1.000000; call for call equal).
->
-> **Profile (indicative only).** Q32's extra time in the operations is 21–46 ns/op: mostly **interning lookup (I) 10–28**, operand fetch (F) 8–10, record write (S) 4–6, growth (M) 0–5, shortcut checks (C) 0–2 and unattributed −1 to 5; gcd and other arithmetic are 2–7 ns *lower* in Q32. At entry the extra 12–25 ns is mostly I (9–16) and S (4–6). Read-out differs by 0.5 ns.
->
-> **Process CPU time cross-check:** median CPU share 0.998–1.000 for every job and row (lowest 0.950, job 9 Q32); CPU and total ns per run agree.
->
-> **Runner ticks:** 48 over 378 launches, 0.127 per launch; highest block 0.333 (limit: more than 1 per launch plus 2). Reported only.
->
-> **Flags:** no severe flags. Q32's B_used is 2% above TC's on job 1 (W/N ≈ 1, no reuse), a tie.
->
-> Paper v0.5 (sections 1–2 and Appendix A) is published ([paper/v0.5.md](paper/v0.5.md)).
->
-> **Results:** [results.md](10-interning/test/results-r2/results.md) · [verdicts.csv](10-interning/test/results-r2/verdicts.csv) · [run.log](10-interning/test/results-r2/run.log) · [rule](10-interning/research/rule-r2.md) · [DECISIONS](10-interning/test/DECISIONS.md)
+> **Results:** [results.md](10-interning/test/results-r3/results.md) · [verdicts.csv](10-interning/test/results-r3/verdicts.csv)
 
 # Erdos
 

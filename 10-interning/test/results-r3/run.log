@@ -1,0 +1,52 @@
+[     0.0s] step 1: build, workloads, exact references and predicted figures
+[    24.3s] workloads byte-identical to round 1's
+[    24.3s] step 2: unit tests, the differential test, the allocation check, and the tests under the sanitizers
+[    38.2s] unit tests pass: r3_unit: 1352538 checks, 0 failures; r3_diff: 300 seeds, 3 rows, 233379 operations (8210 divisions by zero, 19460 overflows), every case and K-skip met; 1283374 checks, 0 failures; r3_alloc (timing build): 1246 checks, 0 failures; r3_alloc (counting build): 1246 checks, 0 failures; r3_alloc (profiling build): 1246 checks, 0 failures; r3_unit: 1352538 checks, 0 failures; r3_diff: 60 seeds, 3 rows, 46345 operations (1630 divisions by zero, 3765 overflows), every case and K-skip met; 254894 checks, 0 failures
+[    38.2s] step 3: pilot
+[    40.2s] machine idle before pilot block of job 1 (core 1 0.0%, load 0.57)
+[    42.7s] job 1 pilot: block of 2.5 s undisturbed (runner 1 ticks over 11 launches, 0.091 per launch, forks 11)
+[    44.7s] machine idle before pilot block of job 3 (core 1 0.0%, load 0.53)
+[    47.0s] job 3 pilot: block of 2.4 s undisturbed (runner 1 ticks over 11 launches, 0.091 per launch, forks 11)
+[    49.0s] machine idle before pilot block of job 10 (core 1 0.0%, load 0.48)
+[    51.3s] job 10 pilot: block of 2.3 s undisturbed (runner 2 ticks over 11 launches, 0.182 per launch, forks 12)
+[    53.3s] machine idle before pilot block of job 1 (core 1 0.0%, load 0.44)
+[    54.3s] job 1 pilot: block of 0.9 s undisturbed (runner 0 ticks over 3 launches, 0.000 per launch, forks 3)
+[    54.3s] pilot: P 13.1 s (P_idx 2.3 s, P_rest 10.9 s), P_prof 2.9 s, projection 9.2 min (limit 22); host rates {'1': 0.4063388866314507, '79': 0.4063388866314507, '85': 0.4063388866314507, '92': 0.4230700361475426, '15533': 0.4063388866314507}; profiling slowdown {'Q32-index': {'slowdown': 0.983221862632708, 'within': True}, 'Q32-hash': {'slowdown': 1.2300656111826958, 'within': True}, 'TC': {'slowdown': 1.239042369892188, 'within': True}}
+[    54.3s] step 4: gates (two at a time)
+[    58.9s] every gate passed (24)
+[    58.9s] step 5: counting runs and memory runs (two at a time)
+[    60.2s] step 6: calibration and 12 rounds, one timed block per job
+[    62.2s] machine idle before measured block of job 1 (core 1 0.0%, load 0.57)
+[    74.7s] job 1 measured: block of 12.6 s undisturbed (runner 9 ticks over 51 launches, 0.176 per launch, forks 51)
+[    76.8s] machine idle before measured block of job 2 (core 1 0.0%, load 0.67)
+[    86.6s] job 2 measured: block of 9.9 s undisturbed (runner 7 ticks over 51 launches, 0.137 per launch, forks 52)
+[    88.6s] machine idle before measured block of job 3 (core 1 1.0%, load 0.66)
+[   100.6s] job 3 measured: block of 12.0 s undisturbed (runner 6 ticks over 51 launches, 0.118 per launch, forks 52)
+[   102.6s] machine idle before measured block of job 4 (core 1 0.0%, load 0.71)
+[   111.7s] job 4 measured: block of 9.0 s undisturbed (runner 6 ticks over 51 launches, 0.118 per launch, forks 52)
+[   113.7s] machine idle before measured block of job 8 (core 1 0.0%, load 0.7)
+[   128.3s] job 8 measured: block of 14.6 s undisturbed (runner 5 ticks over 51 launches, 0.098 per launch, forks 52)
+[   130.3s] machine idle before measured block of job 9 (core 1 0.0%, load 0.76)
+[   143.0s] job 9 measured: block of 12.6 s undisturbed (runner 6 ticks over 51 launches, 0.118 per launch, forks 52)
+[   145.0s] machine idle before measured block of job 10 (core 1 0.0%, load 0.74)
+[   156.5s] job 10 measured: block of 11.5 s undisturbed (runner 7 ticks over 51 launches, 0.137 per launch, forks 52)
+[   158.5s] machine idle before measured block of job 11 (core 1 0.0%, load 0.78)
+[   171.0s] job 11 measured: block of 12.4 s undisturbed (runner 8 ticks over 51 launches, 0.157 per launch, forks 52)
+[   171.0s] step 7: the profile runs, one timed block per job
+[   173.0s] machine idle before profile block of job 1 (core 1 0.0%, load 0.82)
+[   175.8s] job 1 profile: block of 2.8 s undisturbed (runner 1 ticks over 9 launches, 0.111 per launch, forks 9)
+[   177.8s] machine idle before profile block of job 2 (core 1 0.0%, load 0.83)
+[   180.1s] job 2 profile: block of 2.3 s undisturbed (runner 2 ticks over 9 launches, 0.222 per launch, forks 10)
+[   182.1s] machine idle before profile block of job 3 (core 1 0.5%, load 0.84)
+[   185.2s] job 3 profile: block of 3.1 s undisturbed (runner 1 ticks over 9 launches, 0.111 per launch, forks 9)
+[   187.2s] machine idle before profile block of job 4 (core 1 0.0%, load 0.86)
+[   189.4s] job 4 profile: block of 2.2 s undisturbed (runner 1 ticks over 9 launches, 0.111 per launch, forks 9)
+[   191.5s] machine idle before profile block of job 8 (core 1 0.0%, load 0.87)
+[   194.7s] job 8 profile: block of 3.3 s undisturbed (runner 1 ticks over 9 launches, 0.111 per launch, forks 9)
+[   196.7s] machine idle before profile block of job 9 (core 1 0.0%, load 0.88)
+[   199.7s] job 9 profile: block of 2.9 s undisturbed (runner 1 ticks over 9 launches, 0.111 per launch, forks 9)
+[   201.7s] machine idle before profile block of job 10 (core 1 0.0%, load 0.89)
+[   204.6s] job 10 profile: block of 2.9 s undisturbed (runner 2 ticks over 9 launches, 0.222 per launch, forks 9)
+[   206.6s] machine idle before profile block of job 11 (core 1 0.5%, load 0.9)
+[   209.7s] job 11 profile: block of 3.1 s undisturbed (runner 2 ticks over 9 launches, 0.222 per launch, forks 10)
+[   211.1s] results: /home/claude/erdos/10-interning/test/results-r3/results.md

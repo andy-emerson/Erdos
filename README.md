@@ -1,6 +1,6 @@
-> **Status** (Oct 30, 2026, 15:30 CDT)
+> **Status** (Oct 30, 2026, 15:40 CDT)
 >
-> - **Paper:** v0.6 build 4b (chapter 4, matrices): applying the review's minor fixes.
+> - **Paper:** v0.6 done (chapters 1–4). Waiting for your direction.
 > - **Test suite:** m3 done.
 >
 > **Results:** latest completed round: [m3](11-matrix/test/results-m3-summary.md)

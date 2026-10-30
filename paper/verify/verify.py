@@ -5,7 +5,9 @@ drift apart, this fails. Each function must also be the mechanical translation o
 line for line (the appendix's own substitutions: `·` is `*`, `/` is `//`, `b′` is `b_prime`, and so on). Every function is checked against Python's fractions.Fraction. Branch coverage of every `if`
 in the appendix is recorded and reported, and every outcome must be reached. The worked computation of section 2.12 is
 reproduced call for call, with its intermediate values and the branches it takes. Finally the library is compared,
-untimed, with the textbook control of 10-interning on round 2's small (toy) workloads (control.py).
+untimed, with the textbook control of 10-interning on round 2's small (toy) workloads (control.py). Appendix B is
+checked in the same way by section3.py (B.1, chapter 3, and the rows of section 4.1 from their pseudocode) and
+section4.py (B.2, the matrices of chapter 4, and the index of section 4.3 from its pseudocode).
 
     python3 paper/verify/verify.py                  everything
     python3 paper/verify/verify.py --no-control     without the comparison with the control (needs no compiler)
@@ -123,6 +125,21 @@ def cond(c):
     return c
 
 
+def statement(s, line):
+    """One pseudocode statement (not IF or FUNCTION) as Python. Chapter 4 adds `SET A[i] = v` (an assignment to an
+    array's slot, in place), `DO f(x)` (a call on a line of its own) and `RETURN` alone (a function with no result)."""
+    if s == "RETURN":
+        return "return"
+    if s.startswith("RETURN "):
+        return "return " + expr(s[7:])
+    if s.startswith("SET "):
+        name, value = s[4:].split(" = ", 1)
+        return expr(name) + " = " + expr(value)
+    if s.startswith("DO "):
+        return expr(s[3:])
+    raise ValueError(f"untranslatable pseudocode line: {line!r}")
+
+
 def translate(lines):
     py = []
     for line in lines:
@@ -141,12 +158,10 @@ def translate(lines):
             elif then == "ERROR":
                 py.append(ind + "if " + cond(c) + ": raise ZeroDivisionError")
             else:
-                assert then.startswith("RETURN "), line
-                py.append(ind + "if " + cond(c) + ": return " + expr(then[7:]))
-        elif s.startswith("RETURN "):
-            py.append(ind + "return " + expr(s[7:]))
+                assert then.startswith(("RETURN", "SET ")), line
+                py.append(ind + "if " + cond(c) + ": " + statement(then, line))
         else:
-            raise ValueError(f"untranslatable pseudocode line: {line!r}")
+            py.append(ind + statement(s, line))
     return "\n".join(py) + "\n"
 
 
@@ -622,7 +637,9 @@ def main():
     for m in missing:
         check(False, "coverage: " + m)
     import section3
-    section3.run(a.paper, ns, FILENAME, sys.modules[__name__], check)
+    import section4
+    ns_b = section3.run(a.paper, ns, FILENAME, sys.modules[__name__], check)
+    section4.run(a.paper, ns_b, FILENAME, sys.modules[__name__], check)
     if not a.no_control:
         import control
         control.compare(ns, check)

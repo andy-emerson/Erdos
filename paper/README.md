@@ -24,6 +24,8 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
     - 4.2 the hash table of 3.4 applied to matrices (no speed gain expected, as in 3.4);
     - 4.3 factorization, with gcds as valuations;
     - 4.4 a coprime base in place of primes.
+  - **Structure of the book:** chapter 1 teaches and chapter 2 builds the library from it; chapter 3 teaches and chapter 4 extends the library from it. Chapter 3's pseudocode is written as the components chapter 4 calls (as chapter 3 calls chapter 2): 3.3–3.4 as store, look up and read by handle; 3.1's columns possibly as a shared-denominator matrix step in chapter 4; 3.2's rows only if chapter 4 uses them. Pseudocode that shows an idea's evolution may stay even if unused, but no library code goes unused.
+  - **Appendix B:** stops being a standalone chapter 3 library. Once chapter 4 is settled, its surviving pieces move into the appendix for the extended library. Nothing is rewritten until then.
   - **Throughout:** "win" names one side of the memory–speed trade-off that runs through the book; each section has its own win. No benchmarks in the paper; its tests come later, built for the textbook versions.
 
 **Moved, Oct 29, 2026.** The two working notes that were here are not part of the paper and now live with the work they describe:

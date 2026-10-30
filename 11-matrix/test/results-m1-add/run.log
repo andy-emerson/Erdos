@@ -1,0 +1,51 @@
+step 0 (before the clock): workloads, exact references and the model's predictions
+step 0 done in 2.1 s: add-1, add-2, add-3, add-4, add-5, add-6, add-7, add-8, add-9, add-10, add-11, add-12, add-13, add-14, add-15, add-16
+[     0.0s] step 1: build, hashes, tcm.c's diff, step 0's files
+[    23.8s] 08 module, tc3.c and tcm.c's diff as pinned; step 0's files unchanged
+[    23.8s] step 2: unit tests, the differential test, the allocation check, and the tests under the sanitizers
+[    25.5s] unit tests pass: m1_unit: 4014 checks, 0 failures; m1_diff: 3000 seeds, 3000 jobs, 747676 operations; 1591644 checks, 0 failures; m1_alloc (timing build): 180 jobs, 18312 checks, 0 failures; m1_alloc (counting build): 180 jobs, 18312 checks, 0 failures; m1_unit: 4014 checks, 0 failures; m1_diff: 600 seeds, 600 jobs, 151723 operations; 324084 checks, 0 failures
+[    25.5s] step 3: pilot
+[    27.6s] machine idle before pilot block of job 1 (core 1 0.5%, load 0.66)
+[    31.3s] job 1 pilot: block of 3.7 s undisturbed (runner 3 ticks over 20 launches, 0.150 per launch, forks 20)
+[    33.3s] machine idle before pilot block of job 6 (core 1 1.0%, load 0.69)
+[    37.0s] job 6 pilot: block of 3.7 s undisturbed (runner 1 ticks over 20 launches, 0.050 per launch, forks 21)
+[    39.0s] machine idle before pilot block of job 13 (core 1 0.5%, load 0.71)
+[    42.9s] job 13 pilot: block of 3.8 s undisturbed (runner 2 ticks over 20 launches, 0.100 per launch, forks 21)
+[    42.9s] pilot: P_6 5.8 s, P_13 5.8 s; projection 10.0 min (limit 30); host rates {'1': 0.26198585276395076, '79': 0.26198585276395076, '85': 0.26198585276395076, '93': 0.26890781098081756, '14116': 0.26198585276395076}
+[    42.9s] step 4: gates (two at a time)
+[    43.8s] every gate passed (96), the TC gate included
+[    43.8s] step 5: counting runs and memory runs (two at a time)
+[    44.4s] step 6: calibration and 12 rounds, one timed block per job
+[    46.4s] machine idle before measured block of job 1 (core 1 0.5%, load 0.68)
+[    66.3s] job 1 measured: block of 19.9 s undisturbed (runner 12 ticks over 90 launches, 0.133 per launch, forks 90)
+[    68.3s] machine idle before measured block of job 2 (core 1 0.0%, load 0.77)
+[    88.8s] job 2 measured: block of 20.5 s undisturbed (runner 12 ticks over 90 launches, 0.133 per launch, forks 91)
+[    90.9s] machine idle before measured block of job 3 (core 1 0.0%, load 0.84)
+[   110.3s] job 3 measured: block of 19.4 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 92)
+[   112.3s] machine idle before measured block of job 4 (core 1 0.0%, load 0.81)
+[   138.1s] job 4 measured: block of 25.8 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 93)
+[   140.1s] machine idle before measured block of job 5 (core 1 0.0%, load 0.88)
+[   158.1s] job 5 measured: block of 17.9 s undisturbed (runner 14 ticks over 90 launches, 0.156 per launch, forks 91)
+[   160.1s] machine idle before measured block of job 6 (core 1 0.0%, load 0.91)
+[   178.5s] job 6 measured: block of 18.4 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 90)
+[   180.5s] machine idle before measured block of job 7 (core 1 0.0%, load 0.94)
+[   199.9s] job 7 measured: block of 19.4 s undisturbed (runner 12 ticks over 90 launches, 0.133 per launch, forks 92)
+[   202.0s] machine idle before measured block of job 8 (core 1 0.0%, load 0.88)
+[   219.6s] job 8 measured: block of 17.6 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 91)
+[   221.6s] machine idle before measured block of job 9 (core 1 0.0%, load 0.83)
+[   241.5s] job 9 measured: block of 19.9 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 90)
+[   243.5s] machine idle before measured block of job 10 (core 1 0.0%, load 0.88)
+[   261.6s] job 10 measured: block of 18.1 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 92)
+[   263.6s] machine idle before measured block of job 11 (core 1 0.0%, load 0.93)
+[   286.3s] job 11 measured: block of 22.6 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 92)
+[   288.3s] machine idle before measured block of job 12 (core 1 0.0%, load 0.96)
+[   310.8s] job 12 measured: block of 22.5 s undisturbed (runner 12 ticks over 90 launches, 0.133 per launch, forks 92)
+[   312.9s] machine idle before measured block of job 13 (core 1 0.0%, load 0.83)
+[   331.8s] job 13 measured: block of 18.9 s undisturbed (runner 14 ticks over 90 launches, 0.156 per launch, forks 90)
+[   333.8s] machine idle before measured block of job 14 (core 1 0.0%, load 0.88)
+[   356.7s] job 14 measured: block of 22.8 s undisturbed (runner 15 ticks over 90 launches, 0.167 per launch, forks 91)
+[   358.7s] machine idle before measured block of job 15 (core 1 0.0%, load 0.92)
+[   380.8s] job 15 measured: block of 22.1 s undisturbed (runner 13 ticks over 90 launches, 0.144 per launch, forks 93)
+[   382.8s] machine idle before measured block of job 16 (core 1 0.5%, load 0.87)
+[   404.1s] job 16 measured: block of 21.2 s undisturbed (runner 12 ticks over 90 launches, 0.133 per launch, forks 91)
+[   408.0s] results: /home/claude/erdos/11-matrix/test/results-m1-add/results.md

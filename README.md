@@ -1,14 +1,17 @@
-> **Milestone reached: round 3 run complete (Q32-index and Q32-hash vs textbook control)** (Oct 29, 2026, 20:51 CDT)
+> **Milestone reached: matrix addition run complete (11-matrix, C = A + B)** (Oct 30, 2026, 00:43 CDT)
 >
-> The round 3 run of [`10-interning`](10-interning/) finished in **3.5 min** (hard stop 30), with no stop: 20 timed blocks, 0 disturbed. Rule sha256 `f4671f1f…`. Gcd work check passed on all 8 jobs. Jobs 5–7 are over capacity and not run. Per measure only, **no overall winner**.
+> Finished in **6.7 min** (hard stop 40), no stop, 0 disturbed blocks. Rule sha256 `8e951ac6…`. Gcd work check passed on all 16 jobs. Per measure only, **no overall winner**. Time: T(TC)/T(row), below 1 = row slower. Bytes: row/TC, below 1 = row smaller.
 >
-> | pairing | operations time (T ref / T row; below 1 = row slower) | creation time | B_used (row / ref; below 1 = row smaller) |
+> | row vs TC | creation time | operation time | memory (B_used) |
 > | --- | --- | --- | --- |
-> | Q32-index vs TC | loss on all 8, 0.011–0.494 | loss on all 8, 0.029–0.640 | win on all 8, 0.256–0.748 |
-> | Q32-hash vs TC | loss on all 8, 0.645–0.805 | loss on all 8, 0.800–0.873 | win on 6, 0.640–0.796; loss on jobs 10–11, 1.160 |
-> | Q32-hash vs Q32-index | win on all 8, 1.63–56.6 | win on all 8, 1.29–29.0 | loss or tie; severe memory flag on jobs 3 (3.11) and 10 (2.09) |
+> | Hash-V-fixed | loss on 16, 0.52–0.71 | loss on 16, 0.39–0.59 | loss on 16, 1.92–2.17 (as designed) |
+> | Hash-M-fixed | loss on 16, 0.55–0.75 | loss on 16, 0.33–0.53 | loss on 16, 2.08–2.50 |
+> | Hash-V-grow | loss on 16, 0.17–0.69 | loss on 16, 0.24–0.51 | **win on 10**, 0.31–0.83; tie 3; loss 3 (no sharing) |
+> | Hash-M-grow | loss on 16, 0.17–0.70 | loss on 16, 0.21–0.50 | **win on 10**, 0.32–0.83; tie 2; loss 4 |
 >
-> **Results:** [results.md](10-interning/test/results-r3/results.md) · [verdicts.csv](10-interning/test/results-r3/verdicts.csv)
+> Translation (M) vs direct comparison (V): slower on operations (0.73–0.93 fixed). Map vs lookup rewrite: map faster on creation on 9 of 16, up to 1.49×. Multiplication run follows.
+>
+> **Results:** [results.md](11-matrix/test/results-m1-add/results.md) · [verdicts.csv](11-matrix/test/results-m1-add/verdicts.csv)
 
 # Erdos
 

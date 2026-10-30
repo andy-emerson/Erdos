@@ -1,7 +1,7 @@
-> **Status** (Oct 30, 2026, 17:52 CDT)
+> **Status** (Oct 30, 2026, 18:40 CDT)
 >
 > - **Paper:** v0.6 done (chapters 1–4). Waiting for your direction.
-> - **Test suite:** finishing the optimized Hash-V-pack build (decisions made); then review and a timed round.
+> - **Test suite:** stopped: the new workload (uniform denominators) overflows every product in mul, sop and pos. Waiting for your decision.
 >
 > **Results:** latest completed round: [m3](11-matrix/test/results-m3-summary.md)
 

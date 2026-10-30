@@ -698,9 +698,10 @@ class Runner:
         p_large = walls.get(C.PILOT_P_LARGE, longest)
         n_large = sum(1 for j in self.jobs if j >= 13)
         n_rest = len(self.jobs) - n_large
-        proj = K.pilot_projection(self.elapsed(), p_small, p_large, n_large, n_rest)
+        elapsed = self.elapsed()
+        proj = K.pilot_projection(elapsed, p_small, p_large, n_large, n_rest)
         self.state["pilot"] = {"jobs": jobs, "walls_s": {str(j): w for j, w in walls.items()}, "P_6_s": p_small,
-                               "P_13_s": p_large, "N_128": n_large, "N_rest": n_rest, "elapsed_s": self.elapsed(),
+                               "P_13_s": p_large, "N_128": n_large, "N_rest": n_rest, "elapsed_s": elapsed,
                                "projected_s": proj, "limit_s": C.PILOT_LIMIT_S, "host_rates": rates,
                                "host_rates_measured": measured,
                                "discarded": "the pilot's results are discarded (rule-m1, Run plan step 3)"}

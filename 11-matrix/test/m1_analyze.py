@@ -288,9 +288,12 @@ def tau_time(d, job, row):
 # ------------------------------------------------------------------------------------------------- report
 def report(outdir):
     outdir = Path(outdir)
+    bad = C.forbidden(outdir)
+    if bad:
+        raise SystemExit(f"no report is written there: {bad}")
     st = json.loads((outdir / "state.json").read_text())
     op = st.get("op")
-    bad = C.forbidden(outdir, op)
+    bad = C.forbidden(outdir, op)                      # the multiplication run's report: not in the addition run's folder
     if bad:
         raise SystemExit(f"no report is written there: {bad}")
     d = Data(st)

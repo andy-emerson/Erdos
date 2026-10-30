@@ -114,7 +114,21 @@ static void temp_case(const tcase *t) {
     free(want);
 }
 
+/* each of the four cross tests (b = d, a = c, a = d, c = b) matches in some case of the operation and fails in
+ * another, so that one_case's exact counts check each test both ways, by V and by M (spec §10, "Tests") */
+static void cross_coverage(const tcase *t, size_t n) {
+    int yes[4] = {0, 0, 0, 0}, no[4] = {0, 0, 0, 0};
+    for (size_t i = 0; i < n; i++) {
+        sk_int a = t[i].xm < 0 ? -t[i].xm : t[i].xm, c = t[i].ym < 0 ? -t[i].ym : t[i].ym;
+        int q[4] = {t[i].xd == t[i].yd, a == c, a == t[i].yd, c == t[i].xd};
+        for (int k = 0; k < 4; k++) q[k] ? yes[k]++ : no[k]++;
+    }
+    for (int k = 0; k < 4; k++) CHECK(yes[k] > 0 && no[k] > 0);
+}
+
 static void test_cases(void) {
+    cross_coverage(ADD_CASES, sizeof ADD_CASES / sizeof *ADD_CASES);
+    cross_coverage(MUL_CASES, sizeof MUL_CASES / sizeof *MUL_CASES);
     for (size_t i = 0; i < sizeof ADD_CASES / sizeof *ADD_CASES; i++) one_case(&ADD_CASES[i], 0);
     for (size_t i = 0; i < sizeof MUL_CASES / sizeof *MUL_CASES; i++) one_case(&MUL_CASES[i], 1);
     for (size_t i = 0; i < sizeof ADD_CASES / sizeof *ADD_CASES; i++) temp_case(&ADD_CASES[i]);

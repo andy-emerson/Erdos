@@ -62,7 +62,7 @@ Nothing in `../10-interning/` is changed.
   checked), in each operand that holds `q`, in the live lists of `s` and `p`, and in the gcd list's entry, which keeps
   `h`'s exponent at each new piece for forming the result's list. A stored sum makes no check and no split (§16.8,
   "Leftovers in stored results").
-- **M3-D9. The scratch of §16.3.** (t): each temporary's list, 15 entries (one spare slot); `s`, `p`, and the sum's
+- **M3-D9. The scratch of §16.3.** Also, used only inside a split (at most once on the grid; disclosed after the build review, Oct 30, 2026): a list copy in `l_split` (`mh3.c:1195`), a gcd-list copy in `leftovers` (`:1264`), and the local products `Pq`, `Pr`, `P` (`:1247`, `:1740`); local copies, not structures. (t): each temporary's list, 15 entries (one spare slot); `s`, `p`, and the sum's
   new list, formed and then copied to `s` (it is the result temporary's (t)). The merge's gcd list: each common
   factor's smaller exponent, whether the exponents are equal, and `h`'s part at it; multiplication's general case has
   two merges, so two such lists at once. Refine's working set `S` (32 entries), with the pieces of `q` and of `r`
@@ -159,14 +159,25 @@ Nothing in `../10-interning/` is changed.
   slip, DECISIONS-m2 M2-D1).
 - v0.3 §16.3: "Refine's working set S ... at most 32 entries" holds for the final base; while the gcd-only refinement
   runs, the list can in principle hold more (it is bounded by about log2 of the product). `mh3.c` stops with an error
-  past 32; no job of the grid, the unit tests or the differential test reaches it.
+  past 32; no job of the grid, the unit tests or the differential test reaches it. Pass 1 cannot reach it (its set's
+  product stays below 2^63, so at most about 19 entries); in reconciliation or leftover splits the bound is about 33,
+  so the stop is reachable only in theory, and the gates (step 4) run the same deterministic jobs before any timed step.
 - v0.3 §16.6 item 1: "at most nu_q(g) divisions, then one failed test": when all nu divisions succeed no failed test
   follows (the loop is "divide while divisible, up to nu times", §16.5 case 8). The rows and the model do the latter.
 - v0.3 §16.8, "Inside a step, a leftover": the split's second number is not named (M3-D8).
 - v0.3 §16.7: the pseudocode leaves the other `D` stale after a split within a pass (M3-D7); correct by the repeat.
-- On every job of the grid (all 45, by the model, checked by the full-size gates), no reconciliation split and no
-  leftover split occurs: every input's base already
+- On the grid (all 45 jobs, by the model, checked by the full-size gates), leftover splits never occur, and a
+  reconciliation split occurs once: sop job 4 (n = 16, rho = 64), step Q = C·D, with one (f) rebuild of 15 entries
+  (corrected after the build review, Oct 30, 2026; the gates of sop jobs 1 and 4 pass). Otherwise every input's base already
   holds 2, 3 and 5 as separate pieces, because some numerator of each input is divisible by one of them alone (|D| = 3
   on both sides). Those paths are exercised by the unit tests, the differential test (2,796 reconciliation splits and
   106 leftover splits over 3,000 random jobs) and the splitting examples of the harness test, each checked against the
   model.
+
+
+## Limitation recorded after the build review (Oct 30, 2026)
+
+The coprime base's split, rebuild and leftover paths are needed for correctness on other inputs but are almost never
+taken on this grid (one reconciliation split and one 15-entry rebuild across all 45 jobs, no leftover split), because
+the {2,3,5}-smooth denominators arrive as separate pieces. Their cost is effectively unmeasured by this round; the
+reconciliation scan itself runs and is timed on every step.

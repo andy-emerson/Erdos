@@ -1,19 +1,21 @@
-"""Checks the Python library of paper/v0.5.md, Appendix A.
+"""Checks the Python library of paper/v0.6.md, Appendix A.
 
 The code is read from the appendix's code block itself, so what is tested is exactly what the paper shows: if the two
 drift apart, this fails. Each function must also be the mechanical translation of its final pseudocode in sections 1-2,
 line for line (the appendix's own substitutions: `·` is `*`, `/` is `//`, `b′` is `b_prime`, and so on). Every function is checked against Python's fractions.Fraction. Branch coverage of every `if`
-in the appendix is recorded and reported, and every outcome must be reached. The worked computation of section 2.9 is
+in the appendix is recorded and reported, and every outcome must be reached. The worked computation of section 2.12 is
 reproduced call for call, with its intermediate values and the branches it takes. Finally the library is compared,
 untimed, with the textbook control of 10-interning on round 2's small (toy) workloads (control.py).
 
     python3 paper/verify/verify.py                  everything
     python3 paper/verify/verify.py --no-control     without the comparison with the control (needs no compiler)
+    python3 paper/verify/verify.py --paper paper/v0.5.md    the previous draft, v0.5
 """
 import argparse
 import ast
 import math
 import random
+import re
 import sys
 from collections import Counter
 from fractions import Fraction
@@ -22,9 +24,9 @@ from pathlib import Path
 sys.dont_write_bytecode = True    # no __pycache__ beside the paper (control.py is imported)
 
 HERE = Path(__file__).resolve().parent
-PAPER = HERE.parent / "v0.5.md"
+PAPER = HERE.parent / "v0.6.md"
 HEADING = "## Appendix A. The library in Python"
-FILENAME = "<v0.5.md, Appendix A>"
+FILENAME = "<v0.6.md, Appendix A>"
 FUNCTIONS = ["rational", "numerator", "denominator", "mod", "gcd", "reduce", "add", "subtract", "multiply", "divide"]
 OPERATIONS = ("add", "subtract", "multiply", "divide")
 FAILURES = []
@@ -73,7 +75,7 @@ def load(path):
 # The appendix's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
 # words, "/" before nothing else makes "//".
 NAMES = {"′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
-# rational, numerator and denominator (section 1.2) are defined in prose, not in pseudocode: their translation is fixed
+# rational, numerator and denominator (section 2.1) are defined in prose, not in pseudocode: their translation is fixed
 PROSE = {"rational": "def rational(p, q):\n    return (p, q)\n",
          "numerator": "def numerator(x):\n    return x[0]\n",
          "denominator": "def denominator(x):\n    return x[1]\n"}
@@ -156,7 +158,7 @@ def check_literal(path, code, tree):
     for fn in tree.body:
         mine = ast.get_source_segment(code, fn) + "\n"
         if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 1.2 (prose)"
+            want, where = PROSE[fn.name], "section 2.1 (prose)"
         elif fn.name in pc:
             want, where = translate(pc[fn.name]), f"{len(pc[fn.name])} lines of pseudocode"
         else:
@@ -396,7 +398,7 @@ def check_functions(ns, tr):
         check(numerator(x) == p and denominator(x) == q, f"rational({p}, {q}) does not keep the pair")
         counts["rational, numerator, denominator"] += 1
 
-    # mod: the remainder of section 2.3, for u >= 0 and v > 0
+    # mod: the remainder of section 1.3, for u >= 0 and v > 0
     mod = ns["mod"]
     pairs = [(u, v) for u in range(0, 61) for v in range(1, 31)]
     pairs += [(abs(random_int(rng)), abs(random_int(rng)) or 1) for _ in range(3000)]
@@ -449,16 +451,16 @@ def check_functions(ns, tr):
             check(False, f"divide({x}, 0/1) returned {r} instead of raising")
         except ZeroDivisionError:
             counts["divide by zero"] += 1
-    check(tr.reduce_in_ops == 0, f"an operation called reduce {tr.reduce_in_ops} times (section 2.9: none does)")
+    check(tr.reduce_in_ops == 0, f"an operation called reduce {tr.reduce_in_ops} times (section 2.12: none does)")
 
     print("Checked against fractions.Fraction (results stored: lowest terms, positive denominator):")
     for k in ["rational, numerator, denominator"] + FUNCTIONS[3:] + ["divide by zero"]:
         print(f"  {k:34s} {counts[k]:8d} calls")
 
 
-# ------------------------------------------------------------------------------------------------- section 2.9's trace
+# ------------------------------------------------------------------------------------------------- section 2.12's trace
 def check_trace(ns, tr):
-    """The worked computation of section 2.9: z = reduce(rational(-44, 30)); r = subtract(x, y); w = divide(r, z),
+    """The worked computation of section 2.12: z = reduce(rational(-44, 30)); r = subtract(x, y); w = divide(r, z),
     with x = 5/6 and y = 1/10. Every call of reduce, gcd and the operations, in order, with its arguments and result;
     the branches each takes; and its intermediate values."""
     rational = ns["rational"]
@@ -486,7 +488,7 @@ def check_trace(ns, tr):
         (2, G, (11, 22), 11), (3, G, (22, 11), 11), (4, G, (11, 0), 11),
     ]
     got_calls = [(e["depth"], e["name"], e["args"], e["result"]) for e in log]
-    ok = check(got_calls == expected_calls, "section 2.9: the calls differ")
+    ok = check(got_calls == expected_calls, "section 2.12: the calls differ")
     if not ok:
         for a, b in zip(got_calls + [None] * 40, expected_calls + [None] * 40):
             if a != b:
@@ -494,7 +496,7 @@ def check_trace(ns, tr):
                 break
     n = Counter(e["name"] for e in log)
     check(all(n[k] == 1 for k in ("reduce", "subtract", "add", "divide", "multiply")),
-          f"section 2.9: reduce and each operation must run exactly once, ran {dict(n)}")
+          f"section 2.12: reduce and each operation must run exactly once, ran {dict(n)}")
 
     no = False
     expected_branches = {
@@ -522,22 +524,22 @@ def check_trace(ns, tr):
             continue
         want_br, want_vals = expected_branches[e["name"]]
         got_br = tr.outcomes(e["lines"])
-        check(got_br == want_br, f"section 2.9, {e['name']}: branches {got_br}, expected {want_br}")
+        check(got_br == want_br, f"section 2.12, {e['name']}: branches {got_br}, expected {want_br}")
         vals = {k: e["locals"].get(k) for k in want_vals}
-        check(vals == want_vals, f"section 2.9, {e['name']}: values {vals}, expected {want_vals}")
+        check(vals == want_vals, f"section 2.12, {e['name']}: values {vals}, expected {want_vals}")
         taken = next((c for c, t in got_br if t), None)
         print(f"  {e['name']:9s} {e['args']} -> {e['result']};  {len(got_br)} checks"
               f"{', taken: if ' + taken if taken else ', none taken'};  "
               + ", ".join(f"{k} = {v}" for k, v in vals.items()))
-    check(z == (-22, 15) and r == (11, 15) and w == (-1, 2), f"section 2.9: z, r, w = {z}, {r}, {w}")
-    check(F(w) == (Fraction(5, 6) - Fraction(1, 10)) / Fraction(-44, 30), "section 2.9: w has the wrong value")
+    check(z == (-22, 15) and r == (11, 15) and w == (-1, 2), f"section 2.12: z, r, w = {z}, {r}, {w}")
+    check(F(w) == (Fraction(5, 6) - Fraction(1, 10)) / Fraction(-44, 30), "section 2.12: w has the wrong value")
 
 
 # ------------------------------------------------------------------------------------- special cases ordered by cost
-# Section 1.6: special cases are ordered by the cost of their result, cheapest first; where two results cost the same,
+# Section 2.5: special cases are ordered by the cost of their result, cheapest first; where two results cost the same,
 # the cheaper test goes first. Each special case is a top-level `if` on a, b, c and d only; the harness knows each
-# one's cost, and the paper's code gives the order. The cost of a result is counted in multiplications in section 1
-# and in gcds in section 2; a test costs 1 against constants and 2 when it compares the operands.
+# one's cost, and the paper's code gives the order. The cost of a result is counted in multiplications in the naive
+# arithmetic (sections 2.3-2.5) and in gcds in lowest terms (sections 2.9-2.11); a test costs 1 against constants and 2 when it compares the operands.
 S1 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (1, 1), "d == 1": (1, 1),
                "d == b": (0, 2), "c == a": (2, 2), "c == -a": (2, 2)}, lambda a, b, c, d: 3),
       "multiply": ({"a == 0": (0, 1), "c == 0": (0, 1), "a == 1 and b == 1": (0, 1), "c == 1 and d == 1": (0, 1),
@@ -546,7 +548,7 @@ S1 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), 
                     "(a == d and c == -b) or (a == -d and c == b)": (0, 2),
                     "c == b": (0, 2), "a == d": (0, 2), "c == -b": (0, 2), "a == -d": (0, 2),
                     "b == 1": (1, 1), "d == 1": (1, 1)}, lambda a, b, c, d: 2)}
-_g2 = lambda a, b, c, d: 1 if math.gcd(b, d) == 1 else 2     # section 2.6: the second gcd is skipped when g = 1
+_g2 = lambda a, b, c, d: 1 if math.gcd(b, d) == 1 else 2     # section 2.9: the second gcd is skipped when g = 1
 S2 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (0, 1), "d == 1": (0, 1),
                "c == -a and d == b": (0, 2), "d == a or d == -a or b == c or b == -c": (0, 2), "d == b": (1, 2),
                "c == a": (_g2, 2), "c == -a": (_g2, 2)}, _g2),
@@ -569,16 +571,16 @@ def check_order(path):
     """Exhaustively, for |p|, q <= 15: the case each input reaches gives a result no dearer than any other case that
     holds for it, and among the cases whose results cost the same it has the cheapest test."""
     text = path.read_text(encoding="utf-8")
-    sec1 = parse_pseudocode(text.split("\n## 2. ")[0])
+    sec1 = parse_pseudocode(re.split(r"\n### \d+\.\d+ Lowest terms\n", text)[0])   # the naive arithmetic, before lowest terms
     sec2 = pseudocode(path)
-    vals1 = [(p, q) for q in range(1, 16) for p in range(-15, 16)]           # section 1: any positive denominator
-    vals2 = [v for v in vals1 if math.gcd(*v) == 1]                         # section 2: reduced
-    print("\nSpecial cases ordered by the cost of their result (section 1.6), every pair with |p|, q <= 15:")
-    for sec, pc, table, vals in (("1", sec1, S1, vals1), ("2", sec2, S2, vals2)):
+    vals1 = [(p, q) for q in range(1, 16) for p in range(-15, 16)]           # naive: any positive denominator
+    vals2 = [v for v in vals1 if math.gcd(*v) == 1]                         # lowest terms: reduced
+    print("\nSpecial cases ordered by the cost of their result (section 2.5), every pair with |p|, q <= 15:")
+    for sec, pc, table, vals in (("naive", sec1, S1, vals1), ("reduced", sec2, S2, vals2)):
         for name, (costs, general) in table.items():
             src = translate(pc[name])
             conds = special_cases(ast.parse(src).body[0], src)
-            if not check(sorted(conds) == sorted(costs), f"section {sec} {name}: special cases {conds}"):
+            if not check(sorted(conds) == sorted(costs), f"{sec} {name}: special cases {conds}"):
                 continue
             compiled = [(t, compile(t, "<cond>", "eval")) for t in conds]
             n = bad = 0
@@ -598,8 +600,8 @@ def check_order(path):
                     tie = min(costs[t][1] for t in held if cost(t) == cost(r))
                     if cost(r) > best or costs[r][1] > tie:
                         bad += 1
-                        check(False, f"section {sec} {name}({a}/{b}, {c}/{d}) reaches `{r}`, but {held} hold")
-            print(f"  section {sec} {name:9s} {len(conds):2d} special cases, {n:7d} pairs, {bad} out of order")
+                        check(False, f"{sec} {name}({a}/{b}, {c}/{d}) reaches `{r}`, but {held} hold")
+            print(f"  {sec:7s} {name:9s} {len(conds):2d} special cases, {n:7d} pairs, {bad} out of order")
 
 
 def main():

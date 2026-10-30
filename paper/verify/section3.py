@@ -1,11 +1,11 @@
-"""Checks Appendix B of paper/v0.5.md, the section 3 library in Python, as verify.py checks Appendix A.
+"""Checks Appendix B of paper/v0.6.md, the sections 3 and 4 library in Python, as verify.py checks Appendix A.
 
 Appendix B's one ```python block is read from the paper and run on top of Appendix A's functions, which it uses and does
-not repeat. Each function must be the line-for-line translation of its pseudocode in sections 3.1 and 3.2 (Appendix
+not repeat. Each function must be the line-for-line translation of its pseudocode in sections 3.1 and 4.1 (Appendix
 A's substitutions, with ERROR raising ValueError); every function is checked against fractions.Fraction, including
 signs, zero, values that cannot join, empty columns, sums that reduce to zero and raw entries; every `if` outcome (and
-any `or` term) of Appendix B must be reached; and every formula and example of section 3 is reproduced, with the gcd and reduce calls it
-claims. `join` and `take` are defined twice in the pseudocode, for a column (3.1) and for a row (3.2); in Appendix B each is one
+any `or` term) of Appendix B must be reached; and every formula and example of sections 3 and 4 is reproduced, with the gcd and reduce calls it
+claims. `join` and `take` are defined twice in the pseudocode, for a column (3.1) and for a row (4.1); in Appendix B each is one
 function that runs the column definition under `if isinstance(g, Column):` and the row definition after it.
 """
 import ast
@@ -16,8 +16,9 @@ import sys
 from collections import Counter
 from fractions import Fraction
 
-HEADING = "## Appendix B. The section 3 library in Python"
-FILENAME = "<v0.5.md, Appendix B>"
+HEADINGS = ("## Appendix B. The sections 3 and 4 library in Python",   # v0.6
+            "## Appendix B. The section 3 library in Python")          # v0.5
+FILENAME = "<v0.6.md, Appendix B>"
 FUNCTIONS = ["prepend", "first", "rest", "shared", "entries",
              "column", "row", "join", "take", "tally", "sum_", "product"]
 HEAD = ["from collections import namedtuple", "empty = None",
@@ -29,14 +30,14 @@ PROSE = {"prepend": "def prepend(u, L):\n    return (u, L)\n",
          "shared": "def shared(g):\n    return g[0]\n",
          "entries": "def entries(g):\n    return g[1]\n"}
 PYNAME = {"sum": "sum_"}           # `sum` is a Python built-in
-BOTH = ("join", "take")            # defined for a column (3.1) and for a row (3.2), dispatched in Appendix B
+BOTH = ("join", "take")            # defined for a column (3.1) and for a row (4.1), dispatched in Appendix B
 
 
 def extract(path):
     lines = path.read_text(encoding="utf-8").split("\n")
-    starts = [i for i, l in enumerate(lines) if l.strip() == HEADING]
+    starts = [i for i, l in enumerate(lines) if l.strip() in HEADINGS]
     if len(starts) != 1:
-        sys.exit(f"{path.name}: expected one heading {HEADING!r}, found {len(starts)}")
+        sys.exit(f"{path.name}: expected one heading of {HEADINGS!r}, found {len(starts)}")
     end = next((i for i in range(starts[0] + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
     blocks, i = [], starts[0] + 1
     while i < end:
@@ -128,9 +129,10 @@ class Tracer:
 
 
 def section_pseudocode(path, V):
-    """{name: lines} of the pseudocode of section 3.1, and of section 3.2, read separately (join and take are in both)."""
-    text = path.read_text(encoding="utf-8").split("\n## Appendix A")[0].split("\n## 3. ")[1]
-    s31, s32 = text.split("\n### 3.2 ")
+    """{name: lines} of the pseudocode of shared denominators (section 3.1), and of shared numerators (section 4.1; 3.2 in
+    v0.5), read separately (join and take are in both)."""
+    text = path.read_text(encoding="utf-8").split("\n## Appendix A")[0]
+    _, s31, s32 = re.split(r"\n### \d+\.\d+ Shared (?:denominators|numerators)\n", text)
     return V.parse_pseudocode(s31), V.parse_pseudocode(s32)
 
 
@@ -147,7 +149,7 @@ def wanted(fn, pc31, pc32, V):
         lines = [f"def {fn}(g, {params}", "    if isinstance(g, Column):"]
         lines += ["    " + l for l in body(pc31[fn], V, "c", "Column")]
         lines += body(pc32[fn], V, "r", "Row")
-        return "\n".join(lines) + "\n", f"{len(pc31[fn])} + {len(pc32[fn])} lines of pseudocode (3.1, 3.2)"
+        return "\n".join(lines) + "\n", f"{len(pc31[fn])} + {len(pc32[fn])} lines of pseudocode (3.1, 4.1)"
     src = {PYNAME.get(k, k): (v, "Column") for k, v in pc31.items()}
     src.update({PYNAME.get(k, k): (v, "Row") for k, v in pc32.items()})
     if fn not in src:
@@ -164,9 +166,9 @@ def run(path, ns_a, a_filename, V, check):
     print(f"\nAppendix B of {path.name}: {len(code.splitlines())} lines of Python from line {first_line} of the "
           f"paper, defining empty, {', '.join(FUNCTIONS)}, on top of Appendix A\n")
 
-    # ---------------------------------------------------------------------------- line for line against section 3
+    # ---------------------------------------------------------------------------- line for line against sections 3 and 4
     pc31, pc32 = section_pseudocode(path, V)
-    print("Line for line against the pseudocode of section 3:")
+    print("Line for line against the pseudocode of sections 3 and 4:")
     for fn in Funcs(tree).body:
         mine = ast.get_source_segment(code, fn) + "\n"
         if fn.name in PROSE:
@@ -289,7 +291,7 @@ def check_functions(ns, tr, V, check):
         check(ns["tally"](Lu) == sum(us), "tally")
         counts["tally"] += 1
 
-    # ------------------------------------------------------------------------------------------------ section 3.2
+    # ------------------------------------------------------------------------------------------------ section 4.1
     check(raises(ns["row"], 0), "row(0) did not stop with ERROR")
     counts["row (ERROR)"] += 1
     numerators = list(range(-12, 13)) + [V.random_int(rng) for _ in range(30)]
@@ -319,7 +321,7 @@ def check_functions(ns, tr, V, check):
                 want = Fraction(a, b) * Fraction(a, d)
                 check(is_stored(r) and F(r) == want and not n["gcd"] and not n["reduce"],
                       f"product({a}; {b}, {d}) = {r}, expected {want}")
-                check(r == ns["multiply"]((a, b), (a, d)), "product differs from section 2.7's multiply")
+                check(r == ns["multiply"]((a, b), (a, d)), "product differs from section 2.10's multiply")
                 # what stays: only in the row of 1, as the entry b·d; the row of -1 sends it to the row of 1
                 check((r[0] == a) == (a == 1), f"row of {a}: the product {r} stays/leaves wrongly")
                 if a in (1, -1):
@@ -347,7 +349,7 @@ def check_functions(ns, tr, V, check):
 
 
 def check_examples(ns, tr, check):
-    """Every formula and example of section 3, with the calls it claims."""
+    """Every formula and example of sections 3 and 4, with the calls it claims."""
     rational, reduce_, add = ns["rational"], ns["reduce"], ns["add"]
     Column = ns["Column"]
     # 3.1 storage and promise
@@ -387,14 +389,14 @@ def check_examples(ns, tr, check):
     check(4 + sum(gcds) == 10, "3.1 example: ten gcds")
     check(ns["sum_"](Column(100, ns["prepend"](45, ns["prepend"](-45, None)))) == (0, 1), "3.1: 45 and -45")
 
-    # 3.2
+    # 4.1
     g1, g3 = ns["row"](1), ns["row"](3)
-    check(ns["product"](g1, 6, 6) == (1, 36), "3.2: two sixes")
-    check(ns["product"](g3, 4, 5) == (9, 20), "3.2: 3/4 * 3/5")
-    check(raises(ns["join"], g3, (2, 5)), "3.2: 2/5 joined the row of 3")
+    check(ns["product"](g1, 6, 6) == (1, 36), "4.1: two sixes")
+    check(ns["product"](g3, 4, 5) == (9, 20), "4.1: 3/4 * 3/5")
+    check(raises(ns["join"], g3, (2, 5)), "4.1: 2/5 joined the row of 3")
     check(ns["divide"]((1, 2), (1, 4)) == (2, 1) and Fraction(1, 2) / Fraction(1, 4) == Fraction(4, 2),
-          "3.2: 1/2 / 1/4")
-    check(ns["product"](ns["row"](-1), 2, 3) == (1, 6), "3.2: row of -1")
+          "4.1: 1/2 / 1/4")
+    check(ns["product"](ns["row"](-1), 2, 3) == (1, 6), "4.1: row of -1")
     # scaling a denominator breaks lowest terms unless c = a (no scaling); c = -a fails only on the sign
     for a in [k for k in range(-24, 25) if k]:
         for c in [k for k in range(-24, 25) if k and a % k == 0]:
@@ -403,14 +405,14 @@ def check_examples(ns, tr, check):
                     continue
                 den = d * (a // c)
                 low = den > 0 and math.gcd(a, den) == 1
-                check(low == (c == a), f"3.2: scaling {c}/{d} to the numerator {a}")
-                check((den < 0) == (a // c < 0) and Fraction(a, den) == Fraction(c, d), "3.2: scaling")
+                check(low == (c == a), f"4.1: scaling {c}/{d} to the numerator {a}")
+                check((den < 0) == (a // c < 0) and Fraction(a, den) == Fraction(c, d), "4.1: scaling")
                 if c == -a:
-                    check(den == -d and math.gcd(a, den) == 1, f"3.2: {c}/{d} scaled to {a} fails only on the sign")
-    # the sum of two values of a row is section 2.6's equal-numerators case, with a gcd
+                    check(den == -d and math.gcd(a, den) == 1, f"4.1: {c}/{d} scaled to {a} fails only on the sign")
+    # the sum of two values of a row is section 2.9's equal-numerators case, with a gcd
     _, n = tr.count(add, (1, 6), (1, 10))
-    check(n["gcd"] >= 1, "3.2: 1/6 + 1/10 should need a gcd")
-    print("Section 3's examples: money and minutes, 1/2 as 50/100, 1/3 and 2/5 refused, the column of cents "
+    check(n["gcd"] >= 1, "4.1: 1/6 + 1/10 should need a gcd")
+    print("The examples of sections 3 and 4: money and minutes, 1/2 as 50/100, 1/3 and 2/5 refused, the column of cents "
           "(4 additions and 1 gcd against 10 gcds), 1/36, 9/20, 1/2 / 1/4 = 2, scaling refused")
 
 

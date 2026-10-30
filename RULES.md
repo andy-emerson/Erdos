@@ -26,6 +26,11 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 3. **Match the control.** An optimized model gives the same values as the control, value for value.
 4. **Timed runs alone.** Timed runs need a quiet machine, with all other work paused.
 
+## Reviews
+
+1. **A spec is reviewed against the algorithm design rules** above, before anything is built.
+2. **A build is reviewed against its spec**: it does what was specified, and only that.
+
 ## Prose
 
 1. **Standard terms.** Use the field's standard term; define the paper's own words where they are introduced.

@@ -1,0 +1,363 @@
+--- lib/src/tc3.c
++++ lib/src/tcm.c
+@@ -1,27 +1,29 @@
+-/* tc3.c: TC, the textbook control of round 3 (spec 10-interning v0.3 §9 as amended Oct 29, 2026, §17): round 2's
+- * tc.c (v0.2 §§8-11; kept unchanged as round 2's, and not built by round 3) with the integer cases of v0.3 §17.3
+- * added, checked by value (a denominator of 1).  Each rational a pair (m, d) of 64-bit values in lowest terms, d >= 1,
+- * zero as (0, 1), in one list.  No lookup, no cache, no record of earlier operations.  The prefix stays tc_ (tc.h).
++/* tcm.c: TC of the matrix round (spec 11-matrix v0.1 §4): ../../10-interning/lib/src/tc3.c (copied unchanged to
++ * tc3.c here, and hash-checked as this file's base) with its arithmetic function bodies unchanged and only the
++ * operand and result interface changed.  Each matrix is one array of r*c pairs (m, d) of 64-bit values in lowest
++ * terms, d >= 1, zero as (0, 1), row-major: structure (T-A), (T-B) or (T-C) of §3.  No lookup, no cache, no record of
++ * earlier operations.  The prefix is tcm_ (tcm.h).
+  *
+- * TC follows the pseudocode of v0.2 §10 and v0.3 §17.3 as the Q32 rows do, with value comparisons of magnitudes in
+- * place of handle comparisons (§9), the magnitudes at hand in place of Q32's reads, and a store that appends the pair.
+- * Each known-answer skip is marked [K-n]; the gcds, divisions, multiplications and additions are the Q32 rows', in the
+- * same order, call for call (v0.3 §12.1 item 3).  Every full-width operation goes through the 08 module
+- * (sk_internal.h), unchanged. */
+-#include "r3.h" /* first: round 3's cases (r3.h) */
+-#include "tc.h"
+-
+-#include "r2int.h"
+-
+-typedef struct tc_class T;
+-
+-typedef struct tpair {
+-    sk_int m, d;
+-} tpair;
+-
+-struct tc_class {
+-    tpair *P; /* the pairs */
+-    uint32_t N, cap;
++ * What changed from tc3.c, and nothing else (§4): the operations take two pairs instead of two handles (operand()
++ * forms the magnitudes and the sign from the pair, as before); store() writes the result where the caller names it
++ * (a cell of C, or a local pair) instead of appending it; tcm_enter's store writes the next cell of A or B in the
++ * order of entry (§5.7); begin() has no handle to check, so in the test build it asserts that each operand pair is
++ * valid (d >= 1, in lowest terms, m != -2^63), and the matrix loops' bounds hold by construction; the matrix loops
++ * themselves (tcm_madd, tcm_mmul, at the end), which set the operands' cell positions in the overflow context; the
++ * class is a matrix (its dimensions and its cells written so far), and the per-operation record of the counting
++ * builds (m1int.h).  Every full-width operation goes through the 08 module (sk_internal.h), unchanged. */
++#include "m1.h" /* first: round 3's cases (r3.h) */
++#include "tcm.h"
++
++#include "m1int.h"
++
++typedef struct tcm_class T;
++
++typedef tcm_pair tpair;
++
++struct tcm_class {
++    tpair *P; /* the cells: R x K pairs, row-major */
++    uint32_t N, R, K; /* cells written so far, in the order of entry; rows; columns */
+     sk_opctx ctx;
+     sk_overflow ovf;
+ #ifdef SK_COUNT
+@@ -54,9 +56,10 @@
+ 
+ /* ----------------------------------------------------------------------------------------- store (§10.5) */
+ 
+-/* Append n / e (lowest terms, e >= 1).  No zero test and no e = 1 (K-14); the hints of the pseudocode are Q32's. */
+-static sk_status store(T *c, sk_int n, sk_int e, int kase, sk_handle *out) {
+-    (void)kase;
++/* Write n / e (lowest terms, e >= 1) where the caller names: a cell of the matrix, or a local pair.  No zero test and
++ * no e = 1 (K-14); the hints of the pseudocode are Q32's. */
++static sk_status store(T *c, sk_int n, sk_int e, int kase, tpair *out) {
++    (void)kase, (void)c;
+     SETCELL(c, c->ctx.op, SK_STORE);
+     PF_TO(c, R2_PF_S);
+     KC(c, 14, ops, 1);
+@@ -65,19 +68,21 @@
+     if (n == 0 && e != 1) sk_die("K-14: a zero result without the denominator 1");
+ #endif
+     XC(c, zero_results, n == 0);
+-    sk_check_limit(c->N, "stored rationals");
+-    PF_GROW(c, c->N >= c->cap, SK_RESERVE(c->P, c->N, c->cap, 16));
+-    c->P[c->N].m = n;
+-    c->P[c->N].d = e;
+-    *out = c->N++;
++    out->m = n;
++    out->d = e;
+     PF_END(c, c->ctx.op, kase);
+     return SK_OK;
+ }
+ 
+ /* ----------------------------------------------------------------------------------------- create, entry */
+ 
+-T *tc_create(void) {
++/* A matrix of R x K cells, allocated from its dimensions (spec §3): R*K pairs. */
++T *tcm_create(uint32_t R, uint32_t K) {
++    if (R == 0 || K == 0 || (uint64_t)R * K > SK_LIMIT / 2) sk_die("tcm: bad dimensions");
+     T *c = sk_xcalloc(1, sizeof *c);
++    c->R = R;
++    c->K = K;
++    c->P = sk_xmalloc(sizeof(tpair) * (size_t)R * K);
+ #ifdef SK_COUNT
+     c->xcur = &x_sink;
+ #endif
+@@ -87,7 +92,7 @@
+     return c;
+ }
+ 
+-void tc_destroy(T *c) {
++void tcm_destroy(T *c) {
+     if (!c) return;
+     free(c->P);
+ #ifdef SK_PROFILE
+@@ -98,9 +103,12 @@
+ 
+ #define OVF(step) return sk_overflow_at(&c->ovf, &c->ctx, (step))
+ 
+-sk_status tc_enter(T *c, sk_int m, sk_int d, sk_handle *out) {
++/* Enter m / d as the next cell of the matrix, in the order of entry (row-major, spec §5.7). */
++sk_status tcm_enter(T *c, sk_int m, sk_int d) {
+     if (!sk_valid_input(m) || !sk_valid_input(d)) return SK_EINVAL;
+     if (d == 0) return SK_EDIVZERO;
++    if (c->N >= c->R * c->K) return SK_EINVAL; /* every cell is entered */
++    tpair *out = &c->P[c->N++];
+     c->ctx.op = SK_PH_ENTRY;
+     c->ctx.x = c->ctx.y = SK_NONE;
+     SETCELL(c, SK_PH_ENTRY, SK_CORE);
+@@ -128,16 +136,22 @@
+     bool neg;
+ } opnd;
+ 
+-static inline opnd operand(const T *c, sk_handle h) {
+-    tpair p = c->P[h];
++static inline opnd operand(const T *c, tpair p) {
++    (void)c;
+     return (opnd){p.m < 0 ? -p.m : p.m, p.d, p.m < 0};
+ }
+ 
+-static inline sk_status begin(T *c, sk_phase op, sk_handle x, sk_handle y) {
+-    if (x >= c->N || y >= c->N) return SK_EINVAL;
++/* No handle to check (spec §4): the matrix loops' bounds hold by construction, and they set the operands' cell
++ * positions in ctx.x and ctx.y (SK_NONE for a local pair).  In the test build, each operand pair is asserted valid. */
++static inline sk_status begin(T *c, sk_phase op, tpair x, tpair y) {
++#ifdef SK_AUDIT
++    if (x.m == SK_INT_MIN || x.d < 1 || sk_gcd_raw(x.m, x.d) != 1 || y.m == SK_INT_MIN || y.d < 1 ||
++        sk_gcd_raw(y.m, y.d) != 1)
++        sk_die("tcm: an operand pair is not valid (d >= 1, lowest terms, m != -2^63)");
++#else
++    (void)x, (void)y;
++#endif
+     c->ctx.op = op;
+-    c->ctx.x = x;
+-    c->ctx.y = y;
+     SETCELL(c, op, SK_CORE);
+     return SK_OK;
+ }
+@@ -166,7 +180,7 @@
+     return q;
+ }
+ 
+-static sk_status addsub(T *c, sk_phase op, sk_handle x, sk_handle y, sk_handle *out) {
++static sk_status addsub(T *c, sk_phase op, tpair x, tpair y, tpair *out) {
+     sk_status st = begin(c, op, x, y);
+     if (st) return st;
+     PF_BEGIN(c, R2_PF_F);
+@@ -296,10 +310,10 @@
+     return store(c, n, e, R2_ADD_GEN, out);
+ }
+ 
+-sk_status tc_add(T *c, sk_handle x, sk_handle y, sk_handle *out) { return addsub(c, SK_PH_ADD, x, y, out); }
+-sk_status tc_sub(T *c, sk_handle x, sk_handle y, sk_handle *out) { return addsub(c, SK_PH_SUB, x, y, out); }
+-
+-sk_status tc_mul(T *c, sk_handle x, sk_handle y, sk_handle *out) {
++sk_status tcm_add(T *c, tpair x, tpair y, tpair *out) { return addsub(c, SK_PH_ADD, x, y, out); }
++sk_status tcm_sub(T *c, tpair x, tpair y, tpair *out) { return addsub(c, SK_PH_SUB, x, y, out); }
++
++sk_status tcm_mul(T *c, tpair x, tpair y, tpair *out) {
+     sk_status st = begin(c, SK_PH_MUL, x, y);
+     if (st) return st;
+     PF_BEGIN(c, R2_PF_F);
+@@ -424,7 +438,7 @@
+     return store(c, SGN(c, s, n), e, R2_MUL_GEN, out);
+ }
+ 
+-sk_status tc_div(T *c, sk_handle x, sk_handle y, sk_handle *out) {
++sk_status tcm_div(T *c, tpair x, tpair y, tpair *out) {
+     sk_status st = begin(c, SK_PH_DIV, x, y);
+     if (st) return st;
+     PF_BEGIN(c, R2_PF_F);
+@@ -519,7 +533,7 @@
+ 
+ /* ----------------------------------------------------------------------------------------- read, reports */
+ 
+-sk_status tc_read(const T *c, sk_handle x, sk_int *m, sk_int *d) {
++sk_status tcm_read(const T *c, uint32_t x, sk_int *m, sk_int *d) {
+     if (x >= c->N) return SK_EINVAL;
+     PF_BEGIN(c, R2_PF_F);
+     tpair p = c->P[x];
+@@ -529,15 +543,17 @@
+     return SK_OK;
+ }
+ 
+-uint32_t tc_size(const T *c) { return c->N; }
+-
+-void tc_memory(const T *c, sk_memory *r) {
++uint32_t tcm_size(const T *c) { return c->N; }
++
++/* 16 bytes per cell, every cell counted (spec §9) */
++void tcm_memory(const T *c, sk_memory *r) {
+     memset(r, 0, sizeof *r);
+-    sk_memory_add(r, "pairs", (uint64_t)c->N * sizeof(tpair), (uint64_t)c->cap * sizeof(tpair));
+-    sk_memory_finish(r, c->N);
+-}
+-
+-sk_status tc_counters(const T *c, sk_counters *r, r2_xcounters *x) {
++    uint64_t b = (uint64_t)c->R * c->K * sizeof(tpair);
++    sk_memory_add(r, "pairs", b, b);
++    sk_memory_finish(r, (uint64_t)c->R * c->K);
++}
++
++sk_status tcm_counters(const T *c, sk_counters *r, r2_xcounters *x) {
+ #ifdef SK_COUNT
+     if (r) *r = c->cnt;
+     if (x) *x = c->xcnt;
+@@ -550,36 +566,9 @@
+ #endif
+ }
+ 
+-sk_status tc_overflow(const T *c, sk_overflow *r) {
++sk_status tcm_overflow(const T *c, sk_overflow *r) {
+     *r = c->ovf;
+     return c->ovf.count ? SK_OK : SK_EINVAL;
+-}
+-
+-sk_status tc_profile(const T *c, r2_profile *r) {
+-#ifdef SK_PROFILE
+-    *r = c->pf->rep;
+-    return SK_OK;
+-#else
+-    (void)c;
+-    memset(r, 0, sizeof *r);
+-    return SK_ENOTBUILT;
+-#endif
+-}
+-
+-void tc_prof_sample(T *c, int on) {
+-#ifdef SK_PROFILE
+-    c->pf->on = on;
+-#else
+-    (void)c, (void)on;
+-#endif
+-}
+-
+-void tc_prof_outer(T *c, uint64_t cycles) {
+-#ifdef SK_PROFILE
+-    c->pf->rep.outer[c->pf->jp][c->pf->kase] += cycles;
+-#else
+-    (void)c, (void)cycles;
+-#endif
+ }
+ 
+ /* ----------------------------------------------------------------------------------------- audits (§14.2) */
+@@ -597,7 +586,7 @@
+         else if (m == 0 && d != 1) fail = "pair: zero not stored as (0, 1)";
+     }
+     if (fail) {
+-        snprintf(c->msg, sizeof c->msg, "tc: %s (%s audit, pair %u)", fail, full ? "full" : "incremental", h - 1);
++        snprintf(c->msg, sizeof c->msg, "tcm: %s (%s audit, pair %u)", fail, full ? "full" : "incremental", h - 1);
+         if (why) *why = c->msg;
+         return SK_EAUDIT;
+     }
+@@ -607,7 +596,7 @@
+ }
+ #endif
+ 
+-sk_status tc_audit(T *c, const char **why) {
++sk_status tcm_audit(T *c, const char **why) {
+ #ifdef SK_AUDIT
+     return audit_run(c, 1, why);
+ #else
+@@ -617,7 +606,7 @@
+ #endif
+ }
+ 
+-sk_status tc_audit_changed(T *c, const char **why) {
++sk_status tcm_audit_changed(T *c, const char **why) {
+ #ifdef SK_AUDIT
+     return audit_run(c, 0, why);
+ #else
+@@ -629,7 +618,7 @@
+ 
+ /* ----------------------------------------------------------------------------------------- test build only */
+ 
+-sk_status tc_t_force_general(T *c, int on) {
++sk_status tcm_t_force_general(T *c, int on) {
+ #ifdef SK_AUDIT
+     c->force_general = on;
+     return SK_OK;
+@@ -639,7 +628,7 @@
+ #endif
+ }
+ 
+-sk_status tc_t_known_off(T *c, unsigned mask) {
++sk_status tcm_t_known_off(T *c, unsigned mask) {
+ #ifdef SK_AUDIT
+     c->koff = mask & R2_KOFF_ALL;
+     return SK_OK;
+@@ -649,7 +638,7 @@
+ #endif
+ }
+ 
+-sk_status tc_t_corrupt(T *c, sk_handle x, sk_int m, sk_int d) {
++sk_status tcm_t_corrupt(T *c, uint32_t x, sk_int m, sk_int d) {
+ #ifdef SK_AUDIT
+     if (x >= c->N) return SK_EINVAL;
+     c->P[x].m = m;
+@@ -660,3 +649,53 @@
+     return SK_ENOTBUILT;
+ #endif
+ }
++
++/* ----------------------------------------------------------------------------------------- the matrix operations (§6) */
++
++/* C = A + B, elementwise, in row order (spec §6.1): one add per cell, its result written to the cell of C at once.
++ * The arithmetic is charged to C's counters.  Every cell of A and B is entered first. */
++sk_status tcm_madd(T *a, T *b, T *c) {
++    uint32_t n = c->R * c->K;
++    if (a->R != c->R || a->K != c->K || b->R != c->R || b->K != c->K || a->N != n || b->N != n || c->N != 0)
++        return SK_EINVAL;
++    M1_SNAP(s0);
++    for (uint32_t i = 0; i < n; i++) {
++        c->ctx.x = i; /* the operands' cells, for the overflow report */
++        c->ctx.y = i;
++        M1_OP_BEGIN(c, SK_PH_ADD, s0);
++        sk_status st = addsub(c, SK_PH_ADD, a->P[i], b->P[i], &c->P[i]);
++        if (st) return st;
++        M1_OP_END(c, SK_PH_ADD, s0);
++        c->N = i + 1;
++    }
++    return SK_OK;
++}
++
++/* C = A B (spec §6.2): for each cell of C in row order, s = 0/1; for k = 1..n: p = A[i][k] B[k][j], s = s + p, on
++ * local pairs; then s is written to the cell.  Square matrices (§2). */
++sk_status tcm_mmul(T *a, T *b, T *c) {
++    uint32_t n = c->R;
++    if (c->K != n || a->R != n || a->K != n || b->R != n || b->K != n || a->N != n * n || b->N != n * n || c->N != 0)
++        return SK_EINVAL;
++    M1_SNAP(s0);
++    for (uint32_t i = 0; i < n; i++)
++        for (uint32_t j = 0; j < n; j++) {
++            tpair s = {0, 1}, p;
++            for (uint32_t k = 0; k < n; k++) {
++                c->ctx.x = i * n + k;
++                c->ctx.y = k * n + j;
++                M1_OP_BEGIN(c, SK_PH_MUL, s0);
++                sk_status st = tcm_mul(c, a->P[i * n + k], b->P[k * n + j], &p);
++                if (st) return st;
++                M1_OP_END(c, SK_PH_MUL, s0);
++                c->ctx.x = c->ctx.y = SK_NONE; /* two local pairs */
++                M1_OP_BEGIN(c, SK_PH_ADD, s0);
++                st = addsub(c, SK_PH_ADD, s, p, &s);
++                if (st) return st;
++                M1_OP_END(c, SK_PH_ADD, s0);
++            }
++            c->P[i * n + j] = s; /* store s as C[i][j]: write the pair */
++            c->N = i * n + j + 1;
++        }
++    return SK_OK;
++}

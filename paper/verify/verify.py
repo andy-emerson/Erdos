@@ -73,12 +73,10 @@ def load(path):
 # The appendix's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
 # words, "/" before nothing else makes "//".
 NAMES = {"′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
-# rational, numerator and denominator (section 1.2) and mod (section 2.3) are defined in prose, not in pseudocode:
-# their translation is fixed
+# rational, numerator and denominator (section 1.2) are defined in prose, not in pseudocode: their translation is fixed
 PROSE = {"rational": "def rational(p, q):\n    return (p, q)\n",
          "numerator": "def numerator(x):\n    return x[0]\n",
-         "denominator": "def denominator(x):\n    return x[1]\n",
-         "mod": "def mod(u, v):\n    return u % v\n"}
+         "denominator": "def denominator(x):\n    return x[1]\n"}
 
 
 def pseudocode(path):
@@ -158,7 +156,7 @@ def check_literal(path, code, tree):
     for fn in tree.body:
         mine = ast.get_source_segment(code, fn) + "\n"
         if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 2.3 (prose)" if fn.name == "mod" else "section 1.2 (prose)"
+            want, where = PROSE[fn.name], "section 1.2 (prose)"
         elif fn.name in pc:
             want, where = translate(pc[fn.name]), f"{len(pc[fn.name])} lines of pseudocode"
         else:
@@ -295,7 +293,7 @@ def coverage_report(br, tr, first_line):
             res[phase] = (t, f)
         t, f = res["all"]
         ot, of = res["ops"]
-        tag = "" if fn in ("rational", "numerator", "denominator", "mod") else (
+        tag = "" if fn in ("rational", "numerator", "denominator") else (
             "  [ops: both]" if ot and of else f"  [ops: {'true only' if ot else 'false only' if of else 'never'}]")
         print(f"  {fn:9s} line {at + ln:4d}  if {text:55s} true {t:7d}  false {f:7d}{tag}")
         if not t:

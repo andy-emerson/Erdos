@@ -61,7 +61,7 @@ def trial_counts(fac):
 
 
 def factor_primes(v):
-    return sorted(sympy.factorint(v).items()) if v >= 2 else []
+    return sorted((int(p), int(e)) for p, e in sympy.factorint(v).items()) if v >= 2 else []   # plain ints
 
 
 # ------------------------------------------------------------------------------------------------- coprime bases

@@ -1,12 +1,14 @@
-"""Checks Appendix B of paper/v0.6.md, the sections 3 and 4 library in Python, as verify.py checks Appendix A.
+"""Checks Appendix B of paper/v0.6.md, the chapter 3 library in Python (with the rows of 4.1), as verify.py checks Appendix A.
 
 Appendix B's one ```python block is read from the paper and run on top of Appendix A's functions, which it uses and does
-not repeat. Each function must be the line-for-line translation of its pseudocode in sections 3.1 and 4.1 (Appendix
-A's substitutions, with ERROR raising ValueError); every function is checked against fractions.Fraction, including
-signs, zero, values that cannot join, empty columns, sums that reduce to zero and raw entries; every `if` outcome (and
-any `or` term) of Appendix B must be reached; and every formula and example of sections 3 and 4 is reproduced, with the gcd and reduce calls it
-claims. `join` and `take` are defined twice in the pseudocode, for a column (3.1) and for a row (4.1); in Appendix B each is one
-function that runs the column definition under `if isinstance(g, Column):` and the row definition after it.
+not repeat. Each function must be the line-for-line translation of its pseudocode in chapter 3 (sections 3.1-3.9) and
+section 4.1 (Appendix A's substitutions, with ERROR raising ZeroDivisionError for a zero divisor, OverflowError for a
+scale above 18 and ValueError otherwise); every function is checked against fractions.Fraction, including signs, zero,
+values that cannot join, empty columns, sums that reduce to zero, raw entries, decimals at every scale, scale overflow and
+quotients that leave the decimals; every `if` outcome (and any `or` term) of Appendix B must be reached; and every
+formula and example of chapters 1 (the lcm), 3 and 4 is reproduced, with the gcd and reduce calls it claims. `join` and
+`take` are defined twice in the pseudocode, for a column (3.1) and for a row (4.1); in Appendix B each is one function
+that runs the column definition under `if isinstance(g, Column):` and the row definition after it.
 """
 import ast
 import math
@@ -16,19 +18,28 @@ import sys
 from collections import Counter
 from fractions import Fraction
 
-HEADINGS = ("## Appendix B. The sections 3 and 4 library in Python",   # v0.6
+HEADINGS = ("## Appendix B. The chapter 3 library in Python",          # v0.6, build 4
+            "## Appendix B. The sections 3 and 4 library in Python",   # v0.6, builds 2-3
             "## Appendix B. The section 3 library in Python")          # v0.5
 FILENAME = "<v0.6.md, Appendix B>"
 FUNCTIONS = ["prepend", "first", "rest", "shared", "entries",
-             "column", "row", "join", "take", "tally", "sum_", "product"]
+             "column", "join", "take", "tally", "sum_",
+             "decimal", "scale", "power", "add_decimals", "subtract_decimals", "multiply_decimals",
+             "to_rational", "strip", "places", "to_decimal", "divide_decimals",
+             "row", "product"]
 HEAD = ["from collections import namedtuple", "empty = None",
-        "Column = namedtuple('Column', 'shared entries')", "Row = namedtuple('Row', 'shared entries')"]
+        "Column = namedtuple('Column', 'shared entries')", "Row = namedtuple('Row', 'shared entries')",
+        "Decimal = namedtuple('Decimal', 'numerator scale')"]
+LIMIT = 18                         # the largest scale, for 64-bit numerators (section 3.4)
 # the lists, columns and rows of section 3.1, defined in prose: their translation is fixed (Appendix B's own text)
 PROSE = {"prepend": "def prepend(u, L):\n    return (u, L)\n",
          "first": "def first(L):\n    return L[0]\n",
          "rest": "def rest(L):\n    return L[1]\n",
          "shared": "def shared(g):\n    return g[0]\n",
-         "entries": "def entries(g):\n    return g[1]\n"}
+         "entries": "def entries(g):\n    return g[1]\n",
+         # the decimals of section 3.4, defined in prose
+         "decimal": "def decimal(u, k):\n    return Decimal(u, k)\n",
+         "scale": "def scale(x):\n    return x[1]\n"}
 PYNAME = {"sum": "sum_"}           # `sum` is a Python built-in
 BOTH = ("join", "take")            # defined for a column (3.1) and for a row (4.1), dispatched in Appendix B
 
@@ -136,9 +147,20 @@ def section_pseudocode(path, V):
     return V.parse_pseudocode(s31), V.parse_pseudocode(s32)
 
 
+def errors(py):
+    """ERROR, which V.translate writes as ZeroDivisionError: kept for a zero divisor, OverflowError for a scale above
+    the limit, ValueError otherwise (Appendix B's text)."""
+    out = []
+    for l in py.splitlines():
+        if "raise ZeroDivisionError" in l and "numerator(y) == 0" not in l:
+            l = l.replace("ZeroDivisionError", "OverflowError" if f"> {LIMIT}" in l else "ValueError")
+        out.append(l)
+    return "\n".join(out) + "\n"
+
+
 def body(lines, V, name, kind):
     """The translated body of one definition, with its column or row renamed g and `pair` written as the kind."""
-    py = V.translate(lines).replace("raise ZeroDivisionError", "raise ValueError").replace("pair(", kind + "(")
+    py = errors(V.translate(lines)).replace("pair(", kind + "(")
     out = py.splitlines()[1:]
     return [re.sub(r"\b" + name + r"\b", "g", l) for l in out]
 
@@ -155,7 +177,7 @@ def wanted(fn, pc31, pc32, V):
     if fn not in src:
         return None, None
     lines, kind = src[fn]
-    py = V.translate(lines).replace("raise ZeroDivisionError", "raise ValueError").replace("pair(", kind + "(")
+    py = errors(V.translate(lines)).replace("pair(", kind + "(")
     for k, v in PYNAME.items():
         py = re.sub(r"\bdef " + k + r"\(", "def " + v + "(", py)
     return py, f"{len(lines)} lines of pseudocode"
@@ -168,11 +190,11 @@ def run(path, ns_a, a_filename, V, check):
 
     # ---------------------------------------------------------------------------- line for line against sections 3 and 4
     pc31, pc32 = section_pseudocode(path, V)
-    print("Line for line against the pseudocode of sections 3 and 4:")
+    print("Line for line against the pseudocode of chapter 3 and section 4.1:")
     for fn in Funcs(tree).body:
         mine = ast.get_source_segment(code, fn) + "\n"
         if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 3.1 (prose)"
+            want, where = PROSE[fn.name], "section 3.4 (prose)" if fn.name in ("decimal", "scale") else "section 3.1 (prose)"
         else:
             want, where = wanted(fn.name, pc31, pc32, V)
             if want is None:
@@ -191,7 +213,9 @@ def run(path, ns_a, a_filename, V, check):
     br = V.Branches(code, Funcs(tree))
     with Tracer(br, a_filename) as tr:
         check_functions(ns, tr, V, check)
+        check_decimals(ns, tr, V, check)
         check_examples(ns, tr, check)
+        check_decimal_examples(ns, tr, check)
     coverage(br, tr, first_line, check)
 
 
@@ -414,6 +438,258 @@ def check_examples(ns, tr, check):
     check(n["gcd"] >= 1, "4.1: 1/6 + 1/10 should need a gcd")
     print("The examples of sections 3 and 4: money and minutes, 1/2 as 50/100, 1/3 and 2/5 refused, the column of cents "
           "(4 additions and 1 gcd against 10 gcds), 1/36, 9/20, 1/2 / 1/4 = 2, scaling refused")
+
+
+def raises_as(exc, f, *args):
+    try:
+        f(*args)
+    except exc:
+        return True
+    return False
+
+
+def two_five(q):
+    """(q has no prime factors but 2 and 5, the smallest k with q dividing 10^k), by plain division."""
+    i = j = 0
+    while q % 2 == 0:
+        q, i = q // 2, i + 1
+    while q % 5 == 0:
+        q, j = q // 5, j + 1
+    return q == 1, max(i, j)
+
+
+def check_decimals(ns, tr, V, check):
+    """Sections 3.4-3.8: every decimal function against fractions.Fraction."""
+    Decimal, dec, num, scale = ns["Decimal"], ns["decimal"], ns["numerator"], ns["scale"]
+    rng = random.Random(20261031)
+    counts = Counter()
+
+    def val(x):
+        return Fraction(x[0], 10 ** x[1])
+
+    def is_dec(r, k=None):
+        return (isinstance(r, Decimal) and type(r[0]) is int and type(r[1]) is int and 0 <= r[1] <= LIMIT
+                and (k is None or r[1] == k))
+
+    def is_rat(r):                     # a stored value of section 2, not a decimal
+        return not isinstance(r, Decimal) and V.is_stored(r)
+
+    # decimal, scale and numerator: pairing only
+    for u, k in [(75, 2), (-3, 0), (0, LIMIT), (1 << 70, 5)]:
+        x = dec(u, k)
+        check(isinstance(x, Decimal) and num(x) == u and scale(x) == k, f"decimal({u}, {k}) = {x}")
+        counts["decimal, scale, numerator"] += 1
+    for k in range(0, 60):
+        check(ns["power"](k) == 10 ** k, f"power({k})")
+        counts["power"] += 1
+
+    # strip and places
+    for q in range(1, 3001):
+        for f in range(2, 13):
+            w = ns["strip"](q, f)
+            e = q // w
+            ok = q % w == 0 and w % f != 0
+            while ok and e % f == 0:
+                e //= f
+            check(ok and e == 1, f"strip({q}, {f}) = {w}")
+            counts["strip"] += 1
+    qs = list(range(1, 2001)) + [2 ** i * 5 ** j for i in range(0, 25) for j in range(0, 25)]
+    for q in qs:
+        for k in (0, 1, 2, 5, 18, 19, 20):
+            want = k if k > LIMIT else next((j for j in range(k, LIMIT + 1) if 10 ** j % q == 0), LIMIT + 1)
+            check(ns["places"](q, k) == want, f"places({q}, {k}) = {ns['places'](q, k)}, expected {want}")
+            counts["places"] += 1
+
+    # decimals: every scale, small numerators with both signs and zero, and random large numerators
+    grid = [dec(u, k) for k in range(0, LIMIT + 1) for u in (-11, -10, -3, -1, 0, 1, 2, 7, 10, 100)]
+    rand = [dec(V.random_int(rng), rng.randrange(0, LIMIT + 1)) for _ in range(400)]
+    pairs = [(x, y) for x in grid for y in grid] + [(rng.choice(rand), rng.choice(rand + grid)) for _ in range(4000)]
+    for x, y in pairs:
+        k, m = x[1], y[1]
+        r = ns["add_decimals"](x, y)
+        check(is_dec(r, max(k, m)) and val(r) == val(x) + val(y), f"add_decimals({x}, {y}) = {r}")
+        r = ns["subtract_decimals"](x, y)
+        check(is_dec(r, max(k, m)) and val(r) == val(x) - val(y), f"subtract_decimals({x}, {y}) = {r}")
+        if k + m > LIMIT:
+            check(raises_as(OverflowError, ns["multiply_decimals"], x, y), f"multiply_decimals({x}, {y}): no overflow")
+            counts["multiply_decimals (scale overflow)"] += 1
+        else:
+            r = ns["multiply_decimals"](x, y)
+            check(is_dec(r, k + m) and val(r) == val(x) * val(y), f"multiply_decimals({x}, {y}) = {r}")
+            counts["multiply_decimals"] += 1
+        counts["add_decimals, subtract_decimals"] += 1
+    # no gcd in addition, subtraction or multiplication
+    for x, y in pairs[:3000]:
+        for f in ("add_decimals", "subtract_decimals", "multiply_decimals"):
+            if f == "multiply_decimals" and x[1] + y[1] > LIMIT:
+                continue
+            _, n = tr.count(ns[f], x, y)
+            check(not n["gcd"] and not n["reduce"], f"{f}({x}, {y}) computed a gcd")
+
+    # to_rational: the reduced value, with reduce skipped for 0 and for scale 0
+    for x in grid + rand:
+        r, n = tr.count(ns["to_rational"], x)
+        check(is_rat(r) and V.F(r) == val(x), f"to_rational({x}) = {r}")
+        check(n["reduce"] == (0 if x[0] == 0 or x[1] == 0 else 1), f"to_rational({x}): reduce ran {n['reduce']} times")
+        counts["to_rational"] += 1
+
+    # to_decimal: a decimal at the smallest scale, the rational itself, or scale overflow
+    rats = [V.reduced(p, q) for q in range(1, 1201) for p in (-7, -1, 0, 1, 3, 10)]
+    rats += [V.reduced(p, 2 ** i * 5 ** j) for i in range(0, 24) for j in range(0, 24) for p in (1, -3, 7)]
+    rats += [V.random_value(rng) for _ in range(500)]
+    rats += [V.reduced(V.random_int(rng), 2 ** rng.randrange(0, 30) * 5 ** rng.randrange(0, 30)) for _ in range(500)]
+    for r in rats:
+        ok, kmin = two_five(r[1])
+        if not ok:
+            got = ns["to_decimal"](r)
+            check(got is r, f"to_decimal({r}) = {got}, expected the rational itself")
+            counts["to_decimal (not a decimal)"] += 1
+        elif kmin > LIMIT:
+            check(raises_as(OverflowError, ns["to_decimal"], r), f"to_decimal({r}): no scale overflow")
+            counts["to_decimal (scale overflow)"] += 1
+        else:
+            got = ns["to_decimal"](r)
+            check(is_dec(got, kmin) and val(got) == V.F(r), f"to_decimal({r}) = {got}")
+            counts["to_decimal"] += 1
+
+    # divide_decimals: exact; a decimal at the smallest scale, a stored rational, scale overflow, or a zero divisor
+    dpairs = [(x, y) for x in grid[::3] for y in grid] + [(rng.choice(rand + grid), rng.choice(rand + grid))
+                                                       for _ in range(3000)]
+    dpairs += [(dec(1, 0), dec(2 ** i, 0)) for i in range(0, 25)] + [(dec(1, 0), dec(5 ** j, 0)) for j in range(0, 25)]
+    for x, y in dpairs:
+        if y[0] == 0:
+            check(raises_as(ZeroDivisionError, ns["divide_decimals"], x, y), f"divide_decimals({x}, {y}): no error")
+            counts["divide_decimals (zero divisor)"] += 1
+            continue
+        exact = val(x) / val(y)
+        ok, kmin = two_five(exact.denominator)
+        if ok and kmin > LIMIT:
+            check(raises_as(OverflowError, ns["divide_decimals"], x, y), f"divide_decimals({x}, {y}): no overflow")
+            counts["divide_decimals (scale overflow)"] += 1
+            continue
+        r = ns["divide_decimals"](x, y)
+        if ok:
+            check(is_dec(r, kmin) and val(r) == exact, f"divide_decimals({x}, {y}) = {r}")
+            counts["divide_decimals (decimal)"] += 1
+        else:
+            check(is_rat(r) and V.F(r) == exact, f"divide_decimals({x}, {y}) = {r}")
+            counts["divide_decimals (rational)"] += 1
+
+    # section 3.8's rule: dividing by y keeps every decimal a decimal exactly when y's reduced numerator is 2^i 5^j
+    xs = [dec(u, k) for k in (0, 1, 2) for u in range(-20, 21)]
+    for y in [dec(u, k) for k in (0, 1, 2) for u in range(-30, 31) if u]:
+        stays = two_five(abs(val(y).numerator))[0]
+        left = False
+        for x in xs:
+            try:
+                r = ns["divide_decimals"](x, y)
+            except OverflowError:
+                continue
+            left = left or not isinstance(r, Decimal)
+        check(stays == (not left), f"3.8 rule: dividing by {y}")
+        if not stays:
+            check(not isinstance(ns["divide_decimals"](dec(1, 0), y), Decimal), f"3.8 rule: 1 / {y} stays a decimal")
+        counts["3.8 rule (divisors)"] += 1
+
+    print("\nThe decimals of sections 3.4-3.8 against fractions.Fraction (decimals at the stated scale, rationals "
+          "reduced):")
+    for k in sorted(counts):
+        print(f"  {k:36s} {counts[k]:8d} calls")
+
+
+def check_decimal_examples(ns, tr, check):
+    """The lcm of section 1.5, the aside of section 2.8, and the examples and claims of sections 3.2-3.8."""
+    dec, Decimal, Column = ns["decimal"], ns["Decimal"], ns["Column"]
+
+    def lcm(u, v):                      # the smallest positive common multiple, by search
+        return next(m for m in range(1, abs(u * v) + 1) if m % u == 0 and m % v == 0)
+
+    # 1.5
+    check(lcm(4, 6) == 12 and lcm(-4, 6) == 12 and lcm(6, 10) == (6 // math.gcd(6, 10)) * 10 == 30, "1.5: examples")
+    for u in [k for k in range(-30, 31) if k]:
+        for v in [k for k in range(-30, 31) if k]:
+            m = lcm(u, v)
+            check(m * math.gcd(u, v) == abs(u * v) and m == (abs(u) // math.gcd(u, v)) * abs(v), f"1.5: lcm({u}, {v})")
+            check(all(M % m == 0 for M in range(-3 * m, 3 * m + 1) if M % u == 0 and M % v == 0),
+                  f"1.5: a common multiple of {u} and {v} is not a multiple of the lcm")
+    for B in range(1, 13):
+        for i in range(0, 7):
+            for j in range(i, 7):
+                check(math.gcd(B ** i, B ** j) == B ** i and math.lcm(B ** i, B ** j) == B ** j, f"1.5: powers of {B}")
+    check(math.gcd(100, 10000) == 100 and math.lcm(100, 10000) == 10000, "1.5: 100 and 10 000")
+    # 2.8
+    check(math.gcd(3, 10) == 1 and math.gcd(6, 10) == 2 and Fraction(1, 6) + Fraction(1, 10) == Fraction(8, 30),
+          "2.8: 1/6 + 1/10 over 30")
+
+    # 3.2: the lcm two at a time, and the sum of section 2.6 over it
+    rng = random.Random(7)
+    for _ in range(300):
+        bs = [rng.choice([-1, 1]) * rng.randrange(1, 60) for _ in range(rng.randrange(1, 7))]
+        L = abs(bs[0])
+        for b in bs[1:]:
+            L = (L // math.gcd(L, b)) * abs(b)
+        check(L == math.lcm(*bs), f"3.2: the lcm of {bs}")
+    steps, L = [], 2
+    for b in (3, 4, 5, 6):
+        L = (L // math.gcd(L, b)) * b
+        steps.append(L)
+    check(steps == [6, 12, 60, 60], f"3.2: lcm steps {steps}")
+    G = ns["column"](60)
+    for b in (2, 3, 4, 5, 6):
+        G = ns["join"](G, (1, b))
+    check(as_list(G[1]) == [10, 12, 15, 20, 30], f"3.2: entries {as_list(G[1])}")
+    r, n = tr.count(ns["sum_"], G)
+    check(r == (29, 20) and n["gcd"] == 1 and n["reduce"] == 1 and math.gcd(87, 60) == 3
+          and Fraction(29, 20) == sum(Fraction(1, b) for b in range(2, 7)), f"3.2 example: {r}, {dict(n)}")
+    L13 = math.lcm(*range(2, 14))
+    G = ns["column"](L13)
+    for b in range(2, 14):
+        G = ns["join"](G, (1, b))
+    s = ns["tally"](G[1])
+    check(L13 == 360360 and s == 785633 and math.gcd(s, L13) == 1 and ns["sum_"](G) == (785633, 360360)
+          and Fraction(785633, 360360) == sum(Fraction(1, b) for b in range(2, 14)), "3.2: up to 1/13")
+
+    # 3.4
+    check(10 ** 18 <= 2 ** 63 - 1 < 10 ** 19 and 2 ** 63 - 1 == 9223372036854775807, "3.4: 18 for 64 bits")
+    check(10 ** 9 <= 2 ** 31 - 1 < 10 ** 10, "3.4: 9 for 32 bits")
+    check(Fraction(75, 100) == Fraction("0.75") and Fraction(310, 100) == Fraction("3.10")
+          and Fraction(375, 100) == Fraction("3.75") and 5 * 10 ** 6 == 5000000, "3.3, 3.4: examples")
+    # 3.5
+    check(ns["add_decimals"](dec(310, 2), dec(45, 2)) == (355, 2), "3.5: 3.10 + 0.45")
+    check(ns["add_decimals"](dec(310, 2), dec(35, 3)) == (3135, 3), "3.5: 3.10 + 0.035")
+    check(ns["multiply_decimals"](dec(310, 2), dec(35, 3)) == (10850, 5)
+          and Fraction(10850, 10 ** 5) == Fraction("3.10") * Fraction("0.035"), "3.5: 3.10 * 0.035")
+    check(raises_as(OverflowError, ns["multiply_decimals"], dec(1, 9), dec(1, 10)), "3.5: scale overflow example")
+    # 3.6: section 2.9's dividing out first, on powers of 10, is the alignment
+    for k in range(0, 19):
+        for m in range(k + 1, 19):
+            b, d = 10 ** k, 10 ** m
+            g = math.gcd(b, d)
+            bp, dp = b // g, d // g
+            for u, v in ((7, -3), (-12, 5), (1, 1)):
+                t = u * dp + v * bp
+                check(g == 10 ** k and bp == 1 and dp == 10 ** (m - k) and bp * d == 10 ** m
+                      and ns["add_decimals"](dec(u, k), dec(v, m)) == (t, m), f"3.6: scales {k}, {m}")
+    # 3.7
+    r, n = tr.count(ns["to_rational"], dec(50, 2))
+    check(r == (1, 2) and n["gcd"] == 1 and math.gcd(50, 100) == 50 and ns["to_rational"](dec(5, 1)) == (1, 2),
+          "3.7: 0.50 and 0.5")
+    # 3.8
+    check([two_five(q)[0] for q in (1, 8, 20, 125, 3, 6)] == [True] * 4 + [False] * 2, "3.8: 1, 8, 20, 125; 3, 6")
+    check(all(Fraction(1, 3) * 10 ** k % 1 != 0 for k in range(0, 40)), "3.8: 1/3 is not a decimal")
+    r = ns["divide_decimals"](dec(1, 0), dec(8, 0))
+    check(isinstance(r, Decimal) and r == (125, 3) and ns["places"](8, 0) == 3
+          and [10 ** k % 8 for k in range(4)] == [1, 2, 4, 0], "3.8: 1 / 8")
+    r = ns["divide_decimals"](dec(7, 0), dec(2, 0))
+    check(isinstance(r, Decimal) and r == (35, 1), "3.8: 7 / 2")
+    r = ns["divide_decimals"](dec(1, 0), dec(3, 1))
+    check(not isinstance(r, Decimal) and r == (10, 3), "3.8: 1 / 0.3")
+    r = ns["divide_decimals"](dec(6, 1), dec(3, 1))
+    check(isinstance(r, Decimal) and r == (2, 0), "3.8: 0.6 / 0.3")
+    check(raises_as(OverflowError, ns["divide_decimals"], dec(1, 0), dec(2 ** 19, 0)), "3.8: 1 / 2^19 overflows")
+    print("The examples of chapters 1 and 3: lcm(4, 6), lcm * gcd = |u v|, powers of one base, 1/2 + ... + 1/6 over "
+          "60 (and up to 1/13 over 360 360), 18 and 9 as the largest scales, 3.10 + 0.45, 3.10 + 0.035, 3.10 * 0.035, "
+          "scale overflow, alignment as section 2.9, 0.50 as 1/2, 1 / 8, 7 / 2, 1 / 0.3, 0.6 / 0.3")
 
 
 def coverage(br, tr, first_line, check):

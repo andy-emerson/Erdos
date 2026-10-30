@@ -1,17 +1,23 @@
-> **Milestone reached: matrix runs complete (11-matrix, addition and multiplication)** (Oct 30, 2026, 00:57 CDT)
+> **Milestone reached: matrix round m2 complete (packed build; four runs)** (Oct 30, 2026)
 >
-> Both runs finished with no stop and 0 disturbed blocks (addition 6.7 min, multiplication 11.5 min; hard stop 40). Rule sha256 `8e951ac6…`. Gcd work check passed on all 32 jobs. Per measure only, **no overall winner**. Time: T(TC)/T(row), below 1 = row slower. Bytes: row/TC, below 1 = row smaller.
+> All four runs finished with no stop and 0 disturbed blocks: add 5.1 min, mul 7.4, sum of products 11.2, product of sums 8.2 (hard stop 40). Rule sha256 `e340d32b…`. Gcd work check passed on all 64 jobs. No row pre-stores 0 or 1. Cost as a multiple of the control (1.00 = control, lower is better): **median over 16 jobs [range]**; verdicts per job are in the results.
 >
-> | row vs TC | addition: operation | addition: memory | multiplication: operation | multiplication: memory |
-> | --- | --- | --- | --- | --- |
-> | Hash-V-fixed | loss 16/16, 0.39–0.59 | loss 16/16, 1.92–2.17 | loss 16/16, 0.84–0.91 | loss 16/16, 2.25–2.50 |
-> | Hash-M-fixed | loss 16/16, 0.33–0.53 | loss 16/16, 2.08–2.50 | loss 16/16, 0.84–0.90 | loss 16/16, 2.42–2.83 |
-> | Hash-V-grow | loss 16/16, 0.24–0.51 | **win 10**, tie 3, loss 3; 0.31–1.92 | loss 16/16, 0.82–0.91 | tie 7, loss 9; 0.94–2.25 |
-> | Hash-M-grow | loss 16/16, 0.21–0.50 | **win 10**, tie 2, loss 4; 0.32–2.08 | loss 16/16, 0.81–0.90 | tie 6, loss 10; 0.94–2.42 |
+> | measure | Hash-V-fixed | Hash-V-grow-map | **Hash-V-pack** |
+> | --- | --- | --- | --- |
+> | build one matrix (time) | 1.4–1.5× | 1.7–2.0× | 1.6–1.9× |
+> | addition (time) | 1.89× | 2.38× | 2.17× |
+> | multiplication (time) | 1.12× | 1.12× | 1.12× |
+> | sum of products (time) | 1.12× | 1.12× | 1.12× |
+> | product of sums (time) | 1.11× | 1.12× | 1.11× |
+> | stored matrix (bytes) | 2.25× [2.25–2.50] | 0.55× [0.28–2.25] | **0.29× [0.14–0.80], win on 16/16** |
+> | peak, addition | 2.08× | 0.86× | 0.92× [0.68–1.28] |
+> | peak, multiplication | 2.33× | 1.67× | 1.35× [1.18–1.71] |
+> | peak, sum of products (reported) | 2.29× | 1.57× | 0.91× |
+> | peak, product of sums (reported) | 2.00× | 1.17× | 0.83× |
 >
-> Creation is slower in every row (0.17–0.77). Translation (M) vs direct comparison (V): no gain (tie in multiplication, slower in addition). Map vs lookup rewrite: map faster on creation on 9 of 16 (addition) and 6 of 16 (multiplication). In multiplication, C's values are nearly all distinct, so grow cannot win on memory there.
+> **Headline:** the packed build stores every matrix in 14–80% of the control's memory (median 29%) and has the lowest peaks in multiplication and both expressions, at the same operation speed as the fixed table in multiplication and both expressions (ties on all 48 jobs). It is slower to build (pack vs fixed 0.79–0.87) and in addition (0.86). No version beats the control on speed. Minor, recorded: each timed part takes its own minimum of reps 2 and 3 (as rule-m2 says; m1 used the rep with the smallest total), applied to every row alike.
 >
-> **Results:** [addition](11-matrix/test/results-m1-add/results.md) · [multiplication](11-matrix/test/results-m1-mul/results.md)
+> **Results:** [add](11-matrix/test/results-m2-add/results.md) · [mul](11-matrix/test/results-m2-mul/results.md) · [sum of products](11-matrix/test/results-m2-sop/results.md) · [product of sums](11-matrix/test/results-m2-pos/results.md)
 
 # Erdos
 

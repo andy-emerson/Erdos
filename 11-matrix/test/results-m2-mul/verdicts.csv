@@ -1,0 +1,625 @@
+job,pairing,kind,measure,verdict,ratio,lo,hi,h,caveat,heap_ratio,severe
+1,Hash-V-fixed vs TC,against TC,build,loss,0.6345987800910408,0.6267195040168831,0.6464511552737957,0.05,,,
+1,Hash-V-fixed vs TC,against TC,operation,loss,0.8730941509877136,0.867134264523944,0.8763846648676756,0.05,,,
+1,Hash-V-fixed vs TC,against TC,total,reported,0.8642046775448482,0.8577657580349046,0.8666526167097072,,,,
+1,Hash-V-fixed vs TC,against TC,read-out,reported,0.5880331696514539,0.5800306963794929,0.6263235507421554,,,,
+1,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.235632183908046,True
+1,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.318007662835249,True
+2,Hash-V-fixed vs TC,against TC,build,loss,0.6431625248401547,0.6330402679530487,0.6541012249315772,0.05,,,
+2,Hash-V-fixed vs TC,against TC,operation,loss,0.8700068459174344,0.8678973837877565,0.8751085090209723,0.05,,,
+2,Hash-V-fixed vs TC,against TC,total,reported,0.8616882465586878,0.8590479195814864,0.8663129664405851,,,,
+2,Hash-V-fixed vs TC,against TC,read-out,reported,0.5882639001458907,0.5813003742084053,0.6300258184947697,,,,
+2,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.235632183908046,True
+2,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.318007662835249,True
+3,Hash-V-fixed vs TC,against TC,build,loss,0.6549562134296423,0.6444083913228441,0.6703189030529048,0.05,,,
+3,Hash-V-fixed vs TC,against TC,operation,loss,0.8425033369308627,0.8029844245626807,0.8459614501358396,0.05,,,
+3,Hash-V-fixed vs TC,against TC,total,reported,0.8354935098953956,0.7958465920356189,0.8391360734692165,,,,
+3,Hash-V-fixed vs TC,against TC,read-out,reported,0.5895441487343488,0.5450226118028028,0.7098035802187511,,,,
+3,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.235632183908046,True
+3,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.318007662835249,True
+4,Hash-V-fixed vs TC,against TC,build,loss,0.679069937891597,0.6671271503010319,0.68589178910583,0.05,,,
+4,Hash-V-fixed vs TC,against TC,operation,loss,0.8371864649886347,0.8338904429441952,0.8633187712272544,0.05,,,
+4,Hash-V-fixed vs TC,against TC,total,reported,0.8315991291617083,0.827596241868781,0.8572824681150953,,,,
+4,Hash-V-fixed vs TC,against TC,read-out,reported,0.6221089333509368,0.5793639725579124,0.7043064070200745,,,,
+4,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.235632183908046,True
+4,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.318007662835249,True
+5,Hash-V-fixed vs TC,against TC,build,loss,0.7154390855783148,0.7085969097529603,0.7213324427861842,0.05,,,
+5,Hash-V-fixed vs TC,against TC,operation,loss,0.8897425497780256,0.8871182557840833,0.8927758382787656,0.05,,,
+5,Hash-V-fixed vs TC,against TC,total,reported,0.8861986787527827,0.883445499888664,0.8892614464279036,,,,
+5,Hash-V-fixed vs TC,against TC,read-out,reported,0.6387260599322856,0.6143343409124239,0.7507835642030999,,,,
+5,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.246355685131195,True
+5,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3294460641399417,True
+6,Hash-V-fixed vs TC,against TC,build,loss,0.6904563981449218,0.686508650471947,0.6934462031779125,0.05,,,
+6,Hash-V-fixed vs TC,against TC,operation,loss,0.8889152267311791,0.8863542748822308,0.8911195038954575,0.05,,,
+6,Hash-V-fixed vs TC,against TC,total,reported,0.884740536968556,0.882478527019492,0.8873299662695289,,,,
+6,Hash-V-fixed vs TC,against TC,read-out,reported,0.6217070600632244,0.6091078253872461,0.6878687868786879,,,,
+6,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.246355685131195,True
+6,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3294460641399417,True
+7,Hash-V-fixed vs TC,against TC,build,loss,0.754016739559102,0.7421543257120475,0.7582696575035794,0.05,,,
+7,Hash-V-fixed vs TC,against TC,operation,loss,0.8904868804543723,0.8889247042529849,0.8919426813005139,0.05,,,
+7,Hash-V-fixed vs TC,against TC,total,reported,0.8875450069870767,0.8861979920028024,0.8888679622265652,,,,
+7,Hash-V-fixed vs TC,against TC,read-out,reported,0.6229589437970952,0.6121093352336353,0.8186554835430169,,,,
+7,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.246355685131195,True
+7,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3294460641399417,True
+8,Hash-V-fixed vs TC,against TC,build,loss,0.7485210988669646,0.7440966986876182,0.753771244832338,0.05,,,
+8,Hash-V-fixed vs TC,against TC,operation,loss,0.8783045941207543,0.8749294048818234,0.8824353770202005,0.05,,,
+8,Hash-V-fixed vs TC,against TC,total,reported,0.8761917163225181,0.8725893783815951,0.8801668540995385,,,,
+8,Hash-V-fixed vs TC,against TC,read-out,reported,0.6619116088996518,0.6152659694530134,0.8094959289194478,,,,
+8,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.246355685131195,True
+8,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3294460641399417,True
+9,Hash-V-fixed vs TC,against TC,build,loss,0.7126595367302424,0.706835586025398,0.7196664583301575,0.05,,,
+9,Hash-V-fixed vs TC,against TC,operation,loss,0.8972775489461042,0.8924950546902891,0.8985217589064739,0.05,,,
+9,Hash-V-fixed vs TC,against TC,total,reported,0.8952952566586267,0.8906760099516612,0.8966692868558557,,,,
+9,Hash-V-fixed vs TC,against TC,read-out,reported,0.6098366715180077,0.5523840547253552,0.657088416303467,,,,
+9,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.2490855888807606,True
+9,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3323579614728116,True
+10,Hash-V-fixed vs TC,against TC,build,loss,0.7185006115504318,0.7128434370374822,0.723996393912075,0.05,,,
+10,Hash-V-fixed vs TC,against TC,operation,loss,0.8953951412962591,0.8877869416312529,0.9021535148428371,0.05,,,
+10,Hash-V-fixed vs TC,against TC,total,reported,0.8935500939867894,0.8858267141368822,0.9002417637038947,,,,
+10,Hash-V-fixed vs TC,against TC,read-out,reported,0.6286043583121679,0.5607437522420184,0.7223103261888835,,,,
+10,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.2490855888807606,True
+10,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3323579614728116,True
+11,Hash-V-fixed vs TC,against TC,build,loss,0.757886962957696,0.7539030643810006,0.7618364582081163,0.05,,,
+11,Hash-V-fixed vs TC,against TC,operation,loss,0.8967541750507521,0.8917892757847891,0.9064140336422039,0.05,,,
+11,Hash-V-fixed vs TC,against TC,total,reported,0.8951728594224445,0.8904189460888637,0.9051049160476105,,,,
+11,Hash-V-fixed vs TC,against TC,read-out,reported,0.6110431017156639,0.5563021316033364,0.760461373390558,,,,
+11,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.2490855888807606,True
+11,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3323579614728116,True
+12,Hash-V-fixed vs TC,against TC,build,loss,0.7657564514111811,0.7565470353341973,0.773047414788221,0.05,,,
+12,Hash-V-fixed vs TC,against TC,operation,loss,0.8912945150816342,0.8884376969650747,0.8949820133912388,0.05,,,
+12,Hash-V-fixed vs TC,against TC,total,reported,0.8898837431179176,0.8864558868958966,0.8937374038965784,,,,
+12,Hash-V-fixed vs TC,against TC,read-out,reported,0.6586036888673681,0.569367434595861,0.753592511583057,,,,
+12,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.25,,,,,2.2490855888807606,True
+12,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3323579614728116,True
+13,Hash-V-fixed vs TC,against TC,build,loss,0.6832415273617051,0.6790736170866278,0.6888613599168077,0.05,,,
+13,Hash-V-fixed vs TC,against TC,operation,loss,0.8997009401203044,0.896451345361724,0.9041326434587242,0.05,,,
+13,Hash-V-fixed vs TC,against TC,total,reported,0.8983042624866533,0.8948306644882817,0.9026031835661565,,,,
+13,Hash-V-fixed vs TC,against TC,read-out,reported,0.2785180166178284,0.21386344681479424,0.31478318167330965,,,,
+13,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.5,,,,,2.4996949173225946,True
+13,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.5833333333333335,,,,,2.5830129965220574,True
+14,Hash-V-fixed vs TC,against TC,build,loss,0.7202483391765484,0.7092635000480215,0.723842207320954,0.05,,,
+14,Hash-V-fixed vs TC,against TC,operation,loss,0.8978416169298945,0.894057266039775,0.9036799211400565,0.05,,,
+14,Hash-V-fixed vs TC,against TC,total,reported,0.8963876830704666,0.8926492053147066,0.902068239530758,,,,
+14,Hash-V-fixed vs TC,against TC,read-out,reported,0.2627405367817418,0.19968652181285718,0.28568958293151725,,,,
+14,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.5,,,,,2.4996949173225946,True
+14,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.5833333333333335,,,,,2.5830129965220574,True
+15,Hash-V-fixed vs TC,against TC,build,loss,0.7495067884488517,0.7419686455923927,0.7550515786529018,0.05,,,
+15,Hash-V-fixed vs TC,against TC,operation,loss,0.9060852478749468,0.9004762627906389,0.9166066227160052,0.05,,,
+15,Hash-V-fixed vs TC,against TC,total,reported,0.9050657048871094,0.8990621098369124,0.9148352923086935,,,,
+15,Hash-V-fixed vs TC,against TC,read-out,reported,0.26458788984617615,0.22546537524161694,0.35143222922009204,,,,
+15,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.5,,,,,2.4996949173225946,True
+15,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.5833333333333335,,,,,2.5830129965220574,True
+16,Hash-V-fixed vs TC,against TC,build,loss,0.7549335460246089,0.7479612149232646,0.7664812616748126,0.05,,,
+16,Hash-V-fixed vs TC,against TC,operation,loss,0.9012140925519493,0.888983672635,0.9045696679691541,0.05,,,
+16,Hash-V-fixed vs TC,against TC,total,reported,0.9003988061085777,0.8876752320623966,0.9036797104748494,,,,
+16,Hash-V-fixed vs TC,against TC,read-out,reported,0.3353888317917095,0.25198560152181027,0.48055036801054596,,,,
+16,Hash-V-fixed vs TC,against TC,stable bytes,loss,2.5,,,,,2.4996949173225946,True
+16,Hash-V-fixed vs TC,against TC,peak bytes,loss,2.5833333333333335,,,,,2.5830129965220574,True
+1,Hash-V-grow-map vs TC,against TC,build,loss,0.312250918361774,0.3084972748979185,0.31732760495071033,0.05,,,
+1,Hash-V-grow-map vs TC,against TC,operation,loss,0.8511526486559423,0.8464303402438496,0.8552899917171994,0.05,,,
+1,Hash-V-grow-map vs TC,against TC,total,reported,0.8114953837314964,0.8071964431612231,0.8146513494706888,,,,
+1,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5493607834759436,0.5394888953113537,0.5886480462175318,,,,
+1,Hash-V-grow-map vs TC,against TC,stable bytes,loss,2.25,,,,,2.235632183908046,True
+1,Hash-V-grow-map vs TC,against TC,peak bytes,loss,2.6666666666666665,,,,,2.6455938697318007,True
+2,Hash-V-grow-map vs TC,against TC,build,loss,0.47861186541268147,0.4723677891589554,0.486240071963889,0.05,,,
+2,Hash-V-grow-map vs TC,against TC,operation,loss,0.8560128725831918,0.8526514245677613,0.8596338659589936,0.05,,,
+2,Hash-V-grow-map vs TC,against TC,total,reported,0.836965620616074,0.8334795793072983,0.8402946030619673,,,,
+2,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5553175210405509,0.5446589070645336,0.5917311343478138,,,,
+2,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.75,,,,,0.764367816091954,False
+2,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.6666666666666667,,,,,1.6647509578544062,False
+3,Hash-V-grow-map vs TC,against TC,build,loss,0.5782634547777978,0.5720962362623181,0.590606349472085,0.05,,,
+3,Hash-V-grow-map vs TC,against TC,operation,loss,0.8247332773996521,0.8215569332563746,0.8283057958143473,0.05,,,
+3,Hash-V-grow-map vs TC,against TC,total,reported,0.8144684138406157,0.8119476920833192,0.818213079032868,,,,
+3,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5499508413157673,0.5379234496773185,0.6687281550103499,,,,
+3,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.375,,,,,0.39655172413793105,False
+3,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.4166666666666667,,,,,1.4195402298850575,False
+4,Hash-V-grow-map vs TC,against TC,build,loss,0.6349809188582107,0.6220595105646183,0.6430902267906673,0.05,,,
+4,Hash-V-grow-map vs TC,against TC,operation,loss,0.8240143092711457,0.8197137665998104,0.8477494344917204,0.05,,,
+4,Hash-V-grow-map vs TC,against TC,total,reported,0.8168285720655472,0.8119131790262155,0.8405339308377883,,,,
+4,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5949899270500318,0.5537826653427386,0.6780026322446586,,,,
+4,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.28125,,,,,0.3045977011494253,False
+4,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.3541666666666667,,,,,1.3582375478927202,False
+5,Hash-V-grow-map vs TC,against TC,build,loss,0.4487831971417759,0.4447325682434084,0.45048949813599953,0.05,,,
+5,Hash-V-grow-map vs TC,against TC,operation,loss,0.8803713531988876,0.8743643572721483,0.8845331112607782,0.05,,,
+5,Hash-V-grow-map vs TC,against TC,total,reported,0.8668117725144864,0.8607299404415348,0.8709339558307059,,,,
+5,Hash-V-grow-map vs TC,against TC,read-out,reported,0.6137663125948407,0.584366142059134,0.7415235204855842,,,,
+5,Hash-V-grow-map vs TC,against TC,stable bytes,loss,1.25,,,,,1.251214771622935,False
+5,Hash-V-grow-map vs TC,against TC,peak bytes,loss,2.0,,,,,1.9978943958535798,True
+6,Hash-V-grow-map vs TC,against TC,build,loss,0.5213763602604179,0.5181538187156165,0.5254448501374991,0.05,,,
+6,Hash-V-grow-map vs TC,against TC,operation,loss,0.8823405490934318,0.877349573082305,0.885928860169434,0.05,,,
+6,Hash-V-grow-map vs TC,against TC,total,reported,0.8727049280183911,0.8678931780351784,0.8762816999529099,,,,
+6,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5947152422780618,0.5783940525769382,0.668338213998891,,,,
+6,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.75,,,,,0.7536443148688047,False
+6,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.6666666666666667,,,,,1.6661807580174928,False
+7,Hash-V-grow-map vs TC,against TC,build,loss,0.640153147952259,0.6332756962584184,0.6499259150341583,0.05,,,
+7,Hash-V-grow-map vs TC,against TC,operation,loss,0.8846293993418044,0.8773920789693259,0.8858307056710416,0.05,,,
+7,Hash-V-grow-map vs TC,against TC,total,reported,0.8790505559630996,0.8719342283395582,0.880461288917498,,,,
+7,Hash-V-grow-map vs TC,against TC,read-out,reported,0.5996721832837939,0.5773718071826388,0.786344036807747,,,,
+7,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.375,,,,,0.380466472303207,False
+7,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.4166666666666667,,,,,1.4173955296404277,False
+8,Hash-V-grow-map vs TC,against TC,build,loss,0.6495356728457333,0.6414768984717922,0.6510929948025646,0.05,,,
+8,Hash-V-grow-map vs TC,against TC,operation,loss,0.8744488729952434,0.8703024713842832,0.8777233859240253,0.05,,,
+8,Hash-V-grow-map vs TC,against TC,total,reported,0.8700880578780054,0.8662759122435798,0.8729052126246555,,,,
+8,Hash-V-grow-map vs TC,against TC,read-out,reported,0.6129578583442348,0.5685053484338808,0.751241924574947,,,,
+8,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.28125,,,,,0.28717201166180756,False
+8,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.3541666666666667,,,,,1.3551992225461613,False
+9,Hash-V-grow-map vs TC,against TC,build,loss,0.4591689457570016,0.4525384089483278,0.4623020578359958,0.05,,,
+9,Hash-V-grow-map vs TC,against TC,operation,loss,0.8966849242982413,0.8930363912577304,0.8979245223860521,0.05,,,
+9,Hash-V-grow-map vs TC,against TC,total,reported,0.8899322841851791,0.8864795110054647,0.8914341323169171,,,,
+9,Hash-V-grow-map vs TC,against TC,read-out,reported,0.6548097435134197,0.6213531967721911,0.7479219297068646,,,,
+9,Hash-V-grow-map vs TC,against TC,stable bytes,loss,1.25,,,,,1.250304803706413,False
+9,Hash-V-grow-map vs TC,against TC,peak bytes,loss,2.0,,,,,1.999471673575551,True
+10,Hash-V-grow-map vs TC,against TC,build,loss,0.5839461048156026,0.569872964777904,0.5939182043274316,0.05,,,
+10,Hash-V-grow-map vs TC,against TC,operation,loss,0.8944801897383221,0.886459948824616,0.9022699160803103,0.05,,,
+10,Hash-V-grow-map vs TC,against TC,total,reported,0.8905340584479952,0.8823403094607256,0.898041130003718,,,,
+10,Hash-V-grow-map vs TC,against TC,read-out,reported,0.714559526409006,0.6570808976051292,0.8187826253531919,,,,
+10,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.5,,,,,0.5012192148256522,False
+10,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.5,,,,,1.5000812809883768,False
+11,Hash-V-grow-map vs TC,against TC,build,loss,0.6469285086648431,0.6389555540104788,0.653036772783289,0.05,,,
+11,Hash-V-grow-map vs TC,against TC,operation,loss,0.8956024804254767,0.892616972723828,0.9048051630189176,0.05,,,
+11,Hash-V-grow-map vs TC,against TC,total,reported,0.8928614014469647,0.889560223499586,0.9019490504468713,,,,
+11,Hash-V-grow-map vs TC,against TC,read-out,reported,0.8228274776104714,0.7318594939818226,1.0049975502204802,,,,
+11,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.375,,,,,0.3763716166788588,False
+11,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.4166666666666667,,,,,1.4168495488905144,False
+12,Hash-V-grow-map vs TC,against TC,build,loss,0.6605868974475902,0.6517716980890397,0.6703716078795979,0.05,,,
+12,Hash-V-grow-map vs TC,against TC,operation,loss,0.8926468270860362,0.89000298491374,0.8971285443890886,0.05,,,
+12,Hash-V-grow-map vs TC,against TC,total,reported,0.8899731764739788,0.8873620809829047,0.8944241762779455,,,,
+12,Hash-V-grow-map vs TC,against TC,read-out,reported,0.7286385662454039,0.6591655635632692,0.8136246067071491,,,,
+12,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.28125,,,,,0.2827359180687637,False
+12,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.3541666666666667,,,,,1.3544257498171177,False
+13,Hash-V-grow-map vs TC,against TC,build,loss,0.46364517199038646,0.45736640762861247,0.46710366073464105,0.05,,,
+13,Hash-V-grow-map vs TC,against TC,operation,loss,0.8992567422763367,0.893829286433802,0.9013020089133162,0.05,,,
+13,Hash-V-grow-map vs TC,against TC,total,reported,0.8961516748179522,0.8906463822461383,0.8980885575338693,,,,
+13,Hash-V-grow-map vs TC,against TC,read-out,reported,0.7194475018494795,0.6458997779150734,0.8446652096165309,,,,
+13,Hash-V-grow-map vs TC,against TC,stable bytes,loss,1.5,,,,,1.5,False
+13,Hash-V-grow-map vs TC,against TC,peak bytes,loss,2.3333333333333335,,,,,2.3330994366139888,True
+14,Hash-V-grow-map vs TC,against TC,build,loss,0.6085842256200001,0.606251789058599,0.6128322088636444,0.05,,,
+14,Hash-V-grow-map vs TC,against TC,operation,loss,0.8973589910685117,0.8943637755527751,0.9078935072686557,0.05,,,
+14,Hash-V-grow-map vs TC,against TC,total,reported,0.8957100554394439,0.8927921445699117,0.9061169409044633,,,,
+14,Hash-V-grow-map vs TC,against TC,read-out,reported,0.8866276622611331,0.7995785759788308,0.9311681749687638,,,,
+14,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.75,,,,,0.7502288120080541,False
+14,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.8333333333333333,,,,,1.833251977952692,False
+15,Hash-V-grow-map vs TC,against TC,build,loss,0.6566071204428242,0.6495977807836539,0.6670339023048646,0.05,,,
+15,Hash-V-grow-map vs TC,against TC,operation,loss,0.9031962265126694,0.8918323430233979,0.9124059555344216,0.05,,,
+15,Hash-V-grow-map vs TC,against TC,total,reported,0.9016738342985349,0.890634273589982,0.9109346327169793,,,,
+15,Hash-V-grow-map vs TC,against TC,read-out,reported,0.905337798726536,0.7987973589843477,0.9907487043775499,,,,
+15,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.5625,,,,,0.5627860150100678,False
+15,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.7083333333333333,,,,,1.7082901132873676,False
+16,Hash-V-grow-map vs TC,against TC,build,loss,0.7129533757362674,0.7025867762640424,0.7280052007709161,0.05,,,
+16,Hash-V-grow-map vs TC,against TC,operation,loss,0.9019982547322464,0.8972467446924107,0.9084037797207245,0.05,,,
+16,Hash-V-grow-map vs TC,against TC,total,reported,0.9009577016629292,0.895926836539245,0.9074668372830275,,,,
+16,Hash-V-grow-map vs TC,against TC,read-out,reported,0.9095330739299611,0.7849404403087663,1.0141811021880047,,,,
+16,Hash-V-grow-map vs TC,against TC,stable bytes,win,0.53125,,,,,0.5315455488437366,False
+16,Hash-V-grow-map vs TC,against TC,peak bytes,loss,1.6875,,,,,1.6874631358431467,False
+1,Hash-V-pack vs TC,against TC,build,loss,0.44275172845114336,0.4385871114747558,0.4503091535503809,0.05,,,
+1,Hash-V-pack vs TC,against TC,operation,loss,0.8646537578106408,0.8591225008659307,0.8678859907156401,0.05,,,
+1,Hash-V-pack vs TC,against TC,total,reported,0.8418631007336964,0.8361751979112366,0.8445235957883983,,,,
+1,Hash-V-pack vs TC,against TC,read-out,reported,0.49773080351458043,0.49313804519206883,0.5292725199777089,,,,
+1,Hash-V-pack vs TC,against TC,stable bytes,win,0.802734375,,,,,0.8180076628352491,False
+1,Hash-V-pack vs TC,against TC,peak bytes,loss,1.654296875,,,,,1.6545338441890165,False
+2,Hash-V-pack vs TC,against TC,build,loss,0.5207192782724258,0.5160335378524329,0.5301980601516016,0.05,,,
+2,Hash-V-pack vs TC,against TC,operation,loss,0.8645365633990977,0.8618029449988895,0.8679605965682194,0.05,,,
+2,Hash-V-pack vs TC,against TC,total,reported,0.8486223840170285,0.8457987191023209,0.852619918767516,,,,
+2,Hash-V-pack vs TC,against TC,read-out,reported,0.48906402859025294,0.48238436971091225,0.5228629630561075,,,,
+2,Hash-V-pack vs TC,against TC,stable bytes,win,0.298828125,,,,,0.32567049808429116,False
+2,Hash-V-pack vs TC,against TC,peak bytes,loss,1.3190104166666667,,,,,1.3275862068965518,False
+3,Hash-V-pack vs TC,against TC,build,loss,0.5629591780479856,0.5574432913883962,0.5745432901238969,0.05,,,
+3,Hash-V-pack vs TC,against TC,operation,loss,0.836220551917212,0.8324914811994228,0.8391298099164839,0.05,,,
+3,Hash-V-pack vs TC,against TC,total,reported,0.824359923670003,0.8200045505639175,0.8275401473496048,,,,
+3,Hash-V-pack vs TC,against TC,read-out,reported,0.4932553639634374,0.4865384420814068,0.5958080965866145,,,,
+3,Hash-V-pack vs TC,against TC,stable bytes,win,0.173828125,,,,,0.20306513409961685,False
+3,Hash-V-pack vs TC,against TC,peak bytes,loss,1.2376302083333333,,,,,1.2471264367816093,False
+4,Hash-V-pack vs TC,against TC,build,loss,0.590680872595162,0.579430315434161,0.5964913195043544,0.05,,,
+4,Hash-V-pack vs TC,against TC,operation,loss,0.8306875078620837,0.8269143736599306,0.8525483541620759,0.05,,,
+4,Hash-V-pack vs TC,against TC,total,reported,0.8209974757642555,0.8171478669159986,0.8425286234549949,,,,
+4,Hash-V-pack vs TC,against TC,read-out,reported,0.5207230331829735,0.4858254530139088,0.5917127881913837,,,,
+4,Hash-V-pack vs TC,against TC,stable bytes,win,0.1396484375,,,,,0.1685823754789272,False
+4,Hash-V-pack vs TC,against TC,peak bytes,loss,1.201171875,,,,,1.211366538952746,False
+5,Hash-V-pack vs TC,against TC,build,loss,0.5159627851166936,0.512224648650664,0.5191526294916929,0.05,,,
+5,Hash-V-pack vs TC,against TC,operation,loss,0.8845340594919913,0.8804357894912397,0.8874267358016514,0.05,,,
+5,Hash-V-pack vs TC,against TC,total,reported,0.8744385423767231,0.8706154213308442,0.8772832099460124,,,,
+5,Hash-V-pack vs TC,against TC,read-out,reported,0.555251713231418,0.5323364809092677,0.6794987276780687,,,,
+5,Hash-V-pack vs TC,against TC,stable bytes,win,0.74365234375,,,,,0.7482993197278912,False
+5,Hash-V-pack vs TC,against TC,peak bytes,loss,1.5904947916666667,,,,,1.5913508260447036,False
+6,Hash-V-pack vs TC,against TC,build,loss,0.5830334305586717,0.5793131408210951,0.589000006456153,0.05,,,
+6,Hash-V-pack vs TC,against TC,operation,loss,0.8841229197386854,0.8828851595114592,0.8869543629329325,0.05,,,
+6,Hash-V-pack vs TC,against TC,total,reported,0.8769839417052766,0.8757347050883019,0.8801310710571582,,,,
+6,Hash-V-pack vs TC,against TC,read-out,reported,0.5628428332935845,0.544839065206145,0.6320714293986173,,,,
+6,Hash-V-pack vs TC,against TC,stable bytes,win,0.387451171875,,,,,0.3935860058309038,False
+6,Hash-V-pack vs TC,against TC,peak bytes,loss,1.3543294270833333,,,,,1.3561710398445093,False
+7,Hash-V-pack vs TC,against TC,build,loss,0.6653214395570594,0.654829205513721,0.6696229808637966,0.05,,,
+7,Hash-V-pack vs TC,against TC,operation,loss,0.8899028188006237,0.8854639208313133,0.8917322384522923,0.05,,,
+7,Hash-V-pack vs TC,against TC,total,reported,0.8844282360272945,0.880451456856697,0.8864543447947654,,,,
+7,Hash-V-pack vs TC,against TC,read-out,reported,0.5257598181155224,0.5107809289814246,0.6913203983516484,,,,
+7,Hash-V-pack vs TC,against TC,stable bytes,win,0.167724609375,,,,,0.1749271137026239,False
+7,Hash-V-pack vs TC,against TC,peak bytes,loss,1.2078450520833333,,,,,1.2103984450923226,False
+8,Hash-V-pack vs TC,against TC,build,loss,0.6739378483998739,0.6607332330395312,0.6776793973833752,0.05,,,
+8,Hash-V-pack vs TC,against TC,operation,loss,0.8798888861106859,0.8750855961583508,0.8840514372201704,0.05,,,
+8,Hash-V-pack vs TC,against TC,total,reported,0.8757440880175167,0.8709605223564618,0.8799492848042055,,,,
+8,Hash-V-pack vs TC,against TC,read-out,reported,0.584216502649508,0.5312146523971113,0.7240815045616552,,,,
+8,Hash-V-pack vs TC,against TC,stable bytes,win,0.138671875,,,,,0.1457725947521866,False
+8,Hash-V-pack vs TC,against TC,peak bytes,loss,1.1858723958333333,,,,,1.18837058632977,False
+9,Hash-V-pack vs TC,against TC,build,loss,0.5351202714864427,0.5317358549243816,0.5369570854696577,0.05,,,
+9,Hash-V-pack vs TC,against TC,operation,loss,0.8974424110303988,0.8935440113607882,0.8985120209833767,0.05,,,
+9,Hash-V-pack vs TC,against TC,total,reported,0.8926404009320549,0.8886935153737809,0.8938788599084516,,,,
+9,Hash-V-pack vs TC,against TC,read-out,reported,0.5761239633347883,0.538414569954732,0.6694432562642113,,,,
+9,Hash-V-pack vs TC,against TC,stable bytes,win,0.6846923828125,,,,,0.6858083394294074,False
+9,Hash-V-pack vs TC,against TC,peak bytes,loss,1.5435384114583333,,,,,1.5437291717467283,False
+10,Hash-V-pack vs TC,against TC,build,loss,0.6208347503073743,0.6181305106817517,0.6250955967858527,0.05,,,
+10,Hash-V-pack vs TC,against TC,operation,loss,0.8956583167031994,0.8916298211740176,0.9029297551772997,0.05,,,
+10,Hash-V-pack vs TC,against TC,total,reported,0.8922669384947992,0.8882656759363112,0.8998877114766636,,,,
+10,Hash-V-pack vs TC,against TC,read-out,reported,0.6934777489992936,0.6370834708017156,0.7856535624842037,,,,
+10,Hash-V-pack vs TC,against TC,stable bytes,win,0.37322998046875,,,,,0.3747866374055108,False
+10,Hash-V-pack vs TC,against TC,peak bytes,loss,1.3359375,,,,,1.336381370397464,False
+11,Hash-V-pack vs TC,against TC,build,loss,0.680424052671439,0.6756556518316577,0.6859834707359486,0.05,,,
+11,Hash-V-pack vs TC,against TC,operation,loss,0.8963394487038828,0.8940234782320947,0.9069030304609436,0.05,,,
+11,Hash-V-pack vs TC,against TC,total,reported,0.8940584268097844,0.8916625380565573,0.9048196151649649,,,,
+11,Hash-V-pack vs TC,against TC,read-out,reported,0.760344670789378,0.6701467761663463,0.9467155997398495,,,,
+11,Hash-V-pack vs TC,against TC,stable bytes,win,0.28436279296875,,,,,0.28602779809802487,False
+11,Hash-V-pack vs TC,against TC,peak bytes,loss,1.2766927083333333,,,,,1.27720881085914,False
+12,Hash-V-pack vs TC,against TC,build,loss,0.7000278971494601,0.696400657767684,0.7053518876009064,0.05,,,
+12,Hash-V-pack vs TC,against TC,operation,loss,0.8953364319165403,0.8854405835095179,0.8983025818831766,0.05,,,
+12,Hash-V-pack vs TC,against TC,total,reported,0.893324210017076,0.8836010198958569,0.8964278324978621,,,,
+12,Hash-V-pack vs TC,against TC,read-out,reported,0.691397675547032,0.6201854329074219,0.7679475034081195,,,,
+12,Hash-V-pack vs TC,against TC,stable bytes,win,0.1356201171875,,,,,0.13752743233357717,False
+12,Hash-V-pack vs TC,against TC,peak bytes,loss,1.1778971354166667,,,,,1.178614971958059,False
+13,Hash-V-pack vs TC,against TC,build,loss,0.5493529260681475,0.5448686990297484,0.5535318339282117,0.05,,,
+13,Hash-V-pack vs TC,against TC,operation,loss,0.9007281976642229,0.897564283842051,0.9037064506993365,0.05,,,
+13,Hash-V-pack vs TC,against TC,total,reported,0.8986600232319825,0.8953268316022029,0.9014837157380213,,,,
+13,Hash-V-pack vs TC,against TC,read-out,reported,0.8141149326717916,0.7464843470345787,0.9047780797101449,,,,
+13,Hash-V-pack vs TC,against TC,stable bytes,win,0.5583648681640625,,,,,0.558697907132833,False
+13,Hash-V-pack vs TC,against TC,peak bytes,loss,1.70660400390625,,,,,1.7066019891390567,False
+14,Hash-V-pack vs TC,against TC,build,loss,0.6296603760521712,0.6244684430714121,0.632814217454027,0.05,,,
+14,Hash-V-pack vs TC,against TC,operation,loss,0.8982363746784332,0.8950066789781308,0.9031735603213958,0.05,,,
+14,Hash-V-pack vs TC,against TC,total,reported,0.8966534625877816,0.8936715294695591,0.9015072645511404,,,,
+14,Hash-V-pack vs TC,against TC,read-out,reported,0.8606625195354396,0.7796839057436331,0.8895791915175613,,,,
+14,Hash-V-pack vs TC,against TC,stable bytes,win,0.3575439453125,,,,,0.3579229971322228,False
+14,Hash-V-pack vs TC,against TC,peak bytes,loss,1.57281494140625,,,,,1.5728537433644518,False
+15,Hash-V-pack vs TC,against TC,build,loss,0.680566923460186,0.6724591311223181,0.6833227414816795,0.05,,,
+15,Hash-V-pack vs TC,against TC,operation,loss,0.9021564419266449,0.897877361789435,0.9110041591257013,0.05,,,
+15,Hash-V-pack vs TC,against TC,total,reported,0.9010674624440982,0.8966057293234837,0.909845936582316,,,,
+15,Hash-V-pack vs TC,against TC,read-out,reported,0.8835557707633488,0.7962622519836545,0.9187234483473216,,,,
+15,Hash-V-pack vs TC,against TC,stable bytes,win,0.2808685302734375,,,,,0.2812862285679419,False
+15,Hash-V-pack vs TC,against TC,peak bytes,loss,1.5217081705729167,,,,,1.521762564321598,False
+16,Hash-V-pack vs TC,against TC,build,loss,0.7065710529065646,0.6992529896156112,0.7170954717759108,0.05,,,
+16,Hash-V-pack vs TC,against TC,operation,loss,0.9014857202708922,0.8944661537485952,0.9046914097000692,0.05,,,
+16,Hash-V-pack vs TC,against TC,total,reported,0.9005229832705554,0.8935365389346659,0.903742210442699,,,,
+16,Hash-V-pack vs TC,against TC,read-out,reported,0.8484660012031363,0.735046654438153,0.9533529829842384,,,,
+16,Hash-V-pack vs TC,against TC,stable bytes,win,0.2586669921875,,,,,0.25910671792055645,False
+16,Hash-V-pack vs TC,against TC,peak bytes,loss,1.50689697265625,,,,,1.5069762238900075,False
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.6976876450780843,0.6913947368568425,0.7051899080031022,0.05,,,
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.9903327800701397,0.9837809711132334,0.9962902119865317,0.05,,,
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9741478177662463,0.9681334731306936,0.9801680726761087,,,,
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8464332102381256,0.8396426469692972,0.8548236092963919,,,,
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.3567708333333333,,,,,0.3658954584404456,False
+1,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.708984375,,,,,0.7137741046831956,False
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.809623163914658,0.8054392871943639,0.8221944600964395,0.05,,,
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.993712368421,0.9902705787029406,0.9983629528763582,0.05,,,
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9848369029125785,0.9815635495839782,0.9893827005206277,,,,
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8313684189510252,0.8243456228553188,0.8367547609014108,,,,
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.1328125,,,,,0.1456726649528706,False
+2,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5652901785714286,,,,,0.5727272727272728,False
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8595371209627599,0.8521479200712938,0.8723015839396793,0.05,,,
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.992542717947518,0.9860137427320463,1.0425532845638588,0.05,,,
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9866742397235538,0.9799150841557885,1.0368813527650749,,,,
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.836672478256926,0.8248943987602789,0.90275397673434,,,,
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.07725694444444445,,,,,0.0908311910882605,False
+3,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5304129464285714,,,,,0.5380165289256198,False
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8698380529539139,0.8623265478416862,0.8774350460943299,0.05,,,
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.9922371450108917,0.9861354376976396,0.9955801804297945,0.05,,,
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9872514856910207,0.9812630928493674,0.9911723905868528,,,,
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8370287023176846,0.8222879272068413,0.8650223621341321,,,,
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.062065972222222224,,,,,0.07540702656383891,False
+4,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5147879464285714,,,,,0.5225895316804408,False
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.7211833900570619,0.7129894120381339,0.7293031929147722,0.05,,,
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.9941460703578426,0.9887088477819663,0.997751405152223,0.05,,,
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9867296841464371,0.98147354580531,0.990435869952713,,,,
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8693111931119312,0.8453381180566001,0.9150373907559239,,,,
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.3305121527777778,,,,,0.33311702357776335,False
+5,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.681640625,,,,,0.6831455986649979,False
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8444174492772204,0.8382685919581779,0.8532986032386828,0.05,,,
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.994608814374666,0.993575116984079,0.996928453627042,0.05,,,
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.991232915256877,0.990010440957621,0.9934320582485788,,,,
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.9053183877891724,0.8858416028625721,0.9318947920919112,,,,
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.17220052083333334,,,,,0.1752109020116807,False
+6,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5804268973214285,,,,,0.582186065915728,False
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8823695876381927,0.8772795125337669,0.8871582449053244,0.05,,,
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.9993441097599882,0.9942326149706048,1.0012724368270456,0.05,,,
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9964883234819125,0.9918877381270298,0.9987960774544679,,,,
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8439718593827081,0.8255793254379628,0.8684957844838065,,,,
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.07454427083333333,,,,,0.07787151200519143,False
+7,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5176478794642857,,,,,0.5196078431372549,False
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.9003591874965351,0.8849433682807883,0.9061641107982877,0.05,,,
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.0018038070169923,0.9953905736249682,1.0059494342008901,0.05,,,
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9994891205923743,0.9932911314054819,1.0039471926628032,,,,
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.8826201184485907,0.8529322196119377,0.9088929301093375,,,,
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.06163194444444445,,,,,0.06489292667099286,False
+8,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5082310267857142,,,,,0.5101515783618411,False
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.7508778651046071,0.7401022371686509,0.7568720389854211,0.05,,,
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.0001837358847196,0.9991479928598632,1.0031774805358789,0.05,,,
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9970346590057003,0.9960165246186914,0.9998795804236544,,,,
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,0.9447184635530336,0.8810798280367529,1.0549398625429554,,,,
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.3043077256944444,,,,,0.3049276305090259,False
+9,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.6615164620535714,,,,,0.6618748910960097,False
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8640698982394642,0.859485189490089,0.871221275737593,0.05,,,
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.0002939209682995,0.9970599070661891,1.0068693688381491,0.05,,,
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9985639803513813,0.9953879307540375,1.005209760982616,,,,
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,1.1032022604191194,1.0012394486590448,1.2010180515624262,,,,
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.16587999131944445,,,,,0.1666395619883992,False
+10,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5725446428571428,,,,,0.5729743857814951,False
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8977909449927023,0.8914616665460073,0.9033769737456788,0.05,,,
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.9995375250448699,0.9964873344879364,1.0080707985502537,0.05,,,
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9987550643421215,0.9952797617771113,1.0069655894291147,,,,
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,1.2443388504910877,1.0180154355016537,1.4001449546432245,,,,
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.12638346354166666,,,,,0.1271751504309644,False
+11,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5471540178571428,,,,,0.5476041122146715,False
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.9141651968578358,0.909199000266919,0.9263938613731407,0.05,,,
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.0045348835502885,0.9922272044087912,1.0079558421833952,0.05,,,
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,1.0038661981700034,0.9915268036978624,1.0070539787090338,,,,
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,1.049793202245893,0.9228009259259259,1.2090732967387794,,,,
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.06027560763888889,,,,,0.06114815417140999,False
+12,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5048130580357143,,,,,0.5053319393622583,False
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8040391341396356,0.794093880261463,0.8117403892124415,0.05,,,
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.001141776670569,0.996529583705644,1.0047375409106842,0.05,,,
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,1.0003960359091968,0.9957956984752551,1.0039801408928755,,,,
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,2.9230243075760822,2.6813174528972987,3.8039104882459314,,,,
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.223345947265625,,,,,0.22350643803014586,False
+13,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.6606209047379031,,,,,0.6607020527720691,False
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.8742267656903654,0.8674134737924218,0.8901931272710367,0.05,,,
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.0004396741486417,0.9956662795128409,1.0063830463343386,0.05,,,
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,1.0002965006350875,0.9957497776773115,1.0062684787206622,,,,
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,3.275712724338349,2.978513431589827,4.307312081052039,,,,
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.143017578125,,,,,0.14318667236223837,False
+14,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.6088315902217741,,,,,0.6089221174969882,False
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.9080196923481632,0.9014059826563655,0.9140397799856276,0.05,,,
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,0.99566397758101,0.9905250081092277,1.0025115727632685,0.05,,,
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,0.9955823732780705,0.9908324226801989,1.0030005679970349,,,,
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,3.3393658767868133,2.540059468046108,3.9080656673804426,,,,
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.112347412109375,,,,,0.1125282235918716,False
+15,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.5890483240927419,,,,,0.5891424341923952,False
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,build,loss,0.9359380790895894,0.9289088316686301,0.9419457406141083,0.05,,,
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,operation,tie,1.000301401987816,0.9917849957370004,1.014619120251109,0.05,,,
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,total,reported,1.0001379135124737,0.9917795899838535,1.0145363003401013,,,,
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,read-out,reported,2.5297980158446935,1.83694884471799,3.5332631100646466,,,,
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,stable bytes,win,0.103466796875,,,,,0.10365533654726307,False
+16,Hash-V-pack vs Hash-V-fixed,pack against fixed,peak bytes,win,0.583314957157258,,,,,0.5834179796691312,False
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.4920446243482817,0.48859247081108004,0.49375925584399444,0.05,,,
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9748692597391136,0.9722620963856392,0.9813328348302335,0.05,,,
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9390083215435773,0.9369859675215134,0.9453206021754424,,,,
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9342343456604113,0.9185322691803206,0.9535477810616996,,,,
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,tie,1.0,,,,,1.0,False
+1,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,loss,1.1428571428571428,,,,,1.1413223140495867,False
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.7441538443671465,0.7357354372157612,0.7511216373223701,0.05,,,
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9839150997490304,0.9791558933032893,0.9858730861078259,0.05,,,
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9713090830223713,0.9669033804859697,0.9741271730024925,,,,
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9439938791124713,0.9297042867481641,0.9493748718999795,,,,
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.3333333333333333,,,,,0.34190231362467866,False
+2,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.7142857142857143,,,,,0.7181818181818181,False
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8829039910160604,0.8736902380438905,0.8948665748823305,0.05,,,
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9789080247492612,0.9723293016795969,1.0277888381871378,0.05,,,
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9748351174416517,0.9689490559003626,1.0239711677510472,,,,
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9328408101351161,0.9143731056303298,1.0129853970839413,,,,
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.16666666666666666,,,,,0.17737789203084833,False
+3,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6071428571428571,,,,,0.6123966942148761,False
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.9350744060762348,0.9276038496212793,0.9453168213222691,0.05,,,
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.984266162595369,0.9773344151933593,0.9891460875406035,0.05,,,
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9822383687305558,0.9758213195558264,0.9879505809976584,,,,
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.956407945864351,0.9381223491214231,0.991304797888308,,,,
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.125,,,,,0.13624678663239073,False
+4,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.5803571428571429,,,,,0.5859504132231405,False
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.6272835887614506,0.6218534503458405,0.631680715002994,0.05,,,
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.989467518911537,0.9828374551657376,0.9950251915133221,0.05,,,
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.978123521617544,0.9715498299145258,0.9837026086116671,,,,
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9609226100151745,0.9333586346762812,0.9895301948209687,,,,
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.5555555555555556,,,,,0.5569976205926888,False
+5,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.8571428571428571,,,,,0.8576693088582952,False
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.7551184429041743,0.7509126228253267,0.7608474521491246,0.05,,,
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9926037068102385,0.9877215535840422,0.9965381335547461,0.05,,,
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9863964535959849,0.9815877559616271,0.990147132589923,,,,
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9565843473252214,0.942617481650939,0.9806065658175399,,,,
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.3333333333333333,,,,,0.3354964308890331,False
+6,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.7142857142857143,,,,,0.7152690863579474,False
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8489906315960271,0.8438854381996517,0.8629505988172246,0.05,,,
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9934221589996035,0.985039234946276,0.9948149477130557,0.05,,,
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9904292729302674,0.9822042000691772,0.9920828387401821,,,,
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9626191087788827,0.9371020437364367,0.9811832597597968,,,,
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.16666666666666666,,,,,0.16937053861129137,False
+7,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6071428571428571,,,,,0.6084689194826867,False
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8677586695003449,0.854688839170536,0.8713514984909847,0.05,,,
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9956100410366511,0.9908810472703621,0.9998683352567924,0.05,,,
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.993033877939259,0.9881299411906532,0.9970840562956911,,,,
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,0.9260418613343301,0.9113644807728033,0.961148445215213,,,,
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.125,,,,,0.12783906554185595,False
+8,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.5803571428571429,,,,,0.5817688777638715,False
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.644303376425323,0.6338181616442968,0.6513671360145589,0.05,,,
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9993395302840699,0.9967807006085928,1.0030483332797673,0.05,,,
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9940098281169688,0.9915396107879543,0.9976261236265704,,,,
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,1.0737460931686262,1.0096778175533885,1.2061881311247078,,,,
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.5555555555555556,,,,,0.5559169512657884,False
+9,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.8571428571428571,,,,,0.8572747865481792,False
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8127287512748559,0.7897164700303217,0.8269333574148726,0.05,,,
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9989781588979672,0.9930826999146892,1.0036730953602555,0.05,,,
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9966246598158393,0.990676350415854,1.0013431480897559,,,,
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,1.136739694786132,1.031476506665315,1.24366596768225,,,,
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.2222222222222222,,,,,0.22285466471512982,False
+10,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6428571428571428,,,,,0.6431608294127896,False
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8535949822123455,0.84287344830686,0.861034107205201,0.05,,,
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9987157075402406,0.9967300201151298,1.0028024257056989,0.05,,,
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.997417864101721,0.9951242637365777,1.0006418399330386,,,,
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,1.3465948233441591,1.1340456890198969,1.4909457730538334,,,,
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.16666666666666666,,,,,0.16734428362335338,False
+11,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6071428571428571,,,,,0.6074751698902248,False
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8626592648749114,0.8499826835890014,0.8833703951422383,0.05,,,
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,1.001517244840532,0.9954076859279485,1.005756584285385,0.05,,,
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,1.0001005000448124,0.9943687626212407,1.0053290648058957,,,,
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,1.1063384225777388,0.96188906128782,1.27172509683186,,,,
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.125,,,,,0.12571149780452107,False
+12,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.5803571428571429,,,,,0.5807109252483011,False
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.6785962992921751,0.6669810548798397,0.6858475106341935,0.05,,,
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9995062827833564,0.9929505223267271,1.0027917097646954,0.05,,,
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9976037209678352,0.9909919821736138,1.0006090863850055,,,,
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,2.5831273344039265,2.4086792257530276,3.295945801581084,,,,
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.6,,,,,0.6000732287789101,False
+13,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,tie,0.9032258064516129,,,,,0.9032472696635406,False
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.8449644275692291,0.8415179688873885,0.8604304698896647,0.05,,,
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9994624599124363,0.9957466755518933,1.0059807054949,0.05,,,
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9992440462493846,0.9953549667376754,1.0058584294716801,,,,
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,3.3745369980638102,3.0233553204281076,4.287610529318283,,,,
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.3,,,,,0.3001281503630927,False
+14,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.7096774193548386,,,,,0.7097339349128734,False
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,loss,0.876052266053135,0.8649495291572898,0.8933976792317727,0.05,,,
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,0.9968115347103895,0.9877101860763566,1.0023727227236623,0.05,,,
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,0.9962523487850006,0.9873935751982968,1.0022745004952465,,,,
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,3.421690234019681,2.528680726234837,4.034125784434978,,,,
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.225,,,,,0.22514188075913835,False
+15,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6612903225806451,,,,,0.6613556012252065,False
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,build,tie,0.9443922309329025,0.9302450452504297,0.962569486860315,0.05,,,
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,operation,tie,1.0008701175300938,0.9957920662045597,1.0158621331547601,0.05,,,
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,total,reported,1.000620720008245,0.9951825343227092,1.0167374939815037,,,,
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,read-out,reported,2.7118764482140514,1.961472990152772,3.6765527616591447,,,,
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,stable bytes,win,0.2125,,,,,0.21264416915847928,False
+16,Hash-V-grow-map vs Hash-V-fixed,grow-map against fixed,peak bytes,win,0.6532258064516129,,,,,0.6532925456105954,False
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.4179357126443135,1.4129742393725344,1.4304463919557913,,,,
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0158621478485887,1.0081281252194045,1.019107416723981,,,,
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.037421922060185,1.0299634875542367,1.0408962597875233,,,,
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9060180822615561,0.8882609479982138,0.9215337786766358,,,,
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.3567708333333333,,,,,0.3658954584404456,False
+1,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.620361328125,,,,,0.6253922278542119,False
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0879782051024527,1.0846773435018515,1.105687821186734,,,,
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0099574329883427,1.0069323782147905,1.0160795066200004,,,,
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0139274100558324,1.010754768164009,1.019478326366637,,,,
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.8806925948849003,0.8759014153342842,0.8927308547181249,,,,
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.3984375,,,,,0.42606516290726815,False
+2,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.79140625,,,,,0.7974683544303798,False
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,0.9735340758552812,0.9691035070162995,0.9816265259351695,,,,
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0139284721889468,1.0096536995978547,1.0172066177182832,,,,
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0121447433212836,1.0073638975922166,1.0152662647066901,,,,
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.8969080996099852,0.8797088307893809,0.9110500835483041,,,,
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4635416666666667,,,,,0.5120772946859904,False
+3,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8736213235294117,,,,,0.8785425101214575,False
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,0.9302340512173078,0.9218410472981992,0.9349785548966695,,,,
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0080984013455307,1.0033247201268802,1.0105993030930969,,,,
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0051037682094865,0.9998837281143282,1.007316155940758,,,,
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.8751795778539065,0.8603171758802974,0.8951353855657367,,,,
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4965277777777778,,,,,0.5534591194968553,False
+4,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8870192307692307,,,,,0.8918664786083687,False
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.1496927434065558,1.1402339003145918,1.1615929911580525,,,,
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0047283527320354,0.9984655455641201,1.0117150412252656,,,,
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.008798645916071,1.002688307165981,1.0159560536406822,,,,
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9046630644877878,0.8753680570541366,0.9360590725370468,,,,
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.594921875,,,,,0.5980582524271845,False
+5,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.7952473958333334,,,,,0.7965139845966761,False
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.1182582775088945,1.1084066896902254,1.1310392549547337,,,,
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0020200484349098,0.9983502998447055,1.0069856661976544,,,,
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0049031620534121,1.001383876066651,1.0099398174000986,,,,
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.946407277435181,0.9159853143230399,0.9745110074000302,,,,
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.5166015625,,,,,0.5222437137330754,False
+6,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8125976562499999,,,,,0.8139399241761447,False
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0393160475509797,1.021567279201777,1.0456862431244724,,,,
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0059611623384244,1.0041914013243025,1.011527502519747,,,,
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0061176004357373,1.0044740244949177,1.01225915459776,,,,
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.8767453831799755,0.8496029501120959,0.916260879145092,,,,
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.447265625,,,,,0.45977011494252873,False
+7,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8525965073529411,,,,,0.853959547480288,False
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0375686456868953,1.0276510270723018,1.0479433993243343,,,,
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0062210762497856,1.0023854272496757,1.0088273471352427,,,,
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0065005261114668,1.002698768062179,1.0098680779597478,,,,
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.953110388742931,0.9024446215430395,0.9805152630439489,,,,
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4930555555555556,,,,,0.5076142131979695,False
+8,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8757211538461538,,,,,0.8768973347675391,False
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.1654104146878337,1.1551316404704528,1.1826335591354311,,,,
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.000844763541386,0.998700799175712,1.0037041875707238,,,,
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0030430593372117,1.0006751664607816,1.0056186405642382,,,,
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.8798341335661283,0.8404852700833927,0.9436590721932473,,,,
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.54775390625,,,,,0.5485129205265724,False
+9,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.7717692057291666,,,,,0.7720685379784141,False
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0631713187014413,1.0466291781525465,1.0937912606098712,,,,
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0013171079453667,0.9966956658347641,1.0099119317989944,,,,
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.001945888571431,0.9974867864449819,1.0109571877662453,,,,
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9704968212856133,0.9332489486365472,1.018802162367223,,,,
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.7464599609375,,,,,0.7477499391875456,False
+10,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.890625,,,,,0.8908726395925335,False
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.051776268255244,1.039832170914056,1.0704420433222577,,,,
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0008228743159084,0.9972313236356722,1.0060100550848612,,,,
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.001340662011909,0.9975947604663004,1.0072102159380414,,,,
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9240632957439069,0.8715919841747656,0.9610259047975311,,,,
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.75830078125,,,,,0.7599611273080661,False
+11,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.9011948529411764,,,,,0.9014427903508017,False
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0597059975822472,1.0451804066546782,1.0735204220853958,,,,
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0030130671491704,0.9910487100874843,1.0059675093621263,,,,
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0037653197103915,0.991944507834421,1.0064732551833375,,,,
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9488897617782296,0.9161548610163323,0.9751128031584885,,,,
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4822048611111111,,,,,0.48641655886157825,False
+12,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8698317307692308,,,,,0.8701953371140516,False
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.1848563497595055,1.172163071698991,1.202753633983258,,,,
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.001636301757562,0.9978995221059095,1.0067201449039744,,,,
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.0027990221795209,0.9991258067382638,1.007999797783197,,,,
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,1.131583514542689,1.0007215300502021,1.2364661188421358,,,,
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.3722432454427083,,,,,0.3724652714218887,False
+13,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.7314017159598214,,,,,0.7314741765210986,False
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0346314438411537,1.0244675157446832,1.041379903246294,,,,
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,1.0009777398105488,0.9927524545358494,1.0046143282887583,,,,
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,1.00105325059444,0.9929443137180076,1.0048075230643925,,,,
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9707147161870908,0.9084760383073409,1.0415348182022335,,,,
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4767252604166667,,,,,0.4770851124395104,False
+14,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8578990589488636,,,,,0.8579582961208403,False
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,1.0364903185960017,1.0178015056163454,1.0479527873287542,,,,
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,0.998848772220806,0.9951147934229929,1.008327291646073,,,,
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,0.9993275042134183,0.9953971376039774,1.0084014042642793,,,,
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9759404412432285,0.8868761688240255,1.0618587900614351,,,,
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.4993218315972222,,,,,0.49981026725212774,False
+15,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8907560022865855,,,,,0.8908103796217475,False
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,build,reported,0.9910480501994793,0.9697224627757918,1.0041543205234262,,,,
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,operation,reported,0.9994317788768823,0.9880954581181456,1.0053496116371177,,,,
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,total,reported,0.999517493005974,0.9881867837482349,1.0055443942238302,,,,
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,read-out,reported,0.9328588761891167,0.8900400200838797,1.0120460821895223,,,,
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,stable bytes,reported,0.48690257352941174,,,,,0.48745910577971646,False
+16,Hash-V-pack vs Hash-V-grow-map,pack against grow-map,peak bytes,reported,0.8929759837962963,,,,,0.8930424563835236,False
+1,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+1,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+1,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+2,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+2,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+2,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+3,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+3,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+3,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+4,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+4,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+4,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+5,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+5,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+5,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+6,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+6,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+6,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+7,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+7,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+7,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+8,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+8,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+8,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+9,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+9,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+9,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+10,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+10,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+10,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+11,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+11,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+11,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+12,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+12,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+12,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+13,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+13,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+13,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+14,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+14,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+14,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+15,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+15,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+15,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+16,Hash-V-fixed vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+16,Hash-V-grow-map vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+16,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,

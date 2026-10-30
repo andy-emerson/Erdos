@@ -1,0 +1,352 @@
+job,pairing,kind,measure,verdict,ratio,lo,hi,h,caveat,heap_ratio,severe
+1,Hash-V-pack vs TC,against TC,build,loss,0.4736648829308796,0.47092614621641776,0.478566592392136,0.05,,,
+1,Hash-V-pack vs TC,against TC,operation,loss,0.8669675640603518,0.8630982535276254,0.8706282678485746,0.05,,,
+1,Hash-V-pack vs TC,against TC,total,reported,0.8452572502590443,0.8415683501178145,0.849211877348313,,,,
+1,Hash-V-pack vs TC,against TC,read-out,reported,0.5920226766551934,0.5697674418604651,0.7253380126431351,,,,
+1,Hash-V-pack vs TC,against TC,stable bytes,win,0.80224609375,,,,,0.8189655172413793,False
+1,Hash-V-pack vs TC,against TC,peak bytes,reported,1.1774553571428572,,,,,1.187465790914067,False
+2,Hash-V-pack vs TC,against TC,build,loss,0.5509494499174845,0.5476490168794835,0.5527292984085337,0.05,,,
+2,Hash-V-pack vs TC,against TC,operation,loss,0.8669598655352045,0.8619427876120125,0.8709076843916544,0.05,,,
+2,Hash-V-pack vs TC,against TC,total,reported,0.852250507042658,0.8469287157486548,0.8557462358012494,,,,
+2,Hash-V-pack vs TC,against TC,read-out,reported,0.5916411344174719,0.5684498412113723,0.677098456170992,,,,
+2,Hash-V-pack vs TC,against TC,stable bytes,win,0.29443359375,,,,,0.32088122605363983,False
+2,Hash-V-pack vs TC,against TC,peak bytes,reported,0.8903459821428571,,,,,0.9055829228243022,False
+4,Hash-V-pack vs TC,against TC,build,loss,0.6287375652271656,0.6098996405828072,0.6422946229675746,0.05,,,
+4,Hash-V-pack vs TC,against TC,operation,loss,0.8573033319481725,0.854301783896726,0.8625237278933571,0.05,,,
+4,Hash-V-pack vs TC,against TC,total,reported,0.8485444097421484,0.8457790282213732,0.8537176180669681,,,,
+4,Hash-V-pack vs TC,against TC,read-out,reported,0.5854584126273369,0.5670612737038255,0.6415319699946419,,,,
+4,Hash-V-pack vs TC,against TC,stable bytes,win,0.140625,,,,,0.17049808429118773,False
+4,Hash-V-pack vs TC,against TC,peak bytes,reported,0.7946428571428571,,,,,0.8119868637110016,False
+5,Hash-V-pack vs TC,against TC,build,loss,0.4960355388460036,0.4949437537504543,0.4999359072963134,0.05,,,
+5,Hash-V-pack vs TC,against TC,operation,loss,0.8821646151772408,0.8800357906856587,0.8864701634959901,0.05,,,
+5,Hash-V-pack vs TC,against TC,total,reported,0.8716396397593873,0.8695335973940095,0.8757999855342651,,,,
+5,Hash-V-pack vs TC,against TC,read-out,reported,0.599574854304003,0.5780787942382906,0.6527356504783535,,,,
+5,Hash-V-pack vs TC,against TC,stable bytes,win,0.743408203125,,,,,0.7475704567541303,False
+5,Hash-V-pack vs TC,against TC,peak bytes,reported,1.1179547991071428,,,,,1.1205747605164516,False
+6,Hash-V-pack vs TC,against TC,build,loss,0.5613746668123627,0.5530548491147241,0.5641572291734166,0.05,,,
+6,Hash-V-pack vs TC,against TC,operation,loss,0.8820279466200442,0.8706095253467204,0.8845554311960714,0.05,,,
+6,Hash-V-pack vs TC,against TC,total,reported,0.8741901046368667,0.8631561547390976,0.8769967757525685,,,,
+6,Hash-V-pack vs TC,against TC,read-out,reported,0.5748206193353474,0.5450997202418554,0.676543736232502,,,,
+6,Hash-V-pack vs TC,against TC,stable bytes,win,0.38818359375,,,,,0.3943148688046647,False
+6,Hash-V-pack vs TC,against TC,peak bytes,reported,0.9154575892857143,,,,,0.9191309176731918,False
+8,Hash-V-pack vs TC,against TC,build,loss,0.626137625286177,0.620152789274816,0.6292485719279203,0.05,,,
+8,Hash-V-pack vs TC,against TC,operation,loss,0.8790861479769151,0.8778279695924803,0.882405877472224,0.05,,,
+8,Hash-V-pack vs TC,against TC,total,reported,0.8740425543739797,0.8727198122792095,0.8772921187240833,,,,
+8,Hash-V-pack vs TC,against TC,read-out,reported,0.6387658837119754,0.5888828000285912,0.7751850155485379,,,,
+8,Hash-V-pack vs TC,against TC,stable bytes,win,0.1385498046875,,,,,0.14601554907677355,False
+8,Hash-V-pack vs TC,against TC,peak bytes,reported,0.7713448660714286,,,,,0.7757184506455643,False
+9,Hash-V-pack vs TC,against TC,build,loss,0.5126645207673666,0.510484404857249,0.5140767488830406,0.05,,,
+9,Hash-V-pack vs TC,against TC,operation,loss,0.8916136133936321,0.8876571471158875,0.8961679429098044,0.05,,,
+9,Hash-V-pack vs TC,against TC,total,reported,0.886440131866555,0.8825786877678429,0.8909246519881995,,,,
+9,Hash-V-pack vs TC,against TC,read-out,reported,0.6789183635344667,0.6380003741114852,0.6963619402985075,,,,
+9,Hash-V-pack vs TC,against TC,stable bytes,win,0.681732177734375,,,,,0.6829431845891246,False
+9,Hash-V-pack vs TC,against TC,peak bytes,reported,1.0727887834821428,,,,,1.0735534886961369,False
+10,Hash-V-pack vs TC,against TC,build,loss,0.5847411960762791,0.5829453498086059,0.5886090197353611,0.05,,,
+10,Hash-V-pack vs TC,against TC,operation,loss,0.8890789966368817,0.8861942977235943,0.8951854711481683,0.05,,,
+10,Hash-V-pack vs TC,against TC,total,reported,0.8856678580446956,0.8823749666139519,0.8916786735779231,,,,
+10,Hash-V-pack vs TC,against TC,read-out,reported,0.7624738432922576,0.6652988902359415,0.7870704825414467,,,,
+10,Hash-V-pack vs TC,against TC,stable bytes,win,0.37396240234375,,,,,0.37551816630090223,False
+10,Hash-V-pack vs TC,against TC,peak bytes,reported,0.8970598493303571,,,,,0.8980213885115128,False
+12,Hash-V-pack vs TC,against TC,build,loss,0.6615411827486344,0.6530442774440067,0.6769850628930818,0.05,,,
+12,Hash-V-pack vs TC,against TC,operation,loss,0.893408521266025,0.8912470782952124,0.8956296674159135,0.05,,,
+12,Hash-V-pack vs TC,against TC,total,reported,0.8914050305312429,0.8890011047202911,0.8933612979543035,,,,
+12,Hash-V-pack vs TC,against TC,read-out,reported,0.7005493215643926,0.6459982895853603,0.8406539202330061,,,,
+12,Hash-V-pack vs TC,against TC,stable bytes,win,0.135833740234375,,,,,0.13771031455742502,False
+12,Hash-V-pack vs TC,against TC,peak bytes,reported,0.7610037667410714,,,,,0.7621660222245445,False
+1,Pack-primes vs TC,against TC,build,loss,0.19581840452957808,0.19322784722049696,0.19843808938375782,0.05,,,
+1,Pack-primes vs TC,against TC,operation,loss,0.0033926334468053878,0.0033693064306403327,0.003402944532131987,0.05,,,
+1,Pack-primes vs TC,against TC,total,reported,0.0035004580906286544,0.0034778143941191124,0.003512175035626066,,,,
+1,Pack-primes vs TC,against TC,read-out,reported,0.4001824817518248,0.321240234375,0.5150380408667566,,,,
+1,Pack-primes vs TC,against TC,stable bytes,loss,2.33837890625,,,,,2.3381226053639845,True
+1,Pack-primes vs TC,against TC,peak bytes,reported,2.716099330357143,,,,,2.7088122605363987,False
+2,Pack-primes vs TC,against TC,build,loss,0.37483906404665723,0.3727884826568276,0.3758367997966936,0.05,,,
+2,Pack-primes vs TC,against TC,operation,loss,0.004252348467826615,0.004239423684370587,0.004274266022153584,0.05,,,
+2,Pack-primes vs TC,against TC,total,reported,0.004388285482198101,0.004374410843721414,0.00440895929774602,,,,
+2,Pack-primes vs TC,against TC,read-out,reported,0.4530820269526953,0.32078668578830494,0.5257644169835235,,,,
+2,Pack-primes vs TC,against TC,stable bytes,win,0.7393798828125,,,,,0.7720306513409961,False
+2,Pack-primes vs TC,against TC,peak bytes,reported,1.8138950892857142,,,,,1.8243021346469623,False
+4,Pack-primes vs TC,against TC,build,loss,0.5661946541585688,0.5522506839094753,0.5774290835411471,0.05,,,
+4,Pack-primes vs TC,against TC,operation,loss,0.014908587796444554,0.014824851657803598,0.01497934712709879,0.05,,,
+4,Pack-primes vs TC,against TC,total,reported,0.015301106445276373,0.015214644531830811,0.015375224909543603,,,,
+4,Pack-primes vs TC,against TC,read-out,reported,0.4775989918176505,0.4042170965694462,0.5330824401008827,,,,
+4,Pack-primes vs TC,against TC,stable bytes,win,0.18511962890625,,,,,0.2289272030651341,False
+4,Pack-primes vs TC,against TC,peak bytes,reported,1.4261300223214286,,,,,1.4438970990695128,False
+5,Pack-primes vs TC,against TC,build,loss,0.199333314051021,0.1968819280815135,0.20231053508583913,0.05,(c),,
+5,Pack-primes vs TC,against TC,operation,loss,0.004078114627094057,0.004062375943517216,0.004093457016453374,0.05,(c),,
+5,Pack-primes vs TC,against TC,total,reported,0.0041427297014035875,0.004126038939032217,0.004159132982612297,,,,
+5,Pack-primes vs TC,against TC,read-out,reported,0.0981260554130965,0.07591241769270311,0.14392092549089136,,,,
+5,Pack-primes vs TC,against TC,stable bytes,loss,2.098876953125,,,,,2.0998542274052476,True
+5,Pack-primes vs TC,against TC,peak bytes,reported,2.4442138671875,,,,,2.4432875190892687,False
+6,Pack-primes vs TC,against TC,build,loss,0.37292668524113093,0.3697310881968613,0.3774078542291178,0.05,(c),,
+6,Pack-primes vs TC,against TC,operation,loss,0.0037197631304630137,0.0037025076193458292,0.003750389085298802,0.05,(c),,
+6,Pack-primes vs TC,against TC,total,reported,0.003778133260206521,0.0037621985411419815,0.003809353353758958,,,,
+6,Pack-primes vs TC,against TC,read-out,reported,0.09665206210115249,0.07786211502401685,0.16776506564032267,,,,
+6,Pack-primes vs TC,against TC,stable bytes,win,0.766510009765625,,,,,0.7738095238095238,False
+6,Pack-primes vs TC,against TC,peak bytes,reported,1.6913626534598214,,,,,1.6941552131056503,False
+8,Pack-primes vs TC,against TC,build,loss,0.6092658488901604,0.5992876365721861,0.6148066085448678,0.05,(c),,
+8,Pack-primes vs TC,against TC,operation,loss,0.006037877963678245,0.005996242624003912,0.006108166180961618,0.05,(c),,
+8,Pack-primes vs TC,against TC,total,reported,0.006125315162068085,0.0060842215791897,0.006196767798578194,,,,
+8,Pack-primes vs TC,against TC,read-out,reported,0.1883800817624347,0.10502739586169343,0.23337349047840222,,,,
+8,Pack-primes vs TC,against TC,stable bytes,win,0.1742706298828125,,,,,0.184645286686103,False
+8,Pack-primes vs TC,against TC,peak bytes,reported,1.3382655552455358,,,,,1.3429126752741913,False
+9,Pack-primes vs TC,against TC,build,loss,0.2181753929136055,0.20585618299018218,0.22036755127247334,0.05,(c),,
+9,Pack-primes vs TC,against TC,operation,loss,0.0063077211383457754,0.006298174974700616,0.0063312209472212305,0.05,(c),,
+9,Pack-primes vs TC,against TC,total,reported,0.006355787611555613,0.006346087499538351,0.006379478944257846,,,,
+9,Pack-primes vs TC,against TC,read-out,reported,0.12465378711873708,0.10139929189059568,0.13164141934443557,,,,
+9,Pack-primes vs TC,against TC,stable bytes,loss,1.8891067504882812,,,,,1.889600097537186,False
+9,Pack-primes vs TC,against TC,peak bytes,reported,2.2834080287388394,,,,,2.2834500296095026,False
+10,Pack-primes vs TC,against TC,build,loss,0.38482376815020586,0.36429985136691295,0.4041343597982466,0.05,(c),,
+10,Pack-primes vs TC,against TC,operation,loss,0.006309500095004841,0.006294610450590329,0.0063616043100493515,0.05,(c),,
+10,Pack-primes vs TC,against TC,total,reported,0.0063583309119736465,0.006343250700015952,0.006412877278226029,,,,
+10,Pack-primes vs TC,against TC,read-out,reported,0.1692052091717747,0.1507956189295309,0.1823994956488455,,,,
+10,Pack-primes vs TC,against TC,stable bytes,win,0.7158126831054688,,,,,0.7176908071202146,False
+10,Pack-primes vs TC,against TC,peak bytes,reported,1.6138698032924108,,,,,1.6147281150938795,False
+12,Pack-primes vs TC,against TC,build,loss,0.6370917216908273,0.6253956977636328,0.6456302043078179,0.05,(c),,
+12,Pack-primes vs TC,against TC,operation,loss,0.007222769327814067,0.007208278280200685,0.007276072204975776,0.05,(c),,
+12,Pack-primes vs TC,against TC,total,reported,0.00727644228707749,0.007261439180948322,0.007329557802274589,,,,
+12,Pack-primes vs TC,against TC,read-out,reported,0.15077352141709527,0.1335881963220943,0.17423010641715916,,,,
+12,Pack-primes vs TC,against TC,stable bytes,win,0.16500091552734375,,,,,0.16776396000975372,False
+12,Pack-primes vs TC,against TC,peak bytes,reported,1.2976161411830358,,,,,1.2989514752499391,False
+1,Pack-coprime vs TC,against TC,build,loss,0.013926168294543174,0.013824949822005602,0.014065278114907915,0.05,,,
+1,Pack-coprime vs TC,against TC,operation,loss,0.09961006956635339,0.09898453138932346,0.1000635748799209,0.05,,,
+1,Pack-coprime vs TC,against TC,total,reported,0.0836861364417768,0.08315284289307576,0.0840389402033543,,,,
+1,Pack-coprime vs TC,against TC,read-out,reported,0.5703016643550625,0.5207886929289599,0.6984024179620034,,,,
+1,Pack-coprime vs TC,against TC,stable bytes,loss,2.67474365234375,,,,,2.675287356321839,True
+1,Pack-coprime vs TC,against TC,peak bytes,reported,3.0731724330357144,,,,,3.0670498084291187,False
+2,Pack-coprime vs TC,against TC,build,loss,0.09734855195941004,0.09682539268970956,0.09772489589896323,0.05,,,
+2,Pack-coprime vs TC,against TC,operation,loss,0.10110199195201335,0.10074437650742746,0.10207522944738817,0.05,,,
+2,Pack-coprime vs TC,against TC,total,reported,0.10100039512639292,0.10060672690101956,0.10187703342492321,,,,
+2,Pack-coprime vs TC,against TC,read-out,reported,0.5592959599388898,0.5373181664411367,0.653251784781473,,,,
+2,Pack-coprime vs TC,against TC,stable bytes,win,0.85858154296875,,,,,0.896551724137931,False
+2,Pack-coprime vs TC,against TC,peak bytes,reported,2.0479561941964284,,,,,2.061576354679803,False
+4,Pack-coprime vs TC,against TC,build,loss,0.5256181727761104,0.5120676964127572,0.5375859729294007,0.05,,,
+4,Pack-coprime vs TC,against TC,operation,loss,0.10530923905962879,0.10488488561909101,0.10592329187516172,0.05,,,
+4,Pack-coprime vs TC,against TC,total,reported,0.10755400252926178,0.10714669429729419,0.10820618405963364,,,,
+4,Pack-coprime vs TC,against TC,read-out,reported,0.5537332712180247,0.5396949591053246,0.6136392756470488,,,,
+4,Pack-coprime vs TC,against TC,stable bytes,win,0.19537353515625,,,,,0.2471264367816092,False
+4,Pack-coprime vs TC,against TC,peak bytes,reported,1.621337890625,,,,,1.645046524356869,False
+5,Pack-coprime vs TC,against TC,build,loss,0.0068756867778782225,0.0068462979297389814,0.00691380824502995,0.05,,,
+5,Pack-coprime vs TC,against TC,operation,loss,0.05987958563356826,0.05966658017012489,0.0600846008711568,0.05,,,
+5,Pack-coprime vs TC,against TC,total,reported,0.0534713125115068,0.05329943745889856,0.053671860935734415,,,,
+5,Pack-coprime vs TC,against TC,read-out,reported,0.5891616597822005,0.549927180047333,0.6506881598793364,,,,
+5,Pack-coprime vs TC,against TC,stable bytes,loss,2.331298828125,,,,,2.3333333333333335,True
+5,Pack-coprime vs TC,against TC,peak bytes,reported,2.756321498325893,,,,,2.7562821046786063,False
+6,Pack-coprime vs TC,against TC,build,loss,0.04974837968967336,0.049320208625628685,0.05004938321285696,0.05,,,
+6,Pack-coprime vs TC,against TC,operation,loss,0.05913753100976415,0.058903855727974005,0.05926940631544622,0.05,,,
+6,Pack-coprime vs TC,against TC,total,reported,0.058967495379122645,0.05874592479357884,0.05908771999120458,,,,
+6,Pack-coprime vs TC,against TC,read-out,reported,0.5345478489903424,0.506866048862679,0.6321485481586402,,,,
+6,Pack-coprime vs TC,against TC,stable bytes,win,0.854034423828125,,,,,0.8632167152575316,False
+6,Pack-coprime vs TC,against TC,peak bytes,reported,1.9259207589285714,,,,,1.9298209079550186,False
+8,Pack-coprime vs TC,against TC,build,loss,0.5471515057435579,0.5426029460638743,0.5491382825746357,0.05,,,
+8,Pack-coprime vs TC,against TC,operation,loss,0.05959157533606799,0.059458388867010555,0.05989063018060663,0.05,,,
+8,Pack-coprime vs TC,against TC,total,reported,0.0603661168378208,0.060231982455799596,0.060670712722686544,,,,
+8,Pack-coprime vs TC,against TC,read-out,reported,0.5786100453435647,0.5207315017697624,0.7293623554913294,,,,
+8,Pack-coprime vs TC,against TC,stable bytes,win,0.1822509765625,,,,,0.19484936831875607,False
+8,Pack-coprime vs TC,against TC,peak bytes,reported,1.5236903599330358,,,,,1.529709843120922,False
+9,Pack-coprime vs TC,against TC,build,loss,0.004226069613312217,0.0041990502142350795,0.004238111010081802,0.05,(c),,
+9,Pack-coprime vs TC,against TC,operation,loss,0.033524865381826065,0.033192705290963805,0.0337288808104586,0.05,(c),,
+9,Pack-coprime vs TC,against TC,total,reported,0.03180400491446526,0.03157173247327214,0.03204143217074322,,,,
+9,Pack-coprime vs TC,against TC,read-out,reported,0.2262885073395495,0.14267220411155032,0.2398293463355173,,,,
+9,Pack-coprime vs TC,against TC,stable bytes,loss,2.0248184204101562,,,,,2.0256644720799803,True
+9,Pack-coprime vs TC,against TC,peak bytes,reported,2.5552520751953125,,,,,2.555422022503222,False
+10,Pack-coprime vs TC,against TC,build,loss,0.025560885814084604,0.025359686587711695,0.026125001068145224,0.05,(c),,
+10,Pack-coprime vs TC,against TC,operation,loss,0.033208677337206255,0.03305853867764098,0.03371262796154341,0.05,(c),,
+10,Pack-coprime vs TC,against TC,total,reported,0.033138608907843994,0.03299551533964111,0.033644039523441534,,,,
+10,Pack-coprime vs TC,against TC,read-out,reported,0.19981233701347761,0.13940821291154207,0.248022356611613,,,,
+10,Pack-coprime vs TC,against TC,stable bytes,win,0.7735214233398438,,,,,0.7758473543038283,False
+10,Pack-coprime vs TC,against TC,peak bytes,reported,1.840179443359375,,,,,1.841240812345421,False
+12,Pack-coprime vs TC,against TC,build,loss,0.4492045558643012,0.4410453869568785,0.453578755506878,0.05,(c),,
+12,Pack-coprime vs TC,against TC,operation,loss,0.03449422495077313,0.0342020898776554,0.03463817699336354,0.05,(c),,
+12,Pack-coprime vs TC,against TC,total,reported,0.03473322482910072,0.03444040511826782,0.034874509280062645,,,,
+12,Pack-coprime vs TC,against TC,read-out,reported,0.24143231610627489,0.2011198720146269,0.30628119084494926,,,,
+12,Pack-coprime vs TC,against TC,stable bytes,win,0.17242431640625,,,,,0.17574981711777615,False
+12,Pack-coprime vs TC,against TC,peak bytes,reported,1.4975847516741072,,,,,1.4992336363953043,False
+1,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.41341127785940013,0.4067365341017727,0.41730410969437687,0.05,,,
+1,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.003913218426438406,0.003887077994608964,0.003931469200127108,0.05,,,
+1,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.0041412931856613785,0.004113402774997366,0.0041596150741840515,,,,
+1,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.6759580291970803,0.5423697815060476,0.7548213801518439,,,,
+1,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,2.9147900182592816,,,,,2.8549707602339183,True
+1,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,2.3067535545023694,,,,,2.2811707766766536,False
+2,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.6803510995478744,0.6775569702403255,0.6842728889245414,0.05,,,
+2,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.004904896566580382,0.0048842372491389105,0.004929224558289574,0.05,,,
+2,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.0051490558772744185,0.0051287904730405245,0.005174494348848587,,,,
+2,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.7658054867986799,0.5325023854961832,0.841202445652174,,,,
+2,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,2.5111940298507465,,,,,2.4059701492537315,True
+2,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,2.037292384832341,,,,,2.014505893019039,False
+4,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.9005262059600339,0.8901390845940869,0.9163555580569314,0.05,,,
+4,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.017390096644749584,0.017268268001860272,0.017442738043068253,0.05,,,
+4,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.01803218107338189,0.017907455126708483,0.01808205664710734,,,,
+4,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.8157692869666862,0.6852843426883308,0.8906149711168164,,,,
+4,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,1.31640625,,,,,1.3426966292134832,False
+4,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,1.79468047752809,,,,,1.7782271654870239,False
+5,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.40185288843367506,0.3955910231673256,0.4079726717368185,0.05,(c),,
+5,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.0046228499272493485,0.004594929751386732,0.004633629385008952,0.05,(c),,
+5,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.004752800942539937,0.0047238189620821954,0.004764024836711927,,,,
+5,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.16365939083119646,0.12562808029811276,0.2344033952395727,,,,
+5,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,2.823316912972085,,,,,2.8089047773805653,True
+5,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,2.1863261995382794,,,,,2.180387784178901,False
+6,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.6643097868286604,0.6576743689596729,0.6749387094731302,0.05,(c),,
+6,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.00421728488844061,0.0041978782688037765,0.004274616301334561,0.05,(c),,
+6,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.00432186688017469,0.004301252585256205,0.004378980086818296,,,,
+6,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.16814299774581706,0.14231589221956795,0.2767833605736279,,,,
+6,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,1.9746069182389938,,,,,1.96241528034504,False
+6,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,1.8475598140810727,,,,,1.8432142587417868,False
+8,Pack-primes vs Hash-V-pack,factored against pack,build,tie,0.9730542045156522,0.9607522965956347,0.9804005138487027,0.05,(c),,
+8,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.00686835752966136,0.0068229687916290865,0.0069346775632865365,0.05,(c),,
+8,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.0070080285352413455,0.006962860639578466,0.007076623926700366,,,,
+8,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.294912559618442,0.15981476135488837,0.3121581825830879,,,,
+8,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,1.2578193832599118,,,,,1.264559068219634,False
+8,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,1.7349769397721106,,,,,1.731185682326622,False
+9,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.4255714684274156,0.4015169196913514,0.4303990748271177,0.05,(c),,
+9,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.007074500707024339,0.007053988486534974,0.0071115227805558364,0.05,(c),,
+9,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.007170013386208484,0.007149777278076138,0.007206998148720365,,,,
+9,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.18360644491892403,0.15189087780175758,0.19180708213521092,,,,
+9,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,2.7710394377545997,,,,,2.7668481656699098,True
+9,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,2.1284786566533374,,,,,2.1270016386261497,False
+10,Pack-primes vs Hash-V-pack,factored against pack,build,loss,0.6581095546755455,0.6215157268075031,0.6904520835198436,0.05,(c),,
+10,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.007096669833470119,0.007055438942767421,0.007132136477503714,0.05,(c),,
+10,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.007179137025488364,0.007140552197130593,0.007217826326045436,,,,
+10,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.22191608362743276,0.21105088302150726,0.2458740393755798,,,,
+10,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,1.914130079973886,,,,,1.9112012987012987,False
+10,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,1.7990659201804011,,,,,1.7980953858686166,False
+12,Pack-primes vs Hash-V-pack,factored against pack,build,tie,0.9630416643810107,0.9333418020923602,0.9786996714357132,0.05,(c),,
+12,Pack-primes vs Hash-V-pack,factored against pack,operation,loss,0.008084509108530638,0.008071650569676809,0.008131829906019603,0.05,(c),,
+12,Pack-primes vs Hash-V-pack,factored against pack,total,reported,0.008162891208658552,0.008151182043205293,0.008212519399113962,,,,
+12,Pack-primes vs Hash-V-pack,factored against pack,read-out,reported,0.2152218505906248,0.1905563414328433,0.2426735335672941,,,,
+12,Pack-primes vs Hash-V-pack,factored against pack,stable bytes,loss,1.2147270276342395,,,,,1.2182381584772024,False
+12,Pack-primes vs Hash-V-pack,factored against pack,peak bytes,reported,1.7051376062696213,,,,,1.704289403322745,False
+1,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.02940088825748008,0.029272211233708587,0.029520115501576936,0.05,,,
+1,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.11489480540637535,0.11416235113227428,0.11552249288791157,0.05,,,
+1,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.09900670643893285,0.0983706831962257,0.0994724100825464,,,,
+1,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9633105062413315,0.900757330309412,0.9830692280453258,,,,
+1,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,3.3340687766281194,,,,,3.2666666666666666,True
+1,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.610011848341232,,,,,2.582853191979719,False
+2,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.17669234804389022,0.17591515418379772,0.17795711849378187,0.05,,,
+2,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.11661669238817597,0.11593943531088217,0.11757178420470475,0.05,,,
+2,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.11851022004887761,0.11782421622645012,0.11948058620341857,,,,
+2,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9453297402817857,0.9291701592623638,0.9827380952380952,,,,
+2,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,2.916044776119403,,,,,2.7940298507462686,True
+2,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.3001801942964586,,,,,2.2765185856754306,False
+4,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.8359897703681858,0.8264888147317039,0.8491537538129647,0.05,,,
+4,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.12283778113905097,0.12219392404823429,0.12343948528598316,0.05,,,
+4,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.12675117683227066,0.12610291369750468,0.12735998204321652,,,,
+4,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9458114518041674,0.9292689033550325,0.979597172644959,,,,
+4,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,1.3893229166666667,,,,,1.449438202247191,False
+4,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.040335323033708,,,,,2.025952140208965,False
+5,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.013861278556520543,0.01373473595451943,0.013922433921375772,0.05,,,
+5,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.06787801800635306,0.06747994568250969,0.06811229304477738,0.05,,,
+5,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.061345664047894086,0.0609858749319608,0.06154918416688366,,,,
+5,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9826323695080736,0.9480978260869565,1.0074943438914028,,,,
+5,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,3.135960591133005,,,,,3.121221969450764,True
+5,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.4655035253010547,,,,,2.459703896425695,False
+6,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.08861885409286123,0.08778647368598229,0.08978939376996246,0.05,,,
+6,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.06704723046064563,0.06670911675544709,0.0679951205578226,0.05,,,
+6,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.06745385822414152,0.06709207857626984,0.06837260650250702,,,,
+6,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9299385425812116,0.8935483361415333,0.9667597277961961,,,,
+6,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,2.2000786163522013,,,,,2.1891558841651264,True
+6,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.103779335568424,,,,,2.099614832716562,False
+8,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.8738518237000718,0.868647560727553,0.8773371249075335,0.05,,,
+8,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.0677880950271018,0.06754371018224749,0.06792607508461737,0.05,,,
+8,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.06906542082617151,0.06881656435055868,0.06920775094177528,,,,
+8,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.9058249040809209,0.8770375914836993,0.9680890885270448,,,,
+8,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,1.3154185022026432,,,,,1.3344425956738768,False
+8,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,1.9753685114848978,,,,,1.971991051454139,False
+9,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.008243343243231558,0.008195692494884456,0.008270479888246007,0.05,(c),,
+9,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.03760021704269943,0.03722960708891314,0.037859884879206565,0.05,(c),,
+9,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.03587834504682944,0.03561780054315943,0.036178780157850116,,,,
+9,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.333307389361934,0.2100047238515136,0.3620295596525979,,,,
+9,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,2.9701083307220557,,,,,2.966080514147996,True
+9,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.381878068207679,,,,,2.3803397310057273,False
+10,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.04371316060096817,0.043288009583119964,0.04451008312444852,0.05,(c),,
+10,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.03735177353511295,0.03706882536781628,0.03786396387626316,0.05,(c),,
+10,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.03741651975606824,0.03715821668925411,0.037943513396182946,,,,
+10,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.2620579561794741,0.1939866490583787,0.3192914491875028,,,,
+10,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,2.068447037701975,,,,,2.0660714285714286,True
+10,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,2.0513452304581947,,,,,2.050330689113443,False
+12,Pack-coprime vs Hash-V-pack,factored against pack,build,loss,0.6790273494356062,0.6607474664282916,0.6898205543171801,0.05,(c),,
+12,Pack-coprime vs Hash-V-pack,factored against pack,operation,loss,0.03860968877025294,0.0382443181011944,0.03878197240301994,0.05,(c),,
+12,Pack-coprime vs Hash-V-pack,factored against pack,total,reported,0.03896458247313353,0.03860276391529288,0.03914392730026165,,,,
+12,Pack-coprime vs Hash-V-pack,factored against pack,read-out,reported,0.34463285977800073,0.2944561248201837,0.3706515304523453,,,,
+12,Pack-coprime vs Hash-V-pack,factored against pack,stable bytes,loss,1.2693776679397888,,,,,1.2762284196547145,False
+12,Pack-coprime vs Hash-V-pack,factored against pack,peak bytes,reported,1.9679071472765188,,,,,1.967069631390114,False
+1,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.07111777020141968,0.07048582149228025,0.07218542345501215,,,,
+1,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,29.360693139469408,29.208745019318126,29.557855855754397,,,,
+1,Pack-coprime vs Pack-primes,coprime against primes,total,reported,23.907195651283295,23.766002955421243,24.046142688717318,,,,
+1,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.4251040221914009,1.2667814113597247,1.7913681635505854,,,,
+1,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.1438452704113593,,,,,1.1442031954117164,False
+1,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1314654065437362,,,,,1.1322489391796322,False
+2,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.2597075953302797,0.25906804904238734,0.2609774741439209,,,,
+2,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,23.77556607059694,23.70417488721575,23.90820698992359,,,,
+2,Pack-coprime vs Pack-primes,coprime against primes,total,reported,23.01591260097363,22.938935363112847,23.139823314944817,,,,
+2,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.2344253946698354,1.128449744463373,1.8048738482734865,,,,
+2,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.161218424962853,,,,,1.1612903225806452,False
+2,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1290378403322565,,,,,1.13006300630063,False
+4,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.928334750099752,0.9182442271687123,0.9359533060570561,,,,
+4,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,7.063662936924398,7.029138257613806,7.12603913992541,,,,
+4,Pack-coprime vs Pack-primes,coprime against primes,total,reported,7.0291650420133465,6.995975623856676,7.092258979193532,,,,
+4,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.1594104692529223,1.068733153638814,1.3688289806234204,,,,
+4,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.0553907022749753,,,,,1.0794979079497908,False
+4,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1368794326241134,,,,,1.1393100833965124,False
+5,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.034493415265841286,0.0339072552617661,0.0350084410417262,,,,
+5,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,14.683154131014867,14.646267789124497,14.726200612740831,,,,
+5,Pack-coprime vs Pack-primes,coprime against primes,total,reported,12.907265587081465,12.87546216460667,12.943387254079573,,,,
+5,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,6.004130679684566,4.211541962497725,7.809800976342471,,,,
+5,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.1107363033616378,,,,,1.1111882448223995,False
+5,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1276924394089654,,,,,1.1281038695380419,False
+6,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.13339989241452788,0.13132019725836935,0.13478359432218465,,,,
+6,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,15.898198066822351,15.764443118044534,15.959681885970713,,,,
+6,Pack-coprime vs Pack-primes,coprime against primes,total,reported,15.607574248426419,15.475454387024747,15.667108034814618,,,,
+6,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,5.53064091308165,3.3095301475868015,6.793055313208864,,,,
+6,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.1141856113389337,,,,,1.115541601255887,False
+6,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1386799602018776,,,,,1.1391051380807997,False
+8,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.8980505090515903,0.8905011219147345,0.9114539284223148,,,,
+8,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,9.869622356488486,9.772537750242236,9.927416860698804,,,,
+8,Pack-coprime vs Pack-primes,coprime against primes,total,reported,9.855185446072532,9.758458325084245,9.91299304842051,,,,
+8,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,3.07150331356819,2.8510966415352983,5.778778870170215,,,,
+8,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.0457928377550127,,,,,1.055263157894737,False
+8,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1385560615833676,,,,,1.139098521658224,False
+9,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.019370056159292368,0.019159886766433928,0.020531684748001405,,,,
+9,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,5.314893389630425,5.2600635712442285,5.337313428809893,,,,
+9,Pack-coprime vs Pack-primes,coprime against primes,total,reported,5.003943941839972,4.964786350660728,5.031824679965232,,,,
+9,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.8153360003735932,1.1488897997540664,2.2119859688684267,,,,
+9,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.0718390688545247,,,,,1.0720069684162983,False
+9,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1190518921870554,,,,,1.1191057344662934,False
+10,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.06642231569258888,0.06299960645150877,0.07100492465400311,,,,
+10,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,5.263281850728109,5.237651114566426,5.343415680003247,,,,
+10,Pack-coprime vs Pack-primes,coprime against primes,total,reported,5.211840869345012,5.187885459185959,5.291605493210185,,,,
+10,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.1808876215544344,0.8672275476360445,1.4516287590753734,,,,
+10,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.080619890645151,,,,,1.0810328718253632,False
+10,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1402279413155114,,,,,1.140279156059887,False
+12,Pack-coprime vs Pack-primes,coprime against primes,build,reported,0.7050861603916659,0.6923327549951628,0.7164923977979143,,,,
+12,Pack-coprime vs Pack-primes,coprime against primes,operation,reported,4.775761676056824,4.715901167201218,4.79437196582457,,,,
+12,Pack-coprime vs Pack-primes,coprime against primes,total,reported,4.773380102359194,4.713675903776183,4.79208344027491,,,,
+12,Pack-coprime vs Pack-primes,coprime against primes,read-out,reported,1.601291220348856,1.3204742416947521,1.8755463775598005,,,,
+12,Pack-coprime vs Pack-primes,coprime against primes,stable bytes,reported,1.0449900587228926,,,,,1.0476017441860466,False
+12,Pack-coprime vs Pack-primes,coprime against primes,peak bytes,reported,1.1541045954535987,,,,,1.154187562015608,False
+1,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+1,Pack-primes vs TC,against TC,gcd work (reported),reported,0.02530665903332167,,,,,,
+1,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.24199470613388746,,,,,,
+2,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+2,Pack-primes vs TC,against TC,gcd work (reported),reported,0.025162485600581815,,,,,,
+2,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.2512939569335742,,,,,,
+4,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+4,Pack-primes vs TC,against TC,gcd work (reported),reported,0.023822808240383707,,,,,,
+4,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.311825642672777,,,,,,
+5,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+5,Pack-primes vs TC,against TC,gcd work (reported),reported,0.012064840260446411,,,,,,
+5,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.2199642627643877,,,,,,
+6,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+6,Pack-primes vs TC,against TC,gcd work (reported),reported,0.012159957815630012,,,,,,
+6,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.21677996733335153,,,,,,
+8,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+8,Pack-primes vs TC,against TC,gcd work (reported),reported,0.012073282556868988,,,,,,
+8,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.23108560951411095,,,,,,
+9,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+9,Pack-primes vs TC,against TC,gcd work (reported),reported,0.005836515411388597,,,,,,
+9,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.1958237599933218,,,,,,
+10,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+10,Pack-primes vs TC,against TC,gcd work (reported),reported,0.005821923474249929,,,,,,
+10,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.19376156283945523,,,,,,
+12,Hash-V-pack vs TC,against TC,gcd work (check),passed,1.0,,,,,,
+12,Pack-primes vs TC,against TC,gcd work (reported),reported,0.005690621639372891,,,,,,
+12,Pack-coprime vs TC,against TC,gcd work (reported),reported,0.20296870153142696,,,,,,

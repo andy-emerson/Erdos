@@ -317,8 +317,15 @@ static void fbuf_put(fbuf *b, uint32_t k, sk_int q, unsigned e) {
 /* shrink to E entries and make it the matrix's (f) */
 static void fbuf_finish(X *x, fbuf *b) {
     b->off[b->W] = b->E;
-    b->fac = sk_xrealloc(b->fac, (size_t)b->E * (b->w / 8));
-    b->exp = sk_xrealloc(b->exp, b->E);
+    if (b->E == 0) { /* no entry (every number 0 or 1): the two arrays of no entries are not kept */
+        free(b->fac);
+        free(b->exp);
+        b->fac = NULL;
+        b->exp = NULL;
+    } else {
+        b->fac = sk_xrealloc(b->fac, (size_t)b->E * (b->w / 8));
+        b->exp = sk_xrealloc(b->exp, b->E);
+    }
     ACCT(-(int64_t)((uint64_t)(b->cap - b->E) * (b->w / 8 + 1)));
     x->foff = b->off;
     x->ffac = b->fac;
@@ -368,7 +375,12 @@ static void piece_push(X *x, sk_int q) {
 /* shrink (q) to its pieces */
 static void piece_shrink(X *x) {
     if (x->qcap == x->nq) return;
-    x->piece = sk_xrealloc(x->piece, (size_t)x->nq * (x->w / 8));
+    if (x->nq == 0) {
+        free(x->piece);
+        x->piece = NULL;
+    } else {
+        x->piece = sk_xrealloc(x->piece, (size_t)x->nq * (x->w / 8));
+    }
     ACCT(-(int64_t)((uint64_t)(x->qcap - x->nq) * (x->w / 8)));
     x->qcap = x->nq;
 }
@@ -1950,7 +1962,12 @@ void MH3F(memory)(const X *x, sk_memory *r) {
     memset(r, 0, sizeof *r);
     sk_memory_add(r, "cells", f.bytes_cells, f.bytes_cells);
     sk_memory_add(r, f.packed ? "list" : "table", f.bytes_vals, f.bytes_vals);
-    sk_memory_add(r, "factorizations", bytes_f(x), bytes_f(x));
+    if (x->factored) { /* (f): its three arrays */
+        uint64_t o = 4ull * (x->W + 1), q = (uint64_t)x->Ecap * (x->w / 8), e = x->Ecap;
+        sk_memory_add(r, "f-offsets", o, o);
+        sk_memory_add(r, "f-factors", q, q);
+        sk_memory_add(r, "f-exponents", e, e);
+    }
 #if MH3_COPRIME
     sk_memory_add(r, "base", bytes_q(x), bytes_q(x));
 #endif

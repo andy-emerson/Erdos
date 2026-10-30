@@ -419,3 +419,64 @@ run for this change. The choices below are **pending the author's review**, exce
   - `test_vendor08_and_official_data` covers the new archive.
   - `test_block_rerun_once_and_harness_bug` is renamed `test_block_rerun_once`, since its harness-bug case moved to
     the new test.
+
+# Round 3 harness (rule-r3, spec v0.3), Oct 29, 2026
+
+New files beside round 2's, which are unchanged: `bench_r3.c`, `api_r3.h`, `r3_common.py`, `r3_model.py`,
+`r3_gen.py`, `r3_libconf.py`, `r3_checks.py`, `r3_runner.py`, `r3_analyze.py`, `test_r3_harness.py`. Round 2's whole
+timing method is kept: the fork/exec spawner, the blocks, the idle and disturbance checks, calibration, reps, the
+bootstrap, the profile and the stops. Each choice is **pending the author's review**.
+
+- **R3-H1. Pins.**
+  - `r3_common.RULE_SHA256` is the sha256 of `research/rule-r3.md` as approved and committed at `3267a47` (`1820c273...`).
+    A measured run is refused if the file differs or holds the word "PROPOSED".
+  - `r3_libconf.TC_SHA256` pins `src/tc.c` and `include/tc.h` as at round 2's run (`82c73bf`). They are checked
+    before a run, with the 08 module.
+  - `results-r2/`, the three-structure Q32 (retired), joins the protected official data, with the sha256 of its six
+    files.
+- **R3-H2. `create` is timed** (§6 item 4, §11.3). The driver reads the clock just before and just after `create`.
+  The creation part starts at the first read, so it holds `create` and every entering call, and `create`'s own time
+  is reported as a sixth figure (`rep i total creation ops read create`). The runner's records call the part
+  `creation` (round 2's `entry`). In the profiling build `prep` carries `create=`, and the profile's per-entry figures
+  leave `create` out (it is reported as its own batch figure, not part of M).
+- **R3-H3. The call-for-call checks** (step 5). Each Q32 row's per-call arithmetic file must equal TC's byte for byte,
+  with equal G. For the two Q32 rows, the counting driver also writes each call's intern calls found and new (a
+  second per-call file), which must be equal byte for byte. Their totals per phase of every counter but the storage
+  counters must be equal too, as must their found/new splits after entry and at the end. Any failure is a bug of every
+  row, as in round 2.
+- **R3-H4. The model** (`r3_model.py`) subclasses round 2's model, unchanged, and replaces only `intern`, simulating
+  both stores side by side: the list (entries examined from the value's position) and the table (the probe sequence
+  from `h(v)`). `r3_gen.py` checks each job's values against the reference and every arithmetic counter against round
+  2's model. It predicts per phase the entries examined, the probes and the longest store; the storage totals after
+  entry and at the end; the sha256 of Q32-index's list and of Q32-hash's table (all 32,768 slots, −1 empty); and the
+  fill.
+- **R3-H5. P_idx** (rule-r3 item 5, Run plan step 3). `Spawner.run` reads `time.monotonic()` just before `fork` and
+  just after `waitpid`, and keeps the difference in memory (`launch_s` on each record). P_idx sums Q32-index's
+  launches in the pilot's round blocks, its calibration launch included (it is in the block). P_rest is the round
+  blocks' wall time less P_idx. **For the author:** the rule's "Q32-index's launches in the pilot's round blocks" is
+  read as including the calibration launch.
+- **R3-H6. Rows and order.** Calibration runs TC, Q32-index and Q32-hash. Q32-hash-null takes Q32-hash's r. Rounds
+  rotate over TC, Q32-index, Q32-hash and Q32-hash-null, giving 3 + 48 = 51 launches per job. The profile runs
+  Q32-index, Q32-hash and TC three times per job (9 launches).
+- **R3-H7. The analysis.**
+  - Each pairing (row, reference) gives T(reference)/T(row). Creation and operations each get a verdict with their
+    own band from Q32-hash against Q32-hash-null on that part. Total and read-out are reported with ratio and
+    interval.
+  - The pairings with Q32-index carry the noise caveat of rule-r3 item 8, marked "(c)".
+  - Bytes are row over reference.
+  - Speed against fill is a table sorted by Q32-hash's fill at the end, giving each row's creation ns per entering
+    call (`create` included, as in the creation part) and operations ns per operation, with ratios to TC. A plot
+    `speed_vs_fill.png` (matplotlib, Agg) goes into the results folder.
+  - Round 2's statistics and formatting are imported from `r2_analyze.py` unchanged.
+- **R3-H8. Self-tests** (`test_r3_harness.py`, untimed: no measurement is made or reported). They cover:
+  - every round-2 self-test, adapted;
+  - the two Q32 sources identical to round 2's `q32.c` outside storage, function by function;
+  - the allocation sites by the code, and the allocation check binaries;
+  - the model against hand-worked cases;
+  - the full table and capacity in every build of both Q32 rows, by a 32,769-whole-number workload;
+  - the runner's untimed steps end to end on toy jobs (build, generation, unit tests, gates, counting runs with
+    every call-for-call check);
+  - the pilot's P_idx and its stop;
+  - the analysis's pairings, the bands per measure, storage and the plot.
+
+  `--full` runs every gate and counting run at full size.

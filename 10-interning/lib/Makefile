@@ -166,3 +166,72 @@ r2-sanitize: build/r2/asan/r2_unit build/r2/asan/r2_diff
 	ASAN_OPTIONS=detect_leaks=1 ./build/r2/asan/r2_diff --seeds 60
 
 r2-check: hashes r2-test r2-sanitize
+
+# ======================================================================================================== round 3
+# Spec v0.3 (TC, Q32-index, Q32-hash: two-structure Q32).  Targets:
+#   make r3            build/r3/{timing,counting,test,profiling}/libr3.a: Q32-index (src/q32i.c, q32i_*), Q32-hash
+#                      (src/q32h.c, q32h_*), TC (src/tc.c, tc_*, unchanged), the profiling clock (src/r2prof.c,
+#                      unchanged) and the 08 module (vendor08/common.c, unchanged); four builds differing only in -D
+#                      settings (v0.3 §6 item 3).  Round 2's q32.c and plk.c are retired and not built (v0.3 §14).
+#   make r3-test       unit tests and the differential test of the three rows (test build), and the allocation check
+#                      (timing, counting and profiling builds: each row allocates only its named structures)
+#   make r3-sanitize   the unit and differential tests under AddressSanitizer + UBSan
+#   make r3-check      hashes + r3-test + r3-sanitize
+# The round-1 and round-2 targets above are unchanged.
+
+R3HDR = include/r2.h include/r3.h include/q32i.h include/q32h.h include/tc.h src/r2int.h vendor08/sk_internal.h \
+	vendor08/sk_common.h
+R3THDR = tests/r3t.h
+WRAPALLOC = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
+
+.PHONY: r3 r3-test r3-sanitize r3-check
+r3: build/r3/timing/libr3.a build/r3/counting/libr3.a build/r3/test/libr3.a build/r3/profiling/libr3.a
+
+# $(1) dir, $(2) flags
+define R3CONFIG
+$(1)/obj/q32i.o: src/q32i.c $(R3HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/q32h.o: src/q32h.c $(R3HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/tc.o: src/tc.c $(R3HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/r2prof.o: src/r2prof.c $(R3HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/obj/common.o: vendor08/common.c $(R3HDR)
+	@mkdir -p $(1)/obj
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
+$(1)/libr3.a: $(1)/obj/q32i.o $(1)/obj/q32h.o $(1)/obj/tc.o $(1)/obj/r2prof.o $(1)/obj/common.o
+	ar rcs $$@ $$^
+$(1)/r3_unit: tests/r3_unit.c $(R3THDR) $(1)/libr3.a
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -Itests $$< $(1)/libr3.a -o $$@
+$(1)/r3_diff: tests/r3_diff.c $(R3THDR) $(1)/libr3.a
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) -Itests $$< $(1)/libr3.a -o $$@
+$(1)/r3_alloc: tests/r3_alloc.c $(1)/libr3.a
+	$(CC) $(CSTD) $(WARN) $(2) $(INC) $$< $(1)/libr3.a $(WRAPALLOC) -o $$@
+endef
+
+$(eval $(call R3CONFIG,build/r3/timing,$(OPT) $(V_timing)))
+$(eval $(call R3CONFIG,build/r3/counting,$(OPT) $(V_counting)))
+$(eval $(call R3CONFIG,build/r3/test,$(OPT) $(V_test)))
+$(eval $(call R3CONFIG,build/r3/profiling,$(OPT) $(V_profiling)))
+$(eval $(call R3CONFIG,build/r3/asan,$(SAN) $(V_test)))
+
+R3_SEEDS ?= 300
+
+r3-test: build/r3/test/r3_unit build/r3/test/r3_diff build/r3/timing/r3_alloc build/r3/counting/r3_alloc \
+		build/r3/profiling/r3_alloc
+	./build/r3/test/r3_unit
+	./build/r3/test/r3_diff --seeds $(R3_SEEDS)
+	./build/r3/timing/r3_alloc
+	./build/r3/counting/r3_alloc
+	./build/r3/profiling/r3_alloc
+
+r3-sanitize: build/r3/asan/r3_unit build/r3/asan/r3_diff
+	ASAN_OPTIONS=detect_leaks=1 ./build/r3/asan/r3_unit
+	ASAN_OPTIONS=detect_leaks=1 ./build/r3/asan/r3_diff --seeds 60
+
+r3-check: hashes r3-test r3-sanitize

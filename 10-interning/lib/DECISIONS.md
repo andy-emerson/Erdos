@@ -207,3 +207,58 @@ inefficiency or bug in the reused code was found to fix.
   before the first probe fall in U. Each probe interval is charged to the phase it closes, and a read's cost is
   subtracted once per interval; U's correction subtracts two reads per sampled call (the outer pair).
   `prof_sample` and `prof_outer` are added to the interface for the driver (spec §6 item 1 names only `profile`).
+
+## Round 3: Q32-index and Q32-hash (spec v0.3, approved Oct 29, 2026)
+
+New files beside round 2's, which are unchanged: `include/r3.h`, `include/q32i.h`, `include/q32h.h`, `src/q32i.c`,
+`src/q32h.c`, `tests/r3t.h`, `tests/r3_unit.c`, `tests/r3_diff.c`, `tests/r3_alloc.c`, and the `r3` targets of the
+Makefile. `tc.c`, `tc.h`, `r2.h`, `r2int.h`, `r2prof.c` and the 08 module are used unchanged; `q32.c`, `q32.h`,
+`plk.c` and `plk.h` are retired and not built. Each choice is **pending the author's review**. No point needed a
+structure beyond those of the spec, so the builder instruction's stop was not reached.
+
+- **R3-D1. Derivation.** `q32i.c` and `q32h.c` are round 2's `q32.c` with the prefix renamed, and only the
+  whole-number storage replaced: `intern`, `create`/`destroy`, the memory report, the audits, the storage counters and
+  the test-build introspection. Every other function is the same text (checked by `test_r3_harness`), except two
+  lines of `store_`'s test-build hint check in Q32-hash, which test "a slot holding the value" in place of "an index
+  below W". Q32-hash keeps round 2's member name `W` for its table, so that every read of a whole number (`c->W[k]`,
+  K-Q3) is the same line; `k` is a slot.
+- **R3-D2. Q32-index's search** is `for (k = 0; k < W; k++) if (list[k] == v) break;`: top to bottom, stopping at the
+  first match, with no sentinel or ordering. A new value is appended after the capacity check, by round 2's
+  `SK_RESERVE` growth (doubling from 16, R3-3).
+- **R3-D3. Q32-hash's store** is the pseudocode of §8 item 3: the home slot `(uint64_t)v * phi >> 49`, at most 32,768
+  probes, `s = (s + 1) % 32768`. The table is allocated with `sk_xmalloc` and emptied by a loop setting each slot to
+  −1 in `create`, and never reallocated. A full table aborts with "Q32-hash: hash table overflow: all 32,768 slots are
+  used" in every build. `intern` has no `PF_GROW`, since nothing grows there; M covers the rational list only.
+- **R3-D4. Storage counters** (§11.1) are a new struct `r3_scounters` in `include/r3.h`, one cell per phase and part,
+  read by `q32i_storage` and `q32h_storage` (counting builds). `r2.h` is not changed, so TC is compiled exactly as in
+  round 2. The cell is `[ctx.op][SK_STORE]`, since `intern` is called by the store alone. The counts are added after
+  the loop (Q32-index: k + 1 when found at k, W when new; Q32-hash: the probe number at exit), so no counter sits in
+  the search loop. The found/new split is round 2's `intern_found` / `intern_appended`. The longest store is a
+  maximum per cell. Round 2's `lookup_search` and `lookup_probe` stay in 08's struct and are always 0.
+- **R3-D5. Audits** (§12.2). Q32-index's incremental audit searches for each new entry, which must be found at its own
+  index; its full audit sorts a temporary copy (R3-5). Q32-hash's audits check each slot named by a rational (all of
+  them in the full audit, and those since the last audit in the incremental one) by the probe sequence from `h(v)`.
+  The full audit also checks that every used slot is used by a rational, that the empty slots hold −1, and that the
+  used slots number W. It uses a temporary 32,768-byte flag array, freed before it returns.
+- **R3-D6. Test-build introspection.** `q32h_t_whole(k)` takes a slot and returns `SK_EINVAL` for an empty one.
+  `q32h_t_corrupt_whole` can write any slot, an empty one included.
+- **R3-D7. Tests.**
+  - `tests/r3_unit.c` holds round 2's unit tests for all three rows, each Q32 test run for each Q32 row. The worked
+    example checks indices in Q32-index and values by slot in Q32-hash. It adds both rows' capacity tests (in Q32-hash
+    the full table: every slot used, the next new value aborting by entry and by an operation, a known value still
+    found) and Q32-index's search (a value at index 0, in the middle and at the end, and a new value; the entries
+    examined).
+  - Its probing test covers three values sharing a home slot, found by search with the hash written again in
+    `r3t.h`. It also covers a wrap from slot 32,767 to slot 0, the probes, and the longest store.
+  - The switches test checks the three rows against each other: equal values, equal per-call arithmetic, and equal
+    per-call stores (found, new, reads) in the two Q32 rows, which hold the same set of whole numbers.
+  - `tests/r3_diff.c` runs round 2's differential test with three rows. It compares each Q32 row's per-call counters
+    with TC's, and the two Q32 rows' per-call stores, reads and K-Q skips with each other. At the end it checks the
+    same set of whole numbers.
+- **R3-D8. The allocation check** (§6 item 5) is `tests/r3_alloc.c`, linked with
+  `-Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free`. It runs in the timing, counting and profiling builds.
+  - After `create`: the class header, plus Q32-hash's table of exactly 262,144 bytes, plus the profiling build's
+    state.
+  - After every call: at most TC 2, Q32-index 3 and Q32-hash 3 live blocks (one more in the profiling build).
+  - At the end, the live blocks are exactly the memory report's structures at their allocated sizes. The table is
+    never reallocated, and `destroy` frees everything.

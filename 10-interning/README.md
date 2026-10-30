@@ -1,8 +1,25 @@
 # 10: Interning (Design 3, layer 1)
 
-Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5. Every distinct whole number is stored once, in one list, with a lookup from value to index. Each rational is a pair of indices, with a sign tag on the numerator, and is always kept in lowest terms. Every operation compares indices first and takes a shortcut from the paper's §5.2 table when one applies. Otherwise it uses the gcd-first method.
+Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5. Every distinct whole number is stored once. Each rational is a pair of 16-bit handles to whole numbers, with a sign tag on the numerator, and is always kept in lowest terms. Every operation compares indices first and takes a shortcut from the paper's §5.2 table when one applies. Otherwise it uses the gcd-first method. In round 3, each Q32 row has exactly two structures: the rationals, and the store of whole numbers. In Q32-index that store is a list in arrival order, searched top to bottom, and a handle is an index into it. In Q32-hash it is a fixed hash table of 32,768 slots, and a handle is a slot.
 
-## Round 2: two textbook baselines (approved Oct 29, 2026)
+## Round 3: two-structure Q32 (approved Oct 29, 2026)
+
+**Status: approved by the author, Oct 29, 2026; not built or run.** An independent review found the draft sound after fixes, which are applied. The author then approved every choice (R3-1 to R3-5) and every new threshold of the rule, which is now fixed. Next come the build, its review, and the run.
+
+**Why round 3.** Round 2's Q32 had three structures: the rationals, the list of whole numbers, and a separate hash lookup from value to index. The author's model has two. Round 2's result stays on record as **"three-structure Q32 (retired)"** in [`test/results-r2/`](test/results-r2/results.md).
+
+The round has three rows, with every structure counted:
+- **TC** has 1 structure and is unchanged from round 2.
+- **Q32-index** has 2 structures: the rationals, with 16-bit index handles, and a list of whole numbers in arrival order. The list is searched top to bottom, with no hash and no lookup.
+- **Q32-hash** has 2 structures: the rationals, with 16-bit slot handles, and a fixed hash table of 32,768 slots, with multiplicative hashing and linear probing. It has no separate list and no fill limit. Only a truly full table is an error.
+
+The arithmetic is identical in all three rows, call for call. Creation time and operation time each get their own verdict. Each job's fill and probes are reported, with speed shown against fill.
+
+The documents:
+- **[v0.3](v0.3.md):** the specification.
+- **[research/rule-r3.md](research/rule-r3.md):** the rule. It uses round 2's jobs and timing method, with each threshold either carried over from round 2 or new and approved by the author, Oct 29, 2026. The rule is fixed: the harness pins its sha256 (`1820c2736df677169e19f1b535f94f19679b3fe250c5e4d5a89d45327f85fad2`) and refuses a measured run if the file differs or still holds a mark of a proposal.
+
+## Round 2: two textbook baselines (approved Oct 29, 2026), three-structure Q32 (retired)
 
 **Status: approved by the author, Oct 29, 2026; built and reviewed (below), not run.** An independent review (Oct 29, 2026) accepted the choices R2-1 to R2-10, two of them on conditions that the revision met (v0.2 §17). The author then approved every choice and every threshold, with gcd work as a check, not a verdict, and added the ±1 operand shortcut. The rule is fixed. Next come the build, its review, and the run.
 

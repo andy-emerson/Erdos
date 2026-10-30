@@ -164,7 +164,8 @@ Nothing in `../10-interning/` is changed.
   follows (the loop is "divide while divisible, up to nu times", §16.5 case 8). The rows and the model do the latter.
 - v0.3 §16.8, "Inside a step, a leftover": the split's second number is not named (M3-D8).
 - v0.3 §16.7: the pseudocode leaves the other `D` stale after a split within a pass (M3-D7); correct by the repeat.
-- On the grid's jobs checked so far, no reconciliation split and no leftover split occurs: every input's base already
+- On every job of the grid (all 45, by the model, checked by the full-size gates), no reconciliation split and no
+  leftover split occurs: every input's base already
   holds 2, 3 and 5 as separate pieces, because some numerator of each input is divisible by one of them alone (|D| = 3
   on both sides). Those paths are exercised by the unit tests, the differential test (2,796 reconciliation splits and
   106 leftover splits over 3,000 random jobs) and the splitting examples of the harness test, each checked against the

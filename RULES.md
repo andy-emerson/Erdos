@@ -2,6 +2,8 @@
 
 The rules the work follows, in three lists. A rule holds until it is discussed; a lesson learned holds where it was tested.
 
+**The rule for this file:** only the author writes or changes it. Claude may recommend a rule, but never adds or changes one without the author's say.
+
 ## Algorithm design
 
 1. **Exact.** Arithmetic is exact, never approximated. The project's point is to make exact arithmetic fast, so a departure from exactness is out of scope.

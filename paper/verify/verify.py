@@ -72,7 +72,7 @@ def load(path):
 # ------------------------------------------------------------------------- the translation, against the pseudocode
 # The appendix's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
 # words, "/" before nothing else makes "//".
-NAMES = {"′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4"}
+NAMES = {"′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
 # rational, numerator and denominator (section 1.2) and mod (section 2.3) are defined in prose, not in pseudocode:
 # their translation is fixed
 PROSE = {"rational": "def rational(p, q):\n    return (p, q)\n",
@@ -366,7 +366,7 @@ def related_pair(rng):
     """Two stored values with one of the coincidences the special cases look for, built at random sizes (the
     coincidence can be lost when the second value is reduced; the pair is then an ordinary one)."""
     a, b = random_value(rng)
-    k = rng.randrange(9)
+    k = rng.randrange(11)
     m = abs(random_int(rng)) + 1
     s = rng.choice([1, -1])
     c, d = [(random_int(rng), b),            # shared denominator
@@ -376,7 +376,9 @@ def related_pair(rng):
             (s * b, abs(a) or 1),             # reciprocals, opposite reciprocals
             (random_int(rng), b * m),         # denominators with a common factor
             (a * m, b * m + 1),               # a numerator with a factor of the other's
-            (b, a * s or 1)][k]
+            (b, a * s or 1),
+            (random_int(rng), 1),             # an integer operand
+            (a * m, 1)][k]                    # an integer sharing a factor with the other numerator
     if d == 0:
         d = 1
     return (a, b), reduced(c, d)
@@ -501,17 +503,19 @@ def check_trace(ns, tr):
         "reduce": ([("b < 0", no), ("g == 1", no)],
                    dict(a=-44, b=30, g=2, p=-22, q=15)),
         "subtract": ([], dict(c=1, d=10)),
-        "add": ([("a == 0", no), ("c == 0", no), ("b == 1 and d == 1", no), ("c == -a and d == b", no),
+        "add": ([("a == 0", no), ("c == 0", no), ("b == 1 and d == 1", no), ("b == 1", no), ("d == 1", no),
+                 ("c == -a and d == b", no),
                  ("d == a or d == -a or b == c or b == -c", no), ("d == b", no), ("g == 1", no),
                  ("c == a", no), ("c == -a", no), ("h == 1", no)],
                 dict(a=5, b=6, c=-1, d=10, g=2, b_prime=3, d_prime=5, t=22, h=2, p=11, q=15)),
         "divide": ([("numerator(y) == 0", no), ("c < 0", True)], dict(c=-22, d=15)),
         "multiply": ([("a == 0", no), ("c == 0", no), ("a == 1 and b == 1", no), ("c == 1 and d == 1", no),
                       ("a == -1 and b == 1", no), ("c == -1 and d == 1", no),
+                      ("b == 1 and d == 1", no),
                       ("(a == d and c == b) or (a == -d and c == -b)", no),
                       ("(a == d and c == -b) or (a == -d and c == b)", no),
-                      ("d == b", no), ("c == a", no), ("c == -a", no), ("c == b", no), ("a == d", no),
-                      ("c == -b", True), ("k3 == 1", no)],
+                      ("d == b", no), ("c == a", no), ("c == -a", no), ("b == 1", no), ("d == 1", no),
+                      ("c == b", no), ("a == d", no), ("c == -b", True), ("k3 == 1", no)],
                      dict(a=11, b=15, c=-15, d=22, k3=11)),
     }
     print("\nSection 2.9, the worked computation:")
@@ -531,6 +535,75 @@ def check_trace(ns, tr):
     check(F(w) == (Fraction(5, 6) - Fraction(1, 10)) / Fraction(-44, 30), "section 2.9: w has the wrong value")
 
 
+# ------------------------------------------------------------------------------------- special cases ordered by cost
+# Section 1.6: special cases are ordered by the cost of their result, cheapest first; where two results cost the same,
+# the cheaper test goes first. Each special case is a top-level `if` on a, b, c and d only; the harness knows each
+# one's cost, and the paper's code gives the order. The cost of a result is counted in multiplications in section 1
+# and in gcds in section 2; a test costs 1 against constants and 2 when it compares the operands.
+S1 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (1, 1), "d == 1": (1, 1),
+               "d == b": (0, 2), "c == a": (2, 2), "c == -a": (2, 2)}, lambda a, b, c, d: 3),
+      "multiply": ({"a == 0": (0, 1), "c == 0": (0, 1), "a == 1 and b == 1": (0, 1), "c == 1 and d == 1": (0, 1),
+                    "a == -1 and b == 1": (0, 1), "c == -1 and d == 1": (0, 1), "b == 1 and d == 1": (1, 1),
+                    "(a == d and c == b) or (a == -d and c == -b)": (0, 2),
+                    "(a == d and c == -b) or (a == -d and c == b)": (0, 2),
+                    "c == b": (0, 2), "a == d": (0, 2), "c == -b": (0, 2), "a == -d": (0, 2),
+                    "b == 1": (1, 1), "d == 1": (1, 1)}, lambda a, b, c, d: 2)}
+_g2 = lambda a, b, c, d: 1 if math.gcd(b, d) == 1 else 2     # section 2.6: the second gcd is skipped when g = 1
+S2 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (0, 1), "d == 1": (0, 1),
+               "c == -a and d == b": (0, 2), "d == a or d == -a or b == c or b == -c": (0, 2), "d == b": (1, 2),
+               "c == a": (_g2, 2), "c == -a": (_g2, 2)}, _g2),
+      "multiply": ({**S1["multiply"][0], "b == 1 and d == 1": (0, 1), "d == b": (0, 2), "c == a": (0, 2),
+                    "c == -a": (0, 2), "b == 1": (1, 1), "d == 1": (1, 1),
+                    "c == b": (1, 2), "a == d": (1, 2), "c == -b": (1, 2), "a == -d": (1, 2)}, lambda a, b, c, d: 2)}
+
+
+def special_cases(fn_tree, code):
+    out = []
+    for node in fn_tree.body:
+        if isinstance(node, ast.If):
+            names = {n.id for n in ast.walk(node.test) if isinstance(n, ast.Name)}
+            if names <= set("abcd"):
+                out.append(ast.get_source_segment(code, node.test))
+    return out
+
+
+def check_order(path):
+    """Exhaustively, for |p|, q <= 15: the case each input reaches gives a result no dearer than any other case that
+    holds for it, and among the cases whose results cost the same it has the cheapest test."""
+    text = path.read_text(encoding="utf-8")
+    sec1 = parse_pseudocode(text.split("\n## 2. ")[0])
+    sec2 = pseudocode(path)
+    vals1 = [(p, q) for q in range(1, 16) for p in range(-15, 16)]           # section 1: any positive denominator
+    vals2 = [v for v in vals1 if math.gcd(*v) == 1]                         # section 2: reduced
+    print("\nSpecial cases ordered by the cost of their result (section 1.6), every pair with |p|, q <= 15:")
+    for sec, pc, table, vals in (("1", sec1, S1, vals1), ("2", sec2, S2, vals2)):
+        for name, (costs, general) in table.items():
+            src = translate(pc[name])
+            conds = special_cases(ast.parse(src).body[0], src)
+            if not check(sorted(conds) == sorted(costs), f"section {sec} {name}: special cases {conds}"):
+                continue
+            compiled = [(t, compile(t, "<cond>", "eval")) for t in conds]
+            n = bad = 0
+            for a, b in vals:
+                for c, d in vals:
+                    env = {"a": a, "b": b, "c": c, "d": d}
+                    held = [t for t, co in compiled if eval(co, {}, env)]
+
+                    def cost(t):
+                        k = costs[t][0]
+                        return k(a, b, c, d) if callable(k) else k
+                    n += 1
+                    if not held:
+                        continue
+                    r = held[0]
+                    best = min(min(cost(t) for t in held), general(a, b, c, d))
+                    tie = min(costs[t][1] for t in held if cost(t) == cost(r))
+                    if cost(r) > best or costs[r][1] > tie:
+                        bad += 1
+                        check(False, f"section {sec} {name}({a}/{b}, {c}/{d}) reaches `{r}`, but {held} hold")
+            print(f"  section {sec} {name:9s} {len(conds):2d} special cases, {n:7d} pairs, {bad} out of order")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--no-control", action="store_true", help="skip the comparison with 10-interning's control")
@@ -540,6 +613,7 @@ def main():
     print(f"Appendix A of {a.paper.name}: {len(code.splitlines())} lines of Python from line {first_line} of the paper, "
           f"defining {', '.join(FUNCTIONS)}\n")
     check_literal(a.paper, code, tree)
+    check_order(a.paper)
     br = Branches(code, tree)
     with Tracer(br) as tr:
         check_functions(ns, tr)

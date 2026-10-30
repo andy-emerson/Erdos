@@ -1,17 +1,17 @@
-> **Milestone reached: matrix addition run complete (11-matrix, C = A + B)** (Oct 30, 2026, 00:43 CDT)
+> **Milestone reached: matrix runs complete (11-matrix, addition and multiplication)** (Oct 30, 2026, 00:57 CDT)
 >
-> Finished in **6.7 min** (hard stop 40), no stop, 0 disturbed blocks. Rule sha256 `8e951ac6…`. Gcd work check passed on all 16 jobs. Per measure only, **no overall winner**. Time: T(TC)/T(row), below 1 = row slower. Bytes: row/TC, below 1 = row smaller.
+> Both runs finished with no stop and 0 disturbed blocks (addition 6.7 min, multiplication 11.5 min; hard stop 40). Rule sha256 `8e951ac6…`. Gcd work check passed on all 32 jobs. Per measure only, **no overall winner**. Time: T(TC)/T(row), below 1 = row slower. Bytes: row/TC, below 1 = row smaller.
 >
-> | row vs TC | creation time | operation time | memory (B_used) |
-> | --- | --- | --- | --- |
-> | Hash-V-fixed | loss on 16, 0.52–0.71 | loss on 16, 0.39–0.59 | loss on 16, 1.92–2.17 (as designed) |
-> | Hash-M-fixed | loss on 16, 0.55–0.75 | loss on 16, 0.33–0.53 | loss on 16, 2.08–2.50 |
-> | Hash-V-grow | loss on 16, 0.17–0.69 | loss on 16, 0.24–0.51 | **win on 10**, 0.31–0.83; tie 3; loss 3 (no sharing) |
-> | Hash-M-grow | loss on 16, 0.17–0.70 | loss on 16, 0.21–0.50 | **win on 10**, 0.32–0.83; tie 2; loss 4 |
+> | row vs TC | addition: operation | addition: memory | multiplication: operation | multiplication: memory |
+> | --- | --- | --- | --- | --- |
+> | Hash-V-fixed | loss 16/16, 0.39–0.59 | loss 16/16, 1.92–2.17 | loss 16/16, 0.84–0.91 | loss 16/16, 2.25–2.50 |
+> | Hash-M-fixed | loss 16/16, 0.33–0.53 | loss 16/16, 2.08–2.50 | loss 16/16, 0.84–0.90 | loss 16/16, 2.42–2.83 |
+> | Hash-V-grow | loss 16/16, 0.24–0.51 | **win 10**, tie 3, loss 3; 0.31–1.92 | loss 16/16, 0.82–0.91 | tie 7, loss 9; 0.94–2.25 |
+> | Hash-M-grow | loss 16/16, 0.21–0.50 | **win 10**, tie 2, loss 4; 0.32–2.08 | loss 16/16, 0.81–0.90 | tie 6, loss 10; 0.94–2.42 |
 >
-> Translation (M) vs direct comparison (V): slower on operations (0.73–0.93 fixed). Map vs lookup rewrite: map faster on creation on 9 of 16, up to 1.49×. Multiplication run follows.
+> Creation is slower in every row (0.17–0.77). Translation (M) vs direct comparison (V): no gain (tie in multiplication, slower in addition). Map vs lookup rewrite: map faster on creation on 9 of 16 (addition) and 6 of 16 (multiplication). In multiplication, C's values are nearly all distinct, so grow cannot win on memory there.
 >
-> **Results:** [results.md](11-matrix/test/results-m1-add/results.md) · [verdicts.csv](11-matrix/test/results-m1-add/verdicts.csv)
+> **Results:** [addition](11-matrix/test/results-m1-add/results.md) · [multiplication](11-matrix/test/results-m1-mul/results.md)
 
 # Erdos
 

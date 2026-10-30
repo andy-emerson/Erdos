@@ -83,7 +83,11 @@ PROSE = {"rational": "def rational(p, q):\n    return (p, q)\n",
 
 def pseudocode(path):
     """{name: lines} of each function's last pseudocode definition before Appendix A (its final form)."""
-    text = path.read_text(encoding="utf-8").split("\n## Appendix A")[0]
+    return parse_pseudocode(path.read_text(encoding="utf-8").split("\n## Appendix A")[0])
+
+
+def parse_pseudocode(text):
+    """{name: lines} of each function's last pseudocode definition in text."""
     out, cur = {}, None
     inside = False
     for line in text.split("\n"):

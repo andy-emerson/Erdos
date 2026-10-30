@@ -3,31 +3,33 @@
 Appendix B's one ```python block is read from the paper and run on top of Appendix A's functions, which it uses and does
 not repeat. Each function must be the line-for-line translation of its pseudocode in sections 3.1 and 3.2 (Appendix
 A's substitutions, with ERROR raising ValueError); every function is checked against fractions.Fraction, including
-signs, zero, values that cannot join, empty groups, sums that reduce to zero and raw entries; every `if` outcome (and
+signs, zero, values that cannot join, empty columns, sums that reduce to zero and raw entries; every `if` outcome (and
 any `or` term) of Appendix B must be reached; and every formula and example of section 3 is reproduced, with the gcd and reduce calls it
-claims.
+claims. `join` and `take` are defined twice in the pseudocode, for a column (3.1) and for a row (3.2); in Appendix B each is one
+function that runs the column definition under `if isinstance(g, Column):` and the row definition after it.
 """
 import ast
 import math
 import random
+import re
 import sys
 from collections import Counter
 from fractions import Fraction
 
 HEADING = "## Appendix B. The section 3 library in Python"
 FILENAME = "<v0.5.md, Appendix B>"
-FUNCTIONS = ["is_empty", "prepend", "first", "rest", "group", "shared", "entries",
-             "new_denominator_group", "join_denominator_group", "add_entries", "sum_entries",
-             "take_from_denominator_group", "total",
-             "new_numerator_group", "join_numerator_group", "multiply_entries", "take_from_numerator_group"]
-# the lists and groups of section 3.1, defined in prose: their translation is fixed (Appendix B's own text)
-PROSE = {"is_empty": "def is_empty(L):\n    return L is None\n",
-         "prepend": "def prepend(u, L):\n    return (u, L)\n",
+FUNCTIONS = ["prepend", "first", "rest", "shared", "entries",
+             "column", "row", "join", "take", "tally", "sum_", "product"]
+HEAD = ["from collections import namedtuple", "empty = None",
+        "Column = namedtuple('Column', 'shared entries')", "Row = namedtuple('Row', 'shared entries')"]
+# the lists, columns and rows of section 3.1, defined in prose: their translation is fixed (Appendix B's own text)
+PROSE = {"prepend": "def prepend(u, L):\n    return (u, L)\n",
          "first": "def first(L):\n    return L[0]\n",
          "rest": "def rest(L):\n    return L[1]\n",
-         "group": "def group(s, L):\n    return (s, L)\n",
-         "shared": "def shared(G):\n    return G[0]\n",
-         "entries": "def entries(G):\n    return G[1]\n"}
+         "shared": "def shared(g):\n    return g[0]\n",
+         "entries": "def entries(g):\n    return g[1]\n"}
+PYNAME = {"sum": "sum_"}           # `sum` is a Python built-in
+BOTH = ("join", "take")            # defined for a column (3.1) and for a row (3.2), dispatched in Appendix B
 
 
 def extract(path):
@@ -51,11 +53,10 @@ def extract(path):
 def load(path, ns_a):
     first_line, code = extract(path)
     tree = ast.parse(code)
-    head = tree.body[0]
-    ok_head = (isinstance(head, ast.Assign) and ast.unparse(head) == "empty = None")
-    names = [n.name for n in tree.body[1:] if isinstance(n, ast.FunctionDef)]
-    if not ok_head or names != FUNCTIONS or len(tree.body) != len(FUNCTIONS) + 1:
-        sys.exit(f"Appendix B must be `empty = None` and then define exactly {FUNCTIONS} in this order; "
+    head = [ast.unparse(n) for n in tree.body[:len(HEAD)]]
+    names = [n.name for n in tree.body[len(HEAD):] if isinstance(n, ast.FunctionDef)]
+    if head != HEAD or names != FUNCTIONS or len(tree.body) != len(FUNCTIONS) + len(HEAD):
+        sys.exit(f"Appendix B must be {HEAD} and then define exactly {FUNCTIONS} in this order; "
                  f"it defines {names}")
     ns = dict(ns_a)                      # Appendix A's functions, used as they are
     exec(compile(code, FILENAME, "exec"), ns)
@@ -126,24 +127,55 @@ class Tracer:
         return r, self.calls - before
 
 
+def section_pseudocode(path, V):
+    """{name: lines} of the pseudocode of section 3.1, and of section 3.2, read separately (join and take are in both)."""
+    text = path.read_text(encoding="utf-8").split("\n## Appendix A")[0].split("\n## 3. ")[1]
+    s31, s32 = text.split("\n### 3.2 ")
+    return V.parse_pseudocode(s31), V.parse_pseudocode(s32)
+
+
+def body(lines, V, name, kind):
+    """The translated body of one definition, with its column or row renamed g and `pair` written as the kind."""
+    py = V.translate(lines).replace("raise ZeroDivisionError", "raise ValueError").replace("pair(", kind + "(")
+    out = py.splitlines()[1:]
+    return [re.sub(r"\b" + name + r"\b", "g", l) for l in out]
+
+
+def wanted(fn, pc31, pc32, V):
+    if fn in BOTH:
+        params = V.translate(pc31[fn]).splitlines()[0].split("(", 1)[1].split(", ", 1)[1]
+        lines = [f"def {fn}(g, {params}", "    if isinstance(g, Column):"]
+        lines += ["    " + l for l in body(pc31[fn], V, "c", "Column")]
+        lines += body(pc32[fn], V, "r", "Row")
+        return "\n".join(lines) + "\n", f"{len(pc31[fn])} + {len(pc32[fn])} lines of pseudocode (3.1, 3.2)"
+    src = {PYNAME.get(k, k): (v, "Column") for k, v in pc31.items()}
+    src.update({PYNAME.get(k, k): (v, "Row") for k, v in pc32.items()})
+    if fn not in src:
+        return None, None
+    lines, kind = src[fn]
+    py = V.translate(lines).replace("raise ZeroDivisionError", "raise ValueError").replace("pair(", kind + "(")
+    for k, v in PYNAME.items():
+        py = re.sub(r"\bdef " + k + r"\(", "def " + v + "(", py)
+    return py, f"{len(lines)} lines of pseudocode"
+
+
 def run(path, ns_a, a_filename, V, check):
     code, tree, first_line, ns = load(path, ns_a)
     print(f"\nAppendix B of {path.name}: {len(code.splitlines())} lines of Python from line {first_line} of the "
           f"paper, defining empty, {', '.join(FUNCTIONS)}, on top of Appendix A\n")
 
     # ---------------------------------------------------------------------------- line for line against section 3
-    pc = V.pseudocode(path)
+    pc31, pc32 = section_pseudocode(path, V)
     print("Line for line against the pseudocode of section 3:")
     for fn in Funcs(tree).body:
         mine = ast.get_source_segment(code, fn) + "\n"
         if fn.name in PROSE:
             want, where = PROSE[fn.name], "section 3.1 (prose)"
-        elif fn.name in pc:
-            want = V.translate(pc[fn.name]).replace("raise ZeroDivisionError", "raise ValueError")
-            where = f"{len(pc[fn.name])} lines of pseudocode"
         else:
-            check(False, f"{fn.name}: no pseudocode found in the paper")
-            continue
+            want, where = wanted(fn.name, pc31, pc32, V)
+            if want is None:
+                check(False, f"{fn.name}: no pseudocode found in the paper")
+                continue
         same = (ast.dump(ast.parse(mine)) == ast.dump(ast.parse(want))
                 and len(mine.strip().splitlines()) == len(want.strip().splitlines()))
         ok = check(same, f"{fn.name}: Appendix B is not the translation of its pseudocode")
@@ -180,128 +212,135 @@ def as_list(L):
 def check_functions(ns, tr, V, check):
     F, is_stored = V.F, V.is_stored
     rational = ns["rational"]
+    Column, Row = ns["Column"], ns["Row"]
     rng = random.Random(20261030)
     counts = Counter()
     small = V.grid(12)
 
-    # lists and groups: pairing only
+    # lists, columns and rows: pairing only
     L = ns["prepend"](3, ns["prepend"](-4, ns["empty"]))
     check(as_list(L) == [3, -4] and ns["first"](L) == 3 and ns["rest"](ns["rest"](L)) is None
-          and ns["is_empty"](ns["empty"]) and not ns["is_empty"](L), "lists do not pair as section 3.1 says")
-    G = ns["group"](100, L)
-    check(ns["shared"](G) == 100 and ns["entries"](G) is L, "groups do not pair as section 3.1 says")
-    counts["lists and groups"] += 1
+          and ns["empty"] is None, "lists do not pair as section 3.1 says")
+    for G in (Column(100, L), Row(100, L)):
+        check(ns["shared"](G) == 100 and ns["entries"](G) is L, "columns and rows do not pair as section 3.1 says")
+    check(not isinstance(Row(1, None), Column) and Column(1, None) == Row(1, None) == (1, None),
+          "a Column and a Row are pairs of two kinds")
+    counts["lists, columns and rows"] += 1
 
     # ------------------------------------------------------------------------------------------------ section 3.1
     for D in range(-5, 1):
-        check(raises(ns["new_denominator_group"], D), f"new_denominator_group({D}) did not stop with ERROR")
-        counts["new_denominator_group (ERROR)"] += 1
+        check(raises(ns["column"], D), f"column({D}) did not stop with ERROR")
+        counts["column (ERROR)"] += 1
     Ds = list(range(1, 61)) + [100, 360, 3600, 2 ** 64] + [abs(V.random_int(rng)) + 1 for _ in range(40)]
     values = small + [V.random_value(rng) for _ in range(300)]
     for D in Ds:
-        G0 = ns["new_denominator_group"](D)
-        check(G0 == (D, None), f"new_denominator_group({D}) = {G0}")
-        counts["new_denominator_group"] += 1
+        G0 = ns["column"](D)
+        check(G0 == (D, None) and isinstance(G0, Column), f"column({D}) = {G0}")
+        counts["column"] += 1
         G = G0
         joined = []
         for x in values + [rational(rng.randrange(-50, 50), D)]:
             x = V.reduced(*x)
             if D % x[1] == 0:
-                G2, n = tr.count(ns["join_denominator_group"], G, x)
-                ok = (G2[0] == D and G2[1][1] is G[1] and Fraction(G2[1][0], D) == F(x) and n["gcd"] == 0)
-                check(ok, f"join_denominator_group(D={D}, {x}) = entry {G2[1][0]}")
+                G2, n = tr.count(ns["join"], G, x)
+                ok = (isinstance(G2, Column) and G2[0] == D and G2[1][1] is G[1]
+                      and Fraction(G2[1][0], D) == F(x) and n["gcd"] == 0)
+                check(ok, f"join(column over {D}, {x}) = entry {G2[1][0]}")
                 joined.append(F(x))
                 G = G2
-                counts["join_denominator_group"] += 1
+                counts["join (column)"] += 1
             else:
-                check(raises(ns["join_denominator_group"], G, x), f"{x} joined the group over {D}")
-                counts["join_denominator_group (ERROR)"] += 1
+                check(raises(ns["join"], G, x), f"{x} joined the column over {D}")
+                counts["join (column, ERROR)"] += 1
         # raw entries, signs and zeros, placed as they are
         raw = [rng.randrange(-10 ** 6, 10 ** 6) for _ in range(rng.randrange(0, 40))]
         for u in raw:
-            G = ns["group"](D, ns["prepend"](u, ns["entries"](G)))
+            G = Column(D, ns["prepend"](u, ns["entries"](G)))
         want = sum(joined, Fraction(0)) + Fraction(sum(raw), D)
-        r, n = tr.count(ns["total"], G)
-        check(is_stored(r) and F(r) == want, f"total over {D}: {r}, expected {want}")
-        check(n["reduce"] <= 1 and n["sum_entries"] == len(as_list(G[1])) + 1
-              and n["add_entries"] == len(as_list(G[1])),
-              f"total over {D}: not one deferred reduction ({dict(n)})")
+        r, n = tr.count(ns["sum_"], G)
+        check(is_stored(r) and F(r) == want, f"sum over {D}: {r}, expected {want}")
+        check(n["reduce"] <= 1 and n["tally"] == len(as_list(G[1])) + 1 and n["take"] == 1,
+              f"sum over {D}: not one deferred reduction ({dict(n)})")
         s = sum(as_list(G[1]))
+        check(ns["tally"](G[1]) == s, f"tally over {D}")
         biggest = max([abs(e) for e in as_list(G[1])] + [1])
         check(abs(s).bit_length() <= biggest.bit_length() + math.ceil(math.log2(max(len(as_list(G[1])), 1))),
               "a sum grew by more than log2 N bits")
-        counts["total"] += 1
-        # an empty group, and a group whose entries cancel
-        check(ns["total"](G0) == (0, 1), f"empty group over {D}: total {ns['total'](G0)}")
+        counts["sum_"] += 1
+        # an empty column, and a column whose entries cancel
+        check(ns["sum_"](G0) == (0, 1), f"empty column over {D}: sum {ns['sum_'](G0)}")
         Gz = G0
         for u in raw + [-u for u in raw] + [0]:
-            Gz = ns["group"](D, ns["prepend"](u, ns["entries"](Gz)))
-        check(ns["total"](Gz) == (0, 1), f"cancelling group over {D}: total {ns['total'](Gz)}")
-        counts["total (zero)"] += 2
+            Gz = Column(D, ns["prepend"](u, ns["entries"](Gz)))
+        check(ns["sum_"](Gz) == (0, 1), f"cancelling column over {D}: sum {ns['sum_'](Gz)}")
+        counts["sum_ (zero)"] += 2
 
     for u in range(-200, 201):
         for D in list(range(1, 40)) + [100, 2 ** 70]:
-            r, n = tr.count(ns["take_from_denominator_group"], (D, None), u)
-            check(is_stored(r) and F(r) == Fraction(u, D), f"take_from_denominator_group({D}, {u}) = {r}")
+            r, n = tr.count(ns["take"], Column(D, None), u)
+            check(is_stored(r) and F(r) == Fraction(u, D), f"take(column over {D}, {u}) = {r}")
             check(n["reduce"] == (0 if u == 0 or D == 1 else 1), f"take {u}/{D}: reduce ran {n['reduce']} times")
-            counts["take_from_denominator_group"] += 1
-    for _ in range(3000):
-        u, v = V.random_int(rng), V.random_int(rng)
-        check(ns["add_entries"](u, v) == u + v, f"add_entries({u}, {v})")
-        counts["add_entries"] += 1
+            counts["take (column)"] += 1
+    for _ in range(300):
+        us = [V.random_int(rng) for _ in range(rng.randrange(0, 30))]
+        Lu = None
+        for u in us:
+            Lu = ns["prepend"](u, Lu)
+        check(ns["tally"](Lu) == sum(us), "tally")
+        counts["tally"] += 1
 
     # ------------------------------------------------------------------------------------------------ section 3.2
-    check(raises(ns["new_numerator_group"], 0), "new_numerator_group(0) did not stop with ERROR")
-    counts["new_numerator_group (ERROR)"] += 1
+    check(raises(ns["row"], 0), "row(0) did not stop with ERROR")
+    counts["row (ERROR)"] += 1
     numerators = list(range(-12, 13)) + [V.random_int(rng) for _ in range(30)]
     for a in [a for a in numerators if a != 0]:
-        G0 = ns["new_numerator_group"](a)
-        check(G0 == (a, None), f"new_numerator_group({a}) = {G0}")
-        counts["new_numerator_group"] += 1
+        G0 = ns["row"](a)
+        check(G0 == (a, None) and isinstance(G0, Row), f"row({a}) = {G0}")
+        counts["row"] += 1
         G = G0
         for x in values + [V.reduced(a, abs(V.random_int(rng)) or 1) for _ in range(30)]:
             if x[0] == a:
-                G2, n = tr.count(ns["join_numerator_group"], G, x)
-                check(G2[0] == a and G2[1][0] == x[1] and G2[1][1] is G[1] and not n["gcd"] and not n["reduce"],
-                      f"join_numerator_group({a}, {x}) = {G2}")
+                G2, n = tr.count(ns["join"], G, x)
+                check(isinstance(G2, Row) and G2[0] == a and G2[1][0] == x[1] and G2[1][1] is G[1]
+                      and not n["gcd"] and not n["reduce"], f"join(row of {a}, {x}) = {G2}")
                 G = G2
-                counts["join_numerator_group"] += 1
+                counts["join (row)"] += 1
             else:
-                check(raises(ns["join_numerator_group"], G, x), f"{x} joined the group of {a}")
-                counts["join_numerator_group (ERROR)"] += 1
+                check(raises(ns["join"], G, x), f"{x} joined the row of {a}")
+                counts["join (row, ERROR)"] += 1
         ents = as_list(G[1])
         for b in ents:
-            r, n = tr.count(ns["take_from_numerator_group"], G, b)
+            r, n = tr.count(ns["take"], G, b)
             check(is_stored(r) and r == (a, b) and not n["gcd"] and not n["reduce"],
-                  f"take_from_numerator_group({a}, {b}) = {r}")
-            counts["take_from_numerator_group"] += 1
+                  f"take(row of {a}, {b}) = {r}")
+            counts["take (row)"] += 1
             for d in ents:
-                r, n = tr.count(ns["multiply_entries"], G, b, d)
+                r, n = tr.count(ns["product"], G, b, d)
                 want = Fraction(a, b) * Fraction(a, d)
                 check(is_stored(r) and F(r) == want and not n["gcd"] and not n["reduce"],
-                      f"multiply_entries({a}; {b}, {d}) = {r}, expected {want}")
-                check(r == ns["multiply"]((a, b), (a, d)), "multiply_entries differs from section 2.7's multiply")
-                # what stays: only in the group of 1, as the entry b·d; the group of -1 sends it to the group of 1
-                check((r[0] == a) == (a == 1), f"group of {a}: the product {r} stays/leaves wrongly")
+                      f"product({a}; {b}, {d}) = {r}, expected {want}")
+                check(r == ns["multiply"]((a, b), (a, d)), "product differs from section 2.7's multiply")
+                # what stays: only in the row of 1, as the entry b·d; the row of -1 sends it to the row of 1
+                check((r[0] == a) == (a == 1), f"row of {a}: the product {r} stays/leaves wrongly")
                 if a in (1, -1):
                     check(r == (1, b * d), f"unit numerator {a}: {r}")
-                counts["multiply_entries"] += 1
+                counts["product"] += 1
     # raw entries, placed directly on the caller's promise: b > 0, and gcd(a, b) = 1 unless a = ±1 (then always so)
     for b in range(1, 200):
         for a in (1, -1):
-            check(math.gcd(a, b) == 1 and is_stored(ns["take_from_numerator_group"]((a, None), b)), f"{a}/{b}")
+            check(math.gcd(a, b) == 1 and is_stored(ns["take"](Row(a, None), b)), f"{a}/{b}")
     for a in [a for a in numerators if a != 0]:
         raw = [b for b in list(range(1, 40)) + [abs(V.random_int(rng)) + 1 for _ in range(10)] if math.gcd(a, b) == 1]
-        G = ns["new_numerator_group"](a)
+        G = ns["row"](a)
         for b in raw:
-            G = ns["group"](ns["shared"](G), ns["prepend"](b, ns["entries"](G)))
+            G = Row(ns["shared"](G), ns["prepend"](b, ns["entries"](G)))
         for b in raw[:12]:
             for d in raw[:12]:
-                r, n = tr.count(ns["multiply_entries"], G, b, d)
+                r, n = tr.count(ns["product"], G, b, d)
                 check(is_stored(r) and F(r) == Fraction(a, b) * Fraction(a, d) and not n["gcd"],
-                      f"raw entries: multiply_entries({a}; {b}, {d}) = {r}")
-                counts["multiply_entries (raw entries)"] += 1
-    print("\nAppendix B against fractions.Fraction (taken-out values and numerator-group values: lowest terms, "
+                      f"raw entries: product({a}; {b}, {d}) = {r}")
+                counts["product (raw entries)"] += 1
+    print("\nAppendix B against fractions.Fraction (taken-out values and row values: lowest terms, "
           "positive denominator):")
     for k in sorted(counts):
         print(f"  {k:36s} {counts[k]:8d} calls")
@@ -310,13 +349,13 @@ def check_functions(ns, tr, V, check):
 def check_examples(ns, tr, check):
     """Every formula and example of section 3, with the calls it claims."""
     rational, reduce_, add = ns["rational"], ns["reduce"], ns["add"]
-    G = ns["group"]
+    Column = ns["Column"]
     # 3.1 storage and promise
     check(Fraction(310, 100) == Fraction("3.10") and Fraction(45, 100) == Fraction("0.45")
           and Fraction(25, 100) == Fraction("0.25") and Fraction(90, 60) == Fraction(3, 2), "3.1: money, minutes")
-    g100 = ns["new_denominator_group"](100)
-    check(ns["join_denominator_group"](g100, (1, 2))[1][0] == 50 and math.gcd(50, 100) == 50, "3.1: 1/2 is 50/100")
-    check(raises(ns["join_denominator_group"], g100, (1, 3)), "3.1: 1/3 joined the group over 100")
+    g100 = ns["column"](100)
+    check(ns["join"](g100, (1, 2))[1][0] == 50 and math.gcd(50, 100) == 50, "3.1: 1/2 is 50/100")
+    check(raises(ns["join"], g100, (1, 3)), "3.1: 1/3 joined the column over 100")
     check(Fraction(1, 6) + Fraction(1, 6) == Fraction(1, 3) == Fraction(2, 6), "3.1: 1/6 + 1/6")
     # divisibility is needed: a reduced a/b equals some u/D only if b divides D
     for b in range(1, 30):
@@ -329,11 +368,11 @@ def check_examples(ns, tr, check):
     # the worked example: cents, with a refund
     gm = g100
     for u in (25, -120, 45, 310):
-        gm = G(100, ns["prepend"](u, ns["entries"](gm)))
-    r, n = tr.count(ns["total"], gm)
-    check(r == (13, 5) and n["add_entries"] == 4 and n["gcd"] == 1 and n["reduce"] == 1
+        gm = Column(100, ns["prepend"](u, ns["entries"](gm)))
+    r, n = tr.count(ns["sum_"], gm)
+    check(r == (13, 5) and n["tally"] == 5 and n["gcd"] == 1 and n["reduce"] == 1
           and math.gcd(260, 100) == 20 and 310 + 45 - 120 + 25 == 260,
-          f"3.1 example: total {r}, calls {dict(n)}")
+          f"3.1 example: sum {r}, calls {dict(n)}")
     entered, n_entry = [], Counter()
     for p in (310, 45, -120, 25):
         x, n = tr.count(reduce_, rational(p, 100))
@@ -346,16 +385,16 @@ def check_examples(ns, tr, check):
         gcds.append(n["gcd"])
     check(acc == (13, 5) and gcds == [2, 2, 2], f"3.1 example: section 2 gives {acc} with gcds {gcds}")
     check(4 + sum(gcds) == 10, "3.1 example: ten gcds")
-    check(ns["total"](G(100, ns["prepend"](45, ns["prepend"](-45, None)))) == (0, 1), "3.1: 45 and -45")
+    check(ns["sum_"](Column(100, ns["prepend"](45, ns["prepend"](-45, None)))) == (0, 1), "3.1: 45 and -45")
 
     # 3.2
-    g1, g3 = ns["new_numerator_group"](1), ns["new_numerator_group"](3)
-    check(ns["multiply_entries"](g1, 6, 6) == (1, 36), "3.2: two sixes")
-    check(ns["multiply_entries"](g3, 4, 5) == (9, 20), "3.2: 3/4 * 3/5")
-    check(raises(ns["join_numerator_group"], g3, (2, 5)), "3.2: 2/5 joined the group of 3")
+    g1, g3 = ns["row"](1), ns["row"](3)
+    check(ns["product"](g1, 6, 6) == (1, 36), "3.2: two sixes")
+    check(ns["product"](g3, 4, 5) == (9, 20), "3.2: 3/4 * 3/5")
+    check(raises(ns["join"], g3, (2, 5)), "3.2: 2/5 joined the row of 3")
     check(ns["divide"]((1, 2), (1, 4)) == (2, 1) and Fraction(1, 2) / Fraction(1, 4) == Fraction(4, 2),
           "3.2: 1/2 / 1/4")
-    check(ns["multiply_entries"](ns["new_numerator_group"](-1), 2, 3) == (1, 6), "3.2: group of -1")
+    check(ns["product"](ns["row"](-1), 2, 3) == (1, 6), "3.2: row of -1")
     # scaling a denominator breaks lowest terms unless c = a (no scaling); c = -a fails only on the sign
     for a in [k for k in range(-24, 25) if k]:
         for c in [k for k in range(-24, 25) if k and a % k == 0]:
@@ -368,7 +407,7 @@ def check_examples(ns, tr, check):
                 check((den < 0) == (a // c < 0) and Fraction(a, den) == Fraction(c, d), "3.2: scaling")
                 if c == -a:
                     check(den == -d and math.gcd(a, den) == 1, f"3.2: {c}/{d} scaled to {a} fails only on the sign")
-    # the sum of two values of the group is section 2.6's equal-numerators case, with a gcd
+    # the sum of two values of a row is section 2.6's equal-numerators case, with a gcd
     _, n = tr.count(add, (1, 6), (1, 10))
     check(n["gcd"] >= 1, "3.2: 1/6 + 1/10 should need a gcd")
     print("Section 3's examples: money and minutes, 1/2 as 50/100, 1/3 and 2/5 refused, the column of cents "

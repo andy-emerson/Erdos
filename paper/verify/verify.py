@@ -543,6 +543,8 @@ def main():
     missing = coverage_report(br, tr, first_line)
     for m in missing:
         check(False, "coverage: " + m)
+    import section3
+    section3.run(a.paper, ns, FILENAME, sys.modules[__name__], check)
     if not a.no_control:
         import control
         control.compare(ns, check)

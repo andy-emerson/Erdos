@@ -1,6 +1,6 @@
-# Checks for Appendix A of v0.5
+# Checks for Appendices A and B of v0.5
 
-These checks belong to [Appendix A](../v0.5.md#appendix-a-the-library-in-python) of the paper, "The library in Python", and are kept outside the paper. Run them from the repository root with one command:
+These checks cover Appendices A and B of the paper: [Appendix A](../v0.5.md#appendix-a-the-library-in-python), "The library in Python", and [Appendix B](../v0.5.md#appendix-b-the-section-3-library-in-python), "The section 3 library in Python". They are kept outside the paper. Run them from the repository root with one command:
 
 ```sh
 python3 paper/verify/verify.py
@@ -35,8 +35,16 @@ Requirements: Python 3 (tested with 3.13). The control comparison also needs `gc
    - Every call's value must equal TC's read-out, integer for integer, and the generator's exact reference.
    - Nothing is written outside the temporary directory.
 
+7. **Appendix B, the groups of section 3** (`section3.py`, run by `verify.py`; Appendix A's checks above are unchanged):
+   - The one ` ```python ` block under "Appendix B. The section 3 library in Python" is read and run on top of Appendix A's functions, which it uses and does not repeat. It must be `empty = None` and then define `is_empty`, `prepend`, `first`, `rest`, `group`, `shared`, `entries`, `new_denominator_group`, `join_denominator_group`, `add_entries`, `sum_entries`, `take_from_denominator_group`, `total`, `new_numerator_group`, `join_numerator_group`, `multiply_entries` and `take_from_numerator_group`, in that order.
+   - Each function is the line-for-line translation of its pseudocode in sections 3.1 and 3.2, with Appendix A's substitutions and `ERROR` as `raise ValueError`; the seven list and group primitives, defined in prose, have fixed short forms.
+   - Against `fractions.Fraction`: joining every small stored value, and random ones, to groups over 1..60, 100, 360, 3600, 2^64 and random denominators (joined exactly when the denominator divides the group's, refused with `ValueError` otherwise, and the old group left unchanged); totals with signs and raw entries, of empty groups and of groups whose entries cancel (both 0/1), with one `reduce` at most, one `add_entries` per entry, and a sum at most log2 N bits longer than its largest entry; taking out every entry in −200..200 over many denominators, reduced, with `reduce` skipped exactly for 0 and for D = 1; numerator groups for every numerator in −12..12 and random ones (0 refused), joined only by values with that numerator, taken out with no gcd, and every product of two entries reduced with no gcd or `reduce`, equal to section 2.7's `multiply`, staying in the group only for the numerator 1; and raw entries placed directly on the caller's promise of section 3.2 (b > 0, and gcd(a, b) = 1 unless a = ±1), whose products are reduced with no gcd.
+   - Every example and claim of section 3: 1/2 as 50/100, 1/3 and 2/5 refused, that a reduced a/b is u/D only when b divides D, the column of cents (4 additions and 1 gcd, against 4 + 2 + 2 + 2 = 10 gcds in section 2's library, both giving 13/5), 1/36, 9/20, the group of −1, 1/2 ÷ 1/4 = 2, and that scaling a denominator to a shared numerator breaks lowest terms unless c = a, which is no scaling at all (c = −a fails only on the sign).
+   - Branch coverage of Appendix B: every `if` outcome and every statement must be reached.
+
 ## Limits
 
 - Python's integers are unbounded, so the fixed-width storage of section 1 (and TC's 64-bit overflow checks) is not modelled.
 - `gcd` is recursive, as in the paper, so Python's default recursion limit (1000) bounds it. That allows inputs of several hundred bits even in the worst case, well beyond what is tested here.
 - Outside the paper's interface, `rational(p, 0)` is not rejected (the paper requires q ≠ 0 and does not check it), and `gcd(0, 0)` returns 0. Neither is tested.
+- `sum_entries` is recursive, as in the paper, so Python's recursion limit bounds the length of a list it sums; the groups tested have at most a few hundred entries.

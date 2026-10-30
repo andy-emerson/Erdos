@@ -1,7 +1,7 @@
-> **Status** (Oct 30, 2026, 15:40 CDT)
+> **Status** (Oct 30, 2026, 16:24 CDT)
 >
 > - **Paper:** v0.6 done (chapters 1–4). Waiting for your direction.
-> - **Test suite:** m3 done.
+> - **Test suite:** m3 done; finding where the costs went and researching optimizations.
 >
 > **Results:** latest completed round: [m3](11-matrix/test/results-m3-summary.md)
 

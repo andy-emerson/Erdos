@@ -1,7 +1,7 @@
-> **Status** (Oct 30, 2026, 12:45 CDT)
+> **Status** (Oct 30, 2026, 14:36 CDT)
 >
-> - **Paper:** v0.6 build 4b in progress (chapter 4, matrices); chapters 1–3 done (decimals added).
-> - **Test suite:** matrix round m3 built (03cf662); build under review. The four timed runs follow, with paper work paused while they run.
+> - **Paper:** v0.6 build 4b (chapter 4, matrices) reviewed, minor fixes pending; paused while the timed runs go.
+> - **Test suite:** m3 timed runs in progress (add, mul, sop, pos). Machine must stay quiet.
 >
 > **Results:** latest completed round: [m2](11-matrix/test/results-m2-mul/results.md)
 

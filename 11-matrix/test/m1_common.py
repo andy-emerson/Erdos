@@ -13,7 +13,7 @@ HERE = Path(__file__).resolve().parent              # 11-matrix/test
 ROOT = HERE.parent                                   # 11-matrix
 LIBDIR = ROOT / "lib"
 RULE_FILE = ROOT / "research" / "rule-m1.md"
-ROUND3 = ROOT.parent / "10-interning"                # round 3: read only (spec §1; rule-m1, Harness)
+ROUND3 = ROOT.parent / "archive" / "10-interning"             # round 3: read only (spec §1; rule-m1, Harness)
 
 # The fixed rule (rule-m1.md as approved by the author, Oct 29, 2026, committed at 5ee4eaa). The harness refuses a
 # measured run unless the file on disk has exactly this sha256, and while it holds the word "PROPOSED" (rule-m1.md,

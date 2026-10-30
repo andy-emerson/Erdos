@@ -1,6 +1,6 @@
 # Checks for Appendices A and B of v0.5
 
-These checks cover Appendices A and B of the paper: [Appendix A](../v0.5.md#appendix-a-the-library-in-python), "The library in Python", and [Appendix B](../v0.5.md#appendix-b-the-section-3-library-in-python), "The section 3 library in Python". They are kept outside the paper. Run them from the repository root with one command:
+These checks cover Appendices A and B of the paper: [Appendix A](../../archive/paper/v0.5.md#appendix-a-the-library-in-python), "The library in Python", and [Appendix B](../../archive/paper/v0.5.md#appendix-b-the-section-3-library-in-python), "The section 3 library in Python". They are kept outside the paper. Run them from the repository root with one command:
 
 ```sh
 python3 paper/verify/verify.py

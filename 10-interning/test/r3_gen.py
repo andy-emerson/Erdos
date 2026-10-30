@@ -37,7 +37,7 @@ def reuse(ops, a, b, vals, n_in, cases):
     """Realized reuse (rule-r3 item 13, as rule-r2): N, W, W/N, 2N/W after entry and at the end, the case shares per algorithm,
     and the share of operands that are earlier results."""
     def wholes(vs):
-        s = set()
+        s = {0, 1}                           # stored by create in both Q32 rows (spec v0.3 §17.2), counted in W
         for m, d in vs:
             s.add(abs(m))
             s.add(d)
@@ -81,13 +81,19 @@ def gen_job(job, out, toy, round1):
     vals, cases, We, Wend, cnt = p["values"], p["cases"], p["W_after_entry"], p["W_end"], p["counters"]
     ref = list(zip((int(x) for x in rn), (int(x) for x in rd)))
     assert vals == ref, f"job {job}: the model's values differ from the exact reference"
-    # v0.3 keeps round 2's arithmetic: every counter of round 2's model but its lookup counter is the same
-    _, cases2, We2, Wend2, cnt2, Wl2 = r2_model.predict(ops, a, b)
-    assert cases2 == cases and We2 == We and Wend2 == Wend and Wl2 == p["list"], f"job {job}: models disagree"
-    for ph, names in cnt2.items():
-        for nm, v in names.items():
-            if nm != "lookup_search":
-                assert cnt.get(ph, {}).get(nm) == v, f"job {job}: {ph} {nm} differs from round 2's model"
+    # The amendment of Oct 29, 2026 (spec v0.3 §17) changes the cases and the arithmetic from round 2's, so round 2's
+    # model is no longer an equal check. What stays: the values (above), the whole numbers (round 2's set plus 0 and
+    # 1, the list in arrival order after 0 and 1), and every operation outside the new cases taking round 2's case.
+    v2, cases2, _, _, _, Wl2 = r2_model.predict(ops, a, b)
+    assert v2 == vals, f"job {job}: the two models' values differ"
+    assert p["list"][:2] == [0, 1] and set(p["list"]) == set(Wl2) | {0, 1}, f"job {job}: whole numbers differ"
+    assert [v for v in p["list"][2:] if v not in (0, 1)] == [v for v in Wl2 if v not in (0, 1)], \
+        f"job {job}: the arrival order differs from round 2's"
+    new = {C.CASE[k] for k in C.CASES[21:]}
+    import r2_common
+    for i, (k3, k2) in enumerate(zip(cases, cases2)):
+        if k3 >= 0 and k3 not in new:
+            assert r2_common.CASES[k2] == C.CASES[k3], f"job {job}: call {i} takes {C.CASES[k3]}, round 2 {r2_common.CASES[k2]}"
     n_in = w["n_in"]
     r = reuse(ops, a, b, ref, n_in, cases)
     assert r["after_entry"]["W"] == We and r["end"]["W"] == Wend   # spec §12.1 item 2: W from the reference alone

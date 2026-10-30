@@ -1,7 +1,9 @@
 /* r3_unit.c: unit tests of round 3's rows, TC, Q32-index and Q32-hash (spec v0.3 §12.3: round 2's tests, v0.2 §14.3,
  * for all three rows, both switches included, each Q32 test run for each Q32 row; plus the capacity of both Q32 rows
  * (in Q32-hash the full table), Q32-hash's probing, Q32-index's search, and the three rows against each other: equal
- * values, equal per-call arithmetic, and equal Q32 found/new splits).  From round 2's r2_unit.c (unchanged).  Test
+ * values, equal per-call arithmetic, and equal Q32 found/new splits).  From round 2's r2_unit.c (unchanged).  Amended
+ * Oct 29, 2026 (v0.3 §17): 0 and 1 stored by create at handles 0 and 1 (every W counts them; slots 0 and 1 never take
+ * another value), and the integer cases of every operation, with their gcds, K-skips, hints and overflow steps.  Test
  * build only. */
 #define _GNU_SOURCE
 #include <signal.h>
@@ -81,13 +83,13 @@ static void test_worked_example(void) {
         const row *R = ROWS[r];
         void *c = R->create();
         sk_handle x0 = ent(R, c, 1, 6), x1 = ent(R, c, -5, 6), x2 = ent(R, c, 5, 7), x3 = ent(R, c, 6, 7);
-        const sk_int W0[4] = {1, 6, 5, 7};
+        const sk_int W0[5] = {0, 1, 6, 5, 7}; /* 0 and 1 stored by create, at 0 and 1 (v0.3 §17.2) */
         if (R->isq) {
-            CHECK_EQ(R->wholes(c), 4);
-            if (R->isq == 1) /* Q32-index: the indices are the arrival order */
-                for (uint32_t k = 0; k < 4; k++) CHECK_EQ(qwhole(R, c, k), W0[k]);
-            const struct { sk_handle h; int neg; uint32_t i, j; } E[4] = {{x0, 0, 0, 1}, {x1, 1, 2, 1}, {x2, 0, 2, 3},
-                                                                       {x3, 0, 1, 3}};
+            CHECK_EQ(R->wholes(c), 5);
+            if (R->isq == 1) /* Q32-index: the indices are the arrival order, after 0 and 1 */
+                for (uint32_t k = 0; k < 5; k++) CHECK_EQ(qwhole(R, c, k), W0[k]);
+            const struct { sk_handle h; int neg; uint32_t i, j; } E[4] = {{x0, 0, 1, 2}, {x1, 1, 3, 2}, {x2, 0, 3, 4},
+                                                                       {x3, 0, 2, 4}};
             for (int k = 0; k < 4; k++) {
                 int neg;
                 uint32_t i, j;
@@ -109,16 +111,16 @@ static void test_worked_example(void) {
             int neg;
             uint32_t i, j, W; /* Q32: stored as; whole numbers after */
         } T[8] = {
-            {SK_PH_ADD, x0, x1, R2_ADD_DEN, 1, -2, 3, 1, 4, 5, 6},
-            {SK_PH_MUL, x0, x1, R2_MUL_DEN, 0, -5, 36, 1, 2, 6, 7},
-            {SK_PH_MUL, x1, x2, R2_MUL_NUM, 0, -25, 42, 1, 7, 8, 9},
-            {SK_PH_MUL, x0, x3, R2_MUL_CROSS_CB, 1, 1, 7, 0, 0, 3, 9},
-            {SK_PH_DIV, x2, x1, R2_DIV_NUM, 1, -6, 7, 1, 1, 3, 9},
-            {SK_PH_DIV, x3, x2, R2_DIV_DEN, 1, 6, 5, 0, 1, 2, 9},
-            {SK_PH_DIV, x3, x0, R2_DIV_CROSS_AD, 0, 36, 7, 0, 6, 3, 9},
-            {SK_PH_ADD, x1, x3, R2_ADD_CROSS, 0, 1, 42, 0, 0, 8, 9},
+            {SK_PH_ADD, x0, x1, R2_ADD_DEN, 1, -2, 3, 1, 5, 6, 7},
+            {SK_PH_MUL, x0, x1, R2_MUL_DEN, 0, -5, 36, 1, 3, 7, 8},
+            {SK_PH_MUL, x1, x2, R2_MUL_NUM, 0, -25, 42, 1, 8, 9, 10},
+            {SK_PH_MUL, x0, x3, R2_MUL_CROSS_CB, 1, 1, 7, 0, 1, 4, 10},
+            {SK_PH_DIV, x2, x1, R2_DIV_NUM, 1, -6, 7, 1, 2, 4, 10},
+            {SK_PH_DIV, x3, x2, R2_DIV_DEN, 1, 6, 5, 0, 2, 3, 10},
+            {SK_PH_DIV, x3, x0, R2_DIV_CROSS_AD, 0, 36, 7, 0, 7, 4, 10},
+            {SK_PH_ADD, x1, x3, R2_ADD_CROSS, 0, 1, 42, 0, 1, 9, 10},
         };
-        const sk_int W1[9] = {1, 6, 5, 7, 2, 3, 36, 25, 42};
+        const sk_int W1[10] = {0, 1, 6, 5, 7, 2, 3, 36, 25, 42};
         for (int k = 0; k < 8; k++) {
             take(R, c, SN0);
             sk_handle h = opk(R, c, T[k].op, T[k].x, T[k].y);
@@ -140,19 +142,21 @@ static void test_worked_example(void) {
                 CHECK_EQ(R->wholes(c), T[k].W);
             }
         }
-        if (R->isq == 1) /* the indices appended along the way: 2, 3 at 4, 5; 36 at 6; 25, 42 at 7, 8 */
-            for (uint32_t k = 0; k < 9; k++) CHECK_EQ(qwhole(R, c, k), W1[k]);
-        if (R->isq == 2) { /* Q32-hash: the same nine whole numbers, each at a used slot */
+        if (R->isq == 1) /* the indices appended along the way: 2, 3 at 5, 6; 36 at 7; 25, 42 at 8, 9 */
+            for (uint32_t k = 0; k < 10; k++) CHECK_EQ(qwhole(R, c, k), W1[k]);
+        if (R->isq == 2) { /* Q32-hash: the same ten whole numbers, each at a used slot, 0 and 1 at slots 0 and 1 */
             uint32_t used = 0;
             for (uint32_t s = 0; s < R3_SLOTS; s++) {
                 sk_int v = qwhole(R, c, s);
                 if (v < 0) continue;
                 used++;
                 int in = 0;
-                for (int k = 0; k < 9; k++) in |= v == W1[k];
+                for (int k = 0; k < 10; k++) in |= v == W1[k];
                 CHECK(in);
             }
-            CHECK_EQ(used, 9);
+            CHECK_EQ(used, 10);
+            CHECK_EQ(qwhole(R, c, 0), 0);
+            CHECK_EQ(qwhole(R, c, 1), 1);
         }
         audits_ok(R, c);
         R->destroy(c);
@@ -189,7 +193,34 @@ static const ex EXAMPLES[] = {
     {SK_PH_ADD, 5, 7, -5, 7, R2_ADD_ZERO, 0, 1},        /* x + (-x) */
     {SK_PH_SUB, 1, 1, 1, 1, R2_ADD_ZERO, 0, 1},         /* 1 - 1: zero, not cross (§9) */
     {SK_PH_SUB, 0, 1, 0, 1, R2_ADD_ZERO, 0, 1},         /* 0 - 0: the effective tags differ: zero (§9) */
-    {SK_PH_ADD, 0, 1, 0, 1, R2_ADD_DEN, 0, 1},          /* 0 + 0: den, t = 0, h = 1 (§9) */
+    {SK_PH_ADD, 0, 1, 0, 1, R2_ADD_ZERO_X, 0, 1},       /* 0 + 0: zero_x (v0.3 §17.3; den in v0.2) */
+    {SK_PH_ADD, 0, 1, -5, 7, R2_ADD_ZERO_X, -5, 7},     /* 0 + y = y: no arithmetic */
+    {SK_PH_SUB, 0, 1, -5, 7, R2_ADD_ZERO_X, 5, 7},      /* 0 - y = -y */
+    {SK_PH_SUB, 0, 1, 3, 1, R2_ADD_ZERO_X, -3, 1},
+    {SK_PH_ADD, -5, 7, 0, 1, R2_ADD_ZERO_Y, -5, 7},     /* x + 0 = x */
+    {SK_PH_SUB, 4, 1, 0, 1, R2_ADD_ZERO_Y, 4, 1},       /* x - 0 = x */
+    {SK_PH_ADD, 2, 1, 3, 1, R2_ADD_INT_BOTH, 5, 1},     /* integers: (a + c)/1, no gcd, no multiplication */
+    {SK_PH_SUB, 2, 1, 7, 1, R2_ADD_INT_BOTH, -5, 1},
+    {SK_PH_ADD, 2, 1, 3, 5, R2_ADD_INT_X, 13, 5},       /* 2 + 3/5 = (2*5 + 3)/5, no gcd */
+    {SK_PH_SUB, 2, 1, 13, 5, R2_ADD_INT_X, -3, 5},
+    {SK_PH_ADD, 3, 5, 2, 1, R2_ADD_INT_Y, 13, 5},       /* 3/5 + 2 = (3 + 2*5)/5, no gcd */
+    {SK_PH_SUB, 3, 5, 2, 1, R2_ADD_INT_Y, -7, 5},
+    {SK_PH_ADD, 5, 7, 7, 1, R2_ADD_INT_Y, 54, 7},       /* c = b: int_y, not cross */
+    {SK_PH_ADD, 1, 1, 1, 3, R2_ADD_INT_X, 4, 3},        /* a = c = 1, a = ... : int_x, not cross or num */
+    {SK_PH_MUL, 6, 1, 4, 1, R2_MUL_INT_BOTH, 24, 1},    /* integers: (a*c)/1, no gcd */
+    {SK_PH_MUL, -6, 1, 4, 1, R2_MUL_INT_BOTH, -24, 1},
+    {SK_PH_MUL, 6, 1, 5, 9, R2_MUL_INT_X, 10, 3},       /* 6 * 5/9: gcd(6, 9) = 3 */
+    {SK_PH_MUL, 2, 1, 5, 9, R2_MUL_INT_X, 10, 9},       /* gcd(2, 9) = 1 (K-8) */
+
+    {SK_PH_MUL, 5, 9, 6, 1, R2_MUL_INT_Y, 10, 3},       /* 5/9 * 6: gcd(6, 9) = 3 */
+    {SK_PH_MUL, 5, 9, 2, 1, R2_MUL_INT_Y, 10, 9},       /* gcd(2, 9) = 1 (K-8) */
+    {SK_PH_MUL, 3, 7, 3, 1, R2_MUL_NUM, 9, 7},          /* a = c: num (no gcd) before int_y (one gcd) */
+    {SK_PH_MUL, 3, 7, 7, 1, R2_MUL_CROSS_CB, 3, 1},     /* c = b: cross_cb before int_y */
+    {SK_PH_MUL, 1, 7, 5, 1, R2_MUL_CROSS_AD, 5, 7},     /* a = d = 1: cross_ad before int_y */
+    {SK_PH_DIV, 6, 1, 4, 1, R2_DIV_DEN, 3, 2},          /* integers: den, a/c after gcd(a, c) */
+    {SK_PH_DIV, 6, 1, 4, 5, R2_DIV_GEN, 15, 2},         /* an integer dividend: no integer case in division */
+    {SK_PH_DIV, 6, 5, 4, 1, R2_DIV_GEN, 3, 10},         /* an integer divisor: likewise (v0.3 §17.3) */
+    {SK_PH_DIV, 3, 7, 3, 1, R2_DIV_NUM, 1, 7},          /* a = c: num (0 multiplications) before int_y */
     {SK_PH_MUL, 3, 7, 2, 7, R2_MUL_DEN, 6, 49},         /* 3/7 * 2/7 = 6/49 */
     {SK_PH_MUL, 3, 4, 3, 5, R2_MUL_NUM, 9, 20},         /* 3/4 * 3/5 = 9/20 */
     {SK_PH_MUL, 4, 9, 3, 4, R2_MUL_CROSS_AD, 1, 3},     /* 4/9 * 3/4 = 1/3 */
@@ -203,7 +234,12 @@ static const ex EXAMPLES[] = {
     {SK_PH_MUL, 1, 1, 5, 7, R2_MUL_ONE_X, 5, 7},        /* 1 * y */
     {SK_PH_MUL, -1, 1, 5, 7, R2_MUL_ONE_X, -5, 7},      /* -1 * y */
     {SK_PH_MUL, 5, 7, -1, 1, R2_MUL_ONE_Y, -5, 7},      /* x * -1 */
-    {SK_PH_MUL, -1, 1, 0, 1, R2_MUL_ONE_X, 0, 1},       /* -1 * 0: the tag stays + */
+    {SK_PH_MUL, -1, 1, 0, 1, R2_MUL_ZERO, 0, 1},        /* -1 * 0: zero (v0.3 §17.3), the tag + */
+    {SK_PH_MUL, 5, 7, 0, 1, R2_MUL_ZERO, 0, 1},         /* x * 0: zero, no arithmetic */
+    {SK_PH_MUL, 0, 1, -5, 7, R2_MUL_ZERO, 0, 1},        /* 0 * y */
+    {SK_PH_MUL, 0, 1, 0, 1, R2_MUL_ZERO, 0, 1},
+    {SK_PH_DIV, 0, 1, -5, 7, R2_DIV_ZERO, 0, 1},        /* 0 / y: zero, no arithmetic */
+    {SK_PH_DIV, 0, 1, 3, 1, R2_DIV_ZERO, 0, 1},
     {SK_PH_MUL, -1, 1, -1, 1, R2_MUL_ONE_X, 1, 1},      /* -1 * -1 */
     {SK_PH_DIV, 1, 2, 1, 4, R2_DIV_NUM, 2, 1},          /* 1/2 / 1/4 = 2 */
     {SK_PH_DIV, 3, 10, 9, 10, R2_DIV_DEN, 1, 3},        /* 3/10 / 9/10 = 1/3 */
@@ -218,7 +254,7 @@ static const ex EXAMPLES[] = {
     {SK_PH_DIV, -1, 1, 5, 7, R2_DIV_ONE_X, -7, 5},
     {SK_PH_DIV, 1, 1, -5, 7, R2_DIV_ONE_X, -7, 5},      /* the sign is fixed on the numerator */
     {SK_PH_DIV, 5, 7, -1, 1, R2_DIV_ONE_Y, -5, 7},      /* x / -1 */
-    {SK_PH_DIV, 0, 1, -1, 1, R2_DIV_ONE_Y, 0, 1},       /* 0 / -1: the tag stays + */
+    {SK_PH_DIV, 0, 1, -1, 1, R2_DIV_ZERO, 0, 1},        /* 0 / -1: zero (v0.3 §17.3), the tag + */
     {SK_PH_DIV, 1, 5, 1, 1, R2_DIV_ONE_Y, 1, 5},        /* a = c = 1 (index of c, read once) */
     {SK_PH_DIV, -1, 1, -1, 1, R2_DIV_ONE_X, 1, 1},
 };
@@ -238,7 +274,7 @@ static void run_example(const row *R, const ex *e, int force, unsigned koff) {
     int k = force ? general_of(e->op) : e->kase;
     if (!force && e->kase == R2_ADD_ZERO && (koff & R2_KOFF(2))) k = -1; /* K-2 off: case zero is not taken */
     if (k >= 0) CHECK_EQ(XCASES(SN1->x, e->op, k) - XCASES(SN0->x, e->op, k), 1);
-    CHECK_EQ(XS(SN1->x, e->op, cmp) - XS(SN0->x, e->op, cmp), e->op >= SK_PH_MUL ? 6 : 4);
+    CHECK_EQ(XS(SN1->x, e->op, cmp) - XS(SN0->x, e->op, cmp), e->op >= SK_PH_MUL ? 10 : 8); /* + integer, zero tests */
     audits_ok(R, c);
     R->destroy(c);
 }
@@ -355,7 +391,7 @@ static void test_one(void) {
                         for (int sv = 0; sv < 2; sv++) {
                             const row *R = ROWS[r];
                             sk_int om = so ? -1 : 1, vm = sv ? -Ys[k][0] : Ys[k][0], vd = Ys[k][1];
-                            if (op == SK_PH_DIV && side == 0 && vm == 0) continue; /* below: division by zero */
+                            if (vm == 0) continue; /* a zero other operand: case zero (v0.3 §17.3), test_zero */
                             void *c = R->create();
                             sk_handle o = ent(R, c, om, 1), v = ent(R, c, vm, vd);
                             sk_handle x = side ? v : o, y = side ? o : v;
@@ -410,8 +446,9 @@ static void test_one(void) {
  * over small whole numbers (0 and 1 included), the case counter against §9 on magnitudes and signs. */
 static void test_overlaps(void) {
     static const ex O[] = {
-        {SK_PH_ADD, 1, 1, 1, 1, R2_ADD_CROSS, 2, 1},       /* cross, den and num, equal tags: cross */
-        {SK_PH_ADD, 1, 1, 1, 3, R2_ADD_CROSS, 4, 3},       /* num and cross: cross */
+        {SK_PH_ADD, 1, 1, 1, 1, R2_ADD_INT_BOTH, 2, 1},    /* cross, den, num and integers, equal tags: int_both */
+        {SK_PH_ADD, 1, 1, 1, 3, R2_ADD_INT_X, 4, 3},       /* num, cross and x an integer: int_x */
+        {SK_PH_ADD, 1, 3, 1, 1, R2_ADD_INT_Y, 4, 3},       /* num, cross and y an integer: int_y */
         {SK_PH_ADD, 3, 5, 3, 5, R2_ADD_DEN, 6, 5},         /* den and num, equal tags: den */
         {SK_PH_MUL, 3, 5, 3, 5, R2_MUL_DEN, 9, 25},        /* den and num: den */
         {SK_PH_MUL, 1, 1, 1, 1, R2_MUL_ONE_X, 1, 1},       /* everything: one_x */
@@ -419,6 +456,8 @@ static void test_overlaps(void) {
         {SK_PH_MUL, 1, 3, 1, 1, R2_MUL_ONE_Y, 1, 3},       /* num, cross_ad and one_y: one_y */
         {SK_PH_MUL, 3, 1, 5, 3, R2_MUL_CROSS_AD, 5, 1},    /* cross_ad */
         {SK_PH_MUL, 1, 1, 3, 1, R2_MUL_ONE_X, 3, 1},       /* one_x, den and cross_ad: one_x */
+        {SK_PH_MUL, 2, 1, 2, 1, R2_MUL_INT_BOTH, 4, 1},    /* den, num and integers: int_both */
+        {SK_PH_MUL, 3, 1, 1, 3, R2_MUL_BOTH, 1, 1},        /* both and x an integer: both */
         {SK_PH_DIV, 1, 1, 1, 1, R2_DIV_ONE_X, 1, 1},       /* everything: one_x */
         {SK_PH_DIV, 2, 1, 1, 2, R2_DIV_CROSS_AD, 4, 1},    /* cross_ad and cross_cb: cross_ad */
         {SK_PH_DIV, 1, 3, 1, 1, R2_DIV_ONE_Y, 1, 3},       /* num, cross_ad and one_y: one_y */
@@ -514,10 +553,12 @@ static const ovf OVF[] = {
     {SK_PH_SUB, -8LL, 1537228672809129303LL, -1LL, 1840700271LL, "add general: b'*(d/h)"},
     {SK_PH_ADD, -6LL, 1431655765LL, 4294967297LL, 64424509485LL, "add general: b'*d"},
     {SK_PH_SUB, -4LL, 3037000499LL, -5LL, 12884901891LL, "add general: b*d"},
-    {SK_PH_ADD, -1LL, 1LL, -4611686018427387903LL, 6148914691236517205LL, "add general: s_x*a*d + s_y*c*b"},
+    {SK_PH_ADD, -1LL, 1LL, -4611686018427387903LL, 6148914691236517205LL, "add int_x: s_x*a*d + s_y*c"},
     {SK_PH_SUB, -2000000000000000002LL, 4294967299LL, 1073741824LL, 4294967297LL, "add general: s_x*a*d"},
     {SK_PH_ADD, -2305843009213693951LL, 25769803794LL, 9LL, 10LL, "add general: s_x*a*d'"},
-    {SK_PH_ADD, -1500000000000000001LL, 4611686018427387905LL, 10LL, 1LL, "add general: s_y*c*b"},
+    {SK_PH_ADD, -1500000000000000001LL, 4611686018427387905LL, 10LL, 1LL, "add int_y: s_y*c*b"},
+    {SK_PH_ADD, -1LL, 2LL, -4611686018427387903LL, 6148914691236517205LL, "add general: s_x*a*d + s_y*c*b"},
+    {SK_PH_ADD, -1500000000000000001LL, 4611686018427387905LL, 10LL, 3LL, "add general: s_y*c*b"},
     {SK_PH_ADD, 3037000493LL, 4294967299LL, 4611686018427387903LL, 15032385536LL, "add general: s_y*c*b'"},
     {SK_PH_SUB, -9LL, 8LL, 2305843009213693951LL, 10LL, "add general: t = s_x*a*d' + s_y*c*b'"},
     {SK_PH_SUB, 1317624576693539401LL, 12884901891LL, 1317624576693539401LL, 6LL, "add num: a*(t/h)"},
@@ -540,6 +581,18 @@ static const ovf OVF[] = {
     {SK_PH_MUL, 9LL, 1000000000000000001LL, -3037000499LL, 4294967291LL, "multiply general: b'*d'"},
     {SK_PH_MUL, -4294967297LL, 3LL, -4294967297LL, 8589934598LL, "multiply num: a*a"},
     {SK_PH_MUL, -8LL, 188232082384791343LL, -8LL, 1317624576693539401LL, "multiply num: b*d"},
+    /* the integer cases (v0.3 §17.3) */
+    {SK_PH_ADD, 4611686018427387905LL, 1LL, 4611686018427387905LL, 1LL, "add int_both: t = s_x*a + s_y*c"},
+    {SK_PH_SUB, -4611686018427387905LL, 1LL, 4611686018427387905LL, 1LL, "add int_both: t = s_x*a + s_y*c"},
+    {SK_PH_ADD, 4294967297LL, 1LL, 1LL, 4294967297LL, "add int_x: s_x*a*d"},
+    {SK_PH_ADD, 3LL, 1LL, 9223372036854775801LL, 4LL, "add int_x: s_x*a*d + s_y*c"},
+    {SK_PH_SUB, 1LL, 4294967297LL, -4294967297LL, 1LL, "add int_y: s_y*c*b"},
+    {SK_PH_ADD, 9223372036854775801LL, 4LL, 3LL, 1LL, "add int_y: s_x*a + s_y*c*b"},
+    {SK_PH_MUL, 4294967297LL, 1LL, -4294967297LL, 1LL, "multiply int_both: a*c"},
+    {SK_PH_MUL, 4294967297LL, 1LL, 4294967299LL, 3LL, "multiply int_x: a*c"},
+    {SK_PH_MUL, -8589934594LL, 1LL, 4294967299LL, 2LL, "multiply int_x: a'*c"},
+    {SK_PH_MUL, 4294967299LL, 3LL, 4294967297LL, 1LL, "multiply int_y: a*c"},
+    {SK_PH_MUL, 4294967299LL, 2LL, -8589934594LL, 1LL, "multiply int_y: a*c'"},
 };
 
 static void test_overflow(void) {
@@ -578,23 +631,26 @@ static void test_store(void) {
     for (int q = 0; q < 2; q++) {
         const row *R = QROWS[q];
         void *c = R->create();
+        CHECK_EQ(R->wholes(c), 2); /* 0 and 1, stored by create (v0.3 §17.2), counted in W */
+        CHECK_EQ(qwhole(R, c, 0), 0);
+        CHECK_EQ(qwhole(R, c, 1), 1);
         sk_handle a = ent(R, c, 2, 3), b = ent(R, c, 3, 2); /* whole numbers 2, 3 */
-        CHECK_EQ(R->wholes(c), 2);
+        CHECK_EQ(R->wholes(c), 4);
         sk_handle h = opk(R, c, SK_PH_MUL, a, a); /* 4/9: both new */
-        CHECK_EQ(R->wholes(c), 4);
+        CHECK_EQ(R->wholes(c), 6);
         h = opk(R, c, SK_PH_DIV, a, b); /* 4/9 again: both found */
-        CHECK_EQ(R->wholes(c), 4);
+        CHECK_EQ(R->wholes(c), 6);
         int n1, n2;
         uint32_t i1, j1, i2, j2;
         qrat(R, c, h, &n1, &i1, &j1);
         qrat(R, c, h - 1, &n2, &i2, &j2);
         CHECK(n1 == n2 && i1 == i2 && j1 == j2); /* equal results: two rationals, the same handles */
         CHECK_EQ(R->size(c), 4);
-        h = opk(R, c, SK_PH_ADD, b, b); /* 3/1: 3 found, 1 new */
+        h = opk(R, c, SK_PH_ADD, b, b); /* 3/1: 3 found, 1 found (stored by create) */
         val(R, c, h, 3, 1);
-        CHECK_EQ(R->wholes(c), 5);
-        for (sk_int v = 10; v < 14; v++) ent(R, c, v, 1); /* 10..13: W = 9 */
-        CHECK_EQ(R->wholes(c), 9);
+        CHECK_EQ(R->wholes(c), 6);
+        for (sk_int v = 10; v < 14; v++) ent(R, c, v, 1); /* 10..13: W = 10 */
+        CHECK_EQ(R->wholes(c), 10);
         sk_memory m;
         R->memory(c, &m);
         CHECK_EQ(m.n, 2); /* two structures (v0.3 §§7, 8) */
@@ -602,9 +658,9 @@ static void test_store(void) {
         double bpr;
         if (R->isq == 1) { /* the whole numbers, in a list of capacity 16, and the rationals: B = 4 + 8W/N (§7) */
             CHECK(!strcmp(m.item[0].name, "whole numbers"));
-            CHECK_EQ(m.item[0].used, 8 * 9);
+            CHECK_EQ(m.item[0].used, 8 * 10);
             CHECK_EQ(m.item[0].allocated, 8 * 16);
-            bpr = 4.0 + 8.0 * 9 / N;
+            bpr = 4.0 + 8.0 * 10 / N;
         } else { /* the table, 256 KB used or not: B = 4 + 262,144/N (§8) */
             CHECK(!strcmp(m.item[0].name, "hash table"));
             CHECK_EQ(m.item[0].used, 262144);
@@ -623,16 +679,29 @@ static void test_store(void) {
         audits_ok(R, c);
         R->destroy(c);
     }
-    /* Q32-hash's create: the table allocated and emptied, W = 0 */
+    /* Q32-hash's create: the table allocated and emptied, then 0 at slot 0 and 1 at slot 1: W = 2 (v0.3 §17.2) */
     void *c = ROW_Q32H.create();
-    CHECK_EQ(ROW_Q32H.wholes(c), 0);
+    CHECK_EQ(ROW_Q32H.wholes(c), 2);
     int empty = 0;
     for (uint32_t s = 0; s < R3_SLOTS; s++) empty += qwhole(&ROW_Q32H, c, s) == -1;
-    CHECK_EQ(empty, R3_SLOTS);
+    CHECK_EQ(empty, R3_SLOTS - 2);
+    CHECK_EQ(qwhole(&ROW_Q32H, c, 0), 0);
+    CHECK_EQ(qwhole(&ROW_Q32H, c, 1), 1);
     sk_memory m;
     ROW_Q32H.memory(c, &m);
     CHECK_EQ(m.item[0].allocated, 262144);
+    CHECK_EQ(ROW_Q32H.audit(c, NULL), SK_OK);
     ROW_Q32H.destroy(c);
+    /* Q32-index's create: the list at its first capacity, 0 at index 0 and 1 at index 1: W = 2 */
+    c = ROW_Q32I.create();
+    CHECK_EQ(ROW_Q32I.wholes(c), 2);
+    CHECK_EQ(qwhole(&ROW_Q32I, c, 0), 0);
+    CHECK_EQ(qwhole(&ROW_Q32I, c, 1), 1);
+    ROW_Q32I.memory(c, &m);
+    CHECK_EQ(m.item[0].used, 16);
+    CHECK_EQ(m.item[0].allocated, 8 * 16);
+    CHECK_EQ(ROW_Q32I.audit(c, NULL), SK_OK);
+    ROW_Q32I.destroy(c);
     /* TC: 16 bytes per rational (v0.2 §8) */
     c = ROW_TC.create();
     for (sk_int v = 1; v < 40; v++) ent(&ROW_TC, c, v, 3);
@@ -677,6 +746,22 @@ static const kx KX[] = {
     {SK_PH_DIV, 3, 10, 9, 10, 0, {1, 4, 2, 0, 0}, 0},        /* den, h = 3 */
     {SK_PH_DIV, 2, 9, 5, 7, 11, {2, 7, 0, 2, 0}, 0},         /* general, both gcds 1: K-11 */
     {SK_PH_DIV, 2, 9, -4, 3, 0, {2, 7, 4, 2, 0}, 0},         /* general, g_1 = 2, g_2 = 3 */
+    /* the integer cases (v0.3 §17.3): their gcds, multiplications, additions, K-skips and hints */
+    {SK_PH_ADD, 2, 1, 3, 1, 0, {0, 0, 0, 0, 1}, 1},          /* int_both: one addition; j: 1's handle */
+    {SK_PH_ADD, 0, 1, 3, 5, 0, {0, 0, 0, 0, 0}, 2},          /* zero_x: none; i, j: y's */
+    {SK_PH_SUB, 3, 5, 0, 1, 0, {0, 0, 0, 0, 0}, 2},          /* zero_y: none; i, j: x's */
+    {SK_PH_MUL, 3, 5, 0, 1, 0, {0, 0, 0, 0, 0}, 0},          /* mul zero: none */
+    {SK_PH_DIV, 0, 1, 3, 5, 0, {0, 0, 0, 0, 0}, 0},          /* div zero: none */
+    {SK_PH_SUB, 2, 1, 2, 1, 2, {0, 0, 0, 0, 0}, 0},          /* x - x of an integer: zero, K-2 */
+    {SK_PH_ADD, 2, 1, 3, 5, 0, {0, 0, 0, 1, 1}, 1},          /* int_x: one multiplication, no gcd; j: j_y */
+    {SK_PH_ADD, 3, 5, 2, 1, 0, {0, 0, 0, 1, 1}, 1},          /* int_y: one multiplication, no gcd; j: j_x */
+    {SK_PH_MUL, 2, 1, 3, 1, 0, {0, 0, 0, 1, 0}, 1},          /* int_both: one multiplication, no gcd */
+    {SK_PH_MUL, 2, 1, 3, 5, 8, {1, 3, 0, 1, 0}, 1},          /* int_x, gcd(2, 5) = 1: K-8, j: j_y */
+    {SK_PH_MUL, 2, 1, 3, 4, 0, {1, 3, 2, 1, 0}, 0},          /* int_x, gcd(2, 4) = 2 */
+    {SK_PH_MUL, 3, 5, 2, 1, 8, {1, 3, 0, 1, 0}, 1},          /* int_y, gcd(2, 5) = 1: K-8, j: j_x */
+    {SK_PH_MUL, 3, 4, 2, 1, 0, {1, 3, 2, 1, 0}, 0},          /* int_y, gcd(2, 4) = 2 */
+    {SK_PH_DIV, 6, 1, 4, 1, 0, {1, 3, 2, 0, 0}, 0},          /* integers: den, gcd(6, 4) = 2, no multiplication */
+    {SK_PH_DIV, 6, 1, 5, 1, 10, {1, 3, 0, 0, 0}, 2},         /* integers: den, gcd(6, 5) = 1: K-10 */
 };
 
 static void test_kskips(void) {
@@ -742,8 +827,8 @@ static void test_zero_results(void) {
 static void test_audits_catch(void) {
     for (int q = 0; q < 2; q++) {
         const row *R = QROWS[q];
-        for (int k = 0; k < 8; k++) {
-            if (k >= 6 && R->isq != 2) continue; /* cases 6 and 7: Q32-hash's slots */
+        for (int k = 0; k < 12; k++) {
+            if ((k == 6 || k == 7 || k == 11) && R->isq != 2) continue; /* cases 6, 7 and 11: Q32-hash's slots */
             void *c = R->create();
             sk_handle h;
             R->enter(c, 2, 3, &h);
@@ -773,6 +858,11 @@ static void test_audits_catch(void) {
                 R->corrupt_rat(c, 1, 0, i1, far);
                 break;
             }
+            /* 0 and 1 at handles 0 and 1 (v0.3 §17.2), used by no rational here: */
+            case 8: R->corrupt_whole(c, 0, 4); break;                    /* handle 0 holds another value */
+            case 9: R->corrupt_whole(c, 1, 9); break;                    /* handle 1 holds another value */
+            case 10: R->corrupt_whole(c, j1, 1); break;                  /* 1 stored again, at 7's handle */
+            case 11: R->corrupt_whole(c, 1, R3_EMPTY); break;            /* slot 1 emptied */
             }
             const char *why = NULL;
             CHECK_EQ(R->audit(c, &why), SK_EAUDIT);
@@ -1101,21 +1191,23 @@ static void test_capacity(void) {
 /* ----------------------------------------------------------------------------------------- Q32-index's search */
 
 /* v0.3 §12.3: a value found at index 0, in the middle and at the end, and a new value after a full search; the
- * entries examined (k + 1 for a value at index k, W for a new one) */
+ * entries examined (k + 1 for a value at index k, W for a new one).  0 and 1 are at indices 0 and 1 from create
+ * (v0.3 §17.2): the search finds them like any value, after 1 and 2 entries. */
 static void test_q32i_search(void) {
     const row *R = &ROW_Q32I;
     void *c = R->create();
-    for (sk_int v = 10; v < 20; v++) ent(R, c, v, 1); /* the list: 10, 1, 11, 12, ..., 19 (W = 11) */
-    CHECK_EQ(R->wholes(c), 11);
-    const sk_int L[11] = {10, 1, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    for (uint32_t k = 0; k < 11; k++) CHECK_EQ(qwhole(R, c, k), L[k]);
-    struct { sk_int v; uint64_t examined; int appended; uint32_t at; } T[4] = {
-        {10, 1 + 2, 0, 0},   /* at index 0; then 1 at index 1 */
-        {14, 6 + 2, 0, 5},   /* in the middle */
-        {19, 11 + 2, 0, 10}, /* at the end */
-        {25, 11 + 2, 1, 11}, /* new: the whole list searched, then appended at 11 */
+    for (sk_int v = 10; v < 20; v++) ent(R, c, v, 1); /* the list: 0, 1, 10, 11, ..., 19 (W = 12) */
+    CHECK_EQ(R->wholes(c), 12);
+    const sk_int L[12] = {0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    for (uint32_t k = 0; k < 12; k++) CHECK_EQ(qwhole(R, c, k), L[k]);
+    struct { sk_int v; uint64_t examined; int appended; uint32_t at; } T[5] = {
+        {0, 1 + 2, 0, 0},    /* 0 at index 0; then 1 at index 1 */
+        {10, 3 + 2, 0, 2},   /* the first value entered, at index 2 */
+        {14, 7 + 2, 0, 6},   /* in the middle */
+        {19, 12 + 2, 0, 11}, /* at the end */
+        {25, 12 + 2, 1, 12}, /* new: the whole list searched, then appended at 12 */
     };
-    for (int t = 0; t < 4; t++) {
+    for (int t = 0; t < 5; t++) {
         r3_scount s0 = stor(R, c);
         take(R, c, SN0);
         sk_handle h = ent(R, c, T[t].v, 1);
@@ -1131,8 +1223,10 @@ static void test_q32i_search(void) {
         CHECK_EQ(i, T[t].at);
         CHECK_EQ(j, 1);
     }
-    CHECK_EQ(R->wholes(c), 12);
-    CHECK_EQ(qwhole(R, c, 11), 25);
+    CHECK_EQ(R->wholes(c), 13);
+    CHECK_EQ(qwhole(R, c, 12), 25);
+    CHECK_EQ(qwhole(R, c, 0), 0);
+    CHECK_EQ(qwhole(R, c, 1), 1);
     audits_ok(R, c);
     R->destroy(c);
 }
@@ -1140,80 +1234,284 @@ static void test_q32i_search(void) {
 /* ----------------------------------------------------------------------------------------- Q32-hash's probing */
 
 /* v0.3 §12.3: values sharing a home slot (found by search here), a probe sequence that wraps from slot 32,767 to slot
- * 0, and a found value after several probes; the probes per store and the longest store */
+ * 0, and a found value after several probes; the probes per store and the longest store.  Amended Oct 29, 2026 (v0.3
+ * §17.2): 0 and 1 are found with no probe; slots 0 and 1 hold them from create, so a probe sequence that reaches them
+ * passes on, and values whose home is slot 0 or slot 1 are placed after them: slots 0 and 1 are never reused. */
 static void test_q32h_probing(void) {
     const row *R = &ROW_Q32H;
-    /* three values with one home slot H, with H, H + 1, H + 2 apart from 1's home; two values with home 32,767 */
+    /* three values with one home slot H (clear of slots 0 to 4 and 32,767); two values with home 32,767; one value
+     * (not 0) with home 0 and one (not 1) with home 1 */
     static uint32_t first[R3_SLOTS], second[R3_SLOTS];
     memset(first, 0, sizeof first);
     memset(second, 0, sizeof second);
-    uint32_t h1 = t_home(1);
-    sk_int trip[3] = {0, 0, 0}, wrap[2] = {0, 0};
-    for (sk_int v = 2; (!trip[0] || !wrap[0]) && v < 50000000; v++) {
+    sk_int trip[3] = {0, 0, 0}, wrap[2] = {0, 0}, z0 = 0, z1 = 0;
+    for (sk_int v = 2; (!trip[0] || !wrap[0] || !z0 || !z1) && v < 200000000; v++) {
         uint32_t h = t_home(v);
-        if (h == 32767) {
-            if (!wrap[0] && first[h] && !second[h]) {
-                wrap[0] = (sk_int)first[h];
-                wrap[1] = v;
-            }
+        if (h == 0 && !z0) z0 = v;
+        if (h == 1 && !z1) z1 = v;
+        if (h == 32767 && !wrap[0] && first[h] && !second[h]) {
+            wrap[0] = (sk_int)first[h];
+            wrap[1] = v;
         }
         if (!first[h]) first[h] = (uint32_t)v;
         else if (!second[h]) second[h] = (uint32_t)v;
-        else if (!trip[0] && h >= 1 && h + 2 < R3_SLOTS - 1 && (h1 < h || h1 > h + 2)) { /* clear of 0, 32,767 */
+        else if (!trip[0] && h >= 5 && h + 2 < R3_SLOTS - 1) {
             trip[0] = first[h];
             trip[1] = second[h];
             trip[2] = v;
         }
     }
-    CHECK(trip[0] && wrap[0] && h1 != 0 && h1 != 32767);
+    CHECK(trip[0] && wrap[0] && z0 && z1);
     uint32_t H = t_home(trip[0]);
     CHECK(t_home(trip[1]) == H && t_home(trip[2]) == H && t_home(wrap[0]) == 32767 && t_home(wrap[1]) == 32767);
     void *c = R->create();
-    /* 1's own probes: entering 1/1 stores 1 and finds it (1 found at its home: one probe each, the table holding
-     * nothing else) */
+    /* 0 and 1: found at slots 0 and 1, no probe (entering 1/1 and 0/1: four stores, each found) */
     r3_scount s0 = stor(R, c);
-    ent(R, c, 1, 1);
+    take(R, c, SN0);
+    sk_handle one = ent(R, c, 1, 1), zero = ent(R, c, 0, 1);
+    take(R, c, SN1);
     r3_scount s1 = stor(R, c);
-    CHECK_EQ(s1.probes - s0.probes, 2);
+    CHECK_EQ(s1.probes - s0.probes, 0);
+    CHECK_EQ(XS(SN1->x, -1, intern_found) - XS(SN0->x, -1, intern_found), 4);
+    CHECK_EQ(XS(SN1->x, -1, intern_appended) - XS(SN0->x, -1, intern_appended), 0);
+    CHECK_EQ(R->wholes(c), 2);
+    int neg;
+    uint32_t i, j;
+    qrat(R, c, one, &neg, &i, &j);
+    CHECK(i == 1 && j == 1);
+    qrat(R, c, zero, &neg, &i, &j);
+    CHECK(i == 0 && j == 1);
     sk_handle hs[3];
+    s0 = stor(R, c);
     for (int k = 0; k < 3; k++) hs[k] = ent(R, c, trip[k], 1);
-    for (int k = 0; k < 3; k++) { /* at H, H + 1, H + 2: one more probe each */
-        int neg;
-        uint32_t i, j;
+    s1 = stor(R, c);
+    CHECK_EQ(s1.probes - s0.probes, 1 + 2 + 3); /* at H, H + 1, H + 2; the denominator 1: no probe */
+    for (int k = 0; k < 3; k++) {
         qrat(R, c, hs[k], &neg, &i, &j);
         CHECK_EQ(i, H + (uint32_t)k);
-        CHECK_EQ(j, h1);
+        CHECK_EQ(j, 1);
     }
     s0 = stor(R, c);
-    sk_handle again = ent(R, c, trip[2], 1); /* found after three probes; 1 after one */
+    sk_handle again = ent(R, c, trip[2], 1); /* found after three probes; 1 after none */
     s1 = stor(R, c);
-    CHECK_EQ(s1.probes - s0.probes, 3 + 1);
+    CHECK_EQ(s1.probes - s0.probes, 3);
     CHECK(s1.longest >= 3);
     val(R, c, again, trip[2], 1);
-    /* the wrap: the second value with home 32,767 goes to slot 0 */
+    /* the wrap: the second value with home 32,767 passes slots 0 and 1, which hold 0 and 1, to slot 2 */
     CHECK_EQ(qwhole(R, c, 32767), -1);
-    CHECK_EQ(qwhole(R, c, 0), -1);
+    CHECK_EQ(qwhole(R, c, 2), -1);
     sk_handle w0 = ent(R, c, wrap[0], 1);
     s0 = stor(R, c);
     take(R, c, SN0);
     sk_handle w1 = ent(R, c, wrap[1], 1);
     take(R, c, SN1);
     s1 = stor(R, c);
-    CHECK_EQ(s1.probes - s0.probes, 2 + 1); /* 32,767 then 0; then 1 */
+    CHECK_EQ(s1.probes - s0.probes, 4); /* 32,767, 0, 1, then 2 */
     CHECK_EQ(XS(SN1->x, -1, intern_appended) - XS(SN0->x, -1, intern_appended), 1);
-    int neg;
-    uint32_t i, j;
     qrat(R, c, w0, &neg, &i, &j);
     CHECK_EQ(i, 32767);
     qrat(R, c, w1, &neg, &i, &j);
-    CHECK_EQ(i, 0);
+    CHECK_EQ(i, 2);
     s0 = stor(R, c); /* found again across the wrap */
     ent(R, c, wrap[1], 1);
     s1 = stor(R, c);
-    CHECK_EQ(s1.probes - s0.probes, 2 + 1);
-    CHECK_EQ(R->wholes(c), 6);
+    CHECK_EQ(s1.probes - s0.probes, 4);
+    /* values whose home is slot 0 or slot 1: placed after slots 0 and 1 (and slot 2, now used), never in them */
+    sk_handle hz0 = ent(R, c, z0, 1), hz1 = ent(R, c, z1, 1);
+    qrat(R, c, hz0, &neg, &i, &j);
+    CHECK_EQ(i, 3); /* 0, 1, 2 used */
+    qrat(R, c, hz1, &neg, &i, &j);
+    CHECK_EQ(i, 4); /* 1, 2, 3 used */
+    val(R, c, hz0, z0, 1);
+    val(R, c, hz1, z1, 1);
+    CHECK_EQ(qwhole(R, c, 0), 0);
+    CHECK_EQ(qwhole(R, c, 1), 1);
+    CHECK_EQ(R->wholes(c), 2 + 3 + 2 + 2);
     audits_ok(R, c);
     R->destroy(c);
+}
+
+/* Slots 0 and 1 (Q32-hash) and indices 0 and 1 (Q32-index) hold 0 and 1 through any workload, and no other value is
+ * ever stored there (v0.3 §17.2): random workloads, every handle of every stored rational checked. */
+static void test_fixed_handles(void) {
+    static wl w;
+    for (int rep = 0; rep < 20; rep++) {
+        make_wl(&w, 40 + (int)rndn(60), 800, rep % 2 ? 9 : 300);
+        for (int q = 0; q < 2; q++) {
+            const row *R = QROWS[q];
+            void *c = R->create();
+            sk_handle Hh[WMAX];
+            for (int k = 0; k < w.n; k++) {
+                sk_status st = w.op[k] ? R->op[w.op[k]](c, Hh[w.x[k]], Hh[w.y[k]], &Hh[k]) : R->enter(c, w.m[k], w.d[k], &Hh[k]);
+                CHECK_EQ(st, SK_OK);
+                int neg;
+                uint32_t i, j;
+                qrat(R, c, Hh[k], &neg, &i, &j);
+                sk_int m, d;
+                R->read(c, Hh[k], &m, &d);
+                CHECK((i == 0) == (m == 0)); /* a numerator handle of 0 means zero */
+                CHECK((j == 1) == (d == 1)); /* a denominator handle of 1 means an integer */
+                CHECK(j != 0);
+            }
+            CHECK_EQ(qwhole(R, c, 0), 0);
+            CHECK_EQ(qwhole(R, c, 1), 1);
+            audits_ok(R, c);
+            R->destroy(c);
+        }
+    }
+}
+
+
+/* ----------------------------------------------------------------------------------------- the order of the cases */
+
+/* The cost of a case's result on given operands (v0.3 §17.3: cases are ordered by the cost of their result, cheapest
+ * first): its gcds, then its other arithmetic (exact divisions, multiplications, additions), with every known-answer
+ * skip on.  Magnitudes a/b and c/d in lowest terms, effective tags sx, sy.  This is the formula of each case, written
+ * here independently of the rows; the test checks it against the counters of the case actually taken. */
+typedef struct cost {
+    int gcd, rest;
+} cost;
+static int64_t t_gcd(int64_t p, int64_t q) {
+    p = p < 0 ? -p : p;
+    q = q < 0 ? -q : q;
+    while (q) {
+        int64_t t = p % q;
+        p = q;
+        q = t;
+    }
+    return p;
+}
+static cost case_cost(int k, int64_t a, int64_t b, int64_t c, int64_t d, int sx, int sy) {
+    int64_t A = sx ? -a : a, Cc = sy ? -c : c, g, h;
+    switch (k) {
+    case R2_ADD_ZERO: case R2_ADD_ZERO_X: case R2_ADD_ZERO_Y: case R2_MUL_ZERO: case R2_DIV_ZERO: case R2_MUL_ONE_X: case R2_MUL_ONE_Y: case R2_MUL_BOTH:
+    case R2_DIV_ONE_X: case R2_DIV_ONE_Y: case R2_DIV_BOTH: return (cost){0, 0};
+    case R2_ADD_INT_BOTH: return (cost){0, 1};
+    case R2_ADD_INT_X: case R2_ADD_INT_Y: return (cost){0, 2};
+    case R2_ADD_CROSS: return (cost){0, 4};
+    case R2_ADD_DEN: return (cost){1, 1 + (t_gcd(A + Cc, d) != 1) * 2};
+    case R2_ADD_NUM:
+        g = t_gcd(b, d);
+        if (g == 1) return (cost){1, 3};
+        h = t_gcd((sx ? -d / g : d / g) + (sy ? -b / g : b / g), g);
+        return (cost){2, h == 1 ? 5 : 7};
+    case R2_ADD_GEN:
+        g = t_gcd(b, d);
+        if (g == 1) return (cost){1, 4};
+        h = t_gcd(A * (d / g) + Cc * (b / g), g);
+        return (cost){2, h == 1 ? 6 : 8};
+    case R2_MUL_INT_BOTH: return (cost){0, 1};
+    case R2_MUL_DEN: case R2_MUL_NUM: case R2_DIV_CROSS_AD: case R2_DIV_CROSS_CB: return (cost){0, 2};
+    case R2_MUL_CROSS_AD: return (cost){1, (t_gcd(c, b) != 1) * 2};
+    case R2_MUL_CROSS_CB: return (cost){1, (t_gcd(a, d) != 1) * 2};
+    case R2_MUL_INT_X: return (cost){1, 1 + (t_gcd(a, d) != 1) * 2};
+    case R2_MUL_INT_Y: return (cost){1, 1 + (t_gcd(c, b) != 1) * 2};
+    case R2_MUL_GEN: return (cost){2, 2 + (t_gcd(a, d) != 1) * 2 + (t_gcd(c, b) != 1) * 2};
+    case R2_DIV_NUM: return (cost){1, (t_gcd(d, b) != 1) * 2};
+    case R2_DIV_DEN: return (cost){1, (t_gcd(a, c) != 1) * 2};
+    case R2_DIV_GEN: return (cost){2, 2 + (t_gcd(a, c) != 1) * 2 + (t_gcd(b, d) != 1) * 2};
+    }
+    return (cost){99, 99};
+}
+/* whether case k's formula holds for these operands (its condition) */
+static bool case_applies(int k, int64_t a, int64_t b, int64_t c, int64_t d, int sx, int sy) {
+    switch (k) {
+    case R2_ADD_ZERO: return b == d && a == c && sx != sy;
+    case R2_ADD_INT_BOTH: case R2_MUL_INT_BOTH: return b == 1 && d == 1;
+    case R2_ADD_INT_X: case R2_MUL_INT_X: return b == 1;
+    case R2_ADD_INT_Y: case R2_MUL_INT_Y: return d == 1;
+    case R2_ADD_ZERO_X: return a == 0;
+    case R2_ADD_ZERO_Y: return c == 0;
+    case R2_ADD_CROSS: return a == d || c == b;
+    case R2_ADD_DEN: case R2_MUL_DEN: case R2_DIV_DEN: return b == d;
+    case R2_ADD_NUM: case R2_MUL_NUM: case R2_DIV_NUM: return a == c;
+    case R2_MUL_ZERO: return a == 0 || c == 0;
+    case R2_DIV_ZERO: return a == 0;
+    case R2_MUL_ONE_X: case R2_DIV_ONE_X: return a == b;
+    case R2_MUL_ONE_Y: case R2_DIV_ONE_Y: return c == d;
+    case R2_MUL_BOTH: return a == d && c == b;
+    case R2_DIV_BOTH: return a == c && b == d;
+    case R2_MUL_CROSS_AD: case R2_DIV_CROSS_AD: return a == d;
+    case R2_MUL_CROSS_CB: case R2_DIV_CROSS_CB: return c == b;
+    default: return true; /* general */
+    }
+}
+static bool case_of_op(int k, int op) {
+    static const int add[] = {R2_ADD_ZERO, R2_ADD_ZERO_X, R2_ADD_ZERO_Y, R2_ADD_INT_BOTH, R2_ADD_INT_X, R2_ADD_INT_Y,
+                              R2_ADD_CROSS, R2_ADD_DEN, R2_ADD_NUM, R2_ADD_GEN};
+    static const int mul[] = {R2_MUL_ZERO, R2_MUL_ONE_X, R2_MUL_ONE_Y, R2_MUL_INT_BOTH, R2_MUL_BOTH, R2_MUL_DEN,
+                              R2_MUL_NUM, R2_MUL_CROSS_AD, R2_MUL_CROSS_CB, R2_MUL_INT_X, R2_MUL_INT_Y, R2_MUL_GEN};
+    static const int dv[] = {R2_DIV_ZERO, R2_DIV_ONE_X, R2_DIV_ONE_Y, R2_DIV_BOTH, R2_DIV_CROSS_AD, R2_DIV_CROSS_CB,
+                             R2_DIV_NUM, R2_DIV_DEN, R2_DIV_GEN};
+    const int *v = op == SK_PH_MUL ? mul : op == SK_PH_DIV ? dv : add;
+    int n = op == SK_PH_MUL ? 12 : op == SK_PH_DIV ? 9 : 10;
+    for (int i = 0; i < n; i++)
+        if (v[i] == k) return true;
+    return false;
+}
+
+/* Exhaustively over small operands (magnitudes 0..12 over 1..12, in lowest terms, both signs), every operation, every
+ * row: the case taken is §9/§17.3's; its arithmetic (from the counters) is its cost formula's; and no case whose
+ * condition holds would give a cheaper result (fewer gcds, then less other arithmetic) than the case taken. */
+static void test_case_order(void) {
+    enum { MAXV = 12 };
+    static sk_int vm[400], vd[400];
+    int nv = 0;
+    for (sk_int b = 1; b <= MAXV; b++)
+        for (sk_int a = 0; a <= MAXV; a++) {
+            if (t_gcd(a, b) != 1 || (a == 0 && b != 1)) continue;
+            vm[nv] = a, vd[nv++] = b;
+            if (a) vm[nv] = -a, vd[nv++] = b;
+        }
+    uint64_t ops = 0, cheaper = 0, wrong = 0, mism = 0;
+    for (int r = 0; r < NROWS; r++) {
+        const row *R = ROWS[r];
+        void *c = R->create();
+        sk_handle H[400];
+        for (int i = 0; i < nv; i++) H[i] = ent(R, c, vm[i], vd[i]);
+        for (int op = SK_PH_ADD; op <= SK_PH_DIV; op++)
+            for (int i = 0; i < nv; i++)
+                for (int j = 0; j < nv; j++) {
+                    if (op == SK_PH_DIV && vm[j] == 0) continue;
+                    int64_t a = vm[i] < 0 ? -vm[i] : vm[i], b = vd[i], cc = vm[j] < 0 ? -vm[j] : vm[j], d = vd[j];
+                    int sx = vm[i] < 0, sy = (vm[j] < 0) != (op == SK_PH_SUB);
+                    take(R, c, SN0);
+                    opk(R, c, op, H[i], H[j]);
+                    take(R, c, SN1);
+                    ops++;
+                    int k = predict_case(op, (uint64_t)a, (uint64_t)b, (uint64_t)cc, (uint64_t)d, sx, sy);
+                    if (XCASES(SN1->x, op, k) - XCASES(SN0->x, op, k) != 1) wrong++;
+                    arith m = arith_diff(arith_of(&SN1->b), arith_of(&SN0->b));
+                    cost ck = case_cost(k, a, b, cc, d, sx, sy);
+                    if ((int)m.gcd != ck.gcd || (int)(m.div + m.mul + m.add) != ck.rest) {
+                        if (mism < 5)
+                            fprintf(stderr, "  %s %s %lld/%lld %lld/%lld: case %s made %llu gcd %llu other, formula %d %d\n",
+                                    R->name, sk_phase_name((sk_phase)op), (long long)vm[i], (long long)b,
+                                    (long long)vm[j], (long long)d, r2_case_name(k), (unsigned long long)m.gcd,
+                                    (unsigned long long)(m.div + m.mul + m.add), ck.gcd, ck.rest);
+                        mism++;
+                    }
+                    for (int z = 0; z < R2_NCASE; z++) {
+                        if (!case_of_op(z, op) || !case_applies(z, a, b, cc, d, sx, sy)) continue;
+                        cost cz = case_cost(z, a, b, cc, d, sx, sy);
+                        if (cz.gcd < ck.gcd || (cz.gcd == ck.gcd && cz.rest < ck.rest)) {
+                            if (cheaper < 5)
+                                fprintf(stderr, "  %s %lld/%lld %lld/%lld: took %s (%d, %d), %s is cheaper (%d, %d)\n",
+                                        sk_phase_name((sk_phase)op), (long long)vm[i], (long long)b, (long long)vm[j],
+                                        (long long)d, r2_case_name(k), ck.gcd, ck.rest, r2_case_name(z), cz.gcd,
+                                        cz.rest);
+                            cheaper++;
+                        }
+                    }
+                }
+        audits_ok(R, c);
+        R->destroy(c);
+    }
+    CHECK_EQ(wrong, 0);
+    CHECK_EQ(mism, 0);
+    CHECK_EQ(cheaper, 0);
+    printf("  case order: %llu operations over %d values, three rows: no case shadowed by a cheaper one\n",
+           (unsigned long long)ops, nv);
 }
 
 /* ----------------------------------------------------------------------------------------- builds */
@@ -1257,6 +1555,8 @@ int main(void) {
     test_capacity();
     test_q32i_search();
     test_q32h_probing();
+    test_fixed_handles();
+    test_case_order();
     free(SN0);
     free(SN1);
     printf("r3_unit: %d checks, %d failures\n", checks, failures);

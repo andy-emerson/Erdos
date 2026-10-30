@@ -6,7 +6,9 @@
  * the same found/new split, the same reads and the same K-Q1/K-Q2 skips, call for call, and at the end the same set of
  * whole numbers (§12.1 item 4).  The values are drawn to meet every case: 0, +-1, x - x, shared whole numbers, small and
  * large magnitudes; divisions by zero and overflows are attempted, and both rows must report them alike, storing
- * nothing.  Audits run along the way; at the end, every case and every K-skip must have been met.
+ * nothing.  Audits run along the way; at the end, every case and every K-skip must have been met (the integer and zero
+ * cases of the amendment of Oct 29, 2026 included, v0.3 §17.3), and 0 and 1 are still at handles 0 and 1 in both Q32
+ * rows (§17.2).
  *
  *   r3_diff [--seeds N]      (test build) */
 #include "r3t.h"
@@ -198,6 +200,16 @@ static int run_seed(uint64_t seed) {
         memcmp(set1, set2, sizeof(sk_int) * n1)) {
         fprintf(stderr, "  seed %llu: the two Q32 rows hold different whole numbers\n", (unsigned long long)seed);
         bad++;
+    }
+    for (int q = 1; q < NROWS; q++) { /* 0 and 1 still at handles 0 and 1, never replaced (v0.3 §17.2) */
+        sk_int z = -1, o = -1;
+        ROWS[q]->t_whole(S.c[q], 0, &z);
+        ROWS[q]->t_whole(S.c[q], 1, &o);
+        if (z != 0 || o != 1) {
+            fprintf(stderr, "  seed %llu: %s: handles 0 and 1 hold %lld and %lld\n", (unsigned long long)seed,
+                    ROWS[q]->name, (long long)z, (long long)o);
+            bad++;
+        }
     }
     for (int r = 0; r < NROWS; r++) {
         const char *why = NULL;

@@ -4,7 +4,7 @@ Exact sharing of whole numbers, as in [`../paper/v0.4.md`](../paper/v0.4.md) §5
 
 ## Round 3: two-structure Q32 (approved Oct 29, 2026)
 
-**Status: approved by the author, Oct 29, 2026; not built or run.** An independent review found the draft sound after fixes, which are applied. The author then approved every choice (R3-1 to R3-5) and every new threshold of the rule, which is now fixed. Next come the build, its review, and the run.
+**Status: approved by the author, Oct 29, 2026; amended Oct 29, 2026 before any measurement (v0.3 §17: 0 and 1 at fixed handles 0 and 1; the special cases of a denominator of 1 and a numerator of 0, ordered by the cost of their result); built and tested untimed, not run.** An independent review found the draft sound after fixes, which are applied. The author then approved every choice (R3-1 to R3-5) and every new threshold of the rule, which is now fixed. Next come the build, its review, and the run.
 
 **Why round 3.** Round 2's Q32 had three structures: the rationals, the list of whole numbers, and a separate hash lookup from value to index. The author's model has two. Round 2's result stays on record as **"three-structure Q32 (retired)"** in [`test/results-r2/`](test/results-r2/results.md).
 
@@ -17,7 +17,7 @@ The arithmetic is identical in all three rows, call for call. Creation time and 
 
 The documents:
 - **[v0.3](v0.3.md):** the specification.
-- **[research/rule-r3.md](research/rule-r3.md):** the rule. It uses round 2's jobs and timing method, with each threshold either carried over from round 2 or new and approved by the author, Oct 29, 2026. The rule is fixed: the harness pins its sha256 (`1820c2736df677169e19f1b535f94f19679b3fe250c5e4d5a89d45327f85fad2`) and refuses a measured run if the file differs or still holds a mark of a proposal.
+- **[research/rule-r3.md](research/rule-r3.md):** the rule. It uses round 2's jobs and timing method, with each threshold either carried over from round 2 or new and approved by the author, Oct 29, 2026. The rule is fixed: the harness pins its sha256 (`f4671f1fbc53273a193e63fc1e1c13e116aa0d7d6a06647aadbf6890407f2cf9`) and refuses a measured run if the file differs or still holds a mark of a proposal.
 
 ## Round 2: two textbook baselines (approved Oct 29, 2026), three-structure Q32 (retired)
 

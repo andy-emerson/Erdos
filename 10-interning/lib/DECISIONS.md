@@ -262,3 +262,46 @@ structure beyond those of the spec, so the builder instruction's stop was not re
   - After every call: at most TC 2, Q32-index 3 and Q32-hash 3 live blocks (one more in the profiling build).
   - At the end, the live blocks are exactly the memory report's structures at their allocated sizes. The table is
     never reallocated, and `destroy` frees everything.
+
+## Round 3, amendment of Oct 29, 2026 (spec v0.3 §17; before any measurement)
+
+The author's decisions of Oct 29, 2026, as clarified the same day, are recorded in v0.3 §17 and the rule's revision.
+These are the builder's choices in carrying them out. All are **pending the author's review**.
+
+- **R3-A1. TC is a new file, `src/tc3.c`.** It is round 2's `tc.c` with the cases of §17.3, keeping the prefix `tc_`
+  and `tc.h`. `tc.c` is left byte for byte as round 2's: round 2's TC must stay identical to round 2's Q32, call for
+  call, and `make r2-test` still passes. The alternative was to edit `tc.c` in place, which would break round 2's
+  record and its tests. Round 3's Makefile and harness build `tc.o` from `tc3.c`. The harness still checks `tc.c` and
+  `tc.h` against round 2's hashes.
+- **R3-A2. The new cases are appended to `r2_case`, under `#ifdef R3_H`.** There are ten: add `int_both`, `int_x`,
+  `int_y`, `zero_x` and `zero_y`; multiply `int_both`, `int_x`, `int_y` and `zero`; divide `zero`. Every old case
+  keeps its number, so the int8 case files are compatible. Round 2's translation units never define `R3_H` and
+  compile exactly as before. `r3.h` refuses (with `#error`) a unit that has read `r2.h` first, since such a unit would
+  disagree on the arrays' sizes. This supersedes R3-D4's "`r2.h` is not changed". `r2int.h`'s `XCASE` excludes the
+  zero cases of multiplication and division from K-13's operations in round 3's builds only.
+- **R3-A3. The order of the cases** is by the cost of the result, gcds first, then the other arithmetic (v0.3
+  §17.3). It differs from the order the review proposed in one place: in multiplication, the cross matches come
+  before "one integer". Where both apply, a cross match costs one gcd and no multiplication, and one integer costs one
+  gcd and one multiplication (for example $2/1 \cdot 3/2$). The exhaustive test `test_case_order` in `r3_unit.c`
+  shows that no case is taken when another applicable case gives a cheaper result. It also shows that the proposed
+  order would fail that check. **For the author to confirm.**
+- **R3-A4. Division has no integer case** (the author's clarification). Its zero case, a dividend of 0, is the zero
+  family's. *Finding:* dividing by an integer, $a/b \div c/1$ with $b \ne 1$, falls to case general unless an
+  earlier case applies. It then makes two gcds, one of them $\gcd(b, 1)$, and two multiplications. It does not take
+  the one-gcd form that the first decision expected to be reached naturally.
+- **R3-A5. K-skips of the new cases.** Multiplication's `int_x` and `int_y`, when the cross gcd is 1, skip their two
+  divisions under **K-8**: it is the same skip, and no new K number is added (`R2_NK` stays 15). K-2's skipped
+  arithmetic now follows the case taken without it (v0.3 §17.3).
+- **R3-A6. Zero results of the new zero cases** are stored as addition's case `zero` stores them, through `intern`,
+  which finds 0 and 1 at once (Q32-hash: no probe; Q32-index: 1 and 2 entries). Fixed-handle hints are not used
+  there, and `both`'s and `zero`'s stores are left as in round 2. That would be a further change, left to the author.
+  Addition's `zero_x` and `zero_y` return the other operand's handles, as `one_x` and `one_y` do (helper `other()`).
+- **R3-A7. Comparisons counted:** the two integer tests and the two zero tests are made in `compare()` for every
+  operation and counted in `cmp`, 8 for add and subtract and 10 for multiply and divide. The shortcuts switch clears
+  them.
+- **R3-A8. Q32-index's `create`** reserves the list's first 16 entries with the same `SK_RESERVE` call as `intern`,
+  and writes 0 and 1. No counter moves: they are placed, not searched. Q32-hash's `create` writes them into slots 0
+  and 1 after emptying the table, and its `intern` tests `v == 0 || v == 1` before hashing. A store of 0 or 1 counts
+  as found with 0 probes.
+- **R3-A9. Division's zero-divisor test** is on the handle (`Y.i == 0`) in both Q32 rows. $c$ is still read first, as
+  before, so the reads and the model's read counts are unchanged.

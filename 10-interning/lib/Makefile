@@ -170,9 +170,11 @@ r2-check: hashes r2-test r2-sanitize
 # ======================================================================================================== round 3
 # Spec v0.3 (TC, Q32-index, Q32-hash: two-structure Q32).  Targets:
 #   make r3            build/r3/{timing,counting,test,profiling}/libr3.a: Q32-index (src/q32i.c, q32i_*), Q32-hash
-#                      (src/q32h.c, q32h_*), TC (src/tc.c, tc_*, unchanged), the profiling clock (src/r2prof.c,
-#                      unchanged) and the 08 module (vendor08/common.c, unchanged); four builds differing only in -D
-#                      settings (v0.3 §6 item 3).  Round 2's q32.c and plk.c are retired and not built (v0.3 §14).
+#                      (src/q32h.c, q32h_*), TC (src/tc3.c, tc_*: round 2's tc.c with the integer cases of the
+#                      amendment of Oct 29, 2026, v0.3 §17; tc.c itself is round 2's, unchanged and not built here),
+#                      the profiling clock (src/r2prof.c, unchanged) and the 08 module (vendor08/common.c, unchanged);
+#                      four builds differing only in -D settings (v0.3 §6 item 3).  Round 2's q32.c and plk.c are
+#                      retired and not built (v0.3 §14).
 #   make r3-test       unit tests and the differential test of the three rows (test build), and the allocation check
 #                      (timing, counting and profiling builds: each row allocates only its named structures)
 #   make r3-sanitize   the unit and differential tests under AddressSanitizer + UBSan
@@ -195,7 +197,7 @@ $(1)/obj/q32i.o: src/q32i.c $(R3HDR)
 $(1)/obj/q32h.o: src/q32h.c $(R3HDR)
 	@mkdir -p $(1)/obj
 	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
-$(1)/obj/tc.o: src/tc.c $(R3HDR)
+$(1)/obj/tc.o: src/tc3.c $(R3HDR)
 	@mkdir -p $(1)/obj
 	$(CC) $(CSTD) $(WARN) $(2) $(INC) -c $$< -o $$@
 $(1)/obj/r2prof.o: src/r2prof.c $(R3HDR)

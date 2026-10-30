@@ -22,7 +22,8 @@ SAN = ["-std=c11", "-Wall", "-Wextra", "-Werror", "-O1", "-g", "-fsanitize=addre
 INCLUDE = [LIBDIR / "include", V08, SRC, C.HERE]
 BUILDS = {"timing": [], "counting": ["-DSK_COUNT"], "test": ["-DSK_COUNT", "-DSK_AUDIT"], "profiling": ["-DSK_PROFILE"]}
 # the objects of each row, and the -D a source needs beyond the build's
-OBJECTS = {"q32i": (SRC / "q32i.c", []), "q32h": (SRC / "q32h.c", []), "tc": (SRC / "tc.c", []),
+# TC is tc3.c since the amendment of Oct 29, 2026 (spec v0.3 §17): round 2's tc.c with the integer and zero cases
+OBJECTS = {"q32i": (SRC / "q32i.c", []), "q32h": (SRC / "q32h.c", []), "tc": (SRC / "tc3.c", []),
            "r2prof": (SRC / "r2prof.c", []), "common": (V08 / "common.c", [])}
 ROW_OBJECTS = {"TC": ("tc", "r2prof", "common"), "Q32I": ("q32i", "r2prof", "common"),
                "Q32H": ("q32h", "r2prof", "common")}
@@ -44,8 +45,9 @@ VENDOR08_SHA256 = {
     "sk_internal.h": "166eba893b7ecd288193ec2fd37ee303c44e3e20c77226beda76795a19b17854",
 }
 
-# tc.c and tc.h, used unchanged from round 2 and hash-checked before every run (rule-r3 item 2; spec v0.3 §14): their
-# sha256 at round 2's build (commit 82c73bf)
+# tc.c and tc.h as at round 2's build (commit 82c73bf), hash-checked before every run (rule-r3 item 2, revised Oct 29,
+# 2026): tc.h is round 3's TC header, unchanged; tc.c is round 2's TC, kept unchanged as round 2's record and not built
+# by round 3, whose TC is tc3.c (spec v0.3 §17)
 TC_SHA256 = {
     "src/tc.c": "94126f5de40f86291336974e15dd56d3eafb736cfd66dd13d23247ede768cc24",
     "include/tc.h": "180ba7ff2567b4e1a7741c485d5384fb36ca604a4685c358d186204cb5584389",
@@ -53,7 +55,7 @@ TC_SHA256 = {
 
 SHARED = [LIBDIR / "include" / "r2.h", LIBDIR / "include" / "r3.h", SRC / "r2int.h", SRC / "r2prof.c",
           V08 / "sk_internal.h", V08 / "common.c", V08 / "sk_common.h"] + DRIVER
-OWN = {"TC": [SRC / "tc.c", LIBDIR / "include" / "tc.h"],
+OWN = {"TC": [SRC / "tc3.c", LIBDIR / "include" / "tc.h"],
        "Q32I": [SRC / "q32i.c", LIBDIR / "include" / "q32i.h"],
        "Q32H": [SRC / "q32h.c", LIBDIR / "include" / "q32h.h"]}
 

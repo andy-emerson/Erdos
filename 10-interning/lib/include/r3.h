@@ -10,6 +10,12 @@
 #ifndef R3_H
 #define R3_H
 
+/* r2.h gives round 3's builds the integer cases (spec v0.3 §17) only when it is read after R3_H is defined: every
+ * round-3 translation unit includes this header (directly, or by q32i.h or q32h.h) before r2.h, tc.h or r2int.h, so
+ * that its case counts and arrays are round 3's.  A unit that read r2.h first would disagree on their sizes. */
+#if defined(R2_H) && !defined(R2_INT_CASES)
+#error "include r3.h before r2.h, tc.h and r2int.h in round 3 (spec v0.3 §17): the integer cases"
+#endif
 #include "r2.h"
 
 #ifdef __cplusplus

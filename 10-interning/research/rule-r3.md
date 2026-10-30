@@ -2,10 +2,17 @@
 
 Oct 29, 2026 · **Fixed: approved by the author, Oct 29, 2026**, after one independent review whose fixes are applied. Each threshold is either **carried over** from round 2's fixed rule ([`rule-r2.md`](rule-r2.md), with its two revisions; approved by the author, Oct 29, 2026), and marked so, or new to this round and marked **approved by the author, Oct 29, 2026**. The harness refuses a measured run unless this file has the approved text (by sha256, pinned in the harness), and while any mark of a proposal awaiting approval remains in it, as in round 2. A change after the first trial is a revision, dated and explained at the top. Round 2's rule stays fixed and unedited. Its run ([`../test/results-r2/`](../test/results-r2/results.md)) stays on record as **"three-structure Q32 (retired)"**.
 
+**Revision of Oct 29, 2026 (before any measurement; the author's decisions of Oct 29, 2026; spec v0.3 §17).** Nothing of round 3 had been timed or run. The rows change as spec v0.3 §17 amends them:
+- 0 and 1 are stored at creation at handles 0 and 1 in both Q32 rows, and counted in $W$;
+- all three rows take the special cases of a denominator equal to 1 (addition and multiplication) and of a numerator equal to 0 (every operation), ordered by the cost of their result;
+- TC's source is `lib/src/tc3.c`, round 2's `tc.c` with those cases; `tc.c` stays unchanged and hash-checked as round 2's record.
+
+This revision changes items 2, 7 and 12 to match, and the Workloads table: $W$ grows by 1 on jobs 1, 3, 4 and 10, and every fill moves by under 0.01%. **Every threshold, number, measure, verdict and step of the run plan is unchanged.** The harness pins this revised text's sha256.
+
 This rule measures the three rows of [spec v0.3](../v0.3.md):
-- **TC**: one structure, unchanged from round 2;
-- **Q32-index**: two structures, a list of whole numbers searched top to bottom;
-- **Q32-hash**: two structures, a fixed table of 32,768 slots.
+- **TC**: one structure, the list of rationals, in `lib/src/tc3.c` (round 3's textbook control: round 2's `tc.c` with the special cases above);
+- **Q32-index**: two structures, the rationals $R$ and the list $W$ of whole numbers in arrival order, searched top to bottom;
+- **Q32-hash**: two structures, the rationals $R$ and a fixed table of 32,768 slots holding the whole numbers.
 
 Their arithmetic is identical, call for call (spec v0.3 §12.1). They differ only in how whole numbers are stored. Results are reported **per measure, with no overall winner**. The profile is **reported, not judged**.
 
@@ -23,7 +30,7 @@ Three points are the author's (Oct 29, 2026), carried over: the 30-minute hard s
 
 2. **Builds.** As rule-r2 item 2 (carried over), for the three rows:
    - one compiler and one set of flags (`gcc -std=c11 -O2`);
-   - the 08 module and `tc.c` unchanged, their sha256 checked before every run;
+   - the 08 module, `tc.h` and round 2's `tc.c` unchanged, their sha256 checked before every run (*revised Oct 29, 2026:* TC is built from `tc3.c`, spec v0.3 §17.4; `tc.c` is checked as round 2's record);
    - four builds per row;
    - one counting run and one memory run per row and job, with the per-call counter reads of the call-for-call check;
    - repeats on jobs **3 and 10**, which MUST be identical (carried over);
@@ -91,7 +98,7 @@ Three points are the author's (Oct 29, 2026), carried over: the 30-minute hard s
    - **Total time and read-out time.** Reported with ratio and interval, **without a verdict** (the author: creation and operations are the measures; the total is reported too).
    - **Bytes per rational, accounted (B_used):**
      - TC: 16;
-     - Q32-index: $4 + 8W/N$;
+     - Q32-index: $4 + 8W/N$, with $W$ counting 0 and 1, stored by `create` (*revised Oct 29, 2026*, spec v0.3 §17.2);
      - Q32-hash: $4 + 262{,}144/N$, the table counted in full whatever its fill.
    - **Bytes per rational, heap (B_heap):** the growth of `mallinfo2` (`uordblks + hblkhd`) from just before `create`, over $N$, with `mallopt` as in round 2 (carried over). Both memory figures come from one memory run per row and job, after entry and at the end. Verdicts use the end figures.
    - **Gcd work: a check, not a verdict** (carried over). G(row)/G(TC) MUST be exactly 1 for both Q32 rows, by the call-for-call check. It is reported with G per operation. Any other value is a bug.
@@ -132,7 +139,7 @@ Three points are the author's (Oct 29, 2026), carried over: the 30-minute hard s
     - either Q32 row reaching its capacity, which for Q32-hash is a full table;
     - gcd work differing between rows.
 
-    A fix to `q32i.c` re-runs Q32-index. A fix to `q32h.c` re-runs Q32-hash and its null row. A fix to `tc.c` is not expected, since `tc.c` is unchanged from round 2; if one is needed, it re-runs TC.
+    A fix to `q32i.c` re-runs Q32-index. A fix to `q32h.c` re-runs Q32-hash and its null row. A fix to `tc3.c` re-runs TC (*revised Oct 29, 2026*; `tc.c` is round 2's and is not changed).
 
 13. **Also reported:**
     - **Storage, per job, after entry and at the end:**
@@ -148,19 +155,19 @@ Three points are the author's (Oct 29, 2026), carried over: the 30-minute hard s
 
 | Job | Name | Stratum | $W$ at the end | Q32-hash fill | Run |
 | --- | --- | --- | --- | --- | --- |
-| 1 | MONEY-wide | MONEY | 29,866 | 91.1% | yes |
+| 1 | MONEY-wide | MONEY | 29,867 | 91.1% | yes |
 | 2 | MONEY-catalog | MONEY | 15,403 | 47.0% | yes |
-| 3 | SMALL8 | SMALL | 350 | 1.1% | yes |
-| 4 | SMALL64 | SMALL | 21,346 | 65.1% | yes |
+| 3 | SMALL8 | SMALL | 351 | 1.1% | yes |
+| 4 | SMALL64 | SMALL | 21,347 | 65.1% | yes |
 | 5 | MOD-mixed | MOD | 40,849 | — | **no: over capacity** |
 | 6 | MOD-muldiv | MOD | 40,798 | — | **no: over capacity** |
 | 7 | NEW-add | NEW | 50,795 | — | **no: over capacity** |
 | 8 | CH-money | CHAINS | 27,881 | 85.1% | yes |
 | 9 | CH-closed | CHAINS | 28,379 | 86.6% | yes |
-| 10 | CH-small | CHAINS | 10,945 | 33.4% | yes |
+| 10 | CH-small | CHAINS | 10,946 | 33.4% | yes |
 | 11 | CH-mixed | CHAINS | 12,682 | 38.7% | yes |
 
-Both Q32 rows store the same whole numbers as round 2's Q32, so $W$ is unchanged. The table has no fill limit; its fill is set by the jobs alone.
+Both Q32 rows store the same whole numbers as round 2's Q32, plus 0 and 1 from `create` (*revised Oct 29, 2026*): $W$ is round 2's, +1 on jobs 1, 3, 4 and 10, where 0 was not otherwise stored. The table has no fill limit; its fill is set by the jobs alone.
 
 ## Run plan
 

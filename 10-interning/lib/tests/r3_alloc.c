@@ -6,8 +6,9 @@
  *
  * For each row, on random workloads (entries, then operations on earlier values; overflows and divisions by zero are
  * attempted, and store nothing):
- *   - create makes the class header, and in Q32-hash the table of exactly 32,768 x 8 = 262,144 bytes (plus, in the
- *     profiling build, the profile's state, part of the class header: v0.3 §6 item 5);
+ *   - create makes the class header, and in Q32-hash the table of exactly 32,768 x 8 = 262,144 bytes, and in Q32-index
+ *     the list of whole numbers at its first capacity of 16, holding 0 and 1 (amendment of Oct 29, 2026, v0.3 §17.2)
+ *     (plus, in the profiling build, the profile's state, part of the class header: v0.3 §6 item 5);
  *   - after every call, the live blocks are at most: TC 2 (header, pairs), Q32-index 3 (header, list of whole numbers,
  *     rationals), Q32-hash 3 (header, table, rationals), plus the profile's state in the profiling build;
  *   - at the end, the blocks other than the header (and the profile's state) are exactly the structures of the row's
@@ -21,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "q32h.h"
+#include "q32h.h" /* first: r3.h, round 3's cases (spec v0.3 §17) */
 #include "q32i.h"
 #include "tc.h"
 
@@ -92,6 +93,7 @@ typedef struct arow {
     const char *name;
     int structures; /* named structures beyond the class header (v0.3 §§5, 7-9) */
     int table;      /* 1: one structure is Q32-hash's fixed table */
+    int created;    /* structures made by create: Q32-hash's table, Q32-index's list of whole numbers (v0.3 §17.2) */
     void *(*create)(void);
     void (*destroy)(void *);
     sk_status (*enter)(void *, sk_int, sk_int, sk_handle *);
@@ -111,9 +113,10 @@ typedef struct arow {
 AWRAP(tc_, tc_class)
 AWRAP(q32i_, q32i_class)
 AWRAP(q32h_, q32h_class)
-#define AROW(name, k, t, P)                                                                                       \
-    {name, k, t, P##a_create, P##a_destroy, P##a_enter, {NULL, P##a_add, P##a_sub, P##a_mul, P##a_div}, P##a_memory}
-static const arow AROWS[3] = {AROW("TC", 1, 0, tc_), AROW("Q32-index", 2, 0, q32i_), AROW("Q32-hash", 2, 1, q32h_)};
+#define AROW(name, k, t, m, P)                                                                                    \
+    {name, k, t, m, P##a_create, P##a_destroy, P##a_enter, {NULL, P##a_add, P##a_sub, P##a_mul, P##a_div}, P##a_memory}
+static const arow AROWS[3] = {AROW("TC", 1, 0, 0, tc_), AROW("Q32-index", 2, 0, 1, q32i_),
+                              AROW("Q32-hash", 2, 1, 1, q32h_)};
 
 #ifdef SK_PROFILE
 #define PF_BLOCKS 1 /* the profile's state, allocated in create with the class header */
@@ -152,11 +155,17 @@ static void drive(const arow *R, uint64_t seed, int nin, int nops, int maxv) {
     armed = 1;
     void *c = R->create();
     void *header = nb ? B[0].p : NULL; /* the first block create makes */
-    void *pfstate = NULL;               /* profiling build: create's block that is neither the header nor the table */
+    void *pfstate = NULL; /* profiling build: create's block that is neither the header nor a structure */
     for (int k = 1; k < nb; k++)
-        if (PF_BLOCKS && B[k].n != (size_t)R3_SLOTS * sizeof(sk_int)) pfstate = B[k].p;
+        if (PF_BLOCKS && B[k].n != (size_t)R3_SLOTS * sizeof(sk_int) && B[k].n != 16 * sizeof(sk_int))
+            pfstate = B[k].p;
     int after_create = nb;
-    CHECK(after_create == 1 + PF_BLOCKS + R->table);
+    CHECK(after_create == 1 + PF_BLOCKS + R->created);
+    if (R->created && !R->table) { /* Q32-index: the list of whole numbers, 16 entries (0 and 1 in it) */
+        int l = 0;
+        for (int k = 0; k < nb; k++) l += B[k].n == 16 * sizeof(sk_int);
+        CHECK(l == 1);
+    }
     CHECK(!PF_BLOCKS || pfstate);
     if (R->table) {
         int t = 0;
@@ -211,7 +220,7 @@ int main(void) {
         nb = 0;
         armed = 1;
         void *c = R->create();
-        CHECK(nb == 1 + PF_BLOCKS + R->table);
+        CHECK(nb == 1 + PF_BLOCKS + R->created);
         R->destroy(c);
         CHECK(nb == 0);
         armed = 0;

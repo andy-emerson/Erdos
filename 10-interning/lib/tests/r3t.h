@@ -1,7 +1,7 @@
 /* r3t.h: shared by round 3's unit, differential and allocation tests (spec v0.3 §12.3; test build only), from round
  * 2's r2t.h (unchanged): an exact reference with 128-bit integers and its own Euclid gcd (independent of the 08
  * module), a PRNG, a row table that drives TC, Q32-index and Q32-hash through one interface, the order of cases of
- * v0.2 §9 computed from magnitudes and effective signs, counter sums, and Q32-hash's hash function written again here
+ * v0.2 §9 and of the amendment's §17.3 (v0.3) computed from magnitudes and effective signs, counter sums, and Q32-hash's hash function written again here
  * (independent of q32h.c) for the probing tests. */
 #ifndef R3T_H
 #define R3T_H
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "q32h.h"
+#include "q32h.h" /* first: r3.h, round 3's cases (spec v0.3 §17) */
 #include "q32i.h"
 #include "tc.h"
 
@@ -194,27 +194,37 @@ static inline r3_scount ssum(const r3_scounters *s) {
 
 /* ----------------------------------------------------------------------------------------- order of cases (§9) */
 
-/* The case that §9 names for x op y, from the magnitudes a/b, c/d and the effective tags (subtraction's second tag
- * already flipped). */
+/* The case that §9 and the amendment's §17.3 (spec v0.3) name for x op y, from the magnitudes a/b, c/d and the
+ * effective tags (subtraction's second tag already flipped); ix, iy: x, y an integer (b = 1, d = 1). */
 static inline int predict_case(int op, uint64_t a, uint64_t b, uint64_t c, uint64_t d, int sx, int sy) {
-    bool den = b == d, num = a == c, ad = a == d, cb = c == b, ox = a == b, oy = c == d;
+    bool den = b == d, num = a == c, ad = a == d, cb = c == b, ox = a == b, oy = c == d, ix = b == 1, iy = d == 1;
     if (op == SK_PH_ADD || op == SK_PH_SUB) {
         if (den && num && sx != sy) return R2_ADD_ZERO;
+        if (a == 0) return R2_ADD_ZERO_X;
+        if (c == 0) return R2_ADD_ZERO_Y;
+        if (ix && iy) return R2_ADD_INT_BOTH;
+        if (ix) return R2_ADD_INT_X;
+        if (iy) return R2_ADD_INT_Y;
         if (ad || cb) return R2_ADD_CROSS;
         if (den) return R2_ADD_DEN;
         if (num) return R2_ADD_NUM;
         return R2_ADD_GEN;
     }
     if (op == SK_PH_MUL) {
+        if (a == 0 || c == 0) return R2_MUL_ZERO;
         if (ox) return R2_MUL_ONE_X;
         if (oy) return R2_MUL_ONE_Y;
+        if (ix && iy) return R2_MUL_INT_BOTH;
         if (ad && cb) return R2_MUL_BOTH;
         if (den) return R2_MUL_DEN;
         if (num) return R2_MUL_NUM;
         if (ad) return R2_MUL_CROSS_AD;
         if (cb) return R2_MUL_CROSS_CB;
+        if (ix) return R2_MUL_INT_X;
+        if (iy) return R2_MUL_INT_Y;
         return R2_MUL_GEN;
     }
+    if (a == 0) return R2_DIV_ZERO;
     if (ox) return R2_DIV_ONE_X;
     if (oy) return R2_DIV_ONE_Y;
     if (num && den) return R2_DIV_BOTH;

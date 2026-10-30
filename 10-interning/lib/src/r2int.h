@@ -30,11 +30,18 @@
 #endif
 /* K-n's counter `field` (ops, gcd, gcd_work, div, mul, add) */
 #define KC(c, n, field, v) XC(c, k[(n) - 1].field, v)
-/* a case taken: its counter, and K-13's operations (every case but add's `zero` applies a sign; lib R2-D6) */
+/* a case taken: its counter, and K-13's operations (every case but add's `zero` applies a sign; lib R2-D6; in round
+ * 3, also not multiplication's and division's `zero`, whose result 0/1 has no sign: v0.3 §17.3; addition's zero_x
+ * and zero_y apply one, to the other operand) */
+#ifdef R2_INT_CASES
+#define R2_SIGNED_CASE(kase) ((kase) != R2_ADD_ZERO && (kase) != R2_MUL_ZERO && (kase) != R2_DIV_ZERO)
+#else
+#define R2_SIGNED_CASE(kase) ((kase) != R2_ADD_ZERO)
+#endif
 #define XCASE(c, kase)                                                                                            \
     do {                                                                                                          \
         XC(c, cases[(kase)], 1);                                                                                  \
-        KC(c, 13, ops, (kase) != R2_ADD_ZERO);                                                                    \
+        KC(c, 13, ops, R2_SIGNED_CASE(kase));                                                                     \
     } while (0)
 
 /* the gcd work of gcd(p, q) as 08 counts it: bits of the larger magnitude (counting builds only) */

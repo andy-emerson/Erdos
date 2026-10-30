@@ -17,10 +17,11 @@ RULE_FILE = ROOT / "research" / "rule-r3.md"
 BUILD = HERE / "build" / "r3"
 RESULTS = HERE / "results-r3"                        # round 3 writes only here (rule-r3, Harness: the official data)
 
-# The fixed rule (rule-r3.md as approved by the author, Oct 29, 2026, committed at 3267a47). The harness refuses a
-# measured run unless the file on disk has exactly this sha256, and while it holds the word "PROPOSED" (rule-r3.md,
-# its header).
-RULE_SHA256 = "1820c2736df677169e19f1b535f94f19679b3fe250c5e4d5a89d45327f85fad2"
+# The fixed rule (rule-r3.md as approved by the author, Oct 29, 2026, committed at 3267a47), with its revision of Oct
+# 29, 2026 (spec v0.3 §17; before any measurement; re-pinned: the approved text's sha256 was 1820c273...85fad2). The
+# harness refuses a measured run unless the file on disk has exactly this sha256, and while it holds the word
+# "PROPOSED" (rule-r3.md, its header).
+RULE_SHA256 = "f4671f1fbc53273a193e63fc1e1c13e116aa0d7d6a06647aadbf6890407f2cf9"
 PROPOSAL_MARK = "PROPOSED"
 
 # The official data (rule-r3, Harness: the official data): round 1's, the records of the two stopped round-2 runs,
@@ -164,12 +165,23 @@ STRATA_ORDER = ("MONEY", "SMALL", "CHAINS")
 # ------------------------------------------------------------------------------------------------- cases, counters
 PHASES = ("entry", "add", "sub", "mul", "div")
 OPNAME = {0: "enter", 1: "add", 2: "sub", 3: "mul", 4: "div"}
-# the cases of spec v0.2 §9, numbered as lib/include/r2.h (r2_case)
+# the cases of spec v0.2 §9 and of the amendment of Oct 29, 2026 (v0.3 §17.3: the integer cases of addition and
+# multiplication, and the zero-operand cases of every operation, appended), numbered as lib/include/r2.h (r2_case) in round 3's builds
 CASES = ("add_zero", "add_cross", "add_den", "add_num", "add_general",
          "mul_one_x", "mul_one_y", "mul_both", "mul_den", "mul_num", "mul_cross_ad", "mul_cross_cb", "mul_general",
-         "div_one_x", "div_one_y", "div_both", "div_cross_ad", "div_cross_cb", "div_num", "div_den", "div_general")
+         "div_one_x", "div_one_y", "div_both", "div_cross_ad", "div_cross_cb", "div_num", "div_den", "div_general",
+         "add_int_both", "add_int_x", "add_int_y", "mul_int_both", "mul_int_x", "mul_int_y", "add_zero_x", "add_zero_y",
+         "mul_zero", "div_zero")
 CASE = {n: i for i, n in enumerate(CASES)}
-CASES_OF = {"add": CASES[0:5], "sub": CASES[0:5], "mul": CASES[5:13], "div": CASES[13:21]}
+# per algorithm, in its order of checks (v0.3 §17.3)
+CASES_OF = {"add": ("add_zero", "add_zero_x", "add_zero_y", "add_int_both", "add_int_x", "add_int_y", "add_cross",
+                    "add_den", "add_num", "add_general"),
+            "mul": ("mul_zero", "mul_one_x", "mul_one_y", "mul_int_both", "mul_both", "mul_den", "mul_num",
+                    "mul_cross_ad", "mul_cross_cb", "mul_int_x", "mul_int_y", "mul_general"),
+            "div": ("div_zero", "div_one_x", "div_one_y", "div_both", "div_cross_ad", "div_cross_cb", "div_num",
+                    "div_den", "div_general")}
+CASES_OF["sub"] = CASES_OF["add"]
+assert sorted(sum((CASES_OF[k] for k in ("add", "mul", "div")), ())) == sorted(CASES)
 NK = 15
 KFIELDS = ("ops", "gcd", "gcd_work", "div", "mul", "add")
 # the base counters (08's sk_count) that the driver prints, by these names (round 2's lookup counters are gone: no row
@@ -186,8 +198,8 @@ PF_CASES = CASES + ("entry", "read")
 # workload job-NN.wl, reference job-NN.ref, read-out: as round 1 (test/common.py), read here without numpy.
 #   workload: header (8s magic, 6 int32, 2 int64), then int64 op[n], int64 a[n], int64 b[n]
 #   reference and read-out: int64 num[n], int64 den[n]
-#   case file (round 2's format, written again by round 3) job-NN.case2: int8 per call, the case of spec v0.2 §9 (-1
-#   for an entry)
+#   case file (round 2's format, written again by round 3) job-NN.case2: int8 per call, the case of spec v0.2 §9 or
+#   v0.3 §17.3, numbered as CASES (-1 for an entry)
 WL_MAGIC = b"SKWLOAD1"
 WL_HEAD = struct.Struct("<8s6i2q")
 

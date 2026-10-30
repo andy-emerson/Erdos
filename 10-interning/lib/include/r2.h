@@ -50,18 +50,40 @@ typedef enum r2_case {
     R2_DIV_NUM,
     R2_DIV_DEN,
     R2_DIV_GEN,
+#ifdef R3_H
+    /* Round 3 only (r3.h, included first, defines R3_H), amendment of Oct 29, 2026 (spec v0.3 §17): the integer cases,
+     * appended so that every case above keeps its number.  Round 2's builds (which never include r3.h) are unchanged.
+     * Their place in each algorithm's order of checks is v0.3 §17.3's. */
+    R2_ADD_INT_BOTH,
+    R2_ADD_INT_X,
+    R2_ADD_INT_Y,
+    R2_MUL_INT_BOTH,
+    R2_MUL_INT_X,
+    R2_MUL_INT_Y,
+    R2_ADD_ZERO_X,
+    R2_ADD_ZERO_Y,
+    R2_MUL_ZERO,
+    R2_DIV_ZERO,
+#endif
     R2_NCASE,
     /* the profile's two further "cases": entry and read-out (spec §13.4 item 5) */
     R2_ENTRY = R2_NCASE,
     R2_READ,
     R2_NCASEX
 } r2_case;
+#ifdef R3_H
+#define R2_INT_CASES 1 /* this translation unit has round 3's integer cases (r3.h checks it) */
+#endif
 
 static inline const char *r2_case_name(int k) {
     static const char *const names[R2_NCASEX] = {
         "add_zero", "add_cross", "add_den", "add_num", "add_general",
         "mul_one_x", "mul_one_y", "mul_both", "mul_den", "mul_num", "mul_cross_ad", "mul_cross_cb", "mul_general",
         "div_one_x", "div_one_y", "div_both", "div_cross_ad", "div_cross_cb", "div_num", "div_den", "div_general",
+#ifdef R3_H
+        "add_int_both", "add_int_x", "add_int_y", "mul_int_both", "mul_int_x", "mul_int_y", "add_zero_x", "add_zero_y",
+        "mul_zero", "div_zero",
+#endif
         "entry", "read"};
     return (unsigned)k < R2_NCASEX ? names[k] : "?";
 }

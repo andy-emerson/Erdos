@@ -480,3 +480,27 @@ bootstrap, the profile and the stops. Each choice is **pending the author's revi
   - the analysis's pairings, the bands per measure, storage and the plot.
 
   `--full` runs every gate and counting run at full size.
+
+## Round 3 harness, amendment of Oct 29, 2026 (spec v0.3 §17; rule-r3 revision of Oct 29, 2026)
+
+All untimed, and **pending the author's review**.
+
+- **R3-H-A1. The rule is re-pinned.** `RULE_SHA256` is the revised `rule-r3.md`'s
+  (`f4671f1f…07f2cf9`; it was `1820c273…85fad2`).
+- **R3-H-A2. The harness builds TC from `tc3.c`.** `r3_libconf.OBJECTS["tc"]` and `OWN["TC"]` point to it, and
+  `tc_check` still pins round 2's `tc.c` and `tc.h`.
+- **R3-H-A3. The model** (`r3_model.py`) stores 0 and 1 at handles 0 and 1 at creation, moving no counter. It finds
+  them with no probe in the table, counts the four integer and zero tests in `cmp`, and has its own `addsub`,
+  `multiply` and `divide` with the new cases and the order of v0.3 §17.3. It falls back to round 2's model for the
+  old cases.
+- **R3-H-A4. The generator's check against round 2's model** is now partial, since the arithmetic changed. These must
+  still agree: the values; the whole numbers (round 2's set plus 0 and 1, in round 2's arrival order after them); and
+  every call outside the new cases, which must take round 2's case. Realized reuse counts $W$ with 0 and 1.
+- **R3-H-A5. `r3_common.CASES`** appends the ten new names in `r2.h`'s order. `CASES_OF` lists each algorithm's cases
+  in its order of checks.
+- **R3-H-A6. Self-tests adapted:**
+  - the rows' source check now compares `q32i.c` with `q32h.c`, and each with round 2's `q32.c` (only the
+    amendment's lines differ);
+  - the allocation list includes `create`'s reserve;
+  - the model test covers the new cases;
+  - "probes ≥ stores" became "probes ≥ new values", since 0 and 1 cost no probe.

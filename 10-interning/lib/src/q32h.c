@@ -11,9 +11,15 @@
  * The table keeps the member name W of round 2's list, so that every read of a whole number (W[k], K-Q3) is the
  * same line; k is a slot.  Every full-width operation goes through the 08 module (sk_internal.h), unchanged.
  *
- * The pseudocode of v0.2 §10 is followed case by case; each known-answer skip is marked [K-n].  The rows Q32-hash,
- * Q32-index (q32i.c) and TC (tc.c) make the same gcds, divisions, multiplications and additions in the same order, call
- * for call (v0.3 §12.1 item 3). */
+ * Amendment of Oct 29, 2026 (v0.3 §17): create stores 0 at slot 0 and 1 at slot 1, reserved, before any rational is
+ * entered.  A store checks first whether the value is 0 or 1, whose handle is then known; any other value is hashed
+ * and probed as before.  Slots 0 and 1 are never empty, so the probe passes over them as over any used slot and never
+ * places another value there.  A denominator's handle 1 marks an integer, a numerator's handle 0 a zero, and the
+ * integer cases of §17.3 are taken by those tests.
+ *
+ * The pseudocode of v0.2 §10 and v0.3 §17.3 is followed case by case; each known-answer skip is marked [K-n].  The rows
+ * Q32-hash, Q32-index (q32i.c) and TC (tc3.c) make the same gcds, divisions, multiplications and additions in the same
+ * order, call for call (v0.3 §12.1 item 3). */
 #include "q32h.h"
 
 #include "r2int.h"
@@ -27,6 +33,8 @@ typedef uint16_t qfield;
 #define EMPTY R3_EMPTY     /* the empty mark -1, never a whole number (v0.3 §8 item 2) */
 #define NOIDX SK_NONE      /* "no index" / no hint, in 32-bit variables: never stored (§7 item 3) */
 #define SAME_I (SK_NONE - 1u) /* the hint j "the numerator's" (K-Q2) */
+#define H_ZERO 0u  /* 0's fixed handle: slot 0, reserved and stored by create (v0.3 §17.2) */
+#define H_ONE 1u   /* 1's fixed handle: slot 1, reserved and stored by create */
 
 typedef struct qrat {
     qfield num; /* the tag in the top bit (1 for -), the numerator index in the low 15 bits */
@@ -123,10 +131,16 @@ static inline void count_probes(Q *c, uint32_t n) {
 #define PROBES(c, n) ((void)0)
 #endif
 
-/* Store a whole number (v0.3 §8 item 3): open addressing, textbook.  From the home slot, probe slot by slot (linear
- * probing, wrapping from 32,767 to 0): a slot holding v is its handle; an empty slot takes v.  No fill limit: only a
- * table with every slot used fails, when the loop's bound of 32,768 probes is reached (§8 item 5). */
+/* Store a whole number (v0.3 §8 item 3): open addressing, textbook.  First, 0 and 1: their slots are known (0 and 1,
+ * stored by create; v0.3 §17.2), so they are found with no probe.  Any other value: from the home slot, probe slot by
+ * slot (linear probing, wrapping from 32,767 to 0): a slot holding v is its handle; an empty slot takes v.  Slots 0
+ * and 1 are never empty, so no other value is placed there.  No fill limit: only a table with every slot used fails,
+ * when the loop's bound of 32,768 probes is reached (§8 item 5). */
 static uint32_t intern(Q *c, sk_int v) {
+    if (v == 0 || v == 1) { /* 0 at slot 0, 1 at slot 1: found, no slot read */
+        XC(c, intern_found, 1);
+        return (uint32_t)v;
+    }
     uint32_t s = home(v);
     for (uint32_t n = 1; n <= SLOTS; n++) { /* one probe per slot read */
         if (c->W[s] == v) {
@@ -217,6 +231,9 @@ Q *q32h_create(void) {
     Q *c = sk_xcalloc(1, sizeof *c); /* the class header */
     c->W = sk_xmalloc(sizeof(sk_int) * SLOTS); /* the table, allocated once (v0.3 §8) */
     for (uint32_t s = 0; s < SLOTS; s++) c->W[s] = EMPTY; /* and emptied (§8 item 2) */
+    c->W[H_ZERO] = 0; /* then 0 at slot 0 and 1 at slot 1, reserved, before any rational (v0.3 §17.2); W = 2 */
+    c->W[H_ONE] = 1;
+    c->nW = 2;
 #ifdef SK_COUNT
     c->xcur = &x_sink;
 #endif
@@ -285,9 +302,11 @@ static inline sk_status begin(Q *c, sk_phase op, sk_handle x, sk_handle y) {
 }
 
 /* The comparisons of §9, all made, in this order, before a case is chosen: same(b, d), same(a, c), same(a, d),
- * same(c, b), and in multiplication and division same(a, b) and same(c, d) (the +-1 tests). */
+ * same(c, b), and in multiplication and division same(a, b) and same(c, d) (the +-1 tests); then the two integer
+ * tests of v0.3 §17.3, by handle: the denominator's handle is 1's fixed handle (v0.3 §17.2); and the two zero tests:
+ * the numerator's handle is 0's fixed handle. */
 typedef struct eq {
-    bool den, num, ad, cb, ox, oy;
+    bool den, num, ad, cb, ox, oy, ix, iy, zx, zy;
 } eq;
 
 static inline eq compare(Q *c, opnd X, opnd Y, int six) {
@@ -298,10 +317,31 @@ static inline eq compare(Q *c, opnd X, opnd Y, int six) {
     q.cb = Y.i == X.j;
     q.ox = six && X.i == X.j;
     q.oy = six && Y.i == Y.j;
-    XC(c, cmp, six ? 6 : 4);
-    if (FORCE_GENERAL(c)) q.den = q.num = q.ad = q.cb = q.ox = q.oy = false;
+    q.ix = X.j == H_ONE; /* x is an integer */
+    q.iy = Y.j == H_ONE; /* y is an integer */
+    q.zx = X.i == H_ZERO; /* x is zero (a numerator handle of 0) */
+    q.zy = Y.i == H_ZERO; /* y is zero */
+    XC(c, cmp, six ? 10 : 8);
+    if (FORCE_GENERAL(c)) q.den = q.num = q.ad = q.cb = q.ox = q.oy = q.ix = q.iy = q.zx = q.zy = false;
     (void)c;
     return q;
+}
+
+/* Cases zero_x and zero_y of addition (v0.3 §17.3): the result is the other operand O with the effective tag neg
+ * (subtraction's already applied), its whole numbers O's [K-Q1]; no arithmetic.  As one() below: with the hints and
+ * K-13 on, nothing is read, and the tag is neg unless O is zero (a numerator handle of 0), which keeps the tag +;
+ * otherwise O's numerator is read and the sign applied, as TC does. */
+static sk_status other(Q *c, int kase, bool neg, opnd O, sk_handle *out) {
+    if (HINTS(c) && KON(c, 13)) {
+        KC(c, 13, mul, 1); /* sgn(neg, |n_O|) */
+        PF_TO(c, R2_PF_AR);
+        return store_(c, neg && O.i != H_ZERO, -1, O.i, -1, O.j, kase, out);
+    }
+    PF_TO(c, R2_PF_F);
+    sk_int m = rd(c, O.i);
+    sk_int e = HINTS(c) ? -1 : (O.j == O.i ? m : rd(c, O.j)); /* test build, hints off: looked up, so read */
+    PF_TO(c, R2_PF_AR);
+    return store(c, SGN(c, neg, m), O.i, e, O.j, kase, out);
 }
 
 /* add, and subtract as addition of the second operand with its tag flipped (§10.1) */
@@ -319,8 +359,8 @@ static sk_status addsub(Q *c, sk_phase op, sk_handle x, sk_handle y, sk_handle *
     if (q.den && q.num && X.neg != Y.neg && KON(c, 2)) { /* case zero: x + (-x) = 0/1  [K-2] */
         XCASE(c, R2_ADD_ZERO);
         KC(c, 2, ops, 1);
-        if (q.ad || q.cb) { /* +-1/1 -+ 1/1: without K-2, case cross */
-            KC(c, 2, mul, 3);
+        if (q.zx) { /* 0 - 0: without K-2, case zero_x: no arithmetic (v0.3 §17.3) */
+        } else if (q.ix) { /* x an integer (b = d = 1): without K-2, case int_both: t = 0, one addition (v0.3 §17.3) */
             KC(c, 2, add, 1);
         } else { /* without K-2, case den: t = 0, gcd(0, d), two divisions (counting builds read d for the work) */
             KC(c, 2, add, 1);
@@ -330,6 +370,34 @@ static sk_status addsub(Q *c, sk_phase op, sk_handle x, sk_handle y, sk_handle *
         }
         PF_TO(c, R2_PF_AR);
         return store(c, 0, NOIDX, 1, NOIDX, R2_ADD_ZERO, out);
+    }
+    if (q.zx) { /* case zero_x: x = 0, x + y = s_y*y: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_ADD_ZERO_X);
+        return other(c, R2_ADD_ZERO_X, Y.neg, Y, out);
+    }
+    if (q.zy) { /* case zero_y: y = 0, x + y = x: no arithmetic */
+        XCASE(c, R2_ADD_ZERO_Y);
+        return other(c, R2_ADD_ZERO_Y, X.neg, X, out);
+    }
+    if (q.ix && q.iy) { /* case int_both: b = d = 1, (s_x*a + s_y*c)/1: no gcd, no multiplication (v0.3 §17.3) */
+        XCASE(c, R2_ADD_INT_BOTH);
+        rdset(c, idx, 0x5, 0, v); /* a, c */
+        if (sk_add(SGN(c, X.neg, v[0]), SGN(c, Y.neg, v[2]), &t)) OVF("add int_both: t = s_x*a + s_y*c");
+        return store(c, t, NOIDX, 1, X.j, R2_ADD_INT_BOTH, out); /* [K-Q1] the denominator 1 */
+    }
+    if (q.ix) { /* case int_x: b = 1, (s_x*a*d + s_y*c)/d, in lowest terms as gcd(c, d) = 1: no gcd */
+        XCASE(c, R2_ADD_INT_X);
+        rdset(c, idx, 0xD, 0, v); /* a, c, d */
+        if (sk_mul(SGN(c, X.neg, v[0]), v[3], &p)) OVF("add int_x: s_x*a*d");
+        if (sk_add(p, SGN(c, Y.neg, v[2]), &t)) OVF("add int_x: s_x*a*d + s_y*c");
+        return store(c, t, NOIDX, v[3], Y.j, R2_ADD_INT_X, out); /* [K-Q1] */
+    }
+    if (q.iy) { /* case int_y: d = 1, (s_x*a + s_y*c*b)/b, in lowest terms as gcd(a, b) = 1: no gcd */
+        XCASE(c, R2_ADD_INT_Y);
+        rdset(c, idx, 0x7, 0, v); /* a, b, c */
+        if (sk_mul(SGN(c, Y.neg, v[2]), v[1], &r)) OVF("add int_y: s_y*c*b");
+        if (sk_add(SGN(c, X.neg, v[0]), r, &t)) OVF("add int_y: s_x*a + s_y*c*b");
+        return store(c, t, NOIDX, v[1], X.j, R2_ADD_INT_Y, out); /* [K-Q1] */
     }
     if (q.ad || q.cb) { /* case cross: gcd(b, d) = 1 */
         XCASE(c, R2_ADD_CROSS);
@@ -447,6 +515,11 @@ sk_status q32h_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     sk_int v[4] = {0, 0, 0, 0};
     bool s = X.neg != Y.neg; /* s = s_x * s_y */
     sk_int n, e, h;
+    if (q.zx || q.zy) { /* case zero: a zero factor, x*y = 0/1: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_MUL_ZERO);
+        PF_TO(c, R2_PF_AR);
+        return store(c, 0, NOIDX, 1, NOIDX, R2_MUL_ZERO, out);
+    }
     if (q.ox) { /* case one_x: x = +-1, x*y = s_x*y  [K-15] */
         XCASE(c, R2_MUL_ONE_X);
         return one(c, R2_MUL_ONE_X, X.neg, Y, NOIDX, 0, out);
@@ -454,6 +527,12 @@ sk_status q32h_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     if (q.oy) { /* case one_y: y = +-1, x*y = s_y*x  [K-15] */
         XCASE(c, R2_MUL_ONE_Y);
         return one(c, R2_MUL_ONE_Y, Y.neg, X, NOIDX, 0, out);
+    }
+    if (q.ix && q.iy) { /* case int_both: b = d = 1, (a*c)/1: no gcd (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_BOTH);
+        rdset(c, idx, 0x5, 0, v); /* a, c */
+        if (sk_mul(v[0], v[2], &n)) OVF("multiply int_both: a*c");
+        return store(c, SGN(c, s, n), NOIDX, 1, X.j, R2_MUL_INT_BOTH, out); /* [K-Q1] the denominator 1 */
     }
     if (q.ad && q.cb) { /* case both: a = d, c = b  [K-12, K-Q2] */
         XCASE(c, R2_MUL_BOTH);
@@ -501,6 +580,36 @@ sk_status q32h_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
         e = sk_divexact(v[3], h);
         return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_CROSS_CB, out);
     }
+    if (q.ix) { /* case int_x: b = 1, (a*c)/d: one cross gcd, gcd(a, d) (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_X);
+        rdset(c, idx, 0xD, 0, v); /* a, c, d */
+        h = gcdp(c, v[0], v[3]);
+        if (h == 1 && KON(c, 8)) { /* [K-8], [K-Q1] */
+            KC(c, 8, ops, 1);
+            KC(c, 8, div, 2);
+            if (sk_mul(v[0], v[2], &n)) OVF("multiply int_x: a*c");
+            return store(c, SGN(c, s, n), NOIDX, v[3], Y.j, R2_MUL_INT_X, out);
+        }
+        sk_int ap = sk_divexact(v[0], h);
+        e = sk_divexact(v[3], h);
+        if (sk_mul(ap, v[2], &n)) OVF("multiply int_x: a'*c");
+        return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_INT_X, out);
+    }
+    if (q.iy) { /* case int_y: d = 1, (a*c)/b: one cross gcd, gcd(c, b) (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_Y);
+        rdset(c, idx, 0x7, 0, v); /* a, b, c */
+        h = gcdp(c, v[2], v[1]);
+        if (h == 1 && KON(c, 8)) { /* [K-8], [K-Q1] */
+            KC(c, 8, ops, 1);
+            KC(c, 8, div, 2);
+            if (sk_mul(v[0], v[2], &n)) OVF("multiply int_y: a*c");
+            return store(c, SGN(c, s, n), NOIDX, v[1], X.j, R2_MUL_INT_Y, out);
+        }
+        sk_int cp = sk_divexact(v[2], h);
+        e = sk_divexact(v[1], h);
+        if (sk_mul(v[0], cp, &n)) OVF("multiply int_y: a*c'");
+        return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_INT_Y, out);
+    }
     XCASE(c, R2_MUL_GEN); /* case general, on magnitudes with the sign s */
     rdset(c, idx, 0xF, 0, v);
     sk_int g1 = gcdp(c, v[0], v[3]);
@@ -537,10 +646,15 @@ sk_status q32h_div(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     sk_int v[4] = {0, 0, 0, 0};
     v[2] = rd(c, Y.i); /* c, by its index, before the comparisons (v0.1 L-12) */
     PF_TO(c, R2_PF_C);
-    if (v[2] == 0) return SK_EDIVZERO;
+    if (Y.i == H_ZERO) return SK_EDIVZERO; /* a numerator handle of 0 means zero (v0.3 §17.2) */
     eq q = compare(c, X, Y, 1);
     bool s = X.neg != Y.neg; /* s = s_x * s_y */
     sk_int n, e, h;
+    if (q.zx) { /* case zero: a zero dividend, y != 0, x/y = 0/1: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_DIV_ZERO);
+        PF_TO(c, R2_PF_AR);
+        return store(c, 0, NOIDX, 1, NOIDX, R2_DIV_ZERO, out);
+    }
     if (q.ox) { /* case one_x: x = +-1, x/y = s*d/c, c != 0  [K-15, K-Q1] */
         XCASE(c, R2_DIV_ONE_X);
         KC(c, 15, ops, 1);
@@ -729,11 +843,14 @@ static const char *check_rats(const Q *c, uint32_t from) {
 
 /* the slot slot's value v (in [0, 2^63 - 1]) is found at its own slot by the store's probe sequence from h(v):
  * uncounted (the audits change no counter).  A second copy of v would lie on the same sequence, so this also shows
- * that no value is stored twice (v0.3 §12.2). */
+ * that no value is stored twice (v0.3 §12.2).  Slots 0 and 1 hold 0 and 1, found by the store's first test, not by
+ * probing (v0.3 §17.2); no other slot may hold 0 or 1. */
 static const char *check_slot(const Q *c, uint32_t slot) {
     sk_int v = c->W[slot];
+    if (slot <= H_ONE) return v == (sk_int)slot ? NULL : "slot: slots 0 and 1 do not hold 0 and 1";
     if (v == EMPTY) return "slot: referenced by a rational, but empty";
     if (v < 0) return "slot: holds a negative value that is not the empty mark";
+    if (v == 0 || v == 1) return "slot: 0 or 1 stored again, outside slots 0 and 1";
     uint32_t s = home(v);
     for (uint32_t n = 1; n <= SLOTS; n++) {
         if (c->W[s] == v) return s == slot ? NULL : "slot: its value is found at another slot first (a duplicate)";
@@ -743,11 +860,13 @@ static const char *check_slot(const Q *c, uint32_t slot) {
     return "slot: its value is not found by its probe sequence";
 }
 
-/* The full audit: every slot is EMPTY or used; a used slot holds a value in range, is used by a rational, and is
- * found at its own slot; the used slots number W.  The incremental audit: only the slots named by the rationals stored
+/* Every audit: slots 0 and 1 hold 0 and 1.  The full audit: every slot is EMPTY or used; a used slot holds a value in
+ * range, is used by a rational (but slots 0 and 1, used or not), and is found at its own slot; the used slots number
+ * W.  The incremental audit: only the slots named by the rationals stored
  * since rfrom, each used, in range and found at its own slot (every new whole number is used by one of them). */
 static const char *check_wholes(const Q *c, uint32_t rfrom, int full) {
     const char *fail = NULL;
+    if (c->W[H_ZERO] != 0 || c->W[H_ONE] != 1) return "table: slots 0 and 1 do not hold 0 and 1";
     if (!full) {
         for (uint32_t h = rfrom; h < c->N && !fail; h++) {
             fail = check_slot(c, c->R[h].num & IDX);
@@ -765,7 +884,7 @@ static const char *check_wholes(const Q *c, uint32_t rfrom, int full) {
         if (c->W[s] == EMPTY) continue;
         held++;
         if (c->W[s] < 0) fail = "slot: holds a negative value that is not the empty mark";
-        else if (!used[s]) fail = "whole number: used by no rational";
+        else if (!used[s] && s > H_ONE) fail = "whole number: used by no rational";
         else fail = check_slot(c, s);
     }
     free(used);

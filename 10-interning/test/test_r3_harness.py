@@ -369,8 +369,9 @@ def test_host_allowance_from_pilot():
 
 
 # ------------------------------------------------------------------------------------------------- round 3's rows
-ARITH_FUNCS = ("rd", "rdset", "gcdp", "store", "enter", "operand", "begin", "compare", "addsub", "one", "mul", "div",
-               "read")
+ARITH_FUNCS = ("rd", "rdset", "gcdp", "store", "enter", "operand", "begin", "compare", "addsub", "other", "one", "mul",
+               "div", "read")
+NEW_FUNCS = ("other",)   # added by the amendment of Oct 29, 2026 (spec v0.3 §17.3): not in round 2's q32.c
 
 
 def c_function(src, name, prefix):
@@ -411,30 +412,43 @@ def strip_audit(src):
 
 
 def test_rows_identical_outside_storage():
-    """spec v0.3 §5, §16 reviewer item 4: q32i.c and q32h.c equal round 2's q32.c (renamed) outside whole-number
-    storage: every function of the arithmetic, the cases, the known-answer skips and the store is the same text, but
-    the store's two test-build hint checks in Q32-hash (a slot, not an index below W). Round 2's q32.c and plk.c are
-    unchanged (retired) and neither new row includes plk.h."""
+    """spec v0.3 §5, §16 reviewer item 4, as amended Oct 29, 2026 (§17): q32i.c and q32h.c are the same text outside
+    whole-number storage (every function of the arithmetic, the cases, the known-answer skips and the store, but the
+    store's two test-build hint checks in Q32-hash: a slot, not an index below W), and both add to round 2's q32.c
+    only the amendment's cases and tests; round 2's q32.c, plk.c and tc.c are unchanged (retired, or round 2's record),
+    and neither new row includes plk.h. TC (tc3.c) is round 2's tc.c with the same new cases."""
+    import difflib
     src = L.SRC
-    q32 = (src / "q32.c").read_text()
-    for p, f in (("q32i_", "q32i.c"), ("q32h_", "q32h.c")):
-        new = (src / f).read_text()
-        old = q32.replace("q32_", p)
+    qi, qh = (src / "q32i.c").read_text(), (src / "q32h.c").read_text()
+    for f, new in (("q32i.c", qi), ("q32h.c", qh)):
         assert "plk.h" not in new and "l1q_plk" not in new and "lookup" not in strip_audit(new).lower().replace(
             "no lookup", "")
-        for name in ARITH_FUNCS:
-            assert c_function(old, name, p) == c_function(new, name, p), (f, name)
-        for name in ("add", "sub"):                          # one-line wrappers of addsub
-            line = next(l for l in old.splitlines() if l.startswith(f"sk_status {p}{name}("))
-            assert line in new.splitlines(), (f, name)
-        sa, sb = c_function(old, "store_", p), c_function(new, "store_", p)
-        if p == "q32i_":
-            assert sa == sb
-        else:
-            diff = [(x, y) for x, y in zip(sa.splitlines(), sb.splitlines()) if x != y]
-            assert len(sa.splitlines()) == len(sb.splitlines()) and len(diff) == 2, diff
-            assert all("c->nW" in x and "SLOTS" in y for x, y in diff), diff
-    for f in ("q32.c", "plk.c", "plk.h"):                     # retired, unchanged since round 2's run (82c73bf)
+    for name in ARITH_FUNCS:
+        assert c_function(qi, name, "q32i_") == c_function(qh.replace("q32h_", "q32i_"), name, "q32i_"), name
+    for name in ("add", "sub"):
+        line = next(l for l in qi.splitlines() if l.startswith(f"sk_status q32i_{name}("))
+        assert line.replace("q32i_", "q32h_") in qh.splitlines(), name
+    sa, sb = c_function(qi, "store_", "q32i_"), c_function(qh, "store_", "q32h_")
+    diff = [(x, y) for x, y in zip(sa.splitlines(), sb.splitlines()) if x != y]
+    assert len(sa.splitlines()) == len(sb.splitlines()) and len(diff) == 2, diff
+    assert all("c->nW" in x and "SLOTS" in y for x, y in diff), diff
+    # against round 2's q32.c: only lines added, and each added line belongs to the amendment (a new case, the integer
+    # and zero tests, the fixed handles); no line of round 2's arithmetic is removed but the comparison count, the
+    # struct of comparisons, division's zero test (by handle) and K-2's note for 1/1 - 1/1 (now int_both)
+    old = (src / "q32.c").read_text().replace("q32_", "q32i_")
+    removed = []
+    for name in (f for f in ARITH_FUNCS if f not in NEW_FUNCS):
+        a_, b_ = c_function(old, name, "q32i_").splitlines(), c_function(qi, name, "q32i_").splitlines()
+        removed += [l[1:].strip() for l in difflib.unified_diff(a_, b_, lineterm="", n=0)
+                    if l.startswith("-") and not l.startswith("---")]
+    allowed = ("XC(c, cmp, six ? 6 : 4);", "if (FORCE_GENERAL(c)) q.den = q.num = q.ad = q.cb = q.ox = q.oy = false;",
+               "if (v[2] == 0) return SK_EDIVZERO;", "KC(c, 2, mul, 3);",
+               "if (q.ad || q.cb) { /* +-1/1 -+ 1/1: without K-2, case cross */")
+    assert all(l in allowed for l in removed), [l for l in removed if l not in allowed]
+    tc2, tc3 = (src / "tc.c").read_text(), (src / "tc3.c").read_text()
+    for name in ("store", "enter", "operand", "begin", "read"):
+        assert c_function(tc2, name, "tc_") == c_function(tc3, name, "tc_"), name
+    for f in ("q32.c", "plk.c", "plk.h", "tc.c"):              # unchanged since round 2's run (82c73bf)
         r = subprocess.run(["git", "diff", "--quiet", "82c73bf", "--", str(src / f)], cwd=src)
         assert r.returncode == 0, f
 
@@ -447,6 +461,7 @@ def test_only_named_structures():
     import re
     alloc = re.compile(r"\b(sk_xmalloc|sk_xcalloc|sk_xrealloc|malloc|calloc|realloc|SK_RESERVE)\s*\(")
     want = {"q32i.c": ["sk_xcalloc(1, sizeof *c)", "SK_RESERVE(c->W, c->nW, c->capW, 16)",
+                       "SK_RESERVE(c->W, c->nW, c->capW, 16)",          # in create: 0 and 1 (v0.3 §17.2)
                        "SK_RESERVE(c->R, c->N, c->capR, 16)", "sk_xcalloc(1, sizeof *c->pf)"],
             "q32h.c": ["sk_xcalloc(1, sizeof *c)", "sk_xmalloc(sizeof(sk_int) * SLOTS)",
                        "SK_RESERVE(c->R, c->N, c->capR, 16)", "sk_xcalloc(1, sizeof *c->pf)"]}
@@ -504,21 +519,32 @@ def test_full_table_and_capacity():
 
 
 def test_model_matches_round2_and_simulates_both_stores():
-    """the model (r3_model) keeps round 2's arithmetic counters (r3_gen checks every job against r2_model), and its
-    two stores agree: the list in arrival order, the table with the hash of spec v0.3 §8 (h(1) worked by hand)"""
+    """the model (r3_model) keeps round 2's values and whole numbers (r3_gen checks every job against r2_model, with 0
+    and 1 first), and its two stores agree: the list in arrival order after 0 and 1, the table with the hash of spec
+    v0.3 §8 (h(1) worked by hand) and 0 and 1 at slots 0 and 1 (§17.2), found with no probe"""
     import r3_model
     assert C.home(1) == (0x9E3779B97F4A7C15 >> 49) and C.home(0) == 0
     assert C.home(2) == ((2 * 0x9E3779B97F4A7C15) % 2 ** 64) >> 49
     ops, a, b = [0, 0, 1, 3], [1, 5, 0, 0], [6, 6, 1, 2]       # 1/6, 5/6, x + y = 1, x * (x + y)
     p = r3_model.predict(ops, a, b)
     assert p["values"] == [(1, 6), (5, 6), (1, 1), (1, 6)]
-    assert p["list"] == [1, 6, 5]
-    assert sorted(v for v in p["table"] if v >= 0) == [1, 5, 6] and p["table"][C.home(6)] == 6
+    assert p["list"] == [0, 1, 6, 5] and p["W_end"] == 4
+    assert p["table"][0] == 0 and p["table"][1] == 1
+    assert sorted(v for v in p["table"] if v >= 0) == [0, 1, 5, 6] and p["table"][C.home(6)] == 6
     s = p["stor_end"]
-    # stores: 1 6 | 5 6 | (1 found via den case h = 6? the result 1/1: 1 found, 1 found) | 1/6 cross_cb K-8: hints
-    assert s["new"] == 3 and s["found"] + s["new"] == sum(
+    # stores: 1 (found, no probe) 6 (new) | 5 (new) 6 (found) | 1/1, den h = 6: 1, 1 found, no probe | 1/6 * 1/1:
+    # one_y, the operand's handles
+    assert s["new"] == 2 and s["found"] == 4 and s["probes"] == 3
+    assert s["found"] + s["new"] == sum(
         v for ph in p["counters"].values() for k, v in ph.items() if k in ("intern_found", "intern_appended"))
     assert s["examined"] == sum(ph.get("examined", 0) for ph in p["counters"].values())
+    # the new cases: 2 + 3/5 (int_x, no gcd), 3/5 * 2 (int_y, one gcd), 0 * 3/5 (zero), 3/5 / 2 (general: division
+    # has no integer case), 0 + 3/5 and 3/5 - 0 (zero_x, zero_y: no arithmetic)
+    p = r3_model.predict([0, 0, 0, 0, 1, 3, 3, 4, 1, 2], [2, 3, 0, 0, 0, 1, 2, 1, 2, 1], [1, 5, 1, 1, 1, 0, 1, 0, 1, 2])
+    assert p["values"][4:] == [(13, 5), (6, 5), (0, 1), (3, 10), (3, 5), (3, 5)]
+    assert [C.CASES[k] for k in p["cases"][4:]] == ["add_int_x", "mul_int_y", "mul_zero", "div_general", "add_zero_x",
+                                                    "add_zero_y"]
+    assert p["counters"]["add"].get("gcd", 0) == 0 and p["counters"]["mul"]["gcd"] == 1
 
 
 def test_untimed_steps_toy():
@@ -553,7 +579,7 @@ def test_untimed_steps_toy():
             assert r.state["mems"][f"{impl}:10"]["repeat"] == "identical"
         assert not r.state.get("bugs")
         st = r.state["counts"]["Q32H:3"]["stor"]["end"]
-        assert st["new"] > 0 and st["probes"] >= st["found"] + st["new"]
+        assert st["new"] > 0 and st["probes"] >= st["new"]      # 0 and 1 are found with no probe (spec v0.3 §17.2)
 
 
 # ------------------------------------------------------------------------------------------------- spawning, timer

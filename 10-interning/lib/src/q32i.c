@@ -9,9 +9,14 @@
  * hash and no lookup; and the rationals (two 16-bit fields).  Every full-width operation goes through the 08 module
  * (sk_internal.h), unchanged.
  *
- * The pseudocode of v0.2 §10 is followed case by case; each known-answer skip is marked [K-n].  The rows Q32-index,
- * Q32-hash (q32h.c) and TC (tc.c) make the same gcds, divisions, multiplications and additions in the same order, call
- * for call (v0.3 §12.1 item 3). */
+ * Amendment of Oct 29, 2026 (v0.3 §17): create stores 0 at index 0 and 1 at index 1, before any rational is entered;
+ * everything else is appended after them, as before.  Their handles are fixed by construction: a denominator's handle
+ * 1 marks an integer, a numerator's handle 0 a zero, and the integer cases of §17.3 are taken by those tests.  The
+ * search itself is unchanged: 0 and 1 are found at the top of the list like any other value.
+ *
+ * The pseudocode of v0.2 §10 and v0.3 §17.3 is followed case by case; each known-answer skip is marked [K-n].  The rows
+ * Q32-index, Q32-hash (q32h.c) and TC (tc3.c) make the same gcds, divisions, multiplications and additions in the same
+ * order, call for call (v0.3 §12.1 item 3). */
 #include "q32i.h"
 
 #include "r2int.h"
@@ -24,6 +29,8 @@ typedef uint16_t qfield;
 #define CAPACITY 32768u    /* whole numbers at indices 0 to 32,767 (v0.3 §7 item 5) */
 #define NOIDX SK_NONE      /* "no index" / no hint, in 32-bit variables: never stored (§7 item 3) */
 #define SAME_I (SK_NONE - 1u) /* the hint j "the numerator's" (K-Q2) */
+#define H_ZERO 0u  /* 0's fixed handle: index 0, stored by create (v0.3 §17.2) */
+#define H_ONE 1u   /* 1's fixed handle: index 1, stored by create */
 
 typedef struct qrat {
     qfield num; /* the tag in the top bit (1 for -), the numerator index in the low 15 bits */
@@ -196,7 +203,11 @@ static inline sk_status store(Q *c, sk_int n, uint32_t i, sk_int e, uint32_t j, 
 /* ----------------------------------------------------------------------------------------- create, entry */
 
 Q *q32i_create(void) {
-    Q *c = sk_xcalloc(1, sizeof *c); /* the class header; both lists start empty and grow (v0.3 §7 item 4) */
+    Q *c = sk_xcalloc(1, sizeof *c); /* the class header; the rationals start empty and grow (v0.3 §7 item 4) */
+    SK_RESERVE(c->W, c->nW, c->capW, 16); /* list (b) at its first capacity, 16 (§7 item 4) */
+    c->W[H_ZERO] = 0; /* 0 at index 0 and 1 at index 1, before any rational (v0.3 §17.2); W = 2 */
+    c->W[H_ONE] = 1;
+    c->nW = 2;
 #ifdef SK_COUNT
     c->xcur = &x_sink;
 #endif
@@ -265,9 +276,11 @@ static inline sk_status begin(Q *c, sk_phase op, sk_handle x, sk_handle y) {
 }
 
 /* The comparisons of §9, all made, in this order, before a case is chosen: same(b, d), same(a, c), same(a, d),
- * same(c, b), and in multiplication and division same(a, b) and same(c, d) (the +-1 tests). */
+ * same(c, b), and in multiplication and division same(a, b) and same(c, d) (the +-1 tests); then the two integer
+ * tests of v0.3 §17.3, by handle: the denominator's handle is 1's fixed handle (v0.3 §17.2); and the two zero tests:
+ * the numerator's handle is 0's fixed handle. */
 typedef struct eq {
-    bool den, num, ad, cb, ox, oy;
+    bool den, num, ad, cb, ox, oy, ix, iy, zx, zy;
 } eq;
 
 static inline eq compare(Q *c, opnd X, opnd Y, int six) {
@@ -278,10 +291,31 @@ static inline eq compare(Q *c, opnd X, opnd Y, int six) {
     q.cb = Y.i == X.j;
     q.ox = six && X.i == X.j;
     q.oy = six && Y.i == Y.j;
-    XC(c, cmp, six ? 6 : 4);
-    if (FORCE_GENERAL(c)) q.den = q.num = q.ad = q.cb = q.ox = q.oy = false;
+    q.ix = X.j == H_ONE; /* x is an integer */
+    q.iy = Y.j == H_ONE; /* y is an integer */
+    q.zx = X.i == H_ZERO; /* x is zero (a numerator handle of 0) */
+    q.zy = Y.i == H_ZERO; /* y is zero */
+    XC(c, cmp, six ? 10 : 8);
+    if (FORCE_GENERAL(c)) q.den = q.num = q.ad = q.cb = q.ox = q.oy = q.ix = q.iy = q.zx = q.zy = false;
     (void)c;
     return q;
+}
+
+/* Cases zero_x and zero_y of addition (v0.3 §17.3): the result is the other operand O with the effective tag neg
+ * (subtraction's already applied), its whole numbers O's [K-Q1]; no arithmetic.  As one() below: with the hints and
+ * K-13 on, nothing is read, and the tag is neg unless O is zero (a numerator handle of 0), which keeps the tag +;
+ * otherwise O's numerator is read and the sign applied, as TC does. */
+static sk_status other(Q *c, int kase, bool neg, opnd O, sk_handle *out) {
+    if (HINTS(c) && KON(c, 13)) {
+        KC(c, 13, mul, 1); /* sgn(neg, |n_O|) */
+        PF_TO(c, R2_PF_AR);
+        return store_(c, neg && O.i != H_ZERO, -1, O.i, -1, O.j, kase, out);
+    }
+    PF_TO(c, R2_PF_F);
+    sk_int m = rd(c, O.i);
+    sk_int e = HINTS(c) ? -1 : (O.j == O.i ? m : rd(c, O.j)); /* test build, hints off: looked up, so read */
+    PF_TO(c, R2_PF_AR);
+    return store(c, SGN(c, neg, m), O.i, e, O.j, kase, out);
 }
 
 /* add, and subtract as addition of the second operand with its tag flipped (§10.1) */
@@ -299,8 +333,8 @@ static sk_status addsub(Q *c, sk_phase op, sk_handle x, sk_handle y, sk_handle *
     if (q.den && q.num && X.neg != Y.neg && KON(c, 2)) { /* case zero: x + (-x) = 0/1  [K-2] */
         XCASE(c, R2_ADD_ZERO);
         KC(c, 2, ops, 1);
-        if (q.ad || q.cb) { /* +-1/1 -+ 1/1: without K-2, case cross */
-            KC(c, 2, mul, 3);
+        if (q.zx) { /* 0 - 0: without K-2, case zero_x: no arithmetic (v0.3 §17.3) */
+        } else if (q.ix) { /* x an integer (b = d = 1): without K-2, case int_both: t = 0, one addition (v0.3 §17.3) */
             KC(c, 2, add, 1);
         } else { /* without K-2, case den: t = 0, gcd(0, d), two divisions (counting builds read d for the work) */
             KC(c, 2, add, 1);
@@ -310,6 +344,34 @@ static sk_status addsub(Q *c, sk_phase op, sk_handle x, sk_handle y, sk_handle *
         }
         PF_TO(c, R2_PF_AR);
         return store(c, 0, NOIDX, 1, NOIDX, R2_ADD_ZERO, out);
+    }
+    if (q.zx) { /* case zero_x: x = 0, x + y = s_y*y: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_ADD_ZERO_X);
+        return other(c, R2_ADD_ZERO_X, Y.neg, Y, out);
+    }
+    if (q.zy) { /* case zero_y: y = 0, x + y = x: no arithmetic */
+        XCASE(c, R2_ADD_ZERO_Y);
+        return other(c, R2_ADD_ZERO_Y, X.neg, X, out);
+    }
+    if (q.ix && q.iy) { /* case int_both: b = d = 1, (s_x*a + s_y*c)/1: no gcd, no multiplication (v0.3 §17.3) */
+        XCASE(c, R2_ADD_INT_BOTH);
+        rdset(c, idx, 0x5, 0, v); /* a, c */
+        if (sk_add(SGN(c, X.neg, v[0]), SGN(c, Y.neg, v[2]), &t)) OVF("add int_both: t = s_x*a + s_y*c");
+        return store(c, t, NOIDX, 1, X.j, R2_ADD_INT_BOTH, out); /* [K-Q1] the denominator 1 */
+    }
+    if (q.ix) { /* case int_x: b = 1, (s_x*a*d + s_y*c)/d, in lowest terms as gcd(c, d) = 1: no gcd */
+        XCASE(c, R2_ADD_INT_X);
+        rdset(c, idx, 0xD, 0, v); /* a, c, d */
+        if (sk_mul(SGN(c, X.neg, v[0]), v[3], &p)) OVF("add int_x: s_x*a*d");
+        if (sk_add(p, SGN(c, Y.neg, v[2]), &t)) OVF("add int_x: s_x*a*d + s_y*c");
+        return store(c, t, NOIDX, v[3], Y.j, R2_ADD_INT_X, out); /* [K-Q1] */
+    }
+    if (q.iy) { /* case int_y: d = 1, (s_x*a + s_y*c*b)/b, in lowest terms as gcd(a, b) = 1: no gcd */
+        XCASE(c, R2_ADD_INT_Y);
+        rdset(c, idx, 0x7, 0, v); /* a, b, c */
+        if (sk_mul(SGN(c, Y.neg, v[2]), v[1], &r)) OVF("add int_y: s_y*c*b");
+        if (sk_add(SGN(c, X.neg, v[0]), r, &t)) OVF("add int_y: s_x*a + s_y*c*b");
+        return store(c, t, NOIDX, v[1], X.j, R2_ADD_INT_Y, out); /* [K-Q1] */
     }
     if (q.ad || q.cb) { /* case cross: gcd(b, d) = 1 */
         XCASE(c, R2_ADD_CROSS);
@@ -427,6 +489,11 @@ sk_status q32i_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     sk_int v[4] = {0, 0, 0, 0};
     bool s = X.neg != Y.neg; /* s = s_x * s_y */
     sk_int n, e, h;
+    if (q.zx || q.zy) { /* case zero: a zero factor, x*y = 0/1: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_MUL_ZERO);
+        PF_TO(c, R2_PF_AR);
+        return store(c, 0, NOIDX, 1, NOIDX, R2_MUL_ZERO, out);
+    }
     if (q.ox) { /* case one_x: x = +-1, x*y = s_x*y  [K-15] */
         XCASE(c, R2_MUL_ONE_X);
         return one(c, R2_MUL_ONE_X, X.neg, Y, NOIDX, 0, out);
@@ -434,6 +501,12 @@ sk_status q32i_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     if (q.oy) { /* case one_y: y = +-1, x*y = s_y*x  [K-15] */
         XCASE(c, R2_MUL_ONE_Y);
         return one(c, R2_MUL_ONE_Y, Y.neg, X, NOIDX, 0, out);
+    }
+    if (q.ix && q.iy) { /* case int_both: b = d = 1, (a*c)/1: no gcd (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_BOTH);
+        rdset(c, idx, 0x5, 0, v); /* a, c */
+        if (sk_mul(v[0], v[2], &n)) OVF("multiply int_both: a*c");
+        return store(c, SGN(c, s, n), NOIDX, 1, X.j, R2_MUL_INT_BOTH, out); /* [K-Q1] the denominator 1 */
     }
     if (q.ad && q.cb) { /* case both: a = d, c = b  [K-12, K-Q2] */
         XCASE(c, R2_MUL_BOTH);
@@ -481,6 +554,36 @@ sk_status q32i_mul(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
         e = sk_divexact(v[3], h);
         return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_CROSS_CB, out);
     }
+    if (q.ix) { /* case int_x: b = 1, (a*c)/d: one cross gcd, gcd(a, d) (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_X);
+        rdset(c, idx, 0xD, 0, v); /* a, c, d */
+        h = gcdp(c, v[0], v[3]);
+        if (h == 1 && KON(c, 8)) { /* [K-8], [K-Q1] */
+            KC(c, 8, ops, 1);
+            KC(c, 8, div, 2);
+            if (sk_mul(v[0], v[2], &n)) OVF("multiply int_x: a*c");
+            return store(c, SGN(c, s, n), NOIDX, v[3], Y.j, R2_MUL_INT_X, out);
+        }
+        sk_int ap = sk_divexact(v[0], h);
+        e = sk_divexact(v[3], h);
+        if (sk_mul(ap, v[2], &n)) OVF("multiply int_x: a'*c");
+        return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_INT_X, out);
+    }
+    if (q.iy) { /* case int_y: d = 1, (a*c)/b: one cross gcd, gcd(c, b) (v0.3 §17.3) */
+        XCASE(c, R2_MUL_INT_Y);
+        rdset(c, idx, 0x7, 0, v); /* a, b, c */
+        h = gcdp(c, v[2], v[1]);
+        if (h == 1 && KON(c, 8)) { /* [K-8], [K-Q1] */
+            KC(c, 8, ops, 1);
+            KC(c, 8, div, 2);
+            if (sk_mul(v[0], v[2], &n)) OVF("multiply int_y: a*c");
+            return store(c, SGN(c, s, n), NOIDX, v[1], X.j, R2_MUL_INT_Y, out);
+        }
+        sk_int cp = sk_divexact(v[2], h);
+        e = sk_divexact(v[1], h);
+        if (sk_mul(v[0], cp, &n)) OVF("multiply int_y: a*c'");
+        return store(c, SGN(c, s, n), NOIDX, e, NOIDX, R2_MUL_INT_Y, out);
+    }
     XCASE(c, R2_MUL_GEN); /* case general, on magnitudes with the sign s */
     rdset(c, idx, 0xF, 0, v);
     sk_int g1 = gcdp(c, v[0], v[3]);
@@ -517,10 +620,15 @@ sk_status q32i_div(Q *c, sk_handle x, sk_handle y, sk_handle *out) {
     sk_int v[4] = {0, 0, 0, 0};
     v[2] = rd(c, Y.i); /* c, by its index, before the comparisons (v0.1 L-12) */
     PF_TO(c, R2_PF_C);
-    if (v[2] == 0) return SK_EDIVZERO;
+    if (Y.i == H_ZERO) return SK_EDIVZERO; /* a numerator handle of 0 means zero (v0.3 §17.2) */
     eq q = compare(c, X, Y, 1);
     bool s = X.neg != Y.neg; /* s = s_x * s_y */
     sk_int n, e, h;
+    if (q.zx) { /* case zero: a zero dividend, y != 0, x/y = 0/1: no arithmetic (v0.3 §17.3) */
+        XCASE(c, R2_DIV_ZERO);
+        PF_TO(c, R2_PF_AR);
+        return store(c, 0, NOIDX, 1, NOIDX, R2_DIV_ZERO, out);
+    }
     if (q.ox) { /* case one_x: x = +-1, x/y = s*d/c, c != 0  [K-15, K-Q1] */
         XCASE(c, R2_DIV_ONE_X);
         KC(c, 15, ops, 1);
@@ -719,10 +827,12 @@ static int cmp_whole(const void *a, const void *b) {
 }
 
 /* whole numbers k in [from, nW): in range, and used by a rational stored since rfrom (a whole number is appended only
- * by a store, whose rational follows at once); distinct (v0.3 §12.2): the incremental audit searches for each new
- * entry, which must be found at its own index; the full audit sorts a temporary copy of the list and compares
- * neighbours (R3-5), freed before it returns */
+ * by a store, whose rational follows at once), but 0 and 1 at indices 0 and 1, stored by create and used or not
+ * (v0.3 §17.2); distinct (v0.3 §12.2): the incremental audit searches for each new entry, which must be found at its
+ * own index; the full audit sorts a temporary copy of the list and compares neighbours (R3-5), freed before it
+ * returns.  Every audit checks that indices 0 and 1 hold 0 and 1. */
 static const char *check_wholes(const Q *c, uint32_t from, uint32_t rfrom, int full) {
+    if (c->nW < 2 || c->W[H_ZERO] != 0 || c->W[H_ONE] != 1) return "whole numbers: 0 and 1 not at indices 0 and 1";
     uint32_t n = c->nW - from;
     if (!n) return NULL;
     unsigned char *used = sk_xcalloc(n, 1);
@@ -735,7 +845,7 @@ static const char *check_wholes(const Q *c, uint32_t from, uint32_t rfrom, int f
     for (uint32_t k = from; k < c->nW && !fail; k++) {
         if (c->W[k] < 0) fail = "whole number: negative";
         else if (!full && search(c, c->W[k]) != k) fail = "whole number: not found at its index, or a duplicate";
-        else if (!used[k - from]) fail = "whole number: used by no rational";
+        else if (!used[k - from] && k > H_ONE) fail = "whole number: used by no rational";
     }
     free(used);
     if (!fail && full) {

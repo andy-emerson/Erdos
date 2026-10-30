@@ -2,13 +2,14 @@
 
 A concept paper explaining the idea behind the exact-rational work: the problem of adding rationals, lowest terms and the gcd, the common-denominator representation, and partial sharing over a coprime base. It is independent of any one specification.
 
-**Status: active.** The current draft is [v0.4](v0.4.md).
+**Status: active.** The current draft is [v0.6](v0.6.md).
 
 - [v0.1](v0.1.md): sections 1–6 (problem and core idea).
 - [v0.2](v0.2.md): sections 1–6, recast as an extension of the gcd method, with costs in three forms throughout. Related work, costs and limits, and evidence are to come.
 - [v0.3](v0.3.md): sections 1–6 with the refined gcd method derived as a chain of gcds, an equal-input-size assumption, costs split into arithmetic and data-structure categories, appendices on multiplication, division and the gcd, and a bibliography of classical sources (some fields TBD).
 - [v0.4](v0.4.md) (current draft): exact sharing of whole numbers; partial sharing deferred. Shared denominators, shared numerators, and a combined structure of whole numbers stored once, with arithmetic, structure and algorithm kept apart.
-- [v0.5](v0.5.md) (in progress: sections 1–2 complete; 3.1–3.2 drafted): naive rational arithmetic, written from scratch: storage, the textbook formulas, and the shortcuts for stored integers that are equal, opposite or zero; then arithmetic in lowest terms: growing integers, the gcd and Euclid's algorithm, reduced storage, and the cases where a gcd is known in advance.
+- [v0.6](v0.6.md) (in progress; build 1 of 3 is v0.5 unchanged; build 2 reorders it into one type per chapter: integers, rationals, decimals, matrices; build 3 adds the planned content).
+- [v0.5](v0.5.md) (superseded by v0.6: sections 1–2 complete; 3.1–3.2 drafted): naive rational arithmetic, written from scratch: storage, the textbook formulas, and the shortcuts for stored integers that are equal, opposite or zero; then arithmetic in lowest terms: growing integers, the gcd and Euclid's algorithm, reduced storage, and the cases where a gcd is known in advance.
 
   **To revisit after section 3:**
   - which of section 2's special cases move to section 3, for the paper's flow;

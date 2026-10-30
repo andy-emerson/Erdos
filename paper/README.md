@@ -15,6 +15,17 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
   - whether some known-answer skips belong as early as section 1;
   - how opposite denominators are presented.
 
+  **Planned, not yet written** (agreed Oct 29, 2026):
+  - **3.3:** the combination of 3.1 and 3.2, each whole number stored once, using an index (an arrival-order list). One new idea only: the combination, through its intuitive structure.
+  - **3.4:** the same combination with a hash table, taught from scratch as the efficient version. Index inefficiency is explained by reasoning, not benchmarks. The win is memory; it is somewhat slower in arithmetic and lacks an obvious trigger (unlike a ledger of currency). It shows the idea can be done.
+  - **Common divisors, in chapter 2, math only, no library pseudocode:** between "nothing in common" and "everything in common", dividing out first already benefits from what two numbers share; the cost is finding it. Placement depends on chapter 4: inside 2.5 (the trade-off) if chapter 4 happens, otherwise after the library as a closing aside. Phrased as an observation, not a promise.
+  - **Chapter 4, only if the matrix tests pay off:**
+    - 4.1 matrix arithmetic with chapter 2's rationals;
+    - 4.2 the hash table of 3.4 applied to matrices (no speed gain expected, as in 3.4);
+    - 4.3 factorization, with gcds as valuations;
+    - 4.4 a coprime base in place of primes.
+  - **Throughout:** "win" names one side of the memory–speed trade-off that runs through the book; each section has its own win. No benchmarks in the paper; its tests come later, built for the textbook versions.
+
 **Moved, Oct 29, 2026.** The two working notes that were here are not part of the paper and now live with the work they describe:
 - the note on the two skeleton designs, formerly `note-skeletons.md`: the joint note is [`shared/partial-sharing-baseline/research/design-note.md`](../shared/partial-sharing-baseline/research/design-note.md), and each design's part is in [`08-common-divisors/research/design-note.md`](../08-common-divisors/research/design-note.md) and [`09-coprime-base/research/design-note.md`](../09-coprime-base/research/design-note.md);
 - the explainer of coprime bases and the exponent-vector notation ($p^{\alpha}$, $\wedge$, $\vee$), formerly `note-coprime-base.md`: [`09-coprime-base/research/coprime-base-notation.md`](../09-coprime-base/research/coprime-base-notation.md).

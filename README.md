@@ -1,23 +1,9 @@
-> **Milestone reached: matrix round m2 complete (packed build; four runs)** (Oct 30, 2026)
+> **Status** (Oct 30, 2026, 10:55 CDT)
 >
-> All four runs finished with no stop and 0 disturbed blocks: add 5.1 min, mul 7.4, sum of products 11.2, product of sums 8.2 (hard stop 40). Rule sha256 `e340d32b…`. Gcd work check passed on all 64 jobs. No row pre-stores 0 or 1. Cost as a multiple of the control (1.00 = control, lower is better): **median over 16 jobs [range]**; verdicts per job are in the results.
+> - **Paper:** v0.6 build 3 in progress (fixing what the reorder broke; no new content).
+> - **Test suite:** matrix round m3 (packed prime factors, packed coprime base) is being built.
 >
-> | measure | Hash-V-fixed | Hash-V-grow-map | **Hash-V-pack** |
-> | --- | --- | --- | --- |
-> | build one matrix (time) | 1.4–1.5× | 1.7–2.0× | 1.6–1.9× |
-> | addition (time) | 1.89× | 2.38× | 2.17× |
-> | multiplication (time) | 1.12× | 1.12× | 1.12× |
-> | sum of products (time) | 1.12× | 1.12× | 1.12× |
-> | product of sums (time) | 1.11× | 1.12× | 1.11× |
-> | stored matrix (bytes) | 2.25× [2.25–2.50] | 0.55× [0.28–2.25] | **0.29× [0.14–0.80], win on 16/16** |
-> | peak, addition | 2.08× | 0.86× | 0.92× [0.68–1.28] |
-> | peak, multiplication | 2.33× | 1.67× | 1.35× [1.18–1.71] |
-> | peak, sum of products (reported) | 2.29× | 1.57× | 0.91× |
-> | peak, product of sums (reported) | 2.00× | 1.17× | 0.83× |
->
-> **Headline:** the packed build stores every matrix in 14–80% of the control's memory (median 29%) and has the lowest peaks in multiplication and both expressions, at the same operation speed as the fixed table in multiplication and both expressions (ties on all 48 jobs). It is slower to build (pack vs fixed 0.79–0.87) and in addition (0.86). No version beats the control on speed. Minor, recorded: each timed part takes its own minimum of reps 2 and 3 (as rule-m2 says; m1 used the rep with the smallest total), applied to every row alike.
->
-> **Results:** [add](11-matrix/test/results-m2-add/results.md) · [mul](11-matrix/test/results-m2-mul/results.md) · [sum of products](11-matrix/test/results-m2-sop/results.md) · [product of sums](11-matrix/test/results-m2-pos/results.md)
+> **Results:** latest completed round: [m2](11-matrix/test/results-m2-mul/results.md)
 
 # Erdos
 

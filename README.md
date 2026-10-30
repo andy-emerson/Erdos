@@ -1,7 +1,7 @@
-> **Status** (Oct 30, 2026, 16:58 CDT)
+> **Status** (Oct 30, 2026, 17:52 CDT)
 >
 > - **Paper:** v0.6 done (chapters 1–4). Waiting for your direction.
-> - **Test suite:** building Hash-V-pack optimizations; researching its peak memory during mul.
+> - **Test suite:** finishing the optimized Hash-V-pack build (decisions made); then review and a timed round.
 >
 > **Results:** latest completed round: [m3](11-matrix/test/results-m3-summary.md)
 

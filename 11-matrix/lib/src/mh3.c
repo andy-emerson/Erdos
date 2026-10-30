@@ -9,7 +9,7 @@
  * What is added, as v0.3 §16 says:
  *   - after the pack, each whole number of (l) is factored once, in list order, into the factorization list (f):
  *     offsets (W + 1, 32-bit), factors (E, at the list's width w) and exponents (E, 8-bit), grown by doubling from 2W
- *     entries, then shrunk with realloc (§16.4 items 1-2).  Pack-primes: schoolbook trial division over 2 and the odd
+ *     entries, then shrunk to E entries (§16.4 items 1-2).  Pack-primes: schoolbook trial division over 2 and the odd
  *     numbers, stopping at d^2 > m (§16.4 item 3).  Pack-coprime: pass 1 builds the matrix's coprime base (q) by 09's
  *     absorb scan, gcds and divisions only; pass 2 writes each number's factors over the final base (§16.4 item 4);
  *   - the value arithmetic is TC's, step for step: only how each gcd value is obtained changes (§16.5).  A gcd of two

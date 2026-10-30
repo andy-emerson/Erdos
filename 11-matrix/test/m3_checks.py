@@ -10,7 +10,8 @@ from pathlib import Path
 
 import m2_checks as K2
 import m3_common as C
-from m1_checks import host_allowance, host_rates, kv, readout_check, runner_ticks_check  # noqa: F401  (m1's)
+from m1_checks import (host_allowance, host_rates, kv, other_limit, readout_check,  # noqa: F401  (m1's)
+                       runner_ticks_check)
 from m2_checks import (arith_counts, gcd_work, kept_minimum, parse_counts, parse_memrun, parse_opc,  # noqa: F401
                        parse_packs, parse_rep_cpu, parse_reps, parse_stor, store_split)
 

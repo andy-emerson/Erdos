@@ -1,6 +1,6 @@
-> **Status** (Oct 30, 2026, 11:20 CDT)
+> **Status** (Oct 30, 2026, 12:00 CDT)
 >
-> - **Paper:** v0.6 build 4 in progress (adding the decimal and matrix content); builds 1–3 done.
+> - **Paper:** v0.6 build 4b in progress (chapter 4, matrices); chapters 1–3 done (decimals added).
 > - **Test suite:** matrix round m3 (packed prime factors, packed coprime base) is being built.
 >
 > **Results:** latest completed round: [m2](11-matrix/test/results-m2-mul/results.md)

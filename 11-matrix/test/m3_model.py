@@ -696,7 +696,7 @@ def predict(op, n, inputs):
 def factored(op, n, vals, S, cases, coprime, counters):
     """one factored row over the job: its factorings, steps and final (f) and (q)"""
     names_in = C.SET_INPUTS[op]
-    M, facs, built, end, acc, core = {}, [], {}, {}, {}, {}
+    M, facs, built, end, acc = {}, [], {}, {}, {}
 
     def make(name):
         st = S[name]

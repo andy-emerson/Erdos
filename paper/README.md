@@ -15,6 +15,12 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
   - whether some known-answer skips belong as early as section 1;
   - how opposite denominators are presented.
 
+  **New chapter plan** (agreed Oct 30, 2026; supersedes the chapter numbering below where they differ). One type per chapter:
+  - **1. Integers:** representation, signed and unsigned, overflow, growing integers (now 2.1), division with remainder and `mod`, gcd and Euclid with its cost, the lcm, the coprime lemma and its proofs. Moving the gcd here puts Euclid before the 2.2 whole-multiple proof, so that proof can use the gcd again; choose its cleanest form then (the earlier Euclid-based proof also assumed an unproved scaling step).
+  - **2. Rationals:** storage and the sign, naive arithmetic, lowest terms using chapter 1's gcd, the special cases, the common-divisors aside, the library. Long, as the foundation.
+  - **3. Decimals:** rationals whose denominators are powers of 10, built on shared denominators (now 3.1) with deferred reduction. Money is the quick first example. Common multiples (the lcm) align scales: for powers of 10 the lcm is the larger one; multiplication adds the powers. Points, raised after the decimal system is built: a decimal keeps 10ᵏ denominators and so departs from lowest terms; division is exact but leaves the type unless the divisor's reduced numerator has no prime factors but 2 and 5, in which case the result becomes a general rational, as 7 ÷ 2 leaves the integers.
+  - **4. Matrices:** the same sharing idea extended to numerators (shared numerators, now 3.2, moves here): a packed list of whole numbers that cells refer to, built with a temporary worst-case hash table (3.3–3.4's index and hash material moves here as the build tool). Its trigger is matrices; its win is memory (round m2). Factored entries (primes, coprime base) are added only if the next tests earn a speed win.
+
   **Planned, not yet written** (agreed Oct 29, 2026):
   - **3.3:** the combination of 3.1 and 3.2, each whole number stored once, using an index (an arrival-order list). One new idea only: the combination, through its intuitive structure.
   - **3.4:** the same combination with a hash table, taught from scratch as the efficient version. Index inefficiency is explained by reasoning, not benchmarks. The win is memory; it is somewhat slower in arithmetic and lacks an obvious trigger (unlike a ledger of currency). It shows the idea can be done.

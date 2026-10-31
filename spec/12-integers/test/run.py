@@ -148,26 +148,24 @@ def main():
             log(f"job {k} {op}: idle {idle}; noise {noise if noise is None else round(noise, 4)}; " + ", ".join(
                 f"{r} {x['median']:.3g} ns" if "median" in x else f"{r} {x['trap']}" for r, x in t.items()))
     pairs = []
+    # every comparison is against Control (the author): each build x Control, every job and operation
     for k in gen.JOBS:
         for op in gen.OPS:
             tm = timing[f"{k}|{op}"]
-            if k == 1:
-                pairs += [dict(kind="build x Control", job=k, op=op, ref="control", row=b,
-                               **compare(tm["rows"], "control", b, tm["noise"] or 0)) for b in BUILDS[1:]]
-            else:
-                pairs.append(dict(kind="Byte encoding x Growing", job=k, op=op, ref="growing", row="bytes",
-                                  **compare(tm["rows"], "growing", "bytes", tm["noise"] or 0)))
+            pairs += [dict(kind="build x Control", job=k, op=op, ref="control", row=b,
+                           **compare(tm["rows"], "control", b, tm["noise"] or 0)) for b in BUILDS[1:]]
+    # the two absolute differences, in every build, against Control's normal subtraction
     for b in BUILDS:
         for k in gen.JOBS:
             for ad in ("absdiff", "absdiff2"):
                 s, d = timing[f"{k}|sub"], timing[f"{k}|{ad}"]
-                ts = {"sub": s["rows"][b], ad: d["rows"][b]}
-                pairs.append(dict(kind="absdiff x sub", job=k, op="-", ref="sub", row=f"{b} {ad}",
+                ts = {"sub": s["rows"]["control"], ad: d["rows"][b]}
+                pairs.append(dict(kind="absdiff x Control sub", job=k, op="-", ref="control sub", row=f"{b} {ad}",
                                   **compare(ts, "sub", ad, max(s["noise"] or 0, d["noise"] or 0))))
     for p in pairs:
-        ref = f"{p['ref'] if p['kind'] != 'absdiff x sub' else p['row'].split()[0]}"
-        if p["kind"] == "absdiff x sub":
-            ma, mb = mem[f"{ref}|{p['job']}|sub"], mem[f"{ref}|{p['job']}|{p['row'].split()[1]}"]
+        if p["kind"] == "absdiff x Control sub":
+            b, ad = p["row"].split()
+            ma, mb = mem[f"control|{p['job']}|sub"], mem[f"{b}|{p['job']}|{ad}"]
         else:
             ma, mb = mem[f"{p['ref']}|{p['job']}|{p['op']}"], mem[f"{p['row']}|{p['job']}|{p['op']}"]
         p["bytes_ratio"] = mb["bpv_acct"] / ma["bpv_acct"]

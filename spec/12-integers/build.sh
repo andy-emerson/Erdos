@@ -18,7 +18,7 @@ one() {  # name, build, extra flags...
     # shellcheck disable=SC2086
     "$NIM" c $NIMFLAGS "$NIMC" -d:bld=$b "$@" "--nimcache:$B/nimcache/$name" "-o:$B/bin/$name" "$HERE/src/bench.nim"
 }
-for b in control pow2 even growing bytes; do
+for b in control pow2 even growing bytes hybrid; do
     one "$b-j1" $b "--passC:-fno-tree-vectorize"
     one "$b" $b
     one "$b-mem" $b -d:mem

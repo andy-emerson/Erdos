@@ -1,4 +1,4 @@
-# bench.nim: the driver, one binary per build (-d:bld=control|pow2|even|growing|bytes). Not a build: it reads a job
+# bench.nim: the driver, one binary per build (-d:bld=control|pow2|even|growing|bytes|hybrid). Not a build: it reads a job
 # file, converts its operands to the build's values outside the clock, and runs one operation over them.
 #   dump <job> <op> <out>       each result once, as hex (the correctness check)
 #   calib <job> <op> [min_ns]   r, the smallest power of two with a rep of at least min_ns (50 ms), cap 10 s
@@ -12,6 +12,7 @@ elif bld == "pow2": import pow2
 elif bld == "even": import even
 elif bld == "growing": import growing
 elif bld == "bytes": import bytes
+elif bld == "hybrid": import hybrid
 else: {.error: "unknown build".}
 when defined(mem) and not wordBuild: import alloc
 
@@ -29,6 +30,13 @@ elif bld == "growing":
     for i in countdown(v.len, 1): result.add toHex(uint64(v[i]), sizeof(Word) * 2).toLowerAscii
   proc mixh(h: var uint64; v: Val) =
     for i in 0 .. v.len: h = (h xor uint64(v[i])) * 0x9E3779B97F4A7C15'u64
+elif bld == "hybrid":
+  proc hexOf(v: Val): string =
+    let w = words(v)
+    if w.len == 0: return "0"
+    for i in countdown(w.len - 1, 0): result.add toHex(w[i], 16).toLowerAscii
+  proc mixh(h: var uint64; v: Val) =
+    for x in words(v): h = (h xor x) * 0x9E3779B97F4A7C15'u64
 else:
   proc hexOf(v: Val): string =
     let (vl, L) = byteLen(v)

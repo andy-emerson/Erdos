@@ -28,9 +28,31 @@ def ctz(x):
     return (x & -x).bit_length() - 1 if x else None
 
 
+def divinv_word(x, y, bits):
+    """the machine-level exact division on words: (x >> s) times the odd part's inverse, mod 2^64"""
+    if y == 0:
+        return None
+    s = (y & -y).bit_length() - 1
+    o = y >> s
+    return ((x >> s) * pow(o, -1, 2**64)) % 2**64
+
+
 def model(build, w, op, a, b):
-    if op == "absdiff2":
+    if op in ("absdiff2", "usub"):
         op = "absdiff"
+    if op == "divinv":
+        if build in ("growing", "bytes", "hybrid", "hyb2", "hyb2p2", "hyb2ad", "hyb3", "hyb3w"):
+            op = "divexact"
+        elif build == "control":
+            return divinv_word(a % M64, b % M64, 64)
+        else:
+            x, y = a % M63, b % M63
+            r = divinv_word(x, y, 64)
+            if r is None:
+                return None
+            r %= M63
+            flag = (r != 0 and r & (r - 1) == 0) if build == "pow2" else (r % 2 == 0)
+            return r | flag << 63
     if build in ("hyb2ad", "hyb3", "hyb3w") and op == "sub":
         op = "absdiff"
     """the build's expected value (raw, flag included for the flag builds), "trap", or None (not modelled)"""

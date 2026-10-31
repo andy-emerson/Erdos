@@ -18,7 +18,7 @@ elif bld in ["hyb3", "hyb3w"]: import hybrid3
 else: {.error: "unknown build".}
 when defined(mem) and not wordBuild: import alloc
 
-const ops = ["add", "sub", "absdiff", "mul", "divexact", "gcd", "absdiff2"]
+const ops = ["add", "sub", "absdiff", "mul", "divexact", "gcd", "absdiff2", "divinv", "usub"]
 const capNs = 10_000_000_000'i64
 
 # ------------------------------------------------------------------------------------------------ per build
@@ -109,7 +109,9 @@ mkLoop(loop_mul, opMul)
 mkLoop(loop_divexact, opDivexact)
 mkLoop(loop_gcd, opGcd)
 mkLoop(loop_absdiff2, opAbsdiff2)
-const loops = [loop_add, loop_sub, loop_absdiff, loop_mul, loop_divexact, loop_gcd, loop_absdiff2]
+mkLoop(loop_divinv, opDivinv)
+mkLoop(loop_usub, opUsub)
+const loops = [loop_add, loop_sub, loop_absdiff, loop_mul, loop_divexact, loop_gcd, loop_absdiff2, loop_divinv, loop_usub]
 
 proc main() =
   let args = commandLineParams()
@@ -151,7 +153,9 @@ proc main() =
               of 3: opMul(A[o][j], B[o][j])
               of 4: opDivexact(A[o][j], B[o][j])
               of 5: opGcd(A[o][j], B[o][j])
-              else: opAbsdiff2(A[o][j], B[o][j])
+              of 6: opAbsdiff2(A[o][j], B[o][j])
+              of 7: opDivinv(A[o][j], B[o][j])
+              else: opUsub(A[o][j], B[o][j])
             let p = peak - base
             pk += p
             pkMax = max(pkMax, p)

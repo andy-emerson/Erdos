@@ -22,6 +22,8 @@ proc opAbsdiff2*(a, b: Val): Val {.inline.} =
   var d: uint64
   let m = 0'u64 - subBorrow(v(a), v(b), d)
   mk((d xor m) - m)
+proc opDivinv*(a, b: Val): Val {.inline.} = mk(divExactInv(v(a), v(b)))
+proc opUsub*(a, b: Val): Val {.inline.} = mk(usubAsm(v(a), v(b)))
 proc opMul*(a, b: Val): Val {.inline.} = mk(v(a) * v(b))   # round 2: a plain multiply is cheaper than the flag's branch
 proc opDivexact*(a, b: Val): Val {.inline.} =
   if flagged(b): mk(v(a) shr ctz(v(b)))

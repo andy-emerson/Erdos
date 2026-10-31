@@ -326,3 +326,8 @@ proc fromWords*(w: openArray[uint64]): Big =
       result.wd[2 * i] = Word(w[i] and 0xFFFF_FFFF'u64)
       result.wd[2 * i + 1] = Word(w[i] shr 32)
   norm(result)
+
+# round 6: the machine-level operations, in their multi-word form: exact division is already by inverse (Hensel), and
+# the unsigned subtraction is the subtract-then-negate-on-borrow of opAbsdiff2
+proc opDivinv*(a, b: Big): Big = opDivexact(a, b)
+proc opUsub*(a, b: Big): Big = opAbsdiff2(a, b)

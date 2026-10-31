@@ -13,6 +13,8 @@ proc opAbsdiff2*(a, b: Val): Val {.inline.} =
   var d: uint64
   let m = 0'u64 - subBorrow(a, b, d)
   (d xor m) - m
+proc opDivinv*(a, b: Val): Val {.inline.} = divExactInv(a, b)
+proc opUsub*(a, b: Val): Val {.inline.} = usubAsm(a, b)
 proc opMul*(a, b: Val): Val {.inline.} = a * b
 proc opDivexact*(a, b: Val): Val {.inline.} = a div b
 proc opGcd*(a, b: Val): Val {.inline.} = gcd(a, b)

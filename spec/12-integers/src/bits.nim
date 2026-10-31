@@ -14,3 +14,26 @@ proc subBorrow*(a, b: uint64; d: var uint64): uint64 {.inline.} =
   var o: bool
   {.emit: [o, " = __builtin_sub_overflow(", a, ", ", b, ", &", d, ");"].}
   uint64(o)
+
+# ------------------------------------------------------------------------------------------------ machine-level operations (round 6)
+proc divExactInv*(a, b: uint64): uint64 {.inline.} =
+  ## exact division (b divides a) with no divide instruction: shift out b's trailing zeros, invert b's odd part mod 2^64
+  ## by Newton's iteration (correct to 3 bits, doubling each step), then multiply. b = 0 gives no meaningful result.
+  let s = ctz(b or (1'u64 shl 63))
+  let o = b shr s
+  var x = o
+  x = x * (2'u64 - o * x)    # 6 bits
+  x = x * (2'u64 - o * x)    # 12
+  x = x * (2'u64 - o * x)    # 24
+  x = x * (2'u64 - o * x)    # 48
+  x = x * (2'u64 - o * x)    # 96
+  (a shr s) * x
+
+proc usubAsm*(a, b: uint64): uint64 {.inline.} =
+  ## |a - b| from the subtraction's own borrow: sub sets the carry when a < b; sbb turns it into a mask (all ones or
+  ## zeros); xor and sub with the mask negate the difference exactly when it wrapped.
+  var r = a
+  var m: uint64
+  {.emit: ["__asm__(\"subq %2, %0\\n\\tsbbq %1, %1\\n\\txorq %1, %0\\n\\tsubq %1, %0\" : \"+r\"(", r, "), \"=&r\"(", m,
+           ") : \"r\"(", b, ") : \"cc\");"].}
+  r

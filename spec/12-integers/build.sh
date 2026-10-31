@@ -29,3 +29,5 @@ for b in control pow2 even growing bytes hybrid hyb2 hyb2p2 hyb2ad hyb3 hyb3w; d
 done
 for b in growing bytes; do one "$b-w32" $b -d:W=32; done
 echo built
+# directions mod 4 (round 6): its own small timing, scalar as job 1
+"$NIM" c $NIMFLAGS "$NIMC" "--passC:-fno-tree-vectorize" "--nimcache:$B/nimcache/dir" "-o:$B/bin/dirbench" "$HERE/src/dirbench.nim"

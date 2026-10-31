@@ -64,6 +64,16 @@ when not defined(wide):
   slow(slowMul, growing.opMul)
   slow(slowDivexact, growing.opDivexact)
   slow(slowGcd, growing.opGcd)
+  slow(slowDivinv, growing.opDivinv)
+  slow(slowUsub, growing.opUsub)
+
+  proc opDivinv*(a, b: Val): Val {.inline.} =
+    if both(a, b): return divExactInv(a, b)
+    slowDivinv(a, b)
+
+  proc opUsub*(a, b: Val): Val {.inline.} =
+    if both(a, b): return usubAsm(a, b)
+    slowUsub(a, b)
 
   proc mulOverflow(lo, hi: uint64): Val {.noinline.} = toBig([lo, hi])
   proc addOverflow(s: uint64): Val {.noinline.} = toBig([s])
@@ -201,6 +211,8 @@ static inline u128 gcd128(u128 x, u128 y) {
   slow(slowMul, growing.opMul)
   slow(slowDivexact, growing.opDivexact)
   slow(slowGcd, growing.opGcd)
+  slow(slowDivinv, growing.opDivinv)
+  slow(slowUsub, growing.opUsub)
 
   proc overflow2(lo, hi, c: uint64): Val {.noinline.} = toBig([lo, hi, c])
 
@@ -273,6 +285,16 @@ static inline u128 gcd128(u128 x, u128 y) {
     if (a.hi or b.hi) == 0: return nat(0, gcdWord(a.lo, b.lo))   # both fit one word: the word gcd
     if both(a, b): return gcdWide(a, b)
     slowGcd(a, b)
+
+  proc opDivinv*(a, b: Val): Val {.inline.} =
+    if (a.hi or b.hi) == 0: return nat(0, divExactInv(a.lo, b.lo))
+    if both(a, b): return opDivexact(a, b)
+    slowDivinv(a, b)
+
+  proc opUsub*(a, b: Val): Val {.inline.} =
+    if (a.hi or b.hi) == 0: return nat(0, usubAsm(a.lo, b.lo))
+    if both(a, b): return opAbsdiff2(a, b)
+    slowUsub(a, b)
 
   when defined(mem):
     proc acctOf*(x: Val): int =

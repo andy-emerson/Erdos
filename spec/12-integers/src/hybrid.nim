@@ -120,6 +120,14 @@ proc opGcd*(a, b: Val): Val =
     return mkSmall(y shl s)
   viaGrowing(a, b, growing.opGcd)
 
+proc opDivinv*(a, b: Val): Val =
+  if small(a) and small(b): return mkSmall(divExactInv(sv(a), sv(b)))
+  viaGrowing(a, b, growing.opDivinv)
+
+proc opUsub*(a, b: Val): Val =
+  if small(a) and small(b): return mkSmall(usubAsm(sv(a), sv(b)))
+  viaGrowing(a, b, growing.opUsub)
+
 when defined(mem):
   proc acctOf*(x: Val): int =
     ## a native value is its 8-byte word, as Control's; a big one is its block, as Growing's

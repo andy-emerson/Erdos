@@ -88,6 +88,8 @@ lift(opAbsdiff2, growing.opAbsdiff2)
 lift(opMul, growing.opMul)
 lift(opDivexact, growing.opDivexact)
 lift(opGcd, growing.opGcd)
+lift(opDivinv, growing.opDivinv)
+lift(opUsub, growing.opUsub)
 
 proc fromWords*(w: openArray[uint64]): Val =
   let x = growing.fromWords(w)

@@ -256,7 +256,21 @@ static inline u128 gcd128(u128 x, u128 y) {
              hi, " = (NU64)(g_ >> 64);"].}
     nat(hi, lo)
 
+  proc gcdWord(a, b: uint64): uint64 =
+    var x = a
+    var y = b
+    if x == 0: return y
+    if y == 0: return x
+    let s = ctz(x or y)
+    y = y shr ctz(y)
+    while x != 0:
+      x = x shr ctz(x)
+      if y > x: swap y, x
+      x -= y
+    y shl s
+
   proc opGcd*(a, b: Val): Val {.inline.} =
+    if (a.hi or b.hi) == 0: return nat(0, gcdWord(a.lo, b.lo))   # both fit one word: the word gcd
     if both(a, b): return gcdWide(a, b)
     slowGcd(a, b)
 

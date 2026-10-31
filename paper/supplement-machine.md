@@ -34,27 +34,52 @@ The smallest useful modulus is 2. Mod 2, every integer is 0 (even) or 1 (odd), a
 
 Odd plus odd is even: $1 + 1 = 2 \equiv 0$. Odd times odd is odd: $1 \cdot 1 = 1$.
 
-A **bit** holds one of these two values. Read 0 as false and 1 as true, and the arithmetic of mod 2 becomes logic:
+A **bit** holds one of these two values. Read 0 as false and 1 as true, and the arithmetic of mod 2 becomes logic. Three operations are single steps of it.
 
-- **AND** (both are true) is multiplication: $x \cdot y$ is 1 only when $x$ and $y$ are both 1.
-- **XOR**, "exclusive or" (exactly one is true), is addition: $x + y$ is 1 when one of them is 1, and $1 + 1 \equiv 0$.
-- **NOT** (the opposite) is adding 1: $1 + 0 = 1$, and $1 + 1 \equiv 0$.
+**AND** is true when both $x$ and $y$ are true. That is multiplication, since $x \cdot y$ is 1 only when both are 1:
 
-Two more operations are named in words. **OR** is true when at least one of $x$ and $y$ is true. **NAND** ("not and") is true when they are not both true. Neither is a single step of mod 2 arithmetic, but both follow from the three above by De Morgan's laws.
+$$x \text{ AND } y = x \cdot y.$$
 
-**De Morgan's laws.** They say how NOT acts on a statement about two things:
+**XOR**, "exclusive or", is true when exactly one of $x$ and $y$ is true. That is addition, since $1 + 0 = 1$ and $1 + 1 = 2 \equiv 0$:
 
-- NOT($x$ AND $y$) = (NOT $x$) OR (NOT $y$).
-- NOT($x$ OR $y$) = (NOT $x$) AND (NOT $y$).
+$$x \text{ XOR } y = x + y.$$
 
-In words: to deny that both are true is to say that at least one is false, and to deny that at least one is true is to say that both are false. Take "it is raining" for $x$ and "it is cold" for $y$. "It is not both raining and cold" means it is not raining, or it is not cold, or it is neither. "It is neither raining nor cold", the denial of "raining or cold", means it is not raining and it is not cold. The laws make sense because "both" fails exactly when at least one part fails, and "at least one" fails exactly when every part fails. NOT turns AND into OR and OR into AND, and flips each part along the way.
+**NOT** gives the opposite value. That is adding 1, since $1 + 0 = 1$ and $1 + 1 \equiv 0$:
 
-Now OR and NAND can be written with AND and NOT alone:
+$$\text{NOT } x = 1 + x.$$
 
-- **OR.** Apply NOT to both sides of the second law, and NOT(NOT ...) cancels: $x$ OR $y$ = NOT((NOT $x$) AND (NOT $y$)). As arithmetic, NOT is adding 1, so this is $1 + (1 + x)(1 + y) = x + y + x \cdot y$, with $2 \equiv 0$ removing the extra terms.
-- **NAND** is NOT applied to AND: NOT($x$ AND $y$), which is $1 + x \cdot y$. By the first law it is also (NOT $x$) OR (NOT $y$): at least one is false. It is not OR: for two 0s, NAND gives 1 and OR gives 0.
+**De Morgan's laws.** Two more operations need one more idea first. In everyday speech, "or" means at least one: "raining or cold" is true if it is raining, if it is cold, or both. De Morgan's laws say what happens when NOT is applied to a statement about two things joined by "and" or by "or".
 
-NAND alone can build all the others: NOT $x$ = $x$ NAND $x$; $x$ AND $y$ = NOT($x$ NAND $y$); and $x$ OR $y$ = (NOT $x$) NAND (NOT $y$), which is the first law with NOT $x$ and NOT $y$ in place of $x$ and $y$.
+- To deny that both are true is to say that at least one is false. "It is not both raining and cold" means it is not raining, or it is not cold, or it is neither.
+- To deny that at least one is true is to say that both are false. "It is neither raining nor cold" means it is not raining and it is not cold.
+
+They make sense because "both" fails exactly when at least one part fails, and "at least one" fails exactly when every part fails. So NOT turns "and" into "or" and "or" into "and", and flips each part along the way. Written as formulas:
+
+$$\text{NOT}(x \text{ AND } y) = (\text{NOT } x) \text{ OR } (\text{NOT } y),$$
+
+$$\text{NOT}(x \text{ OR } y) = (\text{NOT } x) \text{ AND } (\text{NOT } y).$$
+
+Both can be checked by trying the four pairs of values for $x$ and $y$.
+
+**OR** is true when at least one of $x$ and $y$ is true. It is not a single step of mod 2 arithmetic, but the second law gives it. Applying NOT to both sides of the second law cancels the NOT on the left, since NOT(NOT $z$) $= z$:
+
+$$x \text{ OR } y = \text{NOT}\big((\text{NOT } x) \text{ AND } (\text{NOT } y)\big).$$
+
+Now each part is a step of mod 2 arithmetic, so
+
+$$x \text{ OR } y = 1 + (1 + x)(1 + y) = 2 + x + y + x \cdot y \equiv x + y + x \cdot y.$$
+
+**NAND**, "not and", is true unless both $x$ and $y$ are true. It is NOT applied to AND, so it is one step more than AND:
+
+$$x \text{ NAND } y = \text{NOT}(x \text{ AND } y) = 1 + x \cdot y.$$
+
+By the first law it is also $(\text{NOT } x) \text{ OR } (\text{NOT } y)$: at least one is false. It is not OR: for two 0s, NAND gives 1 and OR gives 0.
+
+NAND alone can build every other operation:
+
+$$\text{NOT } x = x \text{ NAND } x, \qquad x \text{ AND } y = \text{NOT}(x \text{ NAND } y), \qquad x \text{ OR } y = (\text{NOT } x) \text{ NAND } (\text{NOT } y).$$
+
+The last is the first law with NOT $x$ and NOT $y$ in place of $x$ and $y$.
 
 Together:
 
@@ -121,73 +146,74 @@ At the machine level the inputs don't grow. Every number is one word of 64 bits,
 
 So this supplement counts cost directly. A routine is a list of machine instructions, and its cost is built up from what each instruction costs, counted in the machine's own steps (chapter 2 says what those are). This is the constant that big-O sets aside. It comes back into big-O for numbers of many words: long division of $n$-word numbers is still $O(n^2)$ word operations, and the cost of each word operation, counted here, is the constant in front.
 
-## 2. Machine code
+## 2. From mathematics to machine code
 
-A program in a language such as Nim, C or Rust is translated by a compiler into machine code: a list of instructions the chip carries out directly. Machine code works differently from those languages. There are no named variables, no expressions and no loops. There are a few places to hold numbers, a few dozen simple instructions, and jumps.
+A chip carries out a list of **instructions**, its **machine code**. Programs written in everyday programming languages are translated into it before they run. Each instruction is one step of the mathematics of chapter 1, done on whole words. This chapter matches each step to the pseudocode used in the rest of the supplement. Reading or writing machine code isn't needed: the instruction names are given only for reference, and Appendix A uses them.
 
-### 2.1 Registers, memory and flags
+### 2.1 What a machine holds
 
-- **Registers** are the chip's own places for numbers. An x86-64 chip has 16 general registers, each one word, with names such as `rax`, `rdx` and `r8`. An instruction reads and writes registers, and a register's value changes whenever an instruction writes to it. The low 32 bits of a register have their own names (`eax` is the low half of `rax`) for 32-bit instructions.
-- **Memory** is a long row of bytes, numbered. An instruction can load a value from a numbered place in memory into a register.
-- **Flags** are single bits that most arithmetic instructions set as a side effect. The **carry flag** holds the bit that fell off the top of an addition or a shift, or the borrow of a subtraction. The **zero flag** says whether the result was 0.
+- **Registers** are the chip's own places for numbers. There are 16 of them, and each holds one word. Every step reads some registers and writes its result into one, replacing what was there. In the pseudocode, registers have short names such as `a`, `b`, `q` and `x`.
+- **Memory** is a long row of bytes, each with a number for its place. A step can read a value from a place in memory into a register. The tables in this supplement live in memory.
+- **Flags** are single bits that a step sets as a side effect. The **carry flag** holds the carry out of the top column of an addition (section 1.3): the bit that a word drops when it keeps a result mod $2^{64}$ (section 1.5). The **zero flag** says whether the result was 0. A comparison sets the flags, and a jump reads them.
 
-### 2.2 Instructions
+### 2.2 The steps
 
-These are the instructions this supplement uses. All arithmetic is mod $2^{64}$, as in section 1.5.
+Each pseudocode operation below is one step of chapter 1's mathematics, and the right-hand column names the instruction that carries it out on current x86-64 chips (made by Intel and AMD).
 
-| Instruction | Effect |
-| --- | --- |
-| `mov` | copy a value into a register, or between a register and memory |
-| `add`, `sub`, `neg` | add, subtract, negate |
-| `and`, `or`, `xor` | the operations of section 1.2, bit by bit |
-| `shl`, `shr` | shift left or right (section 1.4) |
-| `rcl` | shift left by one, bringing the carry flag in at the bottom |
-| `imul` | multiply, keeping the low word of the product |
-| `div` | divide (section 2.3) |
-| `tzcnt` | count trailing zeros |
-| `lea` | add, with small multiples: `lea rax, [r8+r8*2]` sets `rax` to $3 \cdot$ `r8` |
-| `movzx` | load one byte from memory into a register, filling the rest with zeros |
-| `cmp` | subtract without keeping the result, only setting the flags |
-| `jb`, `jc`, `jnz`, `jmp` | jump if below, if carry, if not zero, or always |
+| Pseudocode | Mathematics | Instruction |
+| --- | --- | --- |
+| `x ← e` | the register `x` gets the value `e` | `mov` |
+| `x + y` | addition mod $2^{64}$ (section 1.5) | `add` |
+| `x − y` | subtraction mod $2^{64}$ (chapter 4) | `sub`; `neg` for $0 - x$ |
+| `x·y` | multiplication mod $2^{64}$: the low word of the product | `imul` |
+| `x AND y`, `x OR y`, `x XOR y` | the operations of section 1.2, on each of the 64 bits | `and`, `or`, `xor` |
+| `x SHIFT LEFT k` | $x \cdot 2^k \bmod 2^{64}$ (section 1.4) | `shl` |
+| `x SHIFT RIGHT k` | $x \div 2^k$, remainder dropped (section 1.4) | `shr` |
+| `TRAILING ZEROS(x)` | $s$, where $x = 2^s \cdot o$ with $o$ odd (section 1.4) | `tzcnt` |
+| `TABLE[i]` | entry $i$ of a table in memory | `movzx` |
+| `DIVIDE(a, b)` | the quotient of $a \div b$, remainder dropped | `div` |
+| `DIVIDE32(a, b)` | the same, when $a$ and $b$ are below $2^{32}$ | `div`, 32-bit form |
+| `IF x ≥ y THEN` | compare $x$ with $y$ | `cmp`, then a jump: `jb`, `jc`, `jnz`, `jmp` |
+| `REPEAT n TIMES` | count down from $n$ to 0 | `dec`, then a jump back |
+| `RETURN` | the routine ends | `ret` |
 
-### 2.3 The divide instruction
+Most of these are single steps of chapter 1. Addition, subtraction and multiplication are arithmetic mod $2^{64}$, because a word keeps only 64 bits. The Boolean operations act on all 64 bits at once, column by column with no carries, as in section 1.3. Shifts multiply and divide by powers of 2.
 
-`div r` divides a two-word number by the register `r`. The high word of the dividend must be in `rdx` and the low word in `rax`. It puts the quotient in `rax` and the remainder in `rdx`. To divide one word by another, a program first sets `rdx` to 0. There is also a 32-bit form, which divides `edx:eax` by a 32-bit register.
+Division is the exception. `DIVIDE` is one instruction, but it isn't one step of arithmetic. A circuit inside the chip, the **divider**, works through a long division to carry it out (section 6.1). That is why it is slow, and why chapter 6 looks for ways around it.
 
-The division itself is not done by instructions. It is done by a circuit inside the chip, the **divider**, which carries out long division (section 6.1).
+### 2.3 The pseudocode
 
-### 2.4 How long instructions take
+Machine code differs from the pseudocode of the main paper in three ways, and this supplement's pseudocode follows the machine.
+
+- **One step at a time.** An instruction does one operation. A formula such as $(a \div 2^s) \cdot x$ becomes two instructions: the shift, then the multiplication. A line of pseudocode may combine a few steps, and Appendix A shows each line's instructions.
+- **Registers are reused.** In the main paper, `LET` gives a name its value once. A register is overwritten whenever a step writes to it, so this supplement writes `x ← e`: the register `x` now holds `e`, and its earlier value is gone. A register can be set many times.
+- **No loops, only jumps.** A machine runs its instructions in order, except where a jump sends it to another place in the list. Every repetition and every choice is made of jumps. `REPEAT` and `IF` are shorthand for them.
+
+In full:
+
+- `ROUTINE name(inputs)` starts a routine. Its inputs arrive in registers.
+- `x ← e` sets the register `x` to the value `e`. All arithmetic is mod $2^{64}$.
+- `IF condition THEN` runs the indented lines under it only when the condition holds. `IF condition THEN GO TO label` jumps to the line marked `label:` when the condition holds; otherwise the next line runs.
+- `REPEAT n TIMES` runs the indented lines under it $n$ times.
+- `x, s ← name(b)` runs another routine and puts its two results in `x` and `s`.
+- `RETURN` ends the routine with its results.
+
+### 2.4 How long steps take
 
 A chip runs on a clock, and its time is counted in **cycles**. It has several units that do the work: adders, a multiplier, a divider, and units that load from memory. Two facts about them matter here.
 
-- **Independent instructions overlap.** If an instruction doesn't need the result of an earlier one, the chip may start it before the earlier one finishes, on another unit or on the same unit if that unit can take new work while it is still busy. So when a program does many divisions that don't depend on each other, what limits its speed is how often the busiest unit can start a new instruction.
+- **Independent steps overlap.** If a step doesn't need the result of an earlier one, the chip may start it before the earlier one finishes, on another unit or on the same unit if that unit can take new work while it is still busy. So when a program does many divisions that don't depend on each other, what limits its speed is how often the busiest unit can start a new step.
 - **The multiplier overlaps with itself, and the divider doesn't.** A product is a sum of shifted copies of one factor, one copy for each 1 bit of the other. All the copies are known at the start, so a circuit can add them in pairs, then the pairs in pairs, like a tournament. That takes a few stages, and each stage can work on a different multiplication, so a new multiplication can start every cycle. Long division is different: each step needs the remainder from the step before, so the steps form a chain. The divider is busy with one division until the chain is done.
 
-Published measurements of each instruction show this ([uops.info](https://uops.info)). For two families of current chips, here is how often each unit can start a new instruction:
+Published measurements of each instruction show this ([uops.info](https://uops.info)). For two families of current chips, here is how often each unit can start a new step:
 
-| Instruction | Intel (Ice Lake, Tiger Lake, Rocket Lake, Alder Lake) | AMD (Zen 3, Zen 4) |
+| Step | Intel (Ice Lake, Tiger Lake, Rocket Lake, Alder Lake) | AMD (Zen 3, Zen 4) |
 | --- | --- | --- |
-| 64-bit `imul` | every cycle | every cycle |
-| 64-bit `div` | every 10 cycles | every 7 cycles |
-| 32-bit `div` | every 6 cycles | every 6 cycles |
+| `x·y` | every cycle | every cycle |
+| `DIVIDE` | every 10 cycles | every 7 cycles |
+| `DIVIDE32` | every 6 cycles | every 6 cycles |
 
-A multiplication takes 3 cycles from start to result on both. The simple instructions (`add`, `shr`, `mov` and so on) take one cycle, and several units can run them side by side.
-
-### 2.5 Pseudocode for machine code
-
-The main paper's pseudocode gives each name a value once. Machine code doesn't work that way, so this supplement uses a variation:
-
-- `ROUTINE name(inputs)` starts a routine. Its inputs arrive in registers.
-- `x ← e` sets the register `x` to the value `e`. Unlike `LET` in the main paper, a register can be set again; its value is the last one set.
-- All arithmetic is mod $2^{64}$: `x·y` is the low word of the product.
-- `SHIFT LEFT`, `SHIFT RIGHT`, `AND`, `OR`, `XOR` and `TRAILING ZEROS` are the operations of section 1.
-- `DIVIDE(a, b)` is the 64-bit divide instruction of section 2.3, and `DIVIDE32(a, b)` is the 32-bit one.
-- `TABLE[i]` loads byte `i` of a table kept in memory.
-- `IF condition THEN GO TO label` jumps to the line marked `label:` when the condition holds; otherwise the next line runs.
-- `REPEAT n TIMES` runs the indented lines under it $n$ times.
-- `RETURN` ends the routine with its results.
-
-Each line becomes one to five instructions. Appendix A gives them line by line.
+A multiplication takes 3 cycles from start to result on both. The simple steps (`+`, `AND`, `SHIFT RIGHT`, `←` and so on) take one cycle each, and several units can run them side by side.
 
 ## 3. Addition
 
@@ -368,6 +394,8 @@ As section 1.6 explains, big-O can't tell these routines apart, since all of the
 ## Appendix A. The machine code
 
 The routines of chapter 6 in x86-64 machine code, Intel syntax. The full file is [`verify-machine/division.s`](verify-machine/division.s), and [`verify-machine/test.c`](verify-machine/test.c) checks every routine against the exact quotient.
+
+The registers have names: `rax`, `rcx`, `rdx`, `rsi`, `rdi` and `r8` to `r11` here. The low 32 bits of a register have their own names for 32-bit steps (`eax` is the low half of `rax`, `r8d` of `r8`), and `cl` is the low byte of `rcx`. Two instructions have fixed registers. `div r` divides the two-word number whose high word is in `rdx` and low word in `rax` by the register `r`, and puts the quotient in `rax` and the remainder in `rdx`; to divide one word, `rdx` is first set to 0. `rcl` shifts left by one and brings the carry flag in at the bottom. And `lea rax, [r8+r8*2]` sets `rax` to $3 \cdot$ `r8` in one step.
 
 The pair routines take $a$ in `rdi`, $a_2$ in `rsi` and $b$ in `rdx`, and write the two quotients to the memory that `rcx` points to. Shifts by a number held in a register must take it from `cl`, the low byte of `rcx`, so routines that shift first move `rcx` to `r10`. The comments name the pseudocode line each instruction carries out.
 

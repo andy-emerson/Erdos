@@ -1,0 +1,57 @@
+--- sk_internal.h	2026-10-29 06:44:05.660059456 -0500
++++ m4/sk_internal.h	2026-10-30 17:05:23.807489094 -0500
+@@ -1,8 +1,9 @@
+-/* sk_internal.h: the shared integer module (spec §4.3 item 4), counting (spec §12.1), allocation, growth helpers,
+- * and the denominator lookup used by Designs 1 and 2 (spec §5).  Every full-width addition, subtraction,
+- * multiplication, division and gcd of every row goes through the routines below, and no other full-width
+- * arithmetic is done, except negation and absolute value of values that exclude the most negative integer (which
+- * cannot overflow; spec §4.3 item 2), and comparisons. */
++/* sk_internal.h (m4: 08's sk_internal.h, ../sk_internal.h, with sk_gcd_raw changed and nothing else; found before
++ * 08's by the m4 builds' include path): the shared integer module (spec §4.3 item 4), counting (spec §12.1),
++ * allocation, growth helpers, and the denominator lookup used by Designs 1 and 2 (spec §5).  Every full-width
++ * addition, subtraction, multiplication, division and gcd of every row goes through the routines below, and no other
++ * full-width arithmetic is done, except negation and absolute value of values that exclude the most negative integer
++ * (which cannot overflow; spec §4.3 item 2), and comparisons. */
+ #ifndef SK_INTERNAL_H
+ #define SK_INTERNAL_H
+ 
+@@ -88,19 +89,36 @@
+ /* ----------------------------------------------------------------------------------------- gcd */
+ 
+ /* The binary method on magnitudes, gcd(a, 0) = |a| (spec §4.3 item 4, G-4).  The result fits sk_int because the
+- * most negative integer is never an operand. */
++ * most negative integer is never an operand.
++ * m4 (11-matrix/test/DECISIONS-m4.md; ../sk_internal.h is 08's, unchanged): two changes to this routine only, the
++ * same results:
++ *   1. when the bit lengths differ by more than SK_GCD_SPREAD, one remainder first (the larger mod the smaller,
++ *      gcd(u, v) = gcd(u mod v, v)), then the binary method on the smaller pair; the remainder is raw, inside the gcd,
++ *      uncounted as every step of the gcd is (counting rule 3);
++ *   2. in the loop, the shift count is the ctz of the raw difference u - v (equal to that of v - u, the two's
++ *      complement negation keeping the low zero bits), so it does not wait for the min/abs select. */
++#define SK_GCD_SPREAD 8
+ static inline sk_int sk_gcd_raw(sk_int a, sk_int b) {
+     sk_uint u = sk_mag(a), v = sk_mag(b);
+     if (u == 0) return (sk_int)v;
+     if (v == 0) return (sk_int)u;
++    int lu = sk_bits_u_raw((uint64_t)u), lv = sk_bits_u_raw((uint64_t)v);
++    if (lu - lv > SK_GCD_SPREAD) { /* one remainder first, when the sizes differ a lot */
++        u %= v;
++        if (u == 0) return (sk_int)v;
++    } else if (lv - lu > SK_GCD_SPREAD) {
++        v %= u;
++        if (v == 0) return (sk_int)u;
++    }
+     int s = sk_ctz_raw((uint64_t)(u | v));
+     u >>= sk_ctz_raw((uint64_t)u);
+     v >>= sk_ctz_raw((uint64_t)v);
+-    while (u != v) { /* same binary method, written so the compiler emits conditional moves */
++    while (u != v) { /* the binary method, written so the compiler emits conditional moves */
++        int z = sk_ctz_raw((uint64_t)(u - v)); /* the raw difference: ctz(u - v) = ctz(v - u) */
+         sk_uint m = u < v ? u : v;
+         sk_uint d = u < v ? v - u : u - v;
+         u = m;
+-        v = d >> sk_ctz_raw((uint64_t)d);
++        v = d >> z;
+     }
+     return (sk_int)(u << s);
+ }

@@ -1,0 +1,40 @@
+# check.py: the arithmetic claims in the machine-level supplement.
+import random
+
+# 1.1: AND, XOR examples
+assert 0b1100 & 0b1010 == 0b1000 and 0b1100 ^ 0b1010 == 0b0110
+# 1.2, 1.3
+assert 0b1101 == 13 and 13 >> 2 == 3 and 13 % 4 == 1 and 12 == 2**2 * 3
+# 1.4: byte examples
+assert (200 + 100) % 256 == 44 and (16 * 20) % 256 == 64
+# 6.3: the inverse of 3 mod 2^8, and the inexact example
+assert 3 * 171 % 256 == 1 and 7 * 171 % 256 == 173 and 1197 % 256 == 173
+# 6.3: the 5-bit start is right mod 2^5 for every odd o, and not mod 2^6
+assert all(o * ((3 * o) ^ 2) % 32 == 1 for o in range(1, 32, 2))
+assert not all(o * ((3 * o) ^ 2) % 64 == 1 for o in range(1, 64, 2))
+# 6.3: Newton's step doubles the correct bits, and the step counts
+M = 2**64
+rng = random.Random(1)
+for _ in range(100000):
+    o = rng.getrandbits(64) | 1
+    x, k = 1, 1
+    while k < 64:
+        assert o * x % 2**k == 1
+        x = x * (2 - o * x) % M
+        k *= 2
+    assert o * x % M == 1
+    x = (3 * o) ^ 2
+    for _ in range(4): x = x * (2 - o * x) % M
+    assert o * x % M == 1
+# 6.4: the table, its index, and three steps from it
+T = [pow(2 * i + 1, -1, 256) for i in range(128)]
+for _ in range(100000):
+    o = rng.getrandbits(64) | 1
+    i = (o >> 1) & 127
+    assert i == ((o % 256) - 1) // 2 and o * T[i] % 256 == 1
+    x = T[i]
+    for _ in range(3): x = x * (2 - o * x) % M
+    assert o * x % M == 1
+# 6.4: the 16-bit table's size
+assert 2**15 * 2 == 64 * 1024
+print("every claim holds")

@@ -4,6 +4,8 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
 
 **Status: active.** The current draft is [v0.7](v0.7.md), in progress; [v0.6](v0.6.md) is done.
 
+**Supplement:** [arithmetic at the machine level](supplement-machine.md) (draft): the mathematics of bits and words, machine code and its pseudocode, and division: long division, the 32-bit divide, reusing the inverse, the start table, and their combination. Addition, subtraction and multiplication are to come. Checked by [`verify-machine/`](verify-machine/README.md).
+
 - [v0.1](../archive/paper/v0.1.md): sections 1–6 (problem and core idea).
 - [v0.2](../archive/paper/v0.2.md): sections 1–6, recast as an extension of the gcd method, with costs in three forms throughout. Related work, costs and limits, and evidence are to come.
 - [v0.3](../archive/paper/v0.3.md): sections 1–6 with the refined gcd method derived as a chain of gcds, an equal-input-size assumption, costs split into arithmetic and data-structure categories, appendices on multiplication, division and the gcd, and a bibliography of classical sources (some fields TBD).

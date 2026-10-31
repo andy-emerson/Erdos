@@ -1,0 +1,2 @@
+# The pin of the Nim gcd (spec v0.4 §17.7, §17.14): src/gcd.nim, checked by build.sh. Check: cd src && sha256sum -c GCD.SHA256SUMS
+a9d16a2010f5c2f751dbc6430f541d5e26708afad6e394484c79a0cd361c5435  gcd.nim

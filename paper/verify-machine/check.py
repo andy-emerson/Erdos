@@ -1,7 +1,22 @@
 # check.py: the arithmetic claims in the machine-level supplement.
 import random
 
-# 1.1: AND, XOR examples
+# 1.1: the clock
+assert (9 + 5) % 12 == 2
+# 1.2: Booleans as mod 2 arithmetic, and De Morgan
+for x in (0, 1):
+    assert 1 - x == (1 + x) % 2                                   # NOT
+    for y in (0, 1):
+        assert x & y == x * y % 2 and x ^ y == (x + y) % 2       # AND, XOR
+        assert x | y == 1 - ((1 - x) & (1 - y)) == (1 + (1 + x) * (1 + y)) % 2 == (x + y + x * y) % 2   # OR
+# 1.3: column addition: total = digit + 2 carry, digit = XOR of the three, carry = at least two; and 6 + 7
+for x in (0, 1):
+    for y in (0, 1):
+        for c in (0, 1):
+            t = x + y + c
+            assert t % 2 == x ^ y ^ c and t // 2 == (1 if x + y + c >= 2 else 0)
+assert 0b0110 + 0b0111 == 0b1101 == 13
+# 1.3: AND, XOR examples
 assert 0b1100 & 0b1010 == 0b1000 and 0b1100 ^ 0b1010 == 0b0110
 # 1.2, 1.3
 assert 0b1101 == 13 and 13 >> 2 == 3 and 13 % 4 == 1 and 12 == 2**2 * 3

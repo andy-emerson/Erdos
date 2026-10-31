@@ -6,40 +6,11 @@ A computer does arithmetic on fixed-size groups of bits. This supplement explain
 
 ## 1. The mathematics
 
-### 1.1 True and false
-
-A **bit** holds one of two values: false or true, written 0 and 1. Four operations combine bits:
-
-| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ OR $y$ | $x$ XOR $y$ |
-| --- | --- | --- | --- | --- | --- |
-| 0 | 0 | 1 | 0 | 0 | 0 |
-| 0 | 1 | 1 | 0 | 1 | 1 |
-| 1 | 0 | 0 | 0 | 1 | 1 |
-| 1 | 1 | 0 | 1 | 1 | 0 |
-
-AND is true when both are true; OR when at least one is; XOR ("exclusive or") when exactly one is. Read as numbers, AND is multiplication and XOR is addition with the carry dropped: $1 + 1 = 2$, whose last bit is 0.
-
-A machine applies these operations to whole groups of bits at once, bit by bit. For example, $1100$ AND $1010 = 1000$, and $1100$ XOR $1010 = 0110$.
-
-### 1.2 Binary
-
-A group of bits is read as a number in base 2. Each position is worth twice the one to its right: from the right, 1, 2, 4, 8, and so on. So $1101$ is $8 + 4 + 0 + 1 = 13$. In general, the bits $b_{n-1} \ldots b_1 b_0$ stand for
-
-$$b_{n-1} \cdot 2^{n-1} + \cdots + b_1 \cdot 2 + b_0.$$
-
-A **byte** is 8 bits, so it holds $2^8 = 256$ values: 0 to 255. A **word** is the group a machine works on in one step. On current machines a word is 64 bits, which holds the values 0 to $2^{64} - 1$, about $1.8 \times 10^{19}$. A word of $w$ bits holds $2^w$ values.
-
-### 1.3 Powers of 2
-
-Powers of 2 are to binary what powers of 10 are to decimal.
-
-- **Shifting multiplies and divides.** Moving every bit $k$ places left multiplies by $2^k$. Moving every bit $k$ places right divides by $2^k$ and drops the remainder: $1101$ shifted right by 2 is $11$, and $13 \div 4 = 3$ remainder 1.
-- **The low bits are a remainder.** The lowest $k$ bits of $n$ are the remainder of $n$ divided by $2^k$. They can be picked out with AND: $n$ AND $(2^k - 1)$, since $2^k - 1$ is $k$ ones.
-- **Every positive integer is a power of 2 times an odd number.** Write $n = 2^s \cdot o$ with $o$ odd. Then $s$ is the number of zeros at the right end of $n$ (its **trailing zeros**), and $o$ is $n$ shifted right by $s$. For example, $12 = 1100 = 2^2 \cdot 3$.
-
-### 1.4 Modular arithmetic
+### 1.1 Remainders
 
 Dividing $a$ by $m$ gives a quotient $q$ and a remainder $r$ with $a = q \cdot m + r$ and $0 \leq r < m$. The remainder is written $a \bmod m$. Two numbers are **congruent mod $m$**, written $a \equiv b \pmod m$, when they have the same remainder, which is the same as saying $m$ divides $a - b$.
+
+A clock is arithmetic mod 12. Five hours after 9 o'clock is 2 o'clock, because $9 + 5 = 14$ and $14 \bmod 12 = 2$. The clock keeps the remainder and forgets how many times it has gone around.
 
 Sums and products respect congruence: if $a \equiv a'$ and $b \equiv b' \pmod m$, then $a + b \equiv a' + b'$ and $a \cdot b \equiv a' \cdot b' \pmod m$.
 
@@ -47,9 +18,75 @@ Sums and products respect congruence: if $a \equiv a'$ and $b \equiv b' \pmod m$
 
 So a long calculation can be reduced mod $m$ at every step, and the result is still right mod $m$.
 
-This is the arithmetic of a machine word. A word keeps only $w$ bits. When a sum or product needs more, the bits above the top are lost, and what remains is the result mod $2^w$. For example, in a byte, $200 + 100 = 300 = 256 + 44$ leaves 44, and $16 \cdot 20 = 320$ leaves 64. By the rule above, a chain of additions and multiplications on words gives the true result mod $2^w$.
+### 1.2 Mod 2: true and false
 
-### 1.5 Counting cost below big-O
+The smallest useful modulus is 2. Mod 2, every integer is 0 (even) or 1 (odd), and the rules are the familiar ones for even and odd numbers:
+
+| $+$ | 0 | 1 |
+| --- | --- | --- |
+| **0** | 0 | 1 |
+| **1** | 1 | 0 |
+
+| $\cdot$ | 0 | 1 |
+| --- | --- | --- |
+| **0** | 0 | 0 |
+| **1** | 0 | 1 |
+
+Odd plus odd is even: $1 + 1 = 2 \equiv 0$. Odd times odd is odd: $1 \cdot 1 = 1$.
+
+A **bit** holds one of these two values. Read 0 as false and 1 as true, and the arithmetic of mod 2 becomes logic:
+
+- **AND** (both are true) is multiplication: $x \cdot y$ is 1 only when $x$ and $y$ are both 1.
+- **XOR**, "exclusive or" (exactly one is true), is addition: $x + y$ is 1 when one of them is 1, and $1 + 1 \equiv 0$.
+- **NOT** (the opposite) is adding 1: $1 + 0 = 1$, and $1 + 1 \equiv 0$.
+- **OR** (at least one is true) is built from the others. At least one is true exactly when it is not the case that both are false: $x$ OR $y$ = NOT((NOT $x$) AND (NOT $y$)). This is **De Morgan's law**. As arithmetic it is $1 + (1 + x)(1 + y) = x + y + x \cdot y$, so OR is the one operation that isn't a single step of mod 2 arithmetic.
+
+Together:
+
+| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ XOR $y$ | $x$ OR $y$ |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 1 | 0 | 0 | 0 |
+| 0 | 1 | 1 | 0 | 1 | 1 |
+| 1 | 0 | 0 | 0 | 1 | 1 |
+| 1 | 1 | 0 | 1 | 0 | 1 |
+
+These operations are called **Boolean**.
+
+### 1.3 Binary
+
+A row of bits is read as a number in base 2. Each position is worth twice the one to its right: from the right, 1, 2, 4, 8, and so on. So $1101$ is $8 + 4 + 0 + 1 = 13$. In general, the bits $b_{n-1} \ldots b_1 b_0$ stand for
+
+$$b_{n-1} \cdot 2^{n-1} + \cdots + b_1 \cdot 2 + b_0.$$
+
+**Addition** works column by column from the right, as in decimal. In each column the bits are added, along with any carry from the column before. The total is 0, 1, 2 or 3. The column keeps the total mod 2 and carries the rest: total $=$ digit $+ 2 \cdot$ carry. With no carry coming in, that is section 1.2 again: the digit is $x$ XOR $y$, and the carry is $x$ AND $y$, the 2 that mod 2 dropped from $1 + 1$. With a carry coming in, the digit is the XOR of all three bits, and the carry is 1 when at least two of them are 1. For example, $6 + 7$:
+
+```text
+  carry   1 1 0
+          0 1 1 0      6
+        + 0 1 1 1      7
+        ---------
+          1 1 0 1     13
+```
+
+A machine also applies the Boolean operations to whole rows of bits at once, column by column with no carries. For example, $1100$ AND $1010 = 1000$, and $1100$ XOR $1010 = 0110$.
+
+### 1.4 Powers of 2
+
+Powers of 2 are to binary what powers of 10 are to decimal.
+
+- **Shifting multiplies and divides.** Moving every bit $k$ places left multiplies by $2^k$. Moving every bit $k$ places right divides by $2^k$ and drops the remainder: $1101$ shifted right by 2 is $11$, and $13 \div 4 = 3$ remainder 1.
+- **The low bits are a remainder.** The lowest $k$ bits of $n$ are $n \bmod 2^k$. They can be picked out with AND: $n$ AND $(2^k - 1)$, since $2^k - 1$ is $k$ ones.
+- **Every positive integer is a power of 2 times an odd number.** Write $n = 2^s \cdot o$ with $o$ odd. Then $s$ is the number of zeros at the right end of $n$ (its **trailing zeros**), and $o$ is $n$ shifted right by $s$. For example, $12 = 1100 = 2^2 \cdot 3$.
+
+### 1.5 Words: arithmetic mod $2^w$
+
+A **byte** is 8 bits, so it holds $2^8 = 256$ values: 0 to 255. A **word** is the group a machine works on in one step. On current machines a word is 64 bits, which holds the values 0 to $2^{64} - 1$, about $1.8 \times 10^{19}$. A word of $w$ bits holds $2^w$ values.
+
+A word keeps only $w$ bits. When a sum or product needs more, the bits above the top are lost. By section 1.4, what remains is the low $w$ bits, which is the result mod $2^w$. A word is a clock with $2^w$ hours. For example, in a byte, $200 + 100 = 300 = 256 + 44$ leaves 44: the carry out of the top column is the bit that falls off. Likewise $16 \cdot 20 = 320$ leaves 64. By section 1.1, a chain of additions and multiplications on words gives the true result mod $2^w$.
+
+So mod 2 is the arithmetic of one bit, and mod $2^w$ is the arithmetic of one word.
+
+### 1.6 Counting cost below big-O
 
 Big-O describes how the cost of a calculation grows as its inputs grow. The main paper uses it this way: long division of two $n$-digit numbers takes $O(n^2)$ steps, so doubling the digits roughly quadruples the work. Big-O keeps only the shape of the growth and drops constant factors, so $3n^2$ and $50n^2$ steps are both $O(n^2)$.
 
@@ -69,14 +106,14 @@ A program in a language such as Nim, C or Rust is translated by a compiler into 
 
 ### 2.2 Instructions
 
-These are the instructions this supplement uses. All arithmetic is mod $2^{64}$, as in section 1.4.
+These are the instructions this supplement uses. All arithmetic is mod $2^{64}$, as in section 1.5.
 
 | Instruction | Effect |
 | --- | --- |
 | `mov` | copy a value into a register, or between a register and memory |
 | `add`, `sub`, `neg` | add, subtract, negate |
-| `and`, `or`, `xor` | the operations of section 1.1, bit by bit |
-| `shl`, `shr` | shift left or right (section 1.3) |
+| `and`, `or`, `xor` | the operations of section 1.2, bit by bit |
+| `shl`, `shr` | shift left or right (section 1.4) |
 | `rcl` | shift left by one, bringing the carry flag in at the bottom |
 | `imul` | multiply, keeping the low word of the product |
 | `div` | divide (section 2.3) |
@@ -212,7 +249,7 @@ wide:
 
   For any odd $o$, $x = 1$ is right mod 2, since $o \cdot 1$ is odd. So six steps reach $2^{64}$ (1, 2, 4, 8, 16, 32, 64 bits), and every odd number has an inverse.
 - **A better start saves steps.** The start $x = (3 \cdot o)$ XOR $2$ is already right mod $2^5$, for every odd $o$ (a check of the 16 odd numbers below 32 proves it). From 5 correct bits, four steps reach 64: 10, 20, 40, then 80, which covers all 64.
-- **Exact division is multiplication by the inverse.** Write the divisor as $b = 2^s \cdot o$ with $o$ odd (section 1.3). If $a = b \cdot q$, then $a = 2^s \cdot o \cdot q$, so shifting $a$ right by $s$ loses nothing and gives $o \cdot q$. Multiplying by the inverse $x$ of $o$ gives $o \cdot q \cdot x \equiv q \pmod{2^{64}}$. Since $q$ fits in a word, the result is $q$ itself.
+- **Exact division is multiplication by the inverse.** Write the divisor as $b = 2^s \cdot o$ with $o$ odd (section 1.4). If $a = b \cdot q$, then $a = 2^s \cdot o \cdot q$, so shifting $a$ right by $s$ loses nothing and gives $o \cdot q$. Multiplying by the inverse $x$ of $o$ gives $o \cdot q \cdot x \equiv q \pmod{2^{64}}$. Since $q$ fits in a word, the result is $q$ itself.
 
 Working out the inverse takes four Newton steps. Once it is known, each dividend takes one shift and one multiplication. For two dividends with the same divisor, the inverse is worked out once and used twice:
 
@@ -297,7 +334,7 @@ The figures are the same on both chip families. The reason is the one in section
 
 So adding the 32-bit divide to the combination wouldn't help: below $2^{32}$ it would replace 8 multiplications with 12 cycles of divider time. Above $2^{32}$ the combination costs the same 8 multiplications, while the standard way costs 14 to 20 cycles.
 
-As section 1.5 explains, big-O can't tell these routines apart, since all of them are $O(1)$. The difference is in the constant, counted here in cycles of the busiest unit.
+As section 1.6 explains, big-O can't tell these routines apart, since all of them are $O(1)$. The difference is in the constant, counted here in cycles of the busiest unit.
 
 **One limit of this comparison.** The comparison assumes many divisions that don't depend on each other, so that the chip can overlap them. That is the case in reducing a list or a matrix of fractions. A single division whose result is needed right away is different: then what counts is the time from start to result. The combination's steps form a chain of their own (the lookup, then three Newton steps of two multiplications each), which takes longer from start to result than one divide instruction.
 

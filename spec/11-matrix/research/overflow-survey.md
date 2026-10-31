@@ -1,7 +1,7 @@
 # Overflow survey: replacing the mark with exact growing values in Control
 
 Oct 30, 2026 · Research pass, read-only on the code. Nothing here is adopted. It surveys the ways to stop Control's
-rationals failing past 64 bits, ranks them under [`../../RULES.md`](../../RULES.md), and names the structure each one
+rationals failing past 64 bits, ranks them under [`../../RULES.md`](../../../RULES.md), and names the structure each one
 adds. Read: `v0.4.md` §17.9–17.10, `nim/src/arith.nim`, `nim/src/core.nim`, paper v0.6 §1.2 and §3.1 (the column's
 deferred reduction). Measurements were made in a scratch Python script (`fractions.Fraction`), not in the repo's code.
 

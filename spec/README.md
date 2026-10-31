@@ -1,9 +1,6 @@
-# 11-matrix
+# Specs
 
-The current specification: exact rational matrices. It compares a control (each cell a 64-bit numerator and denominator in lowest terms) with models that store each matrix's distinct whole numbers once, in a packed list that the cells refer to.
+The specifications being worked on now. A spec defines one or more models of exact arithmetic, and each round of tests measures them against a control. A spec folder moves to `../archive/` when its work is finished.
 
-- Specs: `v0.1.md` (round m1) to `v0.4.md` (round m4), each amending the one before.
-- `research/`: the measurement rules and research notes behind each round.
-- `lib/`: the models' code. `test/`: the harness, tests and results of each round.
-
-When this work is finished, this folder moves to `archive/11-matrix/`.
+- [`11-matrix`](11-matrix/): exact rational matrices (Control, Packed, Packed-23, Packed-coprime). **Paused** while overflow is solved at the level of integers.
+- [`12-integers`](12-integers/): growing unsigned integers, to replace 64-bit overflow as an error. **Current.**

@@ -2,7 +2,7 @@
 
 Oct 30, 2026; revised the same day after the coordinator's build review (items R-1 to R-8 below). Build and checks only: nothing timed, no wall-clock figure anywhere. Nothing committed. Built from spec
 [v0.4](../v0.4.md) §17, which amends [v0.2](../v0.2.md) and [v0.1](../v0.1.md), and through them the archived
-arithmetic of [`10-interning`](../../archive/10-interning/) v0.2 §10 and v0.3 §17.3. **Every choice below is pending
+arithmetic of [`10-interning`](../../../archive/10-interning/) v0.2 §10 and v0.3 §17.3. **Every choice below is pending
 the author's review.** [README.md](README.md) has the build, the checks and their results.
 
 ## 1. Structures (RULES, Algorithm design 4; §17.8)

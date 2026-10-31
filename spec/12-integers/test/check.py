@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gen  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
-BUILDS = ("control", "pow2", "even", "growing", "bytes", "hybrid", "hyb2", "hyb2p2", "hyb2ad")
+BUILDS = ("control", "pow2", "even", "growing", "bytes", "hybrid", "hyb2", "hyb2p2", "hyb2ad", "hyb3", "hyb3w")
 M64, M63 = 2**64, 2**63
 
 
@@ -31,10 +31,10 @@ def ctz(x):
 def model(build, w, op, a, b):
     if op == "absdiff2":
         op = "absdiff"
-    if build == "hyb2ad" and op == "sub":
+    if build in ("hyb2ad", "hyb3", "hyb3w") and op == "sub":
         op = "absdiff"
     """the build's expected value (raw, flag included for the flag builds), "trap", or None (not modelled)"""
-    if build in ("growing", "bytes", "hybrid", "hyb2", "hyb2p2", "hyb2ad"):
+    if build in ("growing", "bytes", "hybrid", "hyb2", "hyb2p2", "hyb2ad", "hyb3", "hyb3w"):
         if op == "sub" and a < b:
             nw = max(-(-a.bit_length() // w), -(-b.bit_length() // w))
             return (a - b) % 2**(w * nw)

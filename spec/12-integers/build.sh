@@ -19,9 +19,9 @@ one() {  # name, build, extra flags...
     "$NIM" c $NIMFLAGS "$NIMC" -d:bld=$b "$@" "--nimcache:$B/nimcache/$name" "-o:$B/bin/$name" "$HERE/src/bench.nim"
 }
 flags() {  # the variants of hybrid2.nim
-    case $1 in hyb2p2) echo "-d:p2" ;; hyb2ad) echo "-d:adsub" ;; *) echo "" ;; esac
+    case $1 in hyb2p2) echo "-d:p2" ;; hyb2ad) echo "-d:adsub" ;; hyb3w) echo "-d:wide" ;; *) echo "" ;; esac
 }
-for b in control pow2 even growing bytes hybrid hyb2 hyb2p2 hyb2ad; do
+for b in control pow2 even growing bytes hybrid hyb2 hyb2p2 hyb2ad hyb3 hyb3w; do
     f=$(flags $b)
     one "$b-j1" $b "--passC:-fno-tree-vectorize" $f
     one "$b" $b $f

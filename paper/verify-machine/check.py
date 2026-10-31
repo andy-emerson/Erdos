@@ -9,6 +9,14 @@ for x in (0, 1):
     for y in (0, 1):
         assert x & y == x * y % 2 and x ^ y == (x + y) % 2       # AND, XOR
         assert x | y == 1 - ((1 - x) & (1 - y)) == (1 + (1 + x) * (1 + y)) % 2 == (x + y + x * y) % 2   # OR
+# 1.2: NAND, and every operation from NAND alone
+nand = lambda x, y: 1 - (x & y)
+for x in (0, 1):
+    assert nand(x, x) == 1 - x
+    for y in (0, 1):
+        assert nand(x, y) == (1 + x * y) % 2 and nand(x, y) != (x | y) or (x, y) != (0, 0)
+        assert 1 - nand(x, y) == x & y and nand(1 - x, 1 - y) == x | y
+assert nand(0, 0) == 1 and (0 | 0) == 0
 # 1.3: column addition: total = digit + 2 carry, digit = XOR of the three, carry = at least two; and 6 + 7
 for x in (0, 1):
     for y in (0, 1):

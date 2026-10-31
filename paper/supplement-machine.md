@@ -40,15 +40,16 @@ A **bit** holds one of these two values. Read 0 as false and 1 as true, and the 
 - **XOR**, "exclusive or" (exactly one is true), is addition: $x + y$ is 1 when one of them is 1, and $1 + 1 \equiv 0$.
 - **NOT** (the opposite) is adding 1: $1 + 0 = 1$, and $1 + 1 \equiv 0$.
 - **OR** (at least one is true) is built from the others. At least one is true exactly when it is not the case that both are false: $x$ OR $y$ = NOT((NOT $x$) AND (NOT $y$)). This is **De Morgan's law**. As arithmetic it is $1 + (1 + x)(1 + y) = x + y + x \cdot y$, so OR is the one operation that isn't a single step of mod 2 arithmetic.
+- **NAND** ("not and") is NOT applied to AND: NOT($x$ AND $y$), or $1 + x \cdot y$. It is false only when both are true. It is not OR: for two 0s, NAND gives 1 and OR gives 0. NAND alone can build all the others: NOT $x$ = $x$ NAND $x$; $x$ AND $y$ = NOT($x$ NAND $y$); and $x$ OR $y$ = (NOT $x$) NAND (NOT $y$), which is De Morgan's law again.
 
 Together:
 
-| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ XOR $y$ | $x$ OR $y$ |
-| --- | --- | --- | --- | --- | --- |
-| 0 | 0 | 1 | 0 | 0 | 0 |
-| 0 | 1 | 1 | 0 | 1 | 1 |
-| 1 | 0 | 0 | 0 | 1 | 1 |
-| 1 | 1 | 0 | 1 | 0 | 1 |
+| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ XOR $y$ | $x$ OR $y$ | $x$ NAND $y$ |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 1 | 0 | 0 | 0 | 1 |
+| 0 | 1 | 1 | 0 | 1 | 1 | 1 |
+| 1 | 0 | 0 | 0 | 1 | 1 | 1 |
+| 1 | 1 | 0 | 1 | 0 | 1 | 0 |
 
 These operations are called **Boolean**.
 

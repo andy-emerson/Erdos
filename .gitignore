@@ -1,3 +1,4 @@
 spec/11-matrix/nim-pilot/build/
 spec/11-matrix/nim/build/
 __pycache__/
+spec/12-integers/build/

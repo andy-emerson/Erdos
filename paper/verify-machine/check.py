@@ -18,9 +18,9 @@ for x in (0, 1):
 assert 0b0110 + 0b0111 == 0b1101 == 13
 # 1.3: AND, XOR examples
 assert 0b1100 & 0b1010 == 0b1000 and 0b1100 ^ 0b1010 == 0b0110
-# 1.2, 1.3
+# 1.3, 1.4: binary, shifts, trailing zeros
 assert 0b1101 == 13 and 13 >> 2 == 3 and 13 % 4 == 1 and 12 == 2**2 * 3
-# 1.4: byte examples
+# 1.5: byte examples
 assert (200 + 100) % 256 == 44 and (16 * 20) % 256 == 64
 # 6.3: the inverse of 3 mod 2^8, and the inexact example
 assert 3 * 171 % 256 == 1 and 7 * 171 % 256 == 173 and 1197 % 256 == 173

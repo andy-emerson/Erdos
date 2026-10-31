@@ -61,19 +61,19 @@ $$\text{NOT}(x \text{ OR } y) = (\text{NOT } x) \text{ AND } (\text{NOT } y).$$
 
 Both can be checked by trying the four pairs of values for $x$ and $y$.
 
-**OR** is true when at least one of $x$ and $y$ is true. It is not a single step of mod 2 arithmetic, but the second law gives it. Applying NOT to both sides of the second law cancels the NOT on the left, since NOT(NOT $z$) $= z$:
+**NAND**, "not and", is true unless both $x$ and $y$ are true. It is NOT applied to AND, so it is one step more than AND:
+
+$$x \text{ NAND } y = \text{NOT}(x \text{ AND } y) = 1 + x \cdot y.$$
+
+By the first law it is also $(\text{NOT } x) \text{ OR } (\text{NOT } y)$: at least one is false.
+
+**OR** is true when at least one of $x$ and $y$ is true. It is not NAND: for two 0s, NAND gives 1 and OR gives 0. OR is not a single step of mod 2 arithmetic, but the second law gives it. Applying NOT to both sides of the second law cancels the NOT on the left, since NOT(NOT $z$) $= z$:
 
 $$x \text{ OR } y = \text{NOT}\big((\text{NOT } x) \text{ AND } (\text{NOT } y)\big).$$
 
 Now each part is a step of mod 2 arithmetic, so
 
 $$x \text{ OR } y = 1 + (1 + x)(1 + y) = 2 + x + y + x \cdot y \equiv x + y + x \cdot y.$$
-
-**NAND**, "not and", is true unless both $x$ and $y$ are true. It is NOT applied to AND, so it is one step more than AND:
-
-$$x \text{ NAND } y = \text{NOT}(x \text{ AND } y) = 1 + x \cdot y.$$
-
-By the first law it is also $(\text{NOT } x) \text{ OR } (\text{NOT } y)$: at least one is false. It is not OR: for two 0s, NAND gives 1 and OR gives 0.
 
 NAND alone can build every other operation:
 
@@ -83,12 +83,12 @@ The last is the first law with NOT $x$ and NOT $y$ in place of $x$ and $y$.
 
 Together:
 
-| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ XOR $y$ | $x$ OR $y$ | $x$ NAND $y$ |
+| $x$ | $y$ | NOT $x$ | $x$ AND $y$ | $x$ XOR $y$ | $x$ NAND $y$ | $x$ OR $y$ |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | 0 | 1 | 0 | 0 | 0 | 1 |
+| 0 | 0 | 1 | 0 | 0 | 1 | 0 |
 | 0 | 1 | 1 | 0 | 1 | 1 | 1 |
 | 1 | 0 | 0 | 0 | 1 | 1 | 1 |
-| 1 | 1 | 0 | 1 | 0 | 1 | 0 |
+| 1 | 1 | 0 | 1 | 0 | 0 | 1 |
 
 These operations are called **Boolean**.
 
@@ -137,14 +137,6 @@ A **byte** is 8 bits, so it holds $2^8 = 256$ values: 0 to 255. A **word** is th
 A word keeps only $w$ bits. When a sum or product needs more, the bits above the top are lost. By section 1.4, what remains is the low $w$ bits, which is the result mod $2^w$. A word is a clock with $2^w$ hours. For example, in a byte, $200 + 100 = 300 = 256 + 44$ leaves 44: the carry out of the top column is the bit that falls off. Likewise $16 \cdot 20 = 320$ leaves 64. By section 1.1, a chain of additions and multiplications on words gives the true result mod $2^w$.
 
 So mod 2 is the arithmetic of one bit, and mod $2^w$ is the arithmetic of one word.
-
-### 1.6 Counting cost below big-O
-
-Big-O describes how the cost of a calculation grows as its inputs grow. The main paper uses it this way: long division of two $n$-digit numbers takes $O(n^2)$ steps, so doubling the digits roughly quadruples the work. Big-O keeps only the shape of the growth and drops constant factors, so $3n^2$ and $50n^2$ steps are both $O(n^2)$.
-
-At the machine level the inputs don't grow. Every number is one word of 64 bits, so every routine in this supplement takes $O(1)$ time. Big-O can't tell them apart: the constant it drops is the whole difference between them.
-
-So this supplement counts cost directly. A routine is a list of machine instructions, and its cost is built up from what each instruction costs, counted in the machine's own steps (chapter 2 says what those are). This is the constant that big-O sets aside. It comes back into big-O for numbers of many words: long division of $n$-word numbers is still $O(n^2)$ word operations, and the cost of each word operation, counted here, is the constant in front.
 
 ## 2. From mathematics to machine code
 
@@ -214,6 +206,14 @@ Published measurements of each instruction show this ([uops.info](https://uops.i
 | `DIVIDE32` | every 6 cycles | every 6 cycles |
 
 A multiplication takes 3 cycles from start to result on both. The simple steps (`+`, `AND`, `SHIFT RIGHT`, `←` and so on) take one cycle each, and several units can run them side by side.
+
+### 2.5 Why not big-O
+
+Texts on algorithms usually measure cost in big-O notation rather than in cycles. Big-O describes how the cost of a calculation grows as its inputs grow, and keeps only the shape of that growth: it drops constant factors, so $3n^2$ and $50n^2$ steps are both $O(n^2)$. The main paper uses it this way: long division of two $n$-digit numbers takes $O(n^2)$ steps, so doubling the digits roughly quadruples the work.
+
+At the level of this supplement, the inputs don't grow. Every number is one word, so a routine is a fixed list of steps, and its cost is a sum of constants, one for each step. A sum of constants is a constant, $O(1)$. Big-O would call every routine here the same, though they differ by the very constants it drops.
+
+So the cycle count comes first, and big-O is built on it. For numbers of many words, the cost grows again: long division of $n$-word numbers takes $O(n^2)$ word steps. Big-O describes that growth, and the cycles each word step takes, counted here, are the constant in front of it.
 
 ## 3. Addition
 
@@ -387,7 +387,7 @@ The figures are the same on both chip families. The reason is the one in section
 
 So adding the 32-bit divide to the combination wouldn't help: below $2^{32}$ it would replace 8 multiplications with 12 cycles of divider time. Above $2^{32}$ the combination costs the same 8 multiplications, while the standard way costs 14 to 20 cycles.
 
-As section 1.6 explains, big-O can't tell these routines apart, since all of them are $O(1)$. The difference is in the constant, counted here in cycles of the busiest unit.
+As section 2.5 explains, big-O can't tell these routines apart, since all of them are $O(1)$. The difference is in the constant, counted here in cycles of the busiest unit.
 
 **One limit of this comparison.** The comparison assumes many divisions that don't depend on each other, so that the chip can overlap them. That is the case in reducing a list or a matrix of fractions. A single division whose result is needed right away is different: then what counts is the time from start to result. The combination's steps form a chain of their own (the lookup, then three Newton steps of two multiplications each), which takes longer from start to result than one divide instruction.
 

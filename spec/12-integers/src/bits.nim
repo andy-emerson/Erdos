@@ -36,3 +36,64 @@ proc usubAsm*(a, b: uint64): uint64 {.inline.} =
   {.emit: ["__asm__(\"subq %2, %0\\n\\tsbbq %1, %1\\n\\txorq %1, %0\\n\\tsubq %1, %0\" : \"+r\"(", r, "), \"=&r\"(", m,
            ") : \"r\"(", b, ") : \"cc\");"].}
   r
+
+# ------------------------------------------------------------------------------------------------ exact division methods (round 7)
+template oddPart(b: uint64; s: var int): uint64 =
+  s = ctz(b or (1'u64 shl 63))
+  b shr s
+
+proc divPar*(a, b: uint64): uint64 {.inline.} =
+  ## the inverse by the parallel form: x0 (5 bits), y = 1 - o*x0, x = x0 (1+y)(1+y^2)(1+y^4)(1+y^8): o*x = 1 - y^16,
+  ## correct to 80 bits. The squarings of y and the products into x do not wait on each other.
+  var s: int
+  let o = oddPart(b, s)
+  let x0 = (3'u64 * o) xor 2
+  var y = 1'u64 - o * x0
+  var x = x0 * (1'u64 + y)
+  y = y * y
+  x = x * (1'u64 + y)
+  y = y * y
+  x = x * (1'u64 + y)
+  y = y * y
+  x = x * (1'u64 + y)
+  (a shr s) * x
+
+const invTable* = block:
+  ## the inverse of each odd byte o mod 256, at index o shr 1 (128 bytes)
+  var t: array[128, uint8]
+  for i in 0 .. 127:
+    let o = uint8(2 * i + 1)
+    var x = o
+    for k in 0 .. 3: x = x * (2'u8 - o * x)
+    t[i] = x
+  t
+
+proc divTable*(a, b: uint64): uint64 {.inline.} =
+  ## the inverse from an 8-bit table start, then 3 Newton steps (16, 32, 64 bits)
+  var s: int
+  let o = oddPart(b, s)
+  var x = uint64(invTable[(o shr 1) and 127])
+  x = x * (2'u64 - o * x)
+  x = x * (2'u64 - o * x)
+  x = x * (2'u64 - o * x)
+  (a shr s) * x
+
+proc div32*(a, b: uint64): uint64 {.inline.} =
+  ## special case: when a fits 32 bits (so does b), the 32-bit hardware divide; otherwise the 64-bit one
+  if a < (1'u64 shl 32): uint64(uint32(a) div uint32(b)) else: a div b
+
+proc divFp*(a, b: uint64): uint64 {.inline.} =
+  ## special case: when a is below 2^53 (so is b), divide as doubles; the true quotient is a whole number below 2^53,
+  ## so the correctly rounded double quotient is exact. Otherwise the 64-bit hardware divide.
+  if a < (1'u64 shl 53): uint64(float64(a) / float64(b)) else: a div b
+
+template inverseOf*(b: uint64; s: var int): uint64 =
+  ## the shift and the inverse for b, computed once (the reuse method)
+  block:
+    let o = oddPart(b, s)
+    var x = (3'u64 * o) xor 2
+    x = x * (2'u64 - o * x)
+    x = x * (2'u64 - o * x)
+    x = x * (2'u64 - o * x)
+    x = x * (2'u64 - o * x)
+    x

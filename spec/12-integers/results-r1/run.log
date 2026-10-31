@@ -1,0 +1,45 @@
+23:16:24 check: 210 cells, 203776 results checked; failures in 0 cells; traps in 11 cells
+23:16:24 check: trap control job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+23:16:24 check: trap control job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+23:16:24 check: trap control job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+23:16:24 check: trap pow2 job 2 divexact: exit -8 (SIGFPE), 2 divisors are 0 in the build's width
+23:16:24 check: trap pow2 job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+23:16:24 check: trap pow2 job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+23:16:24 check: trap pow2 job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+23:16:24 check: trap even job 2 divexact: exit -8 (SIGFPE), 2 divisors are 0 in the build's width
+23:16:24 check: trap even job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+23:16:24 check: trap even job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+23:16:24 check: trap even job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+23:16:25 memory: 150 cells
+23:17:32 callgrind: 139 cells
+23:17:40 job 1 add: idle {'cpu': 0.005, 'load': 0.78173828125}; noise 0.002; control 0.245 ns, pow2 0.536 ns, even 0.578 ns, growing 8.8 ns, bytes 54.1 ns, control-2 0.244 ns
+23:17:48 job 1 sub: idle {'cpu': 0.005, 'load': 0.79931640625}; noise 0.0081; control 0.232 ns, pow2 0.536 ns, even 0.572 ns, growing 8.76 ns, bytes 55.3 ns, control-2 0.234 ns
+23:17:56 job 1 absdiff: idle {'cpu': 0.005, 'load': 0.83056640625}; noise 0.0044; control 0.562 ns, pow2 0.856 ns, even 0.785 ns, growing 13.9 ns, bytes 54.1 ns, control-2 0.56 ns
+23:18:04 job 1 mul: idle {'cpu': 0.0, 'load': 0.84423828125}; noise 0.1309; control 0.272 ns, pow2 0.825 ns, even 0.576 ns, growing 19.4 ns, bytes 67 ns, control-2 0.308 ns
+23:18:13 job 1 divexact: idle {'cpu': 0.0, 'load': 0.86865234375}; noise 0.001; control 2.61 ns, pow2 2.25 ns, even 2.6 ns, growing 31.2 ns, bytes 77.2 ns, control-2 2.61 ns
+23:18:22 job 1 gcd: idle {'cpu': 0.0, 'load': 0.962890625}; noise 0.015; control 9.29 ns, pow2 8.49 ns, even 9.28 ns, growing 140 ns, bytes 193 ns, control-2 9.43 ns
+23:18:35 job 2 add: idle {'cpu': 0.0, 'load': 0.96923828125}; noise 4.2536; control 1.29 ns, pow2 0.586 ns, even 0.592 ns, growing 10.1 ns, bytes 73.3 ns, control-2 0.245 ns
+23:18:43 job 2 sub: idle {'cpu': 0.0, 'load': 0.974609375}; noise 0.0064; control 0.231 ns, pow2 0.566 ns, even 0.575 ns, growing 9.07 ns, bytes 74.2 ns, control-2 0.232 ns
+23:18:51 job 2 absdiff: idle {'cpu': 0.0, 'load': 0.97900390625}; noise 0.0091; control 0.492 ns, pow2 0.871 ns, even 0.78 ns, growing 15.4 ns, bytes 74.4 ns, control-2 0.487 ns
+23:19:00 job 2 mul: idle {'cpu': 0.0, 'load': 0.90234375}; noise 0.0011; control 0.267 ns, pow2 0.826 ns, even 0.576 ns, growing 22.8 ns, bytes 93.9 ns, control-2 0.267 ns
+23:19:06 job 2 divexact: idle {'cpu': 0.0, 'load': 0.91064453125}; noise 0.0128; control 2.61 ns, pow2 exit -8, even exit -8, growing 37.2 ns, bytes 96 ns, control-2 2.64 ns
+23:19:15 job 2 gcd: idle {'cpu': 0.0, 'load': 0.84423828125}; noise 0.0076; control 133 ns, pow2 132 ns, even 125 ns, growing 378 ns, bytes 452 ns, control-2 134 ns
+23:19:23 job 4 add: idle {'cpu': 0.0, 'load': 0.85693359375}; noise 0.0029; control 0.246 ns, pow2 0.576 ns, even 0.585 ns, growing 12.2 ns, bytes 114 ns, control-2 0.246 ns
+23:19:31 job 4 sub: idle {'cpu': 0.0, 'load': 0.87939453125}; noise 0.002; control 0.245 ns, pow2 0.561 ns, even 0.582 ns, growing 10.6 ns, bytes 127 ns, control-2 0.246 ns
+23:19:39 job 4 absdiff: idle {'cpu': 0.0, 'load': 0.81787109375}; noise 0.0017; control 0.486 ns, pow2 0.87 ns, even 0.785 ns, growing 16 ns, bytes 128 ns, control-2 0.486 ns
+23:19:47 job 4 mul: idle {'cpu': 0.0, 'load': 0.83251953125}; noise 0.0061; control 0.27 ns, pow2 0.748 ns, even 0.578 ns, growing 28.4 ns, bytes 158 ns, control-2 0.268 ns
+23:19:50 job 4 divexact: idle {'cpu': 0.0, 'load': 0.85888671875}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 48.6 ns, bytes 128 ns, control-2 exit -8
+23:19:58 job 4 gcd: idle {'cpu': 0.0, 'load': 0.85888671875}; noise 0.0301; control 131 ns, pow2 124 ns, even 118 ns, growing 922 ns, bytes 1.03e+03 ns, control-2 127 ns
+23:20:06 job 8 add: idle {'cpu': 0.0, 'load': 0.88134765625}; noise 0.0003; control 0.245 ns, pow2 0.555 ns, even 0.59 ns, growing 13.8 ns, bytes 207 ns, control-2 0.245 ns
+23:20:13 job 8 sub: idle {'cpu': 0.0, 'load': 0.89111328125}; noise 0.0015; control 0.245 ns, pow2 0.563 ns, even 0.577 ns, growing 13.7 ns, bytes 211 ns, control-2 0.245 ns
+23:20:21 job 8 absdiff: idle {'cpu': 0.0, 'load': 0.908203125}; noise 0.0056; control 0.486 ns, pow2 0.848 ns, even 0.785 ns, growing 20.2 ns, bytes 214 ns, control-2 0.489 ns
+23:20:29 job 8 mul: idle {'cpu': 0.0, 'load': 0.84228515625}; noise 0.0018; control 0.266 ns, pow2 0.802 ns, even 0.576 ns, growing 68.2 ns, bytes 310 ns, control-2 0.267 ns
+23:20:32 job 8 divexact: idle {'cpu': 0.0, 'load': 0.85498046875}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 72.2 ns, bytes 205 ns, control-2 exit -8
+23:20:41 job 8 gcd: idle {'cpu': 0.0, 'load': 0.86669921875}; noise 0.0062; control 119 ns, pow2 116 ns, even 115 ns, growing 2.47e+03 ns, bytes 2.68e+03 ns, control-2 120 ns
+23:20:50 job 16 add: idle {'cpu': 0.005, 'load': 0.87744140625}; noise 0.0015; control 0.245 ns, pow2 0.56 ns, even 0.589 ns, growing 17.6 ns, bytes 372 ns, control-2 0.244 ns
+23:20:58 job 16 sub: idle {'cpu': 0.0, 'load': 0.97705078125}; noise 0.0013; control 0.231 ns, pow2 0.554 ns, even 0.576 ns, growing 19.6 ns, bytes 377 ns, control-2 0.231 ns
+23:21:06 job 16 absdiff: idle {'cpu': 0.0, 'load': 1.05419921875}; noise 0.0009; control 0.488 ns, pow2 0.865 ns, even 0.791 ns, growing 26.7 ns, bytes 374 ns, control-2 0.488 ns
+23:21:14 job 16 mul: idle {'cpu': 0.0, 'load': 0.96533203125}; noise 0.0216; control 0.266 ns, pow2 0.818 ns, even 0.577 ns, growing 205 ns, bytes 667 ns, control-2 0.271 ns
+23:21:18 job 16 divexact: idle {'cpu': 0.0, 'load': 0.96826171875}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 132 ns, bytes 379 ns, control-2 exit -8
+23:21:26 job 16 gcd: idle {'cpu': 0.0, 'load': 0.97119140625}; noise 0.0045; control 122 ns, pow2 121 ns, even 116 ns, growing 7.73e+03 ns, bytes 8.29e+03 ns, control-2 122 ns
+23:21:26 done in 303 s: /home/claude/erdos/spec/12-integers/build/results/report.md

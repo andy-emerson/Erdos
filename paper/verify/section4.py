@@ -13,8 +13,9 @@ have fixed short forms. Then:
 - every stored matrix must keep section 4.8's promise: its list holds exactly the different integers of its cells, each
   once, each used, with no unused entry; every handle is a position below W; its width is bits(W - 1) and holds every
   handle; equal handles mean equal integers;
-- every build table is recorded as pack receives it: 4rc slots, at most half full, its handles slots below 4rc, its
-  contents those of an independent linear-probing table, and the list its used slots in slot order;
+- every build table is recorded as pack receives it: the smallest power of two from 4rc on in slots, at most half full,
+  its handles slots below its size, its contents those of an independent linear-probing table with section 4.4's
+  multiplicative home, and the list its used slots in slot order;
 - put is checked against a Python dict on random sequences, with section 4.4's conditions (a) and (b) after every
   call, and the probe's wrap past the last slot;
 - the index of section 4.3, pseudocode only, is translated here and checked, with its count of comparisons;
@@ -33,9 +34,10 @@ import section3
 
 FILENAME = "<v0.6.md, Appendix B.2>"
 INDEX_FILENAME = "<v0.6.md, section 4.3 pseudocode>"
-HEAD = ["unused = None", "Matrix = namedtuple('Matrix', 'rows columns width handles values')"]
+HEAD = ["unused = None", "phi = 11400714819323198485",
+        "Matrix = namedtuple('Matrix', 'rows columns width handles values')"]
 FUNCTIONS = ["array", "size", "matrix", "row_count", "column_count", "handles", "values",
-             "cell", "entry", "home", "probe", "put", "place", "positions", "copy_values", "rewrite", "bits", "pack",
+             "cell", "entry", "home", "probe", "put", "table_size", "place", "positions", "copy_values", "rewrite", "bits", "pack",
              "place_all", "build", "add_cells", "add_matrices", "dot", "product_cells", "product_rows",
              "multiply_matrices"]
 PSEUDOCODE_ONLY = ["search"]           # section 4.3, the index
@@ -47,6 +49,7 @@ PROSE = {"array": "def array(n):\n    return [unused] * n\n",
          "column_count": "def column_count(M):\n    return M[1]\n",
          "handles": "def handles(M):\n    return M[3]\n",
          "values": "def values(M):\n    return M[4]\n"}
+PHI = 0x9E3779B97F4A7C15
 
 
 # ------------------------------------------------------------------------------------------------------- the code
@@ -149,11 +152,27 @@ def ref_width(m):
     return next(w for w in (8, 16, 32, 64) if m < 2 ** w)
 
 
-def ref_table(ints, n):
-    """An independent linear-probing table of n slots, home |v| mod n: (slots, the slot of each integer put)."""
+def ref_home(v, n):
+    """Section 4.4's multiplicative hash, independently: the top t of the 64 binary digits of |v| * phi mod 2^64, for
+    n = 2^t slots."""
+    t = n.bit_length() - 1
+    assert n == 1 << t and t <= 64
+    return ((abs(v) * PHI) % 2 ** 64) >> (64 - t)
+
+
+def ref_size(rc):
+    """The table's size: the smallest power of two from 4rc on."""
+    n = 1
+    while n < 4 * rc:
+        n *= 2
+    return n
+
+
+def ref_table(ints, n, home=ref_home):
+    """An independent linear-probing table of n slots: (slots, the slot of each integer put)."""
     T, slots = [None] * n, []
     for v in ints:
-        s = abs(v) % n
+        s = home(v, n)
         while T[s] is not None and T[s] != v:
             s = (s + 1) % n
         T[s] = v
@@ -198,12 +217,13 @@ class Checker:
             check(got == x and self.V.is_stored(got), f"{what}: cell {k} = {got}, expected {x}")
             i, j = divmod(k, c)
             check(ns["entry"](M, i, j) == x, f"{what}: entry({i}, {j})")
-        # the build table, as pack received it: 4rc slots, at most half full, the slots an independent table gives
+        # the build table, as pack received it: a power of two from 4rc on, at most half full, an independent table's slots
         rec = next((p for p in reversed(self.tr.packs) if p["result"] is M), None)
         if check(rec is not None, f"{what}: no pack recorded"):
             T, Hb = rec["T"], rec["H"]
             used = [s for s in range(len(T)) if T[s] is not None]
-            check(len(T) == 4 * r * c and 2 * len(used) <= len(T), f"{what}: table of {len(T)} slots, {len(used)} used")
+            check(len(T) == ref_size(r * c) and len(T) >= 4 * r * c and 2 * len(used) <= len(T),
+                  f"{what}: table of {len(T)} slots, {len(used)} used")
             check(all(0 <= h < len(T) for h in Hb) and ref_width(len(T) - 1) >= w,
                   f"{what}: build handles not slots, or packing widened")
             rt, rslots = ref_table(ints, len(T))
@@ -305,11 +325,12 @@ def check_matrices(ns, ck, V, check):
 
 
 def check_tables(ns, ck, V, check):
-    """put, probe, home and bits, directly: section 4.4's conditions (a) and (b) after every put, against a Python dict."""
+    """put, probe, home, table_size and bits, directly: section 4.4's conditions (a) and (b) after every put, against a
+    Python dict."""
     rng = random.Random(4404)
     array, put, home, bits = ns["array"], ns["put"], ns["home"], ns["bits"]
     for _ in range(400):
-        n = rng.randrange(1, 64)
+        n = 2 ** rng.randrange(0, 7)                      # the table's size is a power of two (section 4.4)
         T = array(n)
         seen = {}
         for _ in range(rng.randrange(0, n // 2 + 1) * 2):
@@ -324,17 +345,40 @@ def check_tables(ns, ck, V, check):
             check(len(used) == len(set(used)) == len(seen), "put: an integer in two slots")
             for u, su in seen.items():
                 k = home(u, n)
-                check(k == abs(u) % n, f"home({u}, {n})")
+                check(k == ref_home(u, n), f"home({u}, {n})")
                 while k != su:
                     check(T[k] is not None, f"put: a gap between the home of {u} and its slot")
                     k = (k + 1) % n
             ck.counts["put"] += 1
-    # the wrap past the last slot: 3 and 7 share the home 3 of 4 slots
+    # the wrap past the last slot: 3 and 8 share the home 3, the last of 4 slots
     T = array(4)
-    check(put(T, 3) == 3 and put(T, 7) == 0 and put(T, 7) == 0 and put(T, -3) == 1 and T == [7, -3, None, 3],
+    check(home(3, 4) == home(8, 4) == 3 and home(-3, 4) == 3, "4.4: 3 and 8 share the last slot's home in 4 slots")
+    check(put(T, 3) == 3 and put(T, 8) == 0 and put(T, 8) == 0 and put(T, -3) == 1 and T == [8, -3, None, 3],
           f"put: the wrap past the last slot: {T}")
-    check(home(17, 16) == home(1, 16) == 1 and home(-5, 16) == home(5, 16) == 5 and home(0, 16) == 0,
-          "4.4: 1 and 17 share a home in 16 slots, and so do v and -v")
+    check(home(-5, 16) == home(5, 16) and home(0, 16) == 0, "4.4: v and -v share a home")
+    # the multiplicative hash: every n = 2^t up to 2^64, and values far past 64 bits (only the last 64 digits matter)
+    for t in range(0, 65):
+        for v in [0, 1, -1, 2, 3, 17, 2 ** 64 - 1, 2 ** 64, 2 ** 64 + 1] + [V.random_int(rng) for _ in range(30)]:
+            k = home(v, 2 ** t)
+            check(k == ref_home(v, 2 ** t) and 0 <= k < 2 ** t and k == home(abs(v) % 2 ** 64, 2 ** t),
+                  f"home({v}, 2^{t}) = {k}")
+            ck.counts["home"] += 1
+    check(PHI % 2 == 1 and PHI == 11400714819323198485 and abs(PHI / 2 ** 64 - 0.618034) < 1e-6,
+          "4.4: phi")
+    from decimal import Decimal, getcontext
+    getcontext().prec = 60
+    check(int(Decimal(2 ** 64) / ((1 + Decimal(5).sqrt()) / 2)) == PHI, "4.4: phi is the whole part of 2^64 / golden ratio")
+    check([home(v, 16) for v in range(1, 17)] == [9, 3, 13, 7, 1, 11, 5, 15, 8, 2, 12, 6, 0, 10, 4, 14]
+          and [v % 16 for v in range(1, 17)] == list(range(1, 16)) + [0]
+          and all(home(v, 16) == ((v * PHI) % 2 ** 64) >> 60 for v in range(1, 17)) and hex(PHI)[2] == "9",
+          "4.4: the homes of 1 to 16 in 16 slots")
+    # table_size: the smallest power of two from m on, less than 2m
+    ts = ns["table_size"]
+    for m in list(range(1, 3000)) + [40000, 2 ** 40 - 1, 2 ** 40, 2 ** 40 + 1]:
+        n = ts(m, 1)
+        check(n >= m and n < 2 * m and n & (n - 1) == 0 and (n == 1 or n // 2 < m), f"table_size({m}, 1) = {n}")
+        ck.counts["table_size"] += 1
+    check(ts(40000, 1) == 65536 and ts(16, 1) == 16, "4.4, 4.7: table sizes")
     for m, w in ((0, 8), (3, 8), (255, 8), (256, 16), (65535, 16), (65536, 32), (2 ** 32 - 1, 32), (2 ** 32, 64),
                  (2 ** 64 - 1, 64)):
         check(bits(m) == w and m < 2 ** w and (w == 8 or m >= 2 ** (w // 2 if w > 8 else 0)), f"bits({m}) = {bits(m)}")
@@ -384,6 +428,24 @@ def check_index(path, ns, V, check):
           "comparisons")
 
 
+def check_first_home(path, ns, V, check):
+    """Section 4.4's first hash function, the remainder (pseudocode only; the library's home is the multiplicative one
+    after it): translated here, and its example, the table of A with 17 probed from slot 1 to slot 4."""
+    text = path.read_text(encoding="utf-8").split("\n### 4.4 ")[1].split("\n#### A multiplicative hash")[0]
+    pc = V.parse_pseudocode(text)
+    ins = dict(ns)
+    exec(compile(translation(pc["home"], V), INDEX_FILENAME, "exec"), ins)
+    home1 = ins["home"]
+    check(all(home1(v, n) == abs(v) % n for n in range(1, 40) for v in range(-100, 101)), "4.4: the first home")
+    check(home1(17, 16) == home1(1, 16) == 1 and home1(-5, 16) == home1(5, 16) == 5,
+          "4.4: 1 and 17 share a home in 16 slots, and so do v and -v (the remainder)")
+    T, slots = ref_table([1, 2, 1, 3, 2, 3, 17, 2], 16, home1)
+    check(T[1:5] == [1, 2, 3, 17] and T.count(None) == 12 and slots == [1, 2, 1, 3, 2, 3, 4, 2],
+          f"4.4: A's table with the remainder: {T}, {slots}")
+    print("Section 4.4's first home, the remainder (pseudocode only, translated here): |v| mod n, and A's table "
+          "(17 probed from slot 1 to slot 4)")
+
+
 def check_examples(ns, ck, check):
     """The examples and counts of sections 4.2-4.7."""
     build, addm, mulm = ns["build"], ns["add_matrices"], ns["multiply_matrices"]
@@ -392,22 +454,28 @@ def check_examples(ns, ck, check):
     check(integers(A_cells) == [1, 2, 1, 3, 2, 3, 17, 2] and len(set(integers(A_cells))) == 4, "4.2: A's integers")
     A = build(2, 2, to_list(ns, A_cells))
     rec = ck.tr.packs[-1]
-    check(rec["T"][1:5] == [1, 2, 3, 17] and rec["T"].count(None) == 12 and len(rec["T"]) == 16
-          and rec["H"] == [1, 2, 1, 3, 2, 3, 4, 2], f"4.4: A's table {rec['T']}, slots {rec['H']}")
-    check(A[4] == [1, 2, 3, 17] and A[3] == [0, 1, 0, 2, 1, 2, 3, 1] and A[2] == 8 and ns["bits"](3) == 8,
-          f"4.2, 4.5: A stored as {A}")
+    T = rec["T"]
+    check(len(T) == 16 and [ref_home(v, 16) for v in (1, 2, 3, 17)] == [9, 3, 13, 8]
+          and (T[3], T[8], T[9], T[13]) == (2, 17, 1, 3) and T.count(None) == 12
+          and rec["H"] == [9, 3, 9, 13, 3, 13, 8, 3], f"4.4: A's table {T}, slots {rec['H']}")
+    check(A[4] == [2, 17, 1, 3] and A[3] == [2, 0, 2, 3, 0, 3, 1, 0] and A[2] == 8 and ns["bits"](3) == 8,
+          f"4.5: A stored as {A}")
     B = build(2, 2, to_list(ns, B_cells))
     S = addm(A, B)
     rec = ck.tr.packs[-1]
-    check([ns["cell"](S, k) for k in range(4)] == [(1, 1), (1, 1), (1, 1), (9, 1)] and S[4] == [1, 9]
-          and S[3] == [0, 0, 0, 0, 0, 0, 1, 0] and rec["T"][1] == 1 and rec["T"][9] == 9, f"4.6: A + B = {S}")
+    check([ns["cell"](S, k) for k in range(4)] == [(1, 1), (1, 1), (1, 1), (9, 1)] and S[4] == [9, 1]
+          and S[3] == [1, 1, 1, 1, 1, 1, 0, 1] and rec["T"][9] == 1 and rec["T"][8] == 9
+          and ref_home(1, 16) == 9 and ref_home(9, 16) == 8, f"4.6: A + B = {S}")
     P = mulm(A, B)
     rec = ck.tr.packs[-1]
     ints = [13, 36, 1, 2, 19, 6, 169, 36]
     check([ns["cell"](P, k) for k in range(4)] == [(13, 36), (1, 2), (19, 6), (169, 36)]
           and integers([ns["cell"](P, k) for k in range(4)]) == ints
-          and [v % 16 for v in dict.fromkeys(ints)] == [13, 4, 1, 2, 3, 6, 9] and rec["H"][:7] == [13, 4, 1, 2, 3, 6, 9]
-          and P[4] == [1, 2, 19, 36, 6, 169, 13], f"4.6: A . B = {P}")
+          and [ref_home(v, 16) for v in dict.fromkeys(ints)] == [0, 3, 9, 3, 11, 11, 7]
+          and rec["H"] == [0, 3, 9, 4, 11, 12, 7, 3] and P[4] == [13, 36, 2, 169, 1, 19, 6], f"4.6: A . B = {P}")
+    # dot sums from the left: s = 1/2 . 1/2 = 1/4, then 1/4 + 1/9 = 13/36
+    check(ns["multiply"]((1, 2), (1, 2)) == (1, 4) and ns["dot"](A, B, 0, 0, 1, (1, 4)) == (13, 36)
+          and ns["dot"](A, B, 0, 0, 2, (1, 4)) == (1, 4), "4.6: the first cell of A . B, summed from the left")
     # 4.7: bytes, with 4-byte integers
     rc = 100 * 100
     check(8 * rc == 80000, "4.7: plain")
@@ -420,9 +488,10 @@ def check_examples(ns, ck, check):
         for W in range(1, 2 * n + 1):
             check((4 * W + 2 * n * 1 < 8 * n) == (2 * W < 3 * n) and (4 * W + 2 * n * 2 < 8 * n) == (W < n)
                   and not (4 * W + 2 * n * 4 < 8 * n), f"4.7: break-even, W = {W}, rc = {n}")
-    check(ref_width(4 * rc - 1) == 16 and 4 * 4 * rc == 160000 and 2 * rc * 2 == 40000 and 4 * rc * 2 == 80000
-          and ref_width(200 - 1) == 8 and 2 * rc * 1 == 20000
-          and 160000 + 40000 + 80000 + 4 * 200 + 20000 == 300800 and 3.5 < 300800 / 80000 < 4
+    n = ref_size(rc)
+    check(4 * rc == 40000 and n == 65536 == 2 ** 16 and ref_width(n - 1) == 16 and 4 * n == 262144
+          and 2 * rc * 2 == 40000 and n * 2 == 131072 and ref_width(200 - 1) == 8 and 2 * rc * 1 == 20000
+          and 262144 + 40000 + 131072 + 4 * 200 + 20000 == 454016 and 5.5 < 454016 / 80000 < 6
           and 4 * 200 + 20000 == 20800, "4.7: the build")
     print("The examples of chapter 4: A's integers, table, slots, list and handles; A + B and A . B; the byte counts "
           "of section 4.7")
@@ -465,6 +534,7 @@ def run(path, ns_b, a_filename, V, check):
         check_tables(ns, ck, V, check)
         check_examples(ns, ck, check)
     check_index(path, ns, V, check)
+    check_first_home(path, ns, V, check)
     print("\nAppendix B.2 against plain matrices of fractions.Fraction (cells in lowest terms; lists, handles, widths "
           "and build tables as section 4.8 promises):")
     for k in sorted(ck.counts):

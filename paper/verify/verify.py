@@ -76,7 +76,7 @@ def load(path):
 # ------------------------------------------------------------------------- the translation, against the pseudocode
 # The appendix's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
 # words, "/" before nothing else makes "//".
-NAMES = {"′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
+NAMES = {"φ": "phi", "′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
 # rational, numerator and denominator (section 2.1) are defined in prose, not in pseudocode: their translation is fixed
 PROSE = {"rational": "def rational(p, q):\n    return (p, q)\n",
          "numerator": "def numerator(x):\n    return x[0]\n",
@@ -114,6 +114,9 @@ def parse_pseudocode(text):
 
 
 def expr(e):
+    """An expression. The bit operation AND of section 1.3 between two integers is `&`; `>>` and `<<` are Python's;
+    2⁶⁴ is 2 ** 64."""
+    e = e.replace(" AND ", " & ").replace("2⁶⁴", "2 ** 64")
     e = e.replace("·", "*").replace("−", "-").replace("/", "//")
     for k, v in NAMES.items():
         e = e.replace(k, v)
@@ -121,7 +124,10 @@ def expr(e):
 
 
 def cond(c):
-    c = expr(c).replace("≠", "!=").replace(" = ", " == ").replace(" AND ", " and ").replace(" OR ", " or ")
+    """A condition. `(x AND y)` in brackets around two single names or numbers is the bit operation (section 1.3);
+    every other AND joins two conditions."""
+    c = re.sub(r"\((\w+) AND (\w+)\)", r"(\1 & \2)", c).replace(" AND ", " and ")
+    c = expr(c).replace("≠", "!=").replace(" = ", " == ").replace(" OR ", " or ")
     return c
 
 
@@ -422,7 +428,7 @@ def check_functions(ns, tr):
         check(type(r) is int and 0 <= r < v and (u - r) % v == 0, f"mod({u}, {v}) = {r}")
         counts["mod"] += 1
 
-    # gcd: every sign combination and zero, then random values
+    # gcd (the binary gcd of section 1.4): every sign combination and zero, then random values
     pairs = [(u, v) for u in range(-30, 31) for v in range(-30, 31) if (u, v) != (0, 0)]
     pairs += [(random_int(rng), random_int(rng)) for _ in range(3000)]
     pairs += [(m * random_int(rng), m * random_int(rng)) for m in (abs(random_int(rng)) + 1 for _ in range(1000))]
@@ -474,6 +480,32 @@ def check_functions(ns, tr):
 
 
 # ------------------------------------------------------------------------------------------------- section 2.12's trace
+def check_bit_examples():
+    """Section 1.3's bit operations, through the appendix's translation: 12 AND 10 = 8 (1100 and 1010 give 1000),
+    13 >> 1 = 6 (1101 to 110), 3 << 2 = 12, u AND 1 the last binary digit, and the bracketed AND of a condition."""
+    ok = (eval(expr("12 AND 10")) == 8 and bin(12) == "0b1100" and bin(10) == "0b1010" and bin(8) == "0b1000"
+          and eval(expr("13 >> 1")) == 6 and bin(13) == "0b1101" and bin(6) == "0b110" and eval(expr("3 << 2")) == 12
+          and all(eval(expr("u AND 1"), {"u": u}) == u % 2 for u in range(200))
+          and all(eval(expr("u >> k"), {"u": u, "k": k}) == u // 2 ** k and eval(expr("u << k"), {"u": u, "k": k})
+                  == u * 2 ** k for u in range(100) for k in range(6))
+          and cond("(u AND 1) = 0 AND (v AND 1) = 0") == "(u & 1) == 0 and (v & 1) == 0")
+    check(ok, "section 1.3: the bit operations' examples")
+    print("\nSection 1.3's bit operations: 12 AND 10 = 8, 13 >> 1 = 6, 3 << 2 = 12, u AND 1 the last digit")
+
+
+def check_gcd_example(ns, tr):
+    """Section 1.4's example: gcd(84, 36) = 2 gcd(42, 18) = 4 gcd(21, 9) = 4 gcd(6, 9) = 4 gcd(3, 9) = 4 gcd(3, 3)
+    = 4 gcd(0, 3) = 12, call for call."""
+    tr.log = []
+    g = ns["gcd"](84, 36)
+    chain = [(e["depth"], e["args"], e["result"]) for e in tr.log if e["name"] == "gcd"]
+    tr.log = None
+    want = [(0, (84, 36), 12), (1, (42, 18), 6), (2, (21, 9), 3), (3, (6, 9), 3), (4, (3, 9), 3), (5, (3, 3), 3),
+            (6, (0, 3), 3)]
+    check(g == 12 and chain == want, f"section 1.4: gcd(84, 36) chain {chain}")
+    print("\nSection 1.4's example: gcd(84, 36) = 2 gcd(42, 18) = 4 gcd(21, 9) = ... = 4 gcd(0, 3) = 12, call for call")
+
+
 def check_trace(ns, tr):
     """The worked computation of section 2.12: z = reduce(rational(-44, 30)); r = subtract(x, y); w = divide(r, z),
     with x = 5/6 and y = 1/10. Every call of reduce, gcd and the operations, in order, with its arguments and result;
@@ -491,16 +523,18 @@ def check_trace(ns, tr):
     expected_calls = [
         # entry
         (0, "reduce", ((-44, 30),), (-22, 15)),
-        (1, G, (-44, 30), 2), (2, G, (44, 30), 2), (3, G, (30, 14), 2), (4, G, (14, 2), 2), (5, G, (2, 0), 2),
+        (1, G, (-44, 30), 2), (2, G, (44, 30), 2), (3, G, (22, 15), 1), (4, G, (11, 15), 1), (5, G, (11, 2), 1),
+        (6, G, (11, 1), 1), (7, G, (5, 1), 1), (8, G, (2, 1), 1), (9, G, (1, 1), 1), (10, G, (0, 1), 1),
         # subtraction and addition
         (0, "subtract", ((5, 6), (1, 10)), (11, 15)),
         (1, "add", ((5, 6), (-1, 10)), (11, 15)),
-        (2, G, (6, 10), 2), (3, G, (10, 6), 2), (4, G, (6, 4), 2), (5, G, (4, 2), 2), (6, G, (2, 0), 2),
-        (2, G, (22, 2), 2), (3, G, (2, 0), 2),
+        (2, G, (6, 10), 2), (3, G, (3, 5), 1), (4, G, (3, 1), 1), (5, G, (1, 1), 1), (6, G, (0, 1), 1),
+        (2, G, (22, 2), 2), (3, G, (11, 1), 1), (4, G, (5, 1), 1), (5, G, (2, 1), 1), (6, G, (1, 1), 1),
+        (7, G, (0, 1), 1),
         # division and multiplication
         (0, "divide", ((11, 15), (-22, 15)), (-1, 2)),
         (1, "multiply", ((11, 15), (-15, 22)), (-1, 2)),
-        (2, G, (11, 22), 11), (3, G, (22, 11), 11), (4, G, (11, 0), 11),
+        (2, G, (11, 22), 11), (3, G, (11, 11), 11), (4, G, (0, 11), 11),
     ]
     got_calls = [(e["depth"], e["name"], e["args"], e["result"]) for e in log]
     ok = check(got_calls == expected_calls, "section 2.12: the calls differ")
@@ -518,8 +552,8 @@ def check_trace(ns, tr):
         "reduce": ([("b < 0", no), ("g == 1", no)],
                    dict(a=-44, b=30, g=2, p=-22, q=15)),
         "subtract": ([], dict(c=1, d=10)),
-        "add": ([("a == 0", no), ("c == 0", no), ("b == 1 and d == 1", no), ("b == 1", no), ("d == 1", no),
-                 ("c == -a and d == b", no),
+        "add": ([("c == -a and d == b", no),
+                 ("a == 0", no), ("c == 0", no), ("b == 1 and d == 1", no), ("b == 1", no), ("d == 1", no),
                  ("d == a or d == -a or b == c or b == -c", no), ("d == b", no), ("g == 1", no),
                  ("c == a", no), ("c == -a", no), ("h == 1", no)],
                 dict(a=5, b=6, c=-1, d=10, g=2, b_prime=3, d_prime=5, t=22, h=2, p=11, q=15)),
@@ -529,11 +563,11 @@ def check_trace(ns, tr):
                       ("b == 1 and d == 1", no),
                       ("(a == d and c == b) or (a == -d and c == -b)", no),
                       ("(a == d and c == -b) or (a == -d and c == b)", no),
-                      ("d == b", no), ("c == a", no), ("c == -a", no), ("b == 1", no), ("d == 1", no),
+                      ("d == b", no), ("c == a", no), ("c == -a", no),
                       ("c == b", no), ("a == d", no), ("c == -b", True), ("k3 == 1", no)],
                      dict(a=11, b=15, c=-15, d=22, k3=11)),
     }
-    print("\nSection 2.9, the worked computation:")
+    print("\nSection 2.12, the worked computation:")
     for e in log:
         if e["name"] == "gcd":
             continue
@@ -551,10 +585,12 @@ def check_trace(ns, tr):
 
 
 # ------------------------------------------------------------------------------------- special cases ordered by cost
-# Section 2.5: special cases are ordered by the cost of their result, cheapest first; where two results cost the same,
+# Section 2.3: special cases are ordered by the cost of their result, cheapest first; where two results cost the same,
 # the cheaper test goes first. Each special case is a top-level `if` on a, b, c and d only; the harness knows each
 # one's cost, and the paper's code gives the order. The cost of a result is counted in multiplications in the naive
-# arithmetic (sections 2.3-2.5) and in gcds in lowest terms (sections 2.9-2.11); a test costs 1 against constants and 2 when it compares the operands.
+# arithmetic (sections 2.3-2.5), and in lowest terms (sections 2.9-2.11) as (gcds, multiplications, additions),
+# compared in that order (section 2.9). A test costs 1 against constants and 2 when it compares the operands; the test
+# for x + (-x) compares an integer with zero, at cost 1, when an operand is zero (section 2.9).
 S1 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (1, 1), "d == 1": (1, 1),
                "d == b": (0, 2), "c == a": (2, 2), "c == -a": (2, 2)}, lambda a, b, c, d: 3),
       "multiply": ({"a == 0": (0, 1), "c == 0": (0, 1), "a == 1 and b == 1": (0, 1), "c == 1 and d == 1": (0, 1),
@@ -564,12 +600,22 @@ S1 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), 
                     "c == b": (0, 2), "a == d": (0, 2), "c == -b": (0, 2), "a == -d": (0, 2),
                     "b == 1": (1, 1), "d == 1": (1, 1)}, lambda a, b, c, d: 2)}
 _g2 = lambda a, b, c, d: 1 if math.gcd(b, d) == 1 else 2     # section 2.9: the second gcd is skipped when g = 1
-S2 = {"add": ({"a == 0": (0, 1), "c == 0": (0, 1), "b == 1 and d == 1": (0, 1), "b == 1": (0, 1), "d == 1": (0, 1),
-               "c == -a and d == b": (0, 2), "d == a or d == -a or b == c or b == -c": (0, 2), "d == b": (1, 2),
-               "c == a": (_g2, 2), "c == -a": (_g2, 2)}, _g2),
-      "multiply": ({**S1["multiply"][0], "b == 1 and d == 1": (0, 1), "d == b": (0, 2), "c == a": (0, 2),
-                    "c == -a": (0, 2), "b == 1": (1, 1), "d == 1": (1, 1),
-                    "c == b": (1, 2), "a == d": (1, 2), "c == -b": (1, 2), "a == -d": (1, 2)}, lambda a, b, c, d: 2)}
+_eq = lambda a, b, c, d: (_g2(a, b, c, d), 2, 1)              # equal or opposite numerators: a * (d' +- b'), b' * d
+_zero_test = lambda a, b, c, d: 1 if a == 0 or c == 0 else 2  # x + (-x): c = -a against zero when an operand is zero
+S2 = {"add": ({"c == -a and d == b": ((0, 0, 0), _zero_test),
+               "a == 0": ((0, 0, 0), 1), "c == 0": ((0, 0, 0), 1), "b == 1 and d == 1": ((0, 0, 1), 1),
+               "b == 1": ((0, 1, 1), 1), "d == 1": ((0, 1, 1), 1),
+               "d == a or d == -a or b == c or b == -c": ((0, 3, 1), 2), "d == b": ((1, 0, 1), 2),
+               "c == a": (_eq, 2), "c == -a": (_eq, 2)}, lambda a, b, c, d: (_g2(a, b, c, d), 3, 1)),
+      "multiply": ({"a == 0": ((0, 0, 0), 1), "c == 0": ((0, 0, 0), 1), "a == 1 and b == 1": ((0, 0, 0), 1),
+                    "c == 1 and d == 1": ((0, 0, 0), 1), "a == -1 and b == 1": ((0, 0, 0), 1),
+                    "c == -1 and d == 1": ((0, 0, 0), 1), "b == 1 and d == 1": ((0, 1, 0), 1),
+                    "(a == d and c == b) or (a == -d and c == -b)": ((0, 0, 0), 2),
+                    "(a == d and c == -b) or (a == -d and c == b)": ((0, 0, 0), 2),
+                    "d == b": ((0, 2, 0), 2), "c == a": ((0, 2, 0), 2), "c == -a": ((0, 2, 0), 2),
+                    "c == b": ((1, 0, 0), 2), "a == d": ((1, 0, 0), 2), "c == -b": ((1, 0, 0), 2),
+                    "a == -d": ((1, 0, 0), 2),
+                    "b == 1": ((1, 1, 0), 1), "d == 1": ((1, 1, 0), 1)}, lambda a, b, c, d: (2, 2, 0))}
 
 
 def special_cases(fn_tree, code):
@@ -590,7 +636,7 @@ def check_order(path):
     sec2 = pseudocode(path)
     vals1 = [(p, q) for q in range(1, 16) for p in range(-15, 16)]           # naive: any positive denominator
     vals2 = [v for v in vals1 if math.gcd(*v) == 1]                         # lowest terms: reduced
-    print("\nSpecial cases ordered by the cost of their result (section 2.5), every pair with |p|, q <= 15:")
+    print("\nSpecial cases ordered by the cost of their result (sections 2.3 and 2.9), every pair with |p|, q <= 15:")
     for sec, pc, table, vals in (("naive", sec1, S1, vals1), ("reduced", sec2, S2, vals2)):
         for name, (costs, general) in table.items():
             src = translate(pc[name])
@@ -604,16 +650,16 @@ def check_order(path):
                     env = {"a": a, "b": b, "c": c, "d": d}
                     held = [t for t, co in compiled if eval(co, {}, env)]
 
-                    def cost(t):
-                        k = costs[t][0]
+                    def cost(t, i=0):
+                        k = costs[t][i]
                         return k(a, b, c, d) if callable(k) else k
                     n += 1
                     if not held:
                         continue
                     r = held[0]
                     best = min(min(cost(t) for t in held), general(a, b, c, d))
-                    tie = min(costs[t][1] for t in held if cost(t) == cost(r))
-                    if cost(r) > best or costs[r][1] > tie:
+                    tie = min(cost(t, 1) for t in held if cost(t) == cost(r))
+                    if cost(r) > best or cost(r, 1) > tie:
                         bad += 1
                         check(False, f"{sec} {name}({a}/{b}, {c}/{d}) reaches `{r}`, but {held} hold")
             print(f"  {sec:7s} {name:9s} {len(conds):2d} special cases, {n:7d} pairs, {bad} out of order")
@@ -624,6 +670,7 @@ def main():
     ap.add_argument("--no-control", action="store_true", help="skip the comparison with 10-interning's control")
     ap.add_argument("--paper", type=Path, default=PAPER, help="the paper to read (default: %(default)s)")
     a = ap.parse_args()
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 10000))    # the binary gcd calls itself once per digit removed
     code, tree, first_line, ns = load(a.paper)
     print(f"Appendix A of {a.paper.name}: {len(code.splitlines())} lines of Python from line {first_line} of the paper, "
           f"defining {', '.join(FUNCTIONS)}\n")
@@ -632,6 +679,8 @@ def main():
     br = Branches(code, tree)
     with Tracer(br) as tr:
         check_functions(ns, tr)
+        check_bit_examples()
+        check_gcd_example(ns, tr)
         check_trace(ns, tr)
     missing = coverage_report(br, tr, first_line)
     for m in missing:

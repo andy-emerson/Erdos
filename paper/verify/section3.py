@@ -601,25 +601,25 @@ def check_decimals(ns, tr, V, check):
 
 
 def check_decimal_examples(ns, tr, check):
-    """The lcm of section 1.5, the aside of section 2.8, and the examples and claims of sections 3.2-3.8."""
+    """The lcm of section 1.6, the aside of section 2.8, and the examples and claims of sections 3.2-3.8."""
     dec, Decimal, Column = ns["decimal"], ns["Decimal"], ns["Column"]
 
     def lcm(u, v):                      # the smallest positive common multiple, by search
         return next(m for m in range(1, abs(u * v) + 1) if m % u == 0 and m % v == 0)
 
-    # 1.5
-    check(lcm(4, 6) == 12 and lcm(-4, 6) == 12 and lcm(6, 10) == (6 // math.gcd(6, 10)) * 10 == 30, "1.5: examples")
+    # 1.6
+    check(lcm(4, 6) == 12 and lcm(-4, 6) == 12 and lcm(6, 10) == (6 // math.gcd(6, 10)) * 10 == 30, "1.6: examples")
     for u in [k for k in range(-30, 31) if k]:
         for v in [k for k in range(-30, 31) if k]:
             m = lcm(u, v)
-            check(m * math.gcd(u, v) == abs(u * v) and m == (abs(u) // math.gcd(u, v)) * abs(v), f"1.5: lcm({u}, {v})")
+            check(m * math.gcd(u, v) == abs(u * v) and m == (abs(u) // math.gcd(u, v)) * abs(v), f"1.6: lcm({u}, {v})")
             check(all(M % m == 0 for M in range(-3 * m, 3 * m + 1) if M % u == 0 and M % v == 0),
-                  f"1.5: a common multiple of {u} and {v} is not a multiple of the lcm")
+                  f"1.6: a common multiple of {u} and {v} is not a multiple of the lcm")
     for B in range(1, 13):
         for i in range(0, 7):
             for j in range(i, 7):
-                check(math.gcd(B ** i, B ** j) == B ** i and math.lcm(B ** i, B ** j) == B ** j, f"1.5: powers of {B}")
-    check(math.gcd(100, 10000) == 100 and math.lcm(100, 10000) == 10000, "1.5: 100 and 10 000")
+                check(math.gcd(B ** i, B ** j) == B ** i and math.lcm(B ** i, B ** j) == B ** j, f"1.6: powers of {B}")
+    check(math.gcd(100, 10000) == 100 and math.lcm(100, 10000) == 10000, "1.6: 100 and 10 000")
     # 2.8
     check(math.gcd(3, 10) == 1 and math.gcd(6, 10) == 2 and Fraction(1, 6) + Fraction(1, 10) == Fraction(8, 30),
           "2.8: 1/6 + 1/10 over 30")

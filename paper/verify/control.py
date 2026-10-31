@@ -18,7 +18,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-TEST = ROOT / "10-interning" / "test"
+TEST = next((p for p in (ROOT / "10-interning" / "test", ROOT / "archive" / "10-interning" / "test") if p.is_dir()),
+            ROOT / "10-interning" / "test")     # 10-interning now lives in archive/
 ENTER, OPS = 0, {1: "add", 2: "subtract", 3: "multiply", 4: "divide"}
 
 

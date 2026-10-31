@@ -39,3 +39,23 @@ Notes:
 - Two fixes to the benchmark itself before these figures: the compiler merged the table row's two inverses of the
   same divisor (secretly reusing), so the second call now hides the divisor from it (no instructions); and the
   two-word shift had a branch on the shift being 0, which mispredicted, so it is now branch-free.
+
+## Repeat: 10 rounds
+
+The same test 10 more times, each round running all 24 cells in a shuffled order. Each cell is the median across the
+rounds of (row ÷ that round's control), with the lowest and highest round in brackets. Raw output:
+`results-divide2-repeat-raw.txt` (round, then the usual line). The checksums were the same in every round.
+
+| Method | below 2^32 | below 2^64 | below 2^128 |
+| --- | --- | --- | --- |
+| control | 1.00 | 1.00 | 1.00 |
+| table | 0.83 (0.82–0.83) | 0.82 (0.81–0.83) | 1.00 (0.99–1.00) |
+| reuse | 0.55 (0.55–0.57) | 0.55 (0.54–0.55) | 0.62 (0.61–0.67) |
+| 32-bit | 0.60 (0.60–0.60) | 1.00 (0.99–1.00) | 1.00 (0.99–1.00) |
+| table + reuse | **0.46** (0.46–0.47) | **0.46** (0.46–0.47) | **0.56** (0.55–0.56) |
+| table + 32-bit | 0.60 (0.60–0.60) | 0.94 (0.94–0.95) | 1.37 (1.37–1.38) |
+| reuse + 32-bit | 0.60 (0.60–0.61) | 0.56 (0.55–0.56) | 0.96 (0.95–0.97) |
+| all three | 0.60 (0.60–0.61) | 0.55 (0.54–0.55) | 0.77 (0.77–0.78) |
+
+Control per division across the rounds: 2.59–2.61 ns, 2.60–2.64 ns, 2.60–2.63 ns. Every figure is within 0.02 of the
+first run except reuse below 2^128 (0.60 then, 0.62 now), the noisiest cell.

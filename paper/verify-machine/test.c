@@ -34,6 +34,13 @@ int main(void) {
       n += 2;
     }
   }
-  printf("every routine gives the exact quotient: %ld exact divisions (%ld pairs all below 2^32); long division also on 3,000,000 inexact ones\n", n, small);
+  for (int k = 0; k < 32; k++) {                     // zero dividends, divisors whose low 32 bits are 0
+    uint64_t b = (uint64_t)(k + 1) << 32, out[2] = {1, 1};
+    for (int r = 0; r < 5; r++) {
+      f[r](0, 0, b, out);
+      if (out[0] || out[1]) { printf("%s fails on zero dividends\n", name[r]); return 1; }
+    }
+  }
+  printf("every routine gives the exact quotient: %ld exact divisions (%ld pairs all below 2^32); long division also on 3,000,000 inexact ones; zero dividends with divisors 2^32 to 32*2^32\n", n, small);
   return 0;
 }

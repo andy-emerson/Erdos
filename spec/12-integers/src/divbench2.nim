@@ -96,7 +96,7 @@ loop64(w_reuse):
   R[j] = (a shr s) * x
   R2[j] = (a2 shr s) * x
 loop64(w_d32):
-  if (a or a2) < (1'u64 shl 32):
+  if (a or a2 or b) < (1'u64 shl 32):
     R[j] = uint64(uint32(a) div uint32(b))
     R2[j] = uint64(uint32(a2) div uint32(b))
   else:
@@ -108,7 +108,7 @@ loop64(w_table_reuse):
   R[j] = (a shr s) * x
   R2[j] = (a2 shr s) * x
 loop64(w_table_d32):
-  if (a or a2) < (1'u64 shl 32):
+  if (a or a2 or b) < (1'u64 shl 32):
     R[j] = uint64(uint32(a) div uint32(b))
     R2[j] = uint64(uint32(a2) div uint32(b))
   else:
@@ -119,7 +119,7 @@ loop64(w_table_d32):
     let x2 = tableInverse(opaque(b), s2)
     R2[j] = (a2 shr s2) * x2
 loop64(w_reuse_d32):
-  if (a or a2) < (1'u64 shl 32):
+  if (a or a2 or b) < (1'u64 shl 32):
     R[j] = uint64(uint32(a) div uint32(b))
     R2[j] = uint64(uint32(a2) div uint32(b))
   else:
@@ -128,7 +128,7 @@ loop64(w_reuse_d32):
     R[j] = (a shr s) * x
     R2[j] = (a2 shr s) * x
 loop64(w_all):
-  if (a or a2) < (1'u64 shl 32):
+  if (a or a2 or b) < (1'u64 shl 32):
     R[j] = uint64(uint32(a) div uint32(b))
     R2[j] = uint64(uint32(a2) div uint32(b))
   else:
@@ -167,7 +167,7 @@ loop128(d_reuse):
   R[j] = low64shr(alo, ahi, s) * x
   R2[j] = low64shr(a2lo, a2hi, s) * x
 loop128(d_d32):
-  if (ahi or a2hi or ((alo or a2lo) shr 32)) == 0:
+  if (ahi or a2hi or ((alo or a2lo or b) shr 32)) == 0:
     R[j] = uint64(uint32(alo) div uint32(b))
     R2[j] = uint64(uint32(a2lo) div uint32(b))
   else:
@@ -179,7 +179,7 @@ loop128(d_table_reuse):
   R[j] = low64shr(alo, ahi, s) * x
   R2[j] = low64shr(a2lo, a2hi, s) * x
 loop128(d_table_d32):
-  if (ahi or a2hi or ((alo or a2lo) shr 32)) == 0:
+  if (ahi or a2hi or ((alo or a2lo or b) shr 32)) == 0:
     R[j] = uint64(uint32(alo) div uint32(b))
     R2[j] = uint64(uint32(a2lo) div uint32(b))
   else:
@@ -190,7 +190,7 @@ loop128(d_table_d32):
     let x2 = tableInverse(opaque(b), s2)
     R2[j] = low64shr(a2lo, a2hi, s2) * x2
 loop128(d_reuse_d32):
-  if (ahi or a2hi or ((alo or a2lo) shr 32)) == 0:
+  if (ahi or a2hi or ((alo or a2lo or b) shr 32)) == 0:
     R[j] = uint64(uint32(alo) div uint32(b))
     R2[j] = uint64(uint32(a2lo) div uint32(b))
   else:
@@ -199,7 +199,7 @@ loop128(d_reuse_d32):
     R[j] = low64shr(alo, ahi, s) * x
     R2[j] = low64shr(a2lo, a2hi, s) * x
 loop128(d_all):
-  if (ahi or a2hi or ((alo or a2lo) shr 32)) == 0:
+  if (ahi or a2hi or ((alo or a2lo or b) shr 32)) == 0:
     R[j] = uint64(uint32(alo) div uint32(b))
     R2[j] = uint64(uint32(a2lo) div uint32(b))
   else:
@@ -246,7 +246,18 @@ proc main() =
           for j in 0 ..< N:
             doAssert R[j] == Q[j] and R2[j] == Q2[j], rows[i] & " set " & $set
             n += 2
-    echo "every row gives the exact quotient: ", n, " divisions (3 sets x 30 seeds x 8 rows x 2048)"
+    # zero dividends with divisors of any size, including ones whose low 32 bits are 0 (the 32-bit divide must not
+    # be used for them)
+    for j in 0 ..< N:
+      B[j] = (uint64(j mod 255) + 1) shl (32 + j mod 24)       # nonzero, below 2^63, low 32 bits 0
+      Alo[j] = 0; Ahi[j] = 0; A2lo[j] = 0; A2hi[j] = 0
+    for i in 0 ..< rows.len:
+      for f in [loops64[i], loops128[i]]:
+        f(1)
+        for j in 0 ..< N:
+          doAssert R[j] == 0 and R2[j] == 0, rows[i] & " zero dividends"
+          n += 2
+    echo "every row gives the exact quotient: ", n, " divisions (3 sets x 30 seeds x 8 rows x 2048, and zero dividends)"
     return
   let set = parseInt(paramStr(2))
   fill(set, 20261031)

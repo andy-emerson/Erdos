@@ -79,8 +79,9 @@ proc divTable*(a, b: uint64): uint64 {.inline.} =
   (a shr s) * x
 
 proc div32*(a, b: uint64): uint64 {.inline.} =
-  ## special case: when a fits 32 bits (so does b), the 32-bit hardware divide; otherwise the 64-bit one
-  if a < (1'u64 shl 32): uint64(uint32(a) div uint32(b)) else: a div b
+  ## special case: when a and b both fit 32 bits, the 32-bit hardware divide; otherwise the 64-bit one. b must be in
+  ## the test: when a = 0, b can be any size, and a b whose low 32 bits are 0 would divide by zero
+  if (a or b) < (1'u64 shl 32): uint64(uint32(a) div uint32(b)) else: a div b
 
 proc divFp*(a, b: uint64): uint64 {.inline.} =
   ## special case: when a is below 2^53 (so is b), divide as doubles; the true quotient is a whole number below 2^53,

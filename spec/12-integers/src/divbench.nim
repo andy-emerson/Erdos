@@ -87,7 +87,10 @@ proc main() =
           var s: int
           let x = inverseOf(b, s)
           doAssert (a shr s) * x == q and (A2[j] shr s) * x == Q2[j], "reuse"
-    echo "every method gives the exact quotient on 153,600 divisions (3 sets x 50 seeds x 1024)"
+    for k in 0 ..< 64:                      # zero dividend, divisors of any size, some with their low 32 bits 0
+      let b = (uint64(k) + 1) shl (k mod 33 + 31)
+      doAssert div32(0, b) == 0 and divTable(0, b) == 0 and divExactInv(0, b) == 0, "zero dividend"
+    echo "every method gives the exact quotient on 153,600 divisions (3 sets x 50 seeds x 1024), and on zero dividends"
     return
   fill(paramStr(2), 20261031)
   let f = case m

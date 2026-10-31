@@ -39,6 +39,11 @@ Notes:
 - Two fixes to the benchmark itself before these figures: the compiler merged the table row's two inverses of the
   same divisor (secretly reusing), so the second call now hides the divisor from it (no instructions); and the
   two-word shift had a branch on the shift being 0, which mispredicted, so it is now branch-free.
+- A fix after these figures (Oct 31, 2026): the 32-bit rows tested only the two dividends, not the divisor. When both
+  dividends are 0, the divisor can be any size, and one whose low 32 bits are 0 made the 32-bit divide divide by zero
+  and crash. The test now includes the divisor (one more OR), in `divbench2.nim` and in `bits.div32`, and both check
+  modes now test zero dividends with such divisors (the old code crashes on them). The operands here never hit the
+  case, so the results are unchanged; the timings were taken before the extra OR.
 
 ## Repeat: 10 rounds
 

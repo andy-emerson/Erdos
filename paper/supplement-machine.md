@@ -49,6 +49,14 @@ So a long calculation can be reduced mod $m$ at every step, and the result is st
 
 This is the arithmetic of a machine word. A word keeps only $w$ bits. When a sum or product needs more, the bits above the top are lost, and what remains is the result mod $2^w$. For example, in a byte, $200 + 100 = 300 = 256 + 44$ leaves 44, and $16 \cdot 20 = 320$ leaves 64. By the rule above, a chain of additions and multiplications on words gives the true result mod $2^w$.
 
+### 1.5 Counting cost below big-O
+
+Big-O describes how the cost of a calculation grows as its inputs grow. The main paper uses it this way: long division of two $n$-digit numbers takes $O(n^2)$ steps, so doubling the digits roughly quadruples the work. Big-O keeps only the shape of the growth and drops constant factors, so $3n^2$ and $50n^2$ steps are both $O(n^2)$.
+
+At the machine level the inputs don't grow. Every number is one word of 64 bits, so every routine in this supplement takes $O(1)$ time. Big-O can't tell them apart: the constant it drops is the whole difference between them.
+
+So this supplement counts cost directly. A routine is a list of machine instructions, and its cost is built up from what each instruction costs, counted in the machine's own steps (chapter 2 says what those are). This is the constant that big-O sets aside. It comes back into big-O for numbers of many words: long division of $n$-word numbers is still $O(n^2)$ word operations, and the cost of each word operation, counted here, is the constant in front.
+
 ## 2. Machine code
 
 A program in a language such as Nim, C or Rust is translated by a compiler into machine code: a list of instructions the chip carries out directly. Machine code works differently from those languages. There are no named variables, no expressions and no loops. There are a few places to hold numbers, a few dozen simple instructions, and jumps.
@@ -172,6 +180,8 @@ Here `r` can need one bit more than a word, since it can reach almost $2b$. The 
 
 The test is one OR. The OR of several numbers has a 1 in some position exactly when at least one of them does, so $a$ OR $a_2$ OR $b$ is below $2^{32}$ exactly when all three are.
 
+The divisor has to be in the test. When the dividends are not 0, an exact divisor is no larger than they are, so it is below $2^{32}$ too. But when both dividends are 0, the divisor can be any size. The 32-bit divide would use only its low 32 bits, and if those are all 0 (as for $b = 2^{32}$), it would divide by zero.
+
 ```text
 ROUTINE divide_pair_32(a, a2, b)
     t ← (a OR a2 OR b) SHIFT RIGHT 32
@@ -287,7 +297,7 @@ The figures are the same on both chip families. The reason is the one in section
 
 So adding the 32-bit divide to the combination wouldn't help: below $2^{32}$ it would replace 8 multiplications with 12 cycles of divider time. Above $2^{32}$ the combination costs the same 8 multiplications, while the standard way costs 14 to 20 cycles.
 
-In the language of big-O, all of these routines take constant time, $O(1)$, because they work on one word of fixed size. Big-O can't tell them apart. The difference is in the constant, and it is counted here in cycles of the busiest unit.
+As section 1.5 explains, big-O can't tell these routines apart, since all of them are $O(1)$. The difference is in the constant, counted here in cycles of the busiest unit.
 
 **One limit of this comparison.** The comparison assumes many divisions that don't depend on each other, so that the chip can overlap them. That is the case in reducing a list or a matrix of fractions. A single division whose result is needed right away is different: then what counts is the time from start to result. The combination's steps form a chain of their own (the lookup, then three Newton steps of two multiplications each), which takes longer from start to result than one divide instruction.
 

@@ -18,10 +18,14 @@ one() {  # name, build, extra flags...
     # shellcheck disable=SC2086
     "$NIM" c $NIMFLAGS "$NIMC" -d:bld=$b "$@" "--nimcache:$B/nimcache/$name" "-o:$B/bin/$name" "$HERE/src/bench.nim"
 }
-for b in control pow2 even growing bytes hybrid; do
-    one "$b-j1" $b "--passC:-fno-tree-vectorize"
-    one "$b" $b
-    one "$b-mem" $b -d:mem
+flags() {  # the variants of hybrid2.nim
+    case $1 in hyb2p2) echo "-d:p2" ;; hyb2ad) echo "-d:adsub" ;; *) echo "" ;; esac
+}
+for b in control pow2 even growing bytes hybrid hyb2 hyb2p2 hyb2ad; do
+    f=$(flags $b)
+    one "$b-j1" $b "--passC:-fno-tree-vectorize" $f
+    one "$b" $b $f
+    one "$b-mem" $b -d:mem $f
 done
 for b in growing bytes; do one "$b-w32" $b -d:W=32; done
 echo built

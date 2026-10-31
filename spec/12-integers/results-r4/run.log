@@ -1,0 +1,50 @@
+00:34:39 check: 385 cells, 382976 results checked; failures in 0 cells; traps in 11 cells
+00:34:39 check: trap control job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+00:34:39 check: trap control job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+00:34:39 check: trap control job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+00:34:39 check: trap pow2 job 2 divexact: exit -8 (SIGFPE), 2 divisors are 0 in the build's width
+00:34:39 check: trap pow2 job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+00:34:39 check: trap pow2 job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+00:34:39 check: trap pow2 job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+00:34:39 check: trap even job 2 divexact: exit -8 (SIGFPE), 2 divisors are 0 in the build's width
+00:34:39 check: trap even job 4 divexact: exit -8 (SIGFPE), 66 divisors are 0 in the build's width
+00:34:39 check: trap even job 8 divexact: exit -8 (SIGFPE), 61 divisors are 0 in the build's width
+00:34:39 check: trap even job 16 divexact: exit -8 (SIGFPE), 71 divisors are 0 in the build's width
+00:34:39 memory: 315 cells
+00:37:12 callgrind: 304 cells
+00:37:26 job 1 add: idle {'cpu': 0.0, 'load': 0.96630859375}; noise 0.0108; control 0.231 ns, pow2 0.537 ns, even 0.576 ns, growing 8.82 ns, bytes 43.4 ns, hybrid 1.36 ns, hyb2 1.06 ns, hyb2p2 1.13 ns, hyb2ad 1.02 ns, control-2 0.234 ns
+00:37:40 job 1 sub: idle {'cpu': 0.0, 'load': 0.97216796875}; noise 0.0123; control 0.234 ns, pow2 0.535 ns, even 0.575 ns, growing 8.66 ns, bytes 44.8 ns, hybrid 7.67 ns, hyb2 7.63 ns, hyb2p2 7.37 ns, hyb2ad 1.14 ns, control-2 0.231 ns
+00:37:53 job 1 absdiff: idle {'cpu': 0.0, 'load': 0.97900390625}; noise 0.0192; control 0.543 ns, pow2 0.859 ns, even 0.756 ns, growing 14.3 ns, bytes 44.4 ns, hybrid 1.44 ns, hyb2 1.14 ns, hyb2p2 1.14 ns, hyb2ad 1.15 ns, control-2 0.532 ns
+00:38:06 job 1 mul: idle {'cpu': 0.0, 'load': 0.984375}; noise 0.1132; control 0.271 ns, pow2 0.72 ns, even 0.577 ns, growing 19 ns, bytes 53.5 ns, hybrid 6.53 ns, hyb2 6.82 ns, hyb2p2 6.79 ns, hyb2ad 6.81 ns, control-2 0.302 ns
+00:38:21 job 1 divexact: idle {'cpu': 0.0, 'load': 0.9873046875}; noise 0.2883; control 3.34 ns, pow2 2.25 ns, even 2.61 ns, growing 25.5 ns, bytes 59.4 ns, hybrid 2.61 ns, hyb2 2.61 ns, hyb2p2 2.38 ns, hyb2ad 2.61 ns, control-2 2.6 ns
+00:38:35 job 1 gcd: idle {'cpu': 0.0, 'load': 0.99072265625}; noise 0.0028; control 9.08 ns, pow2 8.4 ns, even 9.14 ns, growing 42.7 ns, bytes 87.2 ns, hybrid 9.9 ns, hyb2 10.1 ns, hyb2p2 9.84 ns, hyb2ad 9.54 ns, control-2 9.06 ns
+00:38:49 job 1 absdiff2: idle {'cpu': 0.0, 'load': 0.99365234375}; noise 0.0142; control 0.456 ns, pow2 0.969 ns, even 0.859 ns, growing 9.39 ns, bytes 45.6 ns, hybrid 1.43 ns, hyb2 1.14 ns, hyb2p2 1.14 ns, hyb2ad 1.14 ns, control-2 0.449 ns
+00:39:03 job 2 add: idle {'cpu': 0.0, 'load': 0.99560546875}; noise 0.0023; control 0.229 ns, pow2 0.574 ns, even 0.591 ns, growing 9.27 ns, bytes 63.2 ns, hybrid 10.5 ns, hyb2 11 ns, hyb2p2 11.7 ns, hyb2ad 10.8 ns, control-2 0.228 ns
+00:39:17 job 2 sub: idle {'cpu': 0.005, 'load': 0.9970703125}; noise 0.0002; control 0.228 ns, pow2 0.565 ns, even 0.576 ns, growing 8.95 ns, bytes 63.7 ns, hybrid 9.96 ns, hyb2 11.9 ns, hyb2p2 10.3 ns, hyb2ad 17.1 ns, control-2 0.228 ns
+00:39:30 job 2 absdiff: idle {'cpu': 0.005, 'load': 0.91796875}; noise 0.0022; control 0.49 ns, pow2 0.868 ns, even 0.778 ns, growing 15.7 ns, bytes 63.9 ns, hybrid 16.9 ns, hyb2 17.4 ns, hyb2p2 16.9 ns, hyb2ad 17.5 ns, control-2 0.489 ns
+00:39:42 job 2 mul: idle {'cpu': 0.005, 'load': 1.01123046875}; noise 0.0024; control 0.265 ns, pow2 0.837 ns, even 0.582 ns, growing 23.2 ns, bytes 84.1 ns, hybrid 24.5 ns, hyb2 25.2 ns, hyb2p2 25.3 ns, hyb2ad 25.4 ns, control-2 0.265 ns
+00:39:53 job 2 divexact: idle {'cpu': 0.005, 'load': 0.92822265625}; noise 0.0031; control 2.6 ns, pow2 exit -8, even exit -8, growing 29.8 ns, bytes 82.3 ns, hybrid 30.8 ns, hyb2 30.7 ns, hyb2p2 30.1 ns, hyb2ad 30.9 ns, control-2 2.61 ns
+00:40:07 job 2 gcd: idle {'cpu': 0.0, 'load': 0.939453125}; noise 0.0056; control 136 ns, pow2 134 ns, even 126 ns, growing 287 ns, bytes 337 ns, hybrid 285 ns, hyb2 286 ns, hyb2p2 283 ns, hyb2ad 286 ns, control-2 136 ns
+00:40:21 job 2 absdiff2: idle {'cpu': 0.0, 'load': 0.873046875}; noise 0.0044; control 0.446 ns, pow2 0.987 ns, even 0.857 ns, growing 10.5 ns, bytes 66 ns, hybrid 11.6 ns, hyb2 11.6 ns, hyb2p2 11.4 ns, hyb2ad 11.9 ns, control-2 0.444 ns
+00:40:35 job 4 add: idle {'cpu': 0.005, 'load': 0.89306640625}; noise 0.0027; control 0.232 ns, pow2 0.565 ns, even 0.595 ns, growing 10.5 ns, bytes 109 ns, hybrid 11.4 ns, hyb2 11.9 ns, hyb2p2 12.4 ns, hyb2ad 11.7 ns, control-2 0.232 ns
+00:40:47 job 4 sub: idle {'cpu': 0.0, 'load': 0.91748046875}; noise 0.0003; control 0.232 ns, pow2 0.558 ns, even 0.577 ns, growing 11 ns, bytes 99.6 ns, hybrid 11 ns, hyb2 13.2 ns, hyb2p2 11.9 ns, hyb2ad 18.1 ns, control-2 0.232 ns
+00:41:00 job 4 absdiff: idle {'cpu': 0.0, 'load': 0.85595703125}; noise 0.0098; control 0.489 ns, pow2 0.852 ns, even 0.786 ns, growing 16.7 ns, bytes 104 ns, hybrid 17.9 ns, hyb2 18.6 ns, hyb2p2 18.2 ns, hyb2ad 18.5 ns, control-2 0.494 ns
+00:41:12 job 4 mul: idle {'cpu': 0.0, 'load': 0.87841796875}; noise 0.0044; control 0.261 ns, pow2 0.792 ns, even 0.576 ns, growing 27.8 ns, bytes 143 ns, hybrid 29 ns, hyb2 29.6 ns, hyb2p2 30.3 ns, hyb2ad 29.5 ns, control-2 0.262 ns
+00:41:22 job 4 divexact: idle {'cpu': 0.0, 'load': 0.8251953125}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 42 ns, bytes 116 ns, hybrid 42.1 ns, hyb2 43.3 ns, hyb2p2 43.7 ns, hyb2ad 43.1 ns, control-2 exit -8
+00:41:33 job 4 gcd: idle {'cpu': 0.0, 'load': 0.83935546875}; noise 0.0074; control 126 ns, pow2 124 ns, even 120 ns, growing 921 ns, bytes 993 ns, hybrid 921 ns, hyb2 921 ns, hyb2p2 915 ns, hyb2ad 919 ns, control-2 127 ns
+00:41:44 job 4 absdiff2: idle {'cpu': 0.005, 'load': 0.8759765625}; noise 0.0031; control 0.448 ns, pow2 1 ns, even 0.857 ns, growing 12.2 ns, bytes 102 ns, hybrid 14.6 ns, hyb2 13.9 ns, hyb2p2 14.1 ns, hyb2ad 14.5 ns, control-2 0.447 ns
+00:41:56 job 8 add: idle {'cpu': 0.0, 'load': 0.8955078125}; noise 0.0096; control 0.231 ns, pow2 0.556 ns, even 0.594 ns, growing 12.1 ns, bytes 200 ns, hybrid 13.4 ns, hyb2 13.9 ns, hyb2p2 14.2 ns, hyb2ad 13.8 ns, control-2 0.229 ns
+00:42:08 job 8 sub: idle {'cpu': 0.0, 'load': 0.912109375}; noise 0.0067; control 0.243 ns, pow2 0.559 ns, even 0.577 ns, growing 12.4 ns, bytes 197 ns, hybrid 13.5 ns, hyb2 15.6 ns, hyb2p2 14.1 ns, hyb2ad 20.8 ns, control-2 0.242 ns
+00:42:22 job 8 absdiff: idle {'cpu': 0.0, 'load': 1.00537109375}; noise 0.0018; control 0.489 ns, pow2 0.855 ns, even 0.788 ns, growing 19.6 ns, bytes 203 ns, hybrid 20.6 ns, hyb2 21.2 ns, hyb2p2 21 ns, hyb2ad 20.8 ns, control-2 0.489 ns
+00:42:35 job 8 mul: idle {'cpu': 0.0, 'load': 0.923828125}; noise 0.0138; control 0.272 ns, pow2 0.83 ns, even 0.578 ns, growing 65 ns, bytes 295 ns, hybrid 67 ns, hyb2 67.9 ns, hyb2p2 71.9 ns, hyb2ad 67.6 ns, control-2 0.268 ns
+00:42:43 job 8 divexact: idle {'cpu': 0.005, 'load': 0.93603515625}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 66.5 ns, bytes 199 ns, hybrid 65.8 ns, hyb2 66.7 ns, hyb2p2 66.7 ns, hyb2ad 66.7 ns, control-2 exit -8
+00:42:57 job 8 gcd: idle {'cpu': 0.0, 'load': 0.9462890625}; noise 0.0076; control 118 ns, pow2 117 ns, even 110 ns, growing 2.45e+03 ns, bytes 2.71e+03 ns, hybrid 2.44e+03 ns, hyb2 2.45e+03 ns, hyb2p2 2.51e+03 ns, hyb2ad 2.44e+03 ns, control-2 117 ns
+00:43:09 job 8 absdiff2: idle {'cpu': 0.0, 'load': 0.87841796875}; noise 0.0011; control 0.448 ns, pow2 0.982 ns, even 0.859 ns, growing 16.8 ns, bytes 203 ns, hybrid 18.2 ns, hyb2 18.1 ns, hyb2p2 18.6 ns, hyb2ad 18.3 ns, control-2 0.448 ns
+00:43:23 job 16 add: idle {'cpu': 0.0, 'load': 0.8974609375}; noise 0.0023; control 0.231 ns, pow2 0.555 ns, even 0.589 ns, growing 16 ns, bytes 355 ns, hybrid 17.4 ns, hyb2 17.7 ns, hyb2p2 18.6 ns, hyb2ad 17.6 ns, control-2 0.231 ns
+00:43:37 job 16 sub: idle {'cpu': 0.0, 'load': 0.9208984375}; noise 0.0003; control 0.231 ns, pow2 0.557 ns, even 0.576 ns, growing 16.9 ns, bytes 364 ns, hybrid 17.9 ns, hyb2 19.8 ns, hyb2p2 22.3 ns, hyb2ad 26.8 ns, control-2 0.231 ns
+00:43:48 job 16 absdiff: idle {'cpu': 0.005, 'load': 0.85791015625}; noise 0.0004; control 0.489 ns, pow2 0.859 ns, even 0.794 ns, growing 24.8 ns, bytes 364 ns, hybrid 25.3 ns, hyb2 25.8 ns, hyb2p2 26.4 ns, hyb2ad 26.5 ns, control-2 0.489 ns
+00:44:00 job 16 mul: idle {'cpu': 0.0, 'load': 0.88037109375}; noise 0.0035; control 0.263 ns, pow2 0.834 ns, even 0.586 ns, growing 195 ns, bytes 667 ns, hybrid 196 ns, hyb2 198 ns, hyb2p2 211 ns, hyb2ad 196 ns, control-2 0.264 ns
+00:44:09 job 16 divexact: idle {'cpu': 0.0, 'load': 0.8994140625}; noise None; control exit -8, pow2 exit -8, even exit -8, growing 124 ns, bytes 362 ns, hybrid 125 ns, hyb2 126 ns, hyb2p2 126 ns, hyb2ad 126 ns, control-2 exit -8
+00:44:21 job 16 gcd: idle {'cpu': 0.0, 'load': 0.91552734375}; noise 0.0054; control 125 ns, pow2 122 ns, even 116 ns, growing 7.56e+03 ns, bytes 8.27e+03 ns, hybrid 7.57e+03 ns, hyb2 7.58e+03 ns, hyb2p2 7.86e+03 ns, hyb2ad 7.59e+03 ns, control-2 125 ns
+00:44:33 job 16 absdiff2: idle {'cpu': 0.0, 'load': 0.9287109375}; noise 0.0044; control 0.447 ns, pow2 0.988 ns, even 0.862 ns, growing 26.9 ns, bytes 369 ns, hybrid 27.8 ns, hyb2 28.6 ns, hyb2p2 27.5 ns, hyb2ad 27.9 ns, control-2 0.449 ns
+00:44:33 done in 595 s: /home/claude/erdos/spec/12-integers/build/results/report.md

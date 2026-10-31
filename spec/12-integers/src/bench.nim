@@ -13,6 +13,7 @@ elif bld == "even": import even
 elif bld == "growing": import growing
 elif bld == "bytes": import bytes
 elif bld == "hybrid": import hybrid
+elif bld in ["hyb2", "hyb2p2", "hyb2ad"]: import hybrid2
 else: {.error: "unknown build".}
 when defined(mem) and not wordBuild: import alloc
 
@@ -30,7 +31,7 @@ elif bld == "growing":
     for i in countdown(v.len, 1): result.add toHex(uint64(v[i]), sizeof(Word) * 2).toLowerAscii
   proc mixh(h: var uint64; v: Val) =
     for i in 0 .. v.len: h = (h xor uint64(v[i])) * 0x9E3779B97F4A7C15'u64
-elif bld == "hybrid":
+elif bld in ["hybrid", "hyb2", "hyb2p2", "hyb2ad"]:
   proc hexOf(v: Val): string =
     let w = words(v)
     if w.len == 0: return "0"

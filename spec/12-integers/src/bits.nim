@@ -18,15 +18,14 @@ proc subBorrow*(a, b: uint64; d: var uint64): uint64 {.inline.} =
 # ------------------------------------------------------------------------------------------------ machine-level operations (round 6)
 proc divExactInv*(a, b: uint64): uint64 {.inline.} =
   ## exact division (b divides a) with no divide instruction: shift out b's trailing zeros, invert b's odd part mod 2^64
-  ## by Newton's iteration (correct to 3 bits, doubling each step), then multiply. b = 0 gives no meaningful result.
+  ## by Newton's iteration from a 5-bit start, doubling each step, then multiply. b = 0 gives no meaningful result.
   let s = ctz(b or (1'u64 shl 63))
   let o = b shr s
-  var x = o
-  x = x * (2'u64 - o * x)    # 6 bits
-  x = x * (2'u64 - o * x)    # 12
-  x = x * (2'u64 - o * x)    # 24
-  x = x * (2'u64 - o * x)    # 48
-  x = x * (2'u64 - o * x)    # 96
+  var x = (3'u64 * o) xor 2   # correct to 5 bits for any odd o (a standard starting value)
+  x = x * (2'u64 - o * x)    # 10 bits
+  x = x * (2'u64 - o * x)    # 20
+  x = x * (2'u64 - o * x)    # 40
+  x = x * (2'u64 - o * x)    # 80
   (a shr s) * x
 
 proc usubAsm*(a, b: uint64): uint64 {.inline.} =

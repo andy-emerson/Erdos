@@ -59,3 +59,21 @@ rounds of (row ÷ that round's control), with the lowest and highest round in br
 
 Control per division across the rounds: 2.59–2.61 ns, 2.60–2.64 ns, 2.60–2.63 ns. Every figure is within 0.02 of the
 first run except reuse below 2^128 (0.60 then, 0.62 now), the noisiest cell.
+
+## Control in other languages: C (clang) and Rust
+
+The language's own division, over the same operands (`divbench2 dump <set>` writes them; `src/divctl.c`, built with
+clang 18 at -O2, and `src/divctl.rs`, rustc 1.97 at opt-level 2, read them), with the same loop, timing and checksum.
+C built with gcc is not a row: it emits exactly Nim's control, since Nim compiles to C and we build with gcc.
+10 shuffled rounds, each figure the median of (row ÷ that round's Nim control), lowest and highest round in brackets.
+Raw output: `results-divctl-raw.txt`. All checksums match Nim's in every round.
+
+| Control | below 2^32 | below 2^64 | below 2^128 |
+| --- | --- | --- | --- |
+| Nim (gcc) | 1.00 | 1.00 | 1.00 |
+| C (clang) | 0.60 (0.60–0.60) | 1.00 (0.99–1.02) | 1.00 (1.00–1.01) |
+| Rust | 0.60 (0.60–0.61) | 1.00 (0.99–1.01) | 1.00 (1.00–1.01) |
+
+Clang and Rust both check whether the numbers fit 32 bits and use the 32-bit divide when they do (our 32-bit row,
+built into their compiler, LLVM); Rust also checks for division by zero. At 128 bits all three call a library routine
+(gcc's and clang's `__udivti3` from libgcc, Rust's its own), and they cost the same.

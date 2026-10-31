@@ -250,6 +250,9 @@ proc main() =
     return
   let set = parseInt(paramStr(2))
   fill(set, 20261031)
+  if m == "dump":                   # the operands, for the C (clang) and Rust controls: b alo ahi a2lo a2hi per line
+    for j in 0 ..< N: echo B[j], " ", Alo[j], " ", Ahi[j], " ", A2lo[j], " ", A2hi[j]
+    return
   let i = rows.find(m)
   doAssert i >= 0
   let f = (if set == 128: loops128[i] else: loops64[i])

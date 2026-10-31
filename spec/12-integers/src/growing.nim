@@ -48,39 +48,73 @@ else:
 
 # ------------------------------------------------------------------------------------------------ add, sub, compare
 proc opAdd*(a, b: Big): Big =
-  let la = a.len
-  let lb = b.len
-  let n = max(la, lb)
-  result = newBig(n + 1)
-  let x = a.wd
-  let y = b.wd
+  ## round 2: one loop over the shorter operand's words, then the longer's tail carries alone (no per-word end test)
+  var x = a.wd
+  var y = b.wd
+  var lx = a.len
+  var ly = b.len
+  if lx < ly:
+    swap x, y
+    swap lx, ly
+  result = newBig(lx + 1)
   let r = result.wd
   var c: Word = 0
-  for i in 0 ..< n:
-    let s = (if i < la: x[i] else: 0) + c
+  for i in 0 ..< ly:
+    let s = x[i] + c
     let c1 = Word(s < c)
-    let t = s + (if i < lb: y[i] else: 0)
+    let t = s + y[i]
     r[i] = t
     c = c1 + Word(t < s)
-  r[n] = c
+  for i in ly ..< lx:
+    let t = x[i] + c
+    r[i] = t
+    c = Word(t < c)
+  r[lx] = c
   norm(result)
 
-proc opSub*(a, b: Big): Big =
-  ## a - b over max(la, lb) words; when a < b it wraps (the borrow out is dropped).
-  let la = a.len
-  let lb = b.len
-  let n = max(la, lb)
-  result = newBig(n)
-  let x = a.wd
-  let y = b.wd
-  let r = result.wd
+proc subInto(r, x: Words; la: int; y: Words; lb: int): Word {.inline.} =
+  ## r = x - y over max(la, lb) words; returns the final borrow (1 when x < y). Round 2: common words, then the tail.
   var br: Word = 0
-  for i in 0 ..< n:
-    let p = (if i < la: x[i] else: 0)
-    let q = (if i < lb: y[i] else: 0)
+  let m = min(la, lb)
+  for i in 0 ..< m:
+    let p = x[i]
+    let q = y[i]
     let d = p - q
     r[i] = d - br
     br = Word(p < q) + Word(d < br)
+  if la >= lb:
+    for i in m ..< la:
+      let p = x[i]
+      r[i] = p - br
+      br = Word(p < br)
+  else:
+    for i in m ..< lb:
+      let q = y[i]
+      let d = 0 - q
+      r[i] = d - br
+      br = Word(q != 0) + Word(d < br)
+  br
+
+proc opSub*(a, b: Big): Big =
+  ## a - b over max(la, lb) words; when a < b it wraps (the borrow out is dropped).
+  let n = max(a.len, b.len)
+  result = newBig(n)
+  discard subInto(result.wd, a.wd, a.len, b.wd, b.len)
+  norm(result)
+
+proc opAbsdiff2*(a, b: Big): Big =
+  ## |a - b| with no comparison: subtract, and only if the final borrow is set, negate the result in a second pass
+  ## ((r XOR m) + 1 word by word, m all ones).
+  let n = max(a.len, b.len)
+  result = newBig(n)
+  let r = result.wd
+  let br = subInto(r, a.wd, a.len, b.wd, b.len)
+  let m = 0 - br
+  var c = br
+  for i in 0 ..< n:
+    let t = (r[i] xor m) + c
+    c = Word(t < c)
+    r[i] = t
   norm(result)
 
 proc cmpw(x: Words; nx: int; y: Words; ny: int): int {.inline.} =
@@ -178,7 +212,12 @@ proc opDivexact*(a, b: Big): Big =
   ## word from the lowest, q_i = r_i * b^-1 mod 2^W, and q_i * b subtracted. The local structure: one buffer, a then b.
   let la = a.len
   let lb = b.len
-  let buf = cast[Words](xalloc(max(la + lb, 1) * sizeof(Word)))
+  const cap = 128                     # round 2: scratch on the stack up to 128 words (the jobs need at most 32)
+  var sbuf {.noinit.}: array[cap, Word]
+  let nb = max(la + lb, 1)
+  let onStack = nb <= cap
+  let buf = (if onStack: cast[Words](addr sbuf[0]) else: cast[Words](xalloc(nb * sizeof(Word))))
+  if onStack: acctLocal(nb * sizeof(Word))
   let x = buf
   let y = cast[Words](addr buf[la])
   for i in 0 ..< la: x[i] = a.wd[i]
@@ -218,7 +257,7 @@ proc opDivexact*(a, b: Big): Big =
       c = 0
       inc k
   norm(result)
-  xfree(buf)
+  if onStack: acctLocalEnd(nb * sizeof(Word)) else: xfree(buf)
 
 # ------------------------------------------------------------------------------------------------ gcd
 proc opGcd*(a, b: Big): Big =
@@ -227,7 +266,12 @@ proc opGcd*(a, b: Big): Big =
   let lb = b.len
   if la == 0: return copyBig(b.wd, lb)
   if lb == 0: return copyBig(a.wd, la)
-  let buf = cast[Words](xalloc((la + lb) * sizeof(Word)))
+  const cap = 128
+  var sbuf {.noinit.}: array[cap, Word]
+  let nb = la + lb
+  let onStack = nb <= cap
+  let buf = (if onStack: cast[Words](addr sbuf[0]) else: cast[Words](xalloc(nb * sizeof(Word))))
+  if onStack: acctLocal(nb * sizeof(Word))
   var x = buf
   var y = cast[Words](addr buf[la])
   for i in 0 ..< la: x[i] = a.wd[i]
@@ -236,8 +280,21 @@ proc opGcd*(a, b: Big): Big =
   var ny = lb
   let shift = min(ctzw(x), ctzw(y))
   shrw(y, ny, ctzw(y))
+  var fin = false
+  var g: Word = 0
   while nx != 0:
     shrw(x, nx, ctzw(x))
+    if nx <= 1 and ny <= 1:
+      # round 2, named special case: both fit one word, so the word gcd finishes it (both odd here)
+      var u = x[0]
+      var w = y[0]
+      while u != w:
+        if u < w: swap u, w
+        u -= w
+        u = u shr ctz(u)
+      g = u
+      fin = true
+      break
     if cmpw(y, ny, x, nx) > 0:
       swap x, y
       swap nx, ny
@@ -250,8 +307,13 @@ proc opGcd*(a, b: Big): Big =
       x[i] = d - br
       br = Word(p < q) + Word(d < br)
     while nx > 0 and x[nx - 1] == 0: dec nx
-  result = shlInto(y, ny, shift)
-  xfree(buf)
+  if fin:
+    var one {.noinit.}: array[1, Word]
+    one[0] = g
+    result = shlInto(cast[Words](addr one[0]), 1, shift)
+  else:
+    result = shlInto(y, ny, shift)
+  if onStack: acctLocalEnd(nb * sizeof(Word)) else: xfree(buf)
 
 # ------------------------------------------------------------------------------------------------ conversion (outside the clock)
 proc fromWords*(w: openArray[uint64]): Big =

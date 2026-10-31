@@ -42,19 +42,49 @@ proc encode(x: Big): Val {.inline.} =
   for k in 0 ..< L:
     result[vl + k] = uint8((x[1 + k div WB] shr (8 * (k mod WB))) and 0xFF)
 
+const scap = 66      # round 2: operands decoded into stack buffers up to 65 words (the jobs need at most 32)
+
+proc decodeInto(v: Val; sbuf: var array[scap, Word]): Big {.inline.} =
+  var L = 0
+  var sh = 0
+  var i = 0
+  while true:
+    let c = v[i]
+    inc i
+    L = L or (int(c and 0x7F) shl sh)
+    sh += 7
+    if (c and 0x80) == 0: break
+  let n = (L + WB - 1) div WB
+  if n + 1 <= scap:
+    result = cast[Big](addr sbuf[0])
+    acctLocal((n + 1) * sizeof(Word))
+  else:
+    result = cast[Big](xalloc((n + 1) * sizeof(Word)))
+  result[0] = Word(n)
+  for k in 1 .. n: result[k] = 0
+  for k in 0 ..< L:
+    result[1 + k div WB] = result[1 + k div WB] or (Word(v[i + k]) shl (8 * (k mod WB)))
+
+proc releaseDecoded(x: Big; sbuf: var array[scap, Word]) {.inline.} =
+  if cast[pointer](x) == cast[pointer](addr sbuf[0]): acctLocalEnd((x.len + 1) * sizeof(Word))
+  else: release(x)
+
 template lift(name, routine: untyped) =
   proc name*(a, b: Val): Val =
-    let x = decode(a)
-    let y = decode(b)
+    var sa {.noinit.}: array[scap, Word]
+    var sb {.noinit.}: array[scap, Word]
+    let x = decodeInto(a, sa)
+    let y = decodeInto(b, sb)
     let z = routine(x, y)
     result = encode(z)
-    release(x)
-    release(y)
+    releaseDecoded(x, sa)
+    releaseDecoded(y, sb)
     release(z)
 
 lift(opAdd, growing.opAdd)
 lift(opSub, growing.opSub)
 lift(opAbsdiff, growing.opAbsdiff)
+lift(opAbsdiff2, growing.opAbsdiff2)
 lift(opMul, growing.opMul)
 lift(opDivexact, growing.opDivexact)
 lift(opGcd, growing.opGcd)

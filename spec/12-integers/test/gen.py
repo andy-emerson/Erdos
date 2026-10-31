@@ -17,7 +17,7 @@ from pathlib import Path
 SEED = 20261030
 JOBS = (1, 2, 4, 8, 16)
 N = 1024
-OPS = ("add", "sub", "absdiff", "mul", "divexact", "gcd")
+OPS = ("add", "sub", "absdiff", "mul", "divexact", "gcd", "absdiff2")
 POW2_RATE = 1 / 16
 
 
@@ -46,7 +46,7 @@ def job(rng, k, n):
         h = max(1, m - m // 2)
         g, x, y = draw(rng, max(1, m // 2)), draw(rng, h), draw(rng, h)
         gc.append((g * x, g * y))
-    return {"add": add, "sub": swapped, "absdiff": swapped, "mul": mul, "divexact": div, "gcd": gc}
+    return {"add": add, "sub": swapped, "absdiff": swapped, "mul": mul, "divexact": div, "gcd": gc, "absdiff2": swapped}
 
 
 def exact(op, a, b):
@@ -54,7 +54,7 @@ def exact(op, a, b):
         return a + b
     if op == "sub":
         return a - b
-    if op == "absdiff":
+    if op in ("absdiff", "absdiff2"):
         return abs(a - b)
     if op == "mul":
         return a * b

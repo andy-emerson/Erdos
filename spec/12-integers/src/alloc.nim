@@ -23,3 +23,13 @@ when defined(mem):
 else:
   template xalloc*(n: int): pointer = cMalloc(csize_t(n))
   template xfree*(p: pointer) = cFree(p)
+
+# a function's local scratch on the stack: counted in the memory build like a block, so the peaks stay honest
+when defined(mem):
+  proc acctLocal*(n: int) =
+    live += n
+    if live > peak: peak = live
+  proc acctLocalEnd*(n: int) = live -= n
+else:
+  template acctLocal*(n: int) = discard
+  template acctLocalEnd*(n: int) = discard

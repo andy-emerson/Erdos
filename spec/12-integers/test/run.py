@@ -159,14 +159,15 @@ def main():
                                   **compare(tm["rows"], "growing", "bytes", tm["noise"] or 0)))
     for b in BUILDS:
         for k in gen.JOBS:
-            s, d = timing[f"{k}|sub"], timing[f"{k}|absdiff"]
-            ts = {"sub": s["rows"][b], "absdiff": d["rows"][b]}
-            pairs.append(dict(kind="absdiff x sub", job=k, op="-", ref="sub", row=f"{b} absdiff",
-                              **compare(ts, "sub", "absdiff", max(s["noise"] or 0, d["noise"] or 0))))
+            for ad in ("absdiff", "absdiff2"):
+                s, d = timing[f"{k}|sub"], timing[f"{k}|{ad}"]
+                ts = {"sub": s["rows"][b], ad: d["rows"][b]}
+                pairs.append(dict(kind="absdiff x sub", job=k, op="-", ref="sub", row=f"{b} {ad}",
+                                  **compare(ts, "sub", ad, max(s["noise"] or 0, d["noise"] or 0))))
     for p in pairs:
         ref = f"{p['ref'] if p['kind'] != 'absdiff x sub' else p['row'].split()[0]}"
         if p["kind"] == "absdiff x sub":
-            ma, mb = mem[f"{ref}|{p['job']}|sub"], mem[f"{ref}|{p['job']}|absdiff"]
+            ma, mb = mem[f"{ref}|{p['job']}|sub"], mem[f"{ref}|{p['job']}|{p['row'].split()[1]}"]
         else:
             ma, mb = mem[f"{p['ref']}|{p['job']}|{p['op']}"], mem[f"{p['row']}|{p['job']}|{p['op']}"]
         p["bytes_ratio"] = mb["bpv_acct"] / ma["bpv_acct"]

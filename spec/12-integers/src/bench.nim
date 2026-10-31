@@ -15,7 +15,7 @@ elif bld == "bytes": import bytes
 else: {.error: "unknown build".}
 when defined(mem) and not wordBuild: import alloc
 
-const ops = ["add", "sub", "absdiff", "mul", "divexact", "gcd"]
+const ops = ["add", "sub", "absdiff", "mul", "divexact", "gcd", "absdiff2"]
 const capNs = 10_000_000_000'i64
 
 # ------------------------------------------------------------------------------------------------ per build
@@ -98,7 +98,8 @@ mkLoop(loop_absdiff, opAbsdiff)
 mkLoop(loop_mul, opMul)
 mkLoop(loop_divexact, opDivexact)
 mkLoop(loop_gcd, opGcd)
-const loops = [loop_add, loop_sub, loop_absdiff, loop_mul, loop_divexact, loop_gcd]
+mkLoop(loop_absdiff2, opAbsdiff2)
+const loops = [loop_add, loop_sub, loop_absdiff, loop_mul, loop_divexact, loop_gcd, loop_absdiff2]
 
 proc main() =
   let args = commandLineParams()
@@ -139,7 +140,8 @@ proc main() =
               of 2: opAbsdiff(A[o][j], B[o][j])
               of 3: opMul(A[o][j], B[o][j])
               of 4: opDivexact(A[o][j], B[o][j])
-              else: opGcd(A[o][j], B[o][j])
+              of 5: opGcd(A[o][j], B[o][j])
+              else: opAbsdiff2(A[o][j], B[o][j])
             let p = peak - base
             pk += p
             pkMax = max(pkMax, p)

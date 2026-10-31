@@ -29,6 +29,8 @@ def ctz(x):
 
 
 def model(build, w, op, a, b):
+    if op == "absdiff2":
+        op = "absdiff"
     """the build's expected value (raw, flag included for the flag builds), "trap", or None (not modelled)"""
     if build in ("growing", "bytes"):
         if op == "sub" and a < b:

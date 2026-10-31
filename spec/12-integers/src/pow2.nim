@@ -1,5 +1,5 @@
 # pow2.nim: the Power-of-2 flag build (spec §1.2). Control's uint64; bit 63 means "is a power of 2"; values have 63
-# bits. Every result recomputes the flag. The flag is used in multiply, exact division and gcd.
+# bits. Every result recomputes the flag. The flag is used in exact division and gcd (round 2: not in multiply).
 import bits, bingcd
 
 type Val* = uint64
@@ -18,10 +18,11 @@ proc fromWords*(w: openArray[uint64]): Val = mk(if w.len > 0: w[0] else: 0'u64) 
 proc opAdd*(a, b: Val): Val {.inline.} = mk(v(a) + v(b))
 proc opSub*(a, b: Val): Val {.inline.} = mk(v(a) - v(b))
 proc opAbsdiff*(a, b: Val): Val {.inline.} = (if v(a) >= v(b): mk(v(a) - v(b)) else: mk(v(b) - v(a)))
-proc opMul*(a, b: Val): Val {.inline.} =
-  if flagged(a): mk(v(b) shl ctz(v(a)))
-  elif flagged(b): mk(v(a) shl ctz(v(b)))
-  else: mk(v(a) * v(b))
+proc opAbsdiff2*(a, b: Val): Val {.inline.} =
+  var d: uint64
+  let m = 0'u64 - subBorrow(v(a), v(b), d)
+  mk((d xor m) - m)
+proc opMul*(a, b: Val): Val {.inline.} = mk(v(a) * v(b))   # round 2: a plain multiply is cheaper than the flag's branch
 proc opDivexact*(a, b: Val): Val {.inline.} =
   if flagged(b): mk(v(a) shr ctz(v(b)))
   elif flagged(a): mk(1'u64 shl (ctz(v(a)) - ctz(v(b))))

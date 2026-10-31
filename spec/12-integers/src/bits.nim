@@ -8,3 +8,9 @@ template ctz*(x: uint64): int = int(builtinCtz64(x))
 template clz*(x: uint64): int = int(builtinClz64(x))
 template ctz*(x: uint32): int = int(builtinCtz32(x))
 template clz*(x: uint32): int = int(builtinClz32(x))
+
+proc subBorrow*(a, b: uint64; d: var uint64): uint64 {.inline.} =
+  ## d = a - b (wrapping); returns 1 when it borrowed (a < b), from the subtraction itself
+  var o: bool
+  {.emit: [o, " = __builtin_sub_overflow(", a, ", ", b, ", &", d, ");"].}
+  uint64(o)

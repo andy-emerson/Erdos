@@ -1,17 +1,23 @@
-"""Checks the Python library of paper/v0.6.md, Appendix A.
+"""Checks the library of paper/v0.6.md: Appendix A here, Appendix B in section3.py (B.1) and section4.py (B.2), and
+the Nim code of all three in nimlib.py.
 
-The code is read from the appendix's code block itself, so what is tested is exactly what the paper shows: if the two
-drift apart, this fails. Each function must also be the mechanical translation of its final pseudocode in sections 1-2,
-line for line (the appendix's own substitutions: `·` is `*`, `/` is `//`, `b′` is `b_prime`, and so on). Every function is checked against Python's fractions.Fraction. Branch coverage of every `if`
-in the appendix is recorded and reported, and every outcome must be reached. The worked computation of section 2.12 is
-reproduced call for call, with its intermediate values and the branches it takes. Finally the library is compared,
-untimed, with the textbook control of 10-interning on round 2's small (toy) workloads (control.py). Appendix B is
-checked in the same way by section3.py (B.1, chapter 3, and the rows of section 4.1 from their pseudocode) and
-section4.py (B.2, the matrices of chapter 4, and the index of section 4.3 from its pseudocode).
+The appendices give the library in Nim. The Nim code is read from the paper itself, so what is tested is exactly what
+the paper shows: each function must be the mechanical translation of its final pseudocode, line for line (nimlib.py);
+it is then compiled and run on every call the checks below make, and must give the same values.
+
+The checks themselves run on a Python reference: this harness's own translation of the same pseudocode (the
+substitutions of translate() below: `·` is `*`, `/` is `//`, `b′` is `b_prime`, and so on), since Python's integers
+are unbounded and fractions.Fraction gives the exact answers. Every function is checked against fractions.Fraction.
+Branch coverage of every `if` is recorded and reported, for the reference and for the Nim code, and every outcome
+must be reached. The worked computation of section 2.12 is reproduced call for call, with its intermediate values and
+the branches it takes, in Python and, by call trees, in Nim. Finally the library is compared, untimed, with the
+textbook control of 10-interning on round 2's small (toy) workloads (control.py), and those calls are replayed in Nim
+too. Appendix B is checked in the same way by section3.py (B.1, chapter 3, and the rows of section 4.1 from their
+pseudocode) and section4.py (B.2, the matrices of chapter 4, and the index of section 4.3 from its pseudocode).
 
     python3 paper/verify/verify.py                  everything
-    python3 paper/verify/verify.py --no-control     without the comparison with the control (needs no compiler)
-    python3 paper/verify/verify.py --paper paper/v0.5.md    the previous draft, v0.5
+    python3 paper/verify/verify.py --no-control     without the comparison with the control (needs no numpy)
+    python3 paper/verify/verify.py --nim PATH       the Nim compiler to use (default: $NIM, then nim on the PATH)
 """
 import argparse
 import ast
@@ -26,9 +32,11 @@ from pathlib import Path
 sys.dont_write_bytecode = True    # no __pycache__ beside the paper (control.py is imported)
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import nimlib                     # noqa: E402
+
 PAPER = HERE.parent / "v0.6.md"
-HEADING = "## Appendix A. The library in Python"
-FILENAME = "<v0.6.md, Appendix A>"
+FILENAME = "<v0.6.md, sections 1-2: the Python reference>"
 FUNCTIONS = ["rational", "numerator", "denominator", "mod", "gcd", "reduce", "add", "subtract", "multiply", "divide"]
 OPERATIONS = ("add", "subtract", "multiply", "divide")
 FAILURES = []
@@ -42,39 +50,46 @@ def check(cond, what):
     return cond
 
 
-# --------------------------------------------------------------------------------------------- the code, from the paper
-def extract(path):
-    """The one ```python block of Appendix A, and the line of the paper where it starts."""
-    lines = path.read_text(encoding="utf-8").split("\n")
-    starts = [i for i, l in enumerate(lines) if l.strip() == HEADING]
-    if len(starts) != 1:
-        sys.exit(f"{path.name}: expected one heading {HEADING!r}, found {len(starts)}")
-    end = next((i for i in range(starts[0] + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
-    blocks, i = [], starts[0] + 1
-    while i < end:
-        if lines[i].strip() == "```python":
-            j = next(k for k in range(i + 1, end) if lines[k].strip() == "```")
-            blocks.append((i + 2, "\n".join(lines[i + 1:j]) + "\n"))
-            i = j
-        i += 1
-    if len(blocks) != 1:
-        sys.exit(f"{path.name}: expected one python block in Appendix A, found {len(blocks)}")
-    return blocks[0]
+# ------------------------------------------------------------------------------------- the Python reference
+def build_reference(names, prose, numbered, translate_fn, head=""):
+    """The Python reference's code: head, then each function in order, a fixed short form (prose) or the translation
+    of its numbered pseudocode; and {line of the code: line of the pseudocode in the paper}."""
+    lines = head.rstrip("\n").split("\n") if head else []
+    where = {}
+    for name in names:
+        if name in prose:
+            text, nums = prose[name], []
+        else:
+            src = [l for _, l in numbered[name]]
+            text, nums = translate_fn(name, src), [n for n, _ in numbered[name]]
+        tl = text.rstrip("\n").split("\n")
+        if nums and len(nums) != len(tl):
+            sys.exit(f"{name}: the Python reference is not line for line ({len(tl)} lines for {len(nums)})")
+        for i, l in enumerate(tl):
+            lines.append(l)
+            if nums:
+                where[len(lines)] = nums[i]
+        lines += ["", ""]
+    return "\n".join(lines) + "\n", where
 
 
 def load(path):
-    first_line, code = extract(path)
+    """The Python reference for sections 1-2, from the final pseudocode: (code, tree, line map, namespace)."""
+    numbered = parse_numbered(path.read_text(encoding="utf-8").split("\n## Appendix A")[0])
+    code, where = build_reference(FUNCTIONS, PROSE, numbered, lambda name, lines: translate(lines))
     tree = ast.parse(code)
-    names = [n.name for n in tree.body if isinstance(n, ast.FunctionDef)]
-    if names != FUNCTIONS or len(tree.body) != len(FUNCTIONS):
-        sys.exit(f"Appendix A must define exactly {FUNCTIONS} in this order and nothing else; it defines {names}")
     ns = {}
     exec(compile(code, FILENAME, "exec"), ns)
-    return code, tree, first_line, ns
+    return code, tree, where, ns
+
+
+def where_text(where, ln):
+    n = where.get(ln)
+    return f"{n:4d}" if n else "   -"
 
 
 # ------------------------------------------------------------------------- the translation, against the pseudocode
-# The appendix's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
+# The Python reference's substitutions, applied mechanically to the paper's pseudocode. Order matters: "≠" and "=" before the
 # words, "/" before nothing else makes "//".
 NAMES = {"φ": "phi", "′": "_prime", "₊": "_plus", "₋": "_minus", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6"}
 # rational, numerator and denominator (section 2.1) are defined in prose, not in pseudocode: their translation is fixed
@@ -90,9 +105,15 @@ def pseudocode(path):
 
 def parse_pseudocode(text):
     """{name: lines} of each function's last pseudocode definition in text."""
+    return {k: [l for _, l in v] for k, v in parse_numbered(text).items()}
+
+
+def parse_numbered(text, base=1):
+    """{name: [(line of the paper, line)]} of each function's last pseudocode definition in text, which starts at
+    line base of the paper."""
     out, cur = {}, None
     inside = False
-    for line in text.split("\n"):
+    for n, line in enumerate(text.split("\n"), base):
         if line.strip() == "```text":
             inside, cur = True, None
             continue
@@ -103,14 +124,23 @@ def parse_pseudocode(text):
             continue
         if line.startswith("FUNCTION "):
             cur = line.split()[1].split("(")[0]
-            out[cur] = [line]
+            out[cur] = [(n, line)]
         elif cur and line.startswith("    "):
-            out[cur].append(line)
+            out[cur].append((n, line))
         elif cur and not line.strip():
             continue
         else:
             cur = None
     return out
+
+
+def text_from(path, start=None, stop="\n## Appendix A"):
+    """The part of the paper from the marker start (or its beginning) to stop, and the line it starts on."""
+    text = path.read_text(encoding="utf-8").split(stop)[0]
+    if start is None:
+        return text, 1
+    i = text.index(start) + 1
+    return text[i:], text[:i].count("\n") + 1
 
 
 def expr(e):
@@ -171,35 +201,9 @@ def translate(lines):
     return "\n".join(py) + "\n"
 
 
-def check_literal(path, code, tree):
-    """Each function of the appendix is the mechanical translation of its final pseudocode: the same statements, in
-    the same order, one line of Python per line of pseudocode."""
-    pc = pseudocode(path)
-    print("Line for line against the final pseudocode of sections 1-2:")
-    for fn in tree.body:
-        mine = ast.get_source_segment(code, fn) + "\n"
-        if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 2.1 (prose)"
-        elif fn.name in pc:
-            want, where = translate(pc[fn.name]), f"{len(pc[fn.name])} lines of pseudocode"
-        else:
-            check(False, f"{fn.name}: no pseudocode found in the paper")
-            continue
-        same_tree = ast.dump(ast.parse(mine)) == ast.dump(ast.parse(want))
-        same_lines = len(mine.strip().splitlines()) == len(want.strip().splitlines())
-        ok = check(same_tree and same_lines, f"{fn.name}: the appendix is not the translation of its pseudocode")
-        if not ok:
-            for a, b in zip(mine.splitlines() + [""] * 99, want.splitlines() + [""] * 99):
-                if a.strip() != b.strip():
-                    print(f"    appendix:    {a.strip()}\n    translation: {b.strip()}")
-                    break
-        print(f"  {fn.name:12s} {'identical' if ok else 'DIFFERS'} ({where})")
-    print()
-
-
 # ------------------------------------------------------------------------------------------------ coverage and tracing
 class Branches:
-    """Every `if` of the appendix: its condition's text, the line it is on, where its true outcome goes (the same
+    """Every `if` of the Python reference: its condition's text, the line it is on, where its true outcome goes (the same
     line for a one-line `if ...: return`, else the first line of its block), and its top-level `or` terms."""
 
     def __init__(self, code, tree):
@@ -221,7 +225,7 @@ class Branches:
 
 
 class Tracer:
-    """sys.settrace over the appendix's frames only. It records, per frame, the lines run in order (a frame's exit
+    """sys.settrace over the Python reference's frames only. It records, per frame, the lines run in order (a frame's exit
     as "exit"), the call tree with arguments and results, and the locals at return; and, over the whole run, the
     arcs between lines and which `or` terms were ever true."""
 
@@ -300,12 +304,12 @@ class Tracer:
         return out
 
 
-def coverage_report(br, tr, first_line):
-    """Prints the branch coverage, by line of the paper; returns the outcomes never reached."""
-    at = first_line - 1
+def coverage_report(br, tr, where):
+    """Prints the branch coverage of the Python reference, by line of the pseudocode in the paper; returns the
+    outcomes never reached."""
     missing, reached_ops_missing = [], []
-    print("\nBranch coverage (each `if`: times true / times false; [ops] = also reached from inside the four "
-          "operations)")
+    print("\nBranch coverage of the Python reference, by pseudocode line of the paper (each `if`: times true / times "
+          "false; [ops] = also reached from inside the four operations)")
     for ln in sorted(br.ifs):
         fn, text, target, terms = br.ifs[ln]
         res = {}
@@ -318,18 +322,18 @@ def coverage_report(br, tr, first_line):
         ot, of = res["ops"]
         tag = "" if fn in ("rational", "numerator", "denominator") else (
             "  [ops: both]" if ot and of else f"  [ops: {'true only' if ot else 'false only' if of else 'never'}]")
-        print(f"  {fn:9s} line {at + ln:4d}  if {text:55s} true {t:7d}  false {f:7d}{tag}")
+        print(f"  {fn:9s} line {where_text(where, ln)}  if {text:55s} true {t:7d}  false {f:7d}{tag}")
         if not t:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never true")
+            missing.append(f"{fn} line {where_text(where, ln)}: `if {text}` never true")
         if not f:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never false")
+            missing.append(f"{fn} line {where_text(where, ln)}: `if {text}` never false")
         if ot == 0 or of == 0:
             reached_ops_missing.append((fn, text, "true" if ot == 0 else "false"))
         for i, (_, src) in enumerate(terms):
             n = tr.terms[(ln, i)]
             print(f"  {'':9s}            or-term {src:47s} true {n:7d}")
             if not n:
-                missing.append(f"{fn} line {at + ln}: or-term `{src}` never true")
+                missing.append(f"{fn} line {where_text(where, ln)}: or-term `{src}` never true")
     ran = {ln for (ln, b) in tr.arcs["all"] if b is None}
     unrun = sorted(set(br.lines) - ran)
     n_out = 2 * len(br.ifs)
@@ -343,7 +347,7 @@ def coverage_report(br, tr, first_line):
         for fn, text, which in reached_ops_missing:
             print(f"    {fn}: `if {text}` {which}")
     for ln in unrun:
-        missing.append(f"line {at + ln} ({br.lines[ln]}) never ran")
+        missing.append(f"line {where_text(where, ln)} ({br.lines[ln]}) never ran")
     return missing
 
 
@@ -481,7 +485,7 @@ def check_functions(ns, tr):
 
 # ------------------------------------------------------------------------------------------------- section 2.12's trace
 def check_bit_examples():
-    """Section 1.3's bit operations, through the appendix's translation: 12 AND 10 = 8 (1100 and 1010 give 1000),
+    """Section 1.3's bit operations, through the Python translation: 12 AND 10 = 8 (1100 and 1010 give 1000),
     13 >> 1 = 6 (1101 to 110), 3 << 2 = 12, u AND 1 the last binary digit, and the bracketed AND of a condition."""
     ok = (eval(expr("12 AND 10")) == 8 and bin(12) == "0b1100" and bin(10) == "0b1010" and bin(8) == "0b1000"
           and eval(expr("13 >> 1")) == 6 and bin(13) == "0b1101" and bin(6) == "0b110" and eval(expr("3 << 2")) == 12
@@ -497,7 +501,8 @@ def check_gcd_example(ns, tr):
     """Section 1.4's example: gcd(84, 36) = 2 gcd(42, 18) = 4 gcd(21, 9) = 4 gcd(6, 9) = 4 gcd(3, 9) = 4 gcd(3, 3)
     = 4 gcd(0, 3) = 12, call for call."""
     tr.log = []
-    g = ns["gcd"](84, 36)
+    with nimlib.traced():
+        g = ns["gcd"](84, 36)
     chain = [(e["depth"], e["args"], e["result"]) for e in tr.log if e["name"] == "gcd"]
     tr.log = None
     want = [(0, (84, 36), 12), (1, (42, 18), 6), (2, (21, 9), 3), (3, (6, 9), 3), (4, (3, 9), 3), (5, (3, 3), 3),
@@ -513,9 +518,10 @@ def check_trace(ns, tr):
     rational = ns["rational"]
     x, y = rational(5, 6), rational(1, 10)
     tr.log = []
-    z = ns["reduce"](rational(-44, 30))
-    r = ns["subtract"](x, y)
-    w = ns["divide"](r, z)
+    with nimlib.traced():
+        z = ns["reduce"](rational(-44, 30))
+        r = ns["subtract"](x, y)
+        w = ns["divide"](r, z)
     log = [e for e in tr.log if e["name"] not in ("rational", "numerator", "denominator", "mod")]
     tr.log = None
 
@@ -669,29 +675,48 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--no-control", action="store_true", help="skip the comparison with 10-interning's control")
     ap.add_argument("--paper", type=Path, default=PAPER, help="the paper to read (default: %(default)s)")
+    ap.add_argument("--nim", help="the Nim compiler (default: $NIM, then nim on the PATH)")
     a = ap.parse_args()
     sys.setrecursionlimit(max(sys.getrecursionlimit(), 10000))    # the binary gcd calls itself once per digit removed
-    code, tree, first_line, ns = load(a.paper)
-    print(f"Appendix A of {a.paper.name}: {len(code.splitlines())} lines of Python from line {first_line} of the paper, "
-          f"defining {', '.join(FUNCTIONS)}\n")
-    check_literal(a.paper, code, tree)
+    import section3
+    import section4
+    nim = nimlib.find_nim(a.nim)
+    check(nim is not None, "no Nim compiler: give --nim PATH or set NIM (see README.md for the pinned build)")
+
+    # the Nim code, from the paper, line for line against the pseudocode
+    blocks = nimlib.extract(a.paper)
+    pseudo = {"A": pseudocode(a.paper), "B.1": section3.section_pseudocode(a.paper, sys.modules[__name__])[0],
+              "B.2": section4.chapter4_pseudocode(a.paper, sys.modules[__name__])}
+    for part in ("A", "B.1", "B.2"):
+        first, code = blocks[part]
+        print(f"Appendix {part} of {a.paper.name}: {len(code.splitlines())} lines of Nim from line {first} of the paper")
+    print()
+    nimlib.check_literal(blocks, pseudo, check)
+    nimlib.RECORDER = nimlib.Recorder(nimlib.entries_for(blocks))
+
+    # the checks, on the Python reference, through the recorder
+    code, tree, where, lib = load(a.paper)
+    api = nimlib.RECORDER.api(lib, FUNCTIONS)
+    print(f"The Python reference for sections 1-2: {len(code.splitlines())} lines, translated from the pseudocode by "
+          f"this harness, defining {', '.join(FUNCTIONS)}\n")
     check_order(a.paper)
     br = Branches(code, tree)
     with Tracer(br) as tr:
-        check_functions(ns, tr)
+        check_functions(api, tr)
         check_bit_examples()
-        check_gcd_example(ns, tr)
-        check_trace(ns, tr)
-    missing = coverage_report(br, tr, first_line)
+        check_gcd_example(api, tr)
+        check_trace(api, tr)
+    missing = coverage_report(br, tr, where)
     for m in missing:
         check(False, "coverage: " + m)
-    import section3
-    import section4
-    ns_b = section3.run(a.paper, ns, FILENAME, sys.modules[__name__], check)
-    section4.run(a.paper, ns_b, FILENAME, sys.modules[__name__], check)
+    lib_b1, part_b1 = section3.run(a.paper, lib, FILENAME, sys.modules[__name__], check)
+    lib_b2, part_b2 = section4.run(a.paper, lib_b1, FILENAME, sys.modules[__name__], check)
     if not a.no_control:
         import control
-        control.compare(ns, check)
+        control.compare(nimlib.RECORDER.api(lib, FUNCTIONS), check)
+    if nim:
+        parts = [("A", code, FILENAME, 0), part_b1, part_b2]
+        nimlib.run(a.paper, blocks, pseudo, parts, lib_b2, check, nim)
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)} check(s)")

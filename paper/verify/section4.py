@@ -1,11 +1,11 @@
-"""Checks Appendix B.2 of paper/v0.6.md, the chapter 4 part of the extension library in Python (the matrices), as
-verify.py checks Appendix A and section3.py checks B.1.
+"""Checks Appendix B.2 of paper/v0.6.md, the chapter 4 part of the extension library (the matrices), as verify.py
+checks Appendix A and section3.py checks B.1.
 
-Appendix B's second ```python block (B.2) is read from the paper and run on top of Appendix A and B.1, whose functions it
-uses and does not repeat. Each function must be the line-for-line translation of its pseudocode in sections 4.2-4.6
-(the substitutions of Appendices A and B, with `SET A[i] = v` as an assignment, `DO f(x)` as a call on its own line,
-`RETURN` alone as `return`, and ERROR raising ValueError); the arrays and matrices of section 4.2, defined in prose,
-have fixed short forms. Then:
+The appendix is in Nim, and nimlib.py checks it line for line and runs it on every call recorded here. The checks here
+run on the Python reference: this harness's translation of the pseudocode of sections 4.2-4.6 (the substitutions of
+verify.py and section3.py, with `SET A[i] = v` as an assignment, `DO f(x)` as a call on its own line, `RETURN` alone
+as `return`, and ERROR raising ValueError), on top of the references of Appendix A and B.1; the arrays and matrices of
+section 4.2, defined in prose, have fixed short forms. Then:
 
 - every matrix built, added or multiplied is compared, cell by cell, with a plain reference matrix of
   fractions.Fraction, and every cell must be the stored value (lowest terms, positive denominator) that chapter 2's add
@@ -32,16 +32,18 @@ from fractions import Fraction
 
 import section3
 
-FILENAME = "<v0.6.md, Appendix B.2>"
+FILENAME = "<v0.6.md, chapter 4: the Python reference>"
 INDEX_FILENAME = "<v0.6.md, section 4.3 pseudocode>"
-HEAD = ["unused = None", "phi = 11400714819323198485",
-        "Matrix = namedtuple('Matrix', 'rows columns width handles values')"]
+HEAD = ("unused = None\n"
+        "phi = 0x9E3779B97F4A7C15\n"
+        "Matrix = namedtuple('Matrix', 'rows columns width handles values')\n\n\n")
+HEAD_LINES = 3
 FUNCTIONS = ["array", "size", "matrix", "row_count", "column_count", "handles", "values",
              "cell", "entry", "home", "probe", "put", "table_size", "place", "positions", "copy_values", "rewrite", "bits", "pack",
              "place_all", "build", "add_cells", "add_matrices", "dot", "product_cells", "product_rows",
              "multiply_matrices"]
 PSEUDOCODE_ONLY = ["search"]           # section 4.3, the index
-# the arrays and matrices of section 4.2, defined in prose: their translation is fixed (Appendix B.2's own text)
+# the arrays and matrices of section 4.2, defined in prose: their translation is fixed here
 PROSE = {"array": "def array(n):\n    return [unused] * n\n",
          "size": "def size(A):\n    return len(A)\n",
          "matrix": "def matrix(r, c, w, H, L):\n    return Matrix(r, c, w, H, L)\n",
@@ -53,16 +55,15 @@ PHI = 0x9E3779B97F4A7C15
 
 
 # ------------------------------------------------------------------------------------------------------- the code
-def load(path, ns_b):
-    first_line, code = section3.extract(path, part=1)
+def load(path, ns_b, V):
+    """The Python reference for sections 4.2-4.6, on top of Appendix A's and B.1's: (code, tree, line map, namespace)."""
+    text, base = V.text_from(path, "\n### 4.2 ")
+    numbered = V.parse_numbered(text, base)
+    code, where = V.build_reference(FUNCTIONS, PROSE, numbered, lambda name, lines: translation(lines, V), HEAD)
     tree = ast.parse(code)
-    head = [ast.unparse(n) for n in tree.body[:len(HEAD)]]
-    names = [n.name for n in tree.body[len(HEAD):] if isinstance(n, ast.FunctionDef)]
-    if head != HEAD or names != FUNCTIONS or len(tree.body) != len(FUNCTIONS) + len(HEAD):
-        sys.exit(f"Appendix B.2 must be {HEAD} and then define exactly {FUNCTIONS} in this order; it defines {names}")
     ns = dict(ns_b)                      # Appendix A's and B.1's functions, used as they are
     exec(compile(code, FILENAME, "exec"), ns)
-    return code, tree, first_line, ns
+    return code, tree, where, ns
 
 
 def chapter4_pseudocode(path, V):
@@ -122,29 +123,30 @@ class Tracer:
         return local
 
 
-def coverage(br, tr, first_line, check):
-    at = first_line - 1
+def coverage(br, tr, where, V, check):
     missing = []
-    print("\nAppendix B.2 branch coverage (each `if`: times true / times false)")
+    print("\nBranch coverage of the Python reference for chapter 4, by pseudocode line of the paper (each `if`: times "
+          "true / times false)")
     for ln in sorted(br.ifs):
         fn, text, _, terms = br.ifs[ln]
+        at = V.where_text(where, ln)
         t, f = tr.outcomes[(ln, True)], tr.outcomes[(ln, False)]
-        print(f"  {fn:18s} line {at + ln:4d}  if {text:68s} true {t:7d}  false {f:7d}")
+        print(f"  {fn:18s} line {at}  if {text:68s} true {t:7d}  false {f:7d}")
         if not t:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never true")
+            missing.append(f"{fn} line {at}: `if {text}` never true")
         if not f:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never false")
+            missing.append(f"{fn} line {at}: `if {text}` never false")
         for i, (_, src) in enumerate(terms):
             n = tr.terms[(ln, i)]
             print(f"  {'':18s}            or-term {src:60s} true {n:7d}")
             if not n:
-                missing.append(f"{fn} line {at + ln}: or-term `{src}` never true")
+                missing.append(f"{fn} line {at}: or-term `{src}` never true")
     unrun = sorted(ln for ln in br.lines if not tr.ran[ln])
     for ln in unrun:
-        missing.append(f"line {at + ln} ({br.lines[ln]}) never ran")
+        missing.append(f"line {V.where_text(where, ln)} ({br.lines[ln]}) never ran")
     print(f"  statements run: {len(br.lines) - len(unrun)} of {len(br.lines)}")
     for m in missing:
-        check(False, "Appendix B.2 coverage: " + m)
+        check(False, "chapter 4 coverage: " + m)
 
 
 # ------------------------------------------------------------------------------------------------- references
@@ -499,44 +501,26 @@ def check_examples(ns, ck, check):
 
 def run(path, ns_b, a_filename, V, check):
     sys.setrecursionlimit(max(sys.getrecursionlimit(), 20000))
-    code, tree, first_line, ns = load(path, ns_b)
-    print(f"\nAppendix B.2 of {path.name}: {len(code.splitlines())} lines of Python from line {first_line} of the "
-          f"paper, defining unused, Matrix, {', '.join(FUNCTIONS)}, on top of Appendix A and B.1\n")
-
+    code, tree, where, ns = load(path, ns_b, V)
+    print(f"\nThe Python reference for chapter 4 (Appendix B.2): {len(code.splitlines())} lines, translated from the "
+          f"pseudocode by this harness, defining unused, Matrix, {', '.join(FUNCTIONS)}, on top of Appendix A's and B.1's")
     pc = chapter4_pseudocode(path, V)
     check(sorted(pc) == sorted(set(FUNCTIONS) - set(PROSE) | set(PSEUDOCODE_ONLY)),
           f"sections 4.2-4.8 define {sorted(pc)}")
-    print("Line for line against the pseudocode of sections 4.2-4.6:")
-    for fn in section3.Funcs(tree).body:
-        mine = ast.get_source_segment(code, fn) + "\n"
-        if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 4.2 (prose)"
-        elif fn.name in pc:
-            want, where = translation(pc[fn.name], V), f"{len(pc[fn.name])} lines of pseudocode"
-        else:
-            check(False, f"{fn.name}: no pseudocode found in the paper")
-            continue
-        same = (ast.dump(ast.parse(mine)) == ast.dump(ast.parse(want))
-                and len(mine.strip().splitlines()) == len(want.strip().splitlines()))
-        ok = check(same, f"{fn.name}: Appendix B.2 is not the translation of its pseudocode")
-        if not ok:
-            for a, b in zip(mine.splitlines() + [""] * 99, want.splitlines() + [""] * 99):
-                if a.strip() != b.strip():
-                    print(f"    appendix:    {a.strip()}\n    translation: {b.strip()}")
-                    break
-        print(f"  {fn.name:20s} {'identical' if ok else 'DIFFERS'} ({where})")
     print(f"  ({', '.join(PSEUDOCODE_ONLY)}: section 4.3's index, pseudocode only, translated by this harness)")
-
+    api = V.nimlib.RECORDER.api(ns, V.FUNCTIONS + section3.FUNCTIONS + FUNCTIONS)
     br = V.Branches(code, section3.Funcs(tree))
     with Tracer(br) as tr:
-        ck = Checker(ns, tr, V, check)
-        check_matrices(ns, ck, V, check)
-        check_tables(ns, ck, V, check)
-        check_examples(ns, ck, check)
+        ck = Checker(api, tr, V, check)
+        check_matrices(api, ck, V, check)
+        check_tables(api, ck, V, check)
+        with V.nimlib.traced():
+            check_examples(api, ck, check)
     check_index(path, ns, V, check)
     check_first_home(path, ns, V, check)
-    print("\nAppendix B.2 against plain matrices of fractions.Fraction (cells in lowest terms; lists, handles, widths "
+    print("\nChapter 4 against plain matrices of fractions.Fraction (cells in lowest terms; lists, handles, widths "
           "and build tables as section 4.8 promises):")
     for k in sorted(ck.counts):
         print(f"  {k:36s} {ck.counts[k]:8d}")
-    coverage(br, tr, first_line, check)
+    coverage(br, tr, where, V, check)
+    return ns, ("B.2", code, FILENAME, HEAD_LINES)

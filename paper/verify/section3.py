@@ -1,15 +1,16 @@
-"""Checks Appendix B.1 of paper/v0.6.md, the chapter 3 part of the extension library in Python, as verify.py checks
-Appendix A; and the rows of section 4.1, which are pseudocode only, from a translation made here.
+"""Checks Appendix B.1 of paper/v0.6.md, the chapter 3 part of the extension library, as verify.py checks Appendix A;
+and the rows of section 4.1, which are pseudocode only, from a translation made here.
 
-Appendix B's first ```python block (B.1) is read from the paper and run on top of Appendix A's functions, which it uses
-and does not repeat. Each function must be the line-for-line translation of its pseudocode in chapter 3 (sections
-3.1-3.9) (Appendix A's substitutions, with ERROR raising ZeroDivisionError for a zero divisor, OverflowError for a scale
-above 18 and ValueError otherwise); every function is checked against fractions.Fraction, including signs, zero, values
-that cannot join, empty columns, sums that reduce to zero, raw entries, decimals at every scale, scale overflow and
-quotients that leave the decimals; every `if` outcome (and any `or` term) of B.1 must be reached; and every formula and
-example of chapters 1 (the lcm) and 3 is reproduced, with the gcd and reduce calls it claims. The rows of section 4.1 are
-not library code (the author's rule: no unused library code), so they are not in Appendix B; this harness translates
-their pseudocode itself, with `pair` as a `Row`, and runs the same checks on it as before.
+The appendix is in Nim, and nimlib.py checks it line for line and runs it. The checks here run on the Python
+reference: this harness's translation of the pseudocode of chapter 3 (sections 3.1-3.9), with Appendix A's
+substitutions, ERROR raising ZeroDivisionError for a zero divisor, OverflowError for a scale above 18 and ValueError
+otherwise, built on top of the Python reference of Appendix A. Every function is checked against fractions.Fraction,
+including signs, zero, values that cannot join, empty columns, sums that reduce to zero, raw entries, decimals at every
+scale, scale overflow and quotients that leave the decimals; every `if` outcome (and any `or` term) must be reached;
+and every formula and example of chapters 1 (the lcm) and 3 is reproduced, with the gcd and reduce calls it claims.
+Every call these checks make is recorded, and replayed in Nim by nimlib.py. The rows of section 4.1 are not library
+code (the author's rule: no unused library code), so they are not in Appendix B; this harness translates their
+pseudocode itself, with `pair` as a `Row`, and runs the same checks on it as before.
 """
 import ast
 import math
@@ -19,22 +20,24 @@ import sys
 from collections import Counter
 from fractions import Fraction
 
-HEADING = "## Appendix B. The extension library in Python"          # v0.6, build 4b: B.1 decimals, B.2 matrices
-FILENAME = "<v0.6.md, Appendix B.1>"
+FILENAME = "<v0.6.md, chapter 3: the Python reference>"
 ROWS_FILENAME = "<v0.6.md, section 4.1 pseudocode>"
-FUNCTIONS = ["prepend", "first", "rest", "shared", "entries",
+FUNCTIONS = ["prepend", "first", "rest", "pair", "shared", "entries",
              "column", "join", "take", "tally", "sum_",
              "decimal", "scale", "power", "add_decimals", "subtract_decimals", "multiply_decimals",
              "to_rational", "strip", "places", "to_decimal", "divide_decimals"]
-HEAD = ["from collections import namedtuple", "empty = None",
-        "Column = namedtuple('Column', 'shared entries')",
-        "Decimal = namedtuple('Decimal', 'numerator scale')"]
+HEAD = ("from collections import namedtuple\n"
+        "empty = None\n"
+        "Column = namedtuple('Column', 'shared entries')\n"
+        "Decimal = namedtuple('Decimal', 'numerator scale')\n\n\n")
+HEAD_LINES = 4                     # its statements
 ROW_FUNCTIONS = ["row", "join", "product", "take"]     # section 4.1, pseudocode only
 LIMIT = 18                         # the largest scale, for 64-bit numerators (section 3.4)
-# the lists, columns and rows of section 3.1, defined in prose: their translation is fixed (Appendix B's own text)
+# the lists, columns and rows of section 3.1, defined in prose: their translation is fixed here
 PROSE = {"prepend": "def prepend(u, L):\n    return (u, L)\n",
          "first": "def first(L):\n    return L[0]\n",
          "rest": "def rest(L):\n    return L[1]\n",
+         "pair": "def pair(s, L):\n    return Column(s, L)\n",
          "shared": "def shared(g):\n    return g[0]\n",
          "entries": "def entries(g):\n    return g[1]\n",
          # the decimals of section 3.4, defined in prose
@@ -43,47 +46,27 @@ PROSE = {"prepend": "def prepend(u, L):\n    return (u, L)\n",
 PYNAME = {"sum": "sum_"}           # `sum` is a Python built-in
 
 
-def extract(path, part=0):
-    """Appendix B has two ```python blocks, B.1 (part 0) and B.2 (part 1); the one asked for, and its first line."""
-    lines = path.read_text(encoding="utf-8").split("\n")
-    starts = [i for i, l in enumerate(lines) if l.strip() == HEADING]
-    if len(starts) != 1:
-        sys.exit(f"{path.name}: expected one heading {HEADING!r}, found {len(starts)}")
-    end = next((i for i in range(starts[0] + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
-    blocks, i = [], starts[0] + 1
-    while i < end:
-        if lines[i].strip() == "```python":
-            j = next(k for k in range(i + 1, end) if lines[k].strip() == "```")
-            blocks.append((i + 2, "\n".join(lines[i + 1:j]) + "\n"))
-            i = j
-        i += 1
-    if len(blocks) != 2:
-        sys.exit(f"{path.name}: expected two python blocks in Appendix B (B.1 and B.2), found {len(blocks)}")
-    return blocks[part]
-
-
-def load(path, ns_a):
-    first_line, code = extract(path)
+def load(path, ns_a, V):
+    """The Python reference for chapter 3, on top of Appendix A's: (code, tree, line map, namespace)."""
+    text, base = V.text_from(path, "\n## 3. ", "\n## 4. ")
+    numbered = V.parse_numbered(text, base)
+    pc = {PYNAME.get(k, k): v for k, v in numbered.items()}
+    code, where = V.build_reference(FUNCTIONS, PROSE, pc, lambda name, lines: wanted_lines(lines, V), HEAD)
     tree = ast.parse(code)
-    head = [ast.unparse(n) for n in tree.body[:len(HEAD)]]
-    names = [n.name for n in tree.body[len(HEAD):] if isinstance(n, ast.FunctionDef)]
-    if head != HEAD or names != FUNCTIONS or len(tree.body) != len(FUNCTIONS) + len(HEAD):
-        sys.exit(f"Appendix B.1 must be {HEAD} and then define exactly {FUNCTIONS} in this order; "
-                 f"it defines {names}")
     ns = dict(ns_a)                      # Appendix A's functions, used as they are
     exec(compile(code, FILENAME, "exec"), ns)
-    return code, tree, first_line, ns
+    return code, tree, where, ns
 
 
 class Funcs:
-    """Appendix B's function definitions only, for verify.Branches."""
+    """The Python reference's function definitions only, for verify.Branches."""
     def __init__(self, tree):
         self.body = [n for n in tree.body if isinstance(n, ast.FunctionDef)]
 
 
 class Tracer:
-    """Traces Appendix B's frames line by line (arcs and `or` terms, for coverage), and counts calls of Appendix A's
-    reduce, and of gcd from outside gcd (one per gcd computed, not per step of Euclid's algorithm)."""
+    """Traces the chapter 3 reference's frames line by line (arcs and `or` terms, for coverage), and counts calls
+    of Appendix A's reduce, and of gcd from outside gcd (one per gcd computed, not per step of Euclid's algorithm)."""
 
     def __init__(self, br, a_filename):
         self.br, self.a_filename = br, a_filename
@@ -133,7 +116,7 @@ class Tracer:
         return local
 
     def count(self, f, *args):
-        """f(*args), with the calls it makes of reduce, gcd and Appendix B's functions."""
+        """f(*args), with the calls it makes of reduce, gcd and chapter 3's functions."""
         before = Counter(self.calls)
         r = f(*args)
         return r, self.calls - before
@@ -150,7 +133,7 @@ def section_pseudocode(path, V):
 
 def errors(py):
     """ERROR, which V.translate writes as ZeroDivisionError: kept for a zero divisor, OverflowError for a scale above
-    the limit, ValueError otherwise (Appendix B's text)."""
+    the limit, ValueError otherwise."""
     out = []
     for l in py.splitlines():
         if "raise ZeroDivisionError" in l and "numerator(y) == 0" not in l:
@@ -159,19 +142,26 @@ def errors(py):
     return "\n".join(out) + "\n"
 
 
-def wanted(fn, pc3, V, kind="Column"):
+def wanted_lines(lines, V, kind=None):
+    """The Python of one pseudocode function: `pair` stays a function of its own, or becomes the kind of pair given
+    (the rows of section 4.1 are Rows)."""
+    py = errors(V.translate(lines))
+    if kind:
+        py = py.replace("pair(", kind + "(")
+    for k, v in PYNAME.items():
+        py = re.sub(r"\bdef " + k + r"\(", "def " + v + "(", py)
+    return py
+
+
+def wanted(fn, pc3, V, kind=None):
     src = {PYNAME.get(k, k): v for k, v in pc3.items()}
     if fn not in src:
         return None, None
-    lines = src[fn]
-    py = errors(V.translate(lines)).replace("pair(", kind + "(")
-    for k, v in PYNAME.items():
-        py = re.sub(r"\bdef " + k + r"\(", "def " + v + "(", py)
-    return py, f"{len(lines)} lines of pseudocode"
+    return wanted_lines(src[fn], V, kind), f"{len(src[fn])} lines of pseudocode"
 
 
 def row_namespace(ns, pc41, V):
-    """The rows of section 4.1, pseudocode only: translated here, as Appendix B would, with `pair` as a Row, and run on
+    """The rows of section 4.1, pseudocode only: translated here, as chapter 3's are, with `pair` as a Row, and run on
     top of B.1 (in a namespace of their own, since their join and take are not the columns')."""
     rns = dict(ns)
     exec("from collections import namedtuple\nRow = namedtuple('Row', 'shared entries')\n", rns)
@@ -182,43 +172,23 @@ def row_namespace(ns, pc41, V):
 
 
 def run(path, ns_a, a_filename, V, check):
-    code, tree, first_line, ns = load(path, ns_a)
-    print(f"\nAppendix B.1 of {path.name}: {len(code.splitlines())} lines of Python from line {first_line} of the "
-          f"paper, defining empty, {', '.join(FUNCTIONS)}, on top of Appendix A\n")
-
-    # ---------------------------------------------------------------------------------- line for line against chapter 3
+    code, tree, where, ns = load(path, ns_a, V)
+    print(f"\nThe Python reference for chapter 3 (Appendix B.1): {len(code.splitlines())} lines, translated from the "
+          f"pseudocode by this harness, defining empty, {', '.join(FUNCTIONS)}, on top of Appendix A's")
     pc3, pc41 = section_pseudocode(path, V)
     check(sorted(pc41) == sorted(ROW_FUNCTIONS), f"section 4.1 defines {sorted(pc41)}")
-    print("Line for line against the pseudocode of chapter 3:")
-    for fn in Funcs(tree).body:
-        mine = ast.get_source_segment(code, fn) + "\n"
-        if fn.name in PROSE:
-            want, where = PROSE[fn.name], "section 3.4 (prose)" if fn.name in ("decimal", "scale") else "section 3.1 (prose)"
-        else:
-            want, where = wanted(fn.name, pc3, V)
-            if want is None:
-                check(False, f"{fn.name}: no pseudocode found in the paper")
-                continue
-        same = (ast.dump(ast.parse(mine)) == ast.dump(ast.parse(want))
-                and len(mine.strip().splitlines()) == len(want.strip().splitlines()))
-        ok = check(same, f"{fn.name}: Appendix B is not the translation of its pseudocode")
-        if not ok:
-            for a, b in zip(mine.splitlines() + [""] * 99, want.splitlines() + [""] * 99):
-                if a.strip() != b.strip():
-                    print(f"    appendix:    {a.strip()}\n    translation: {b.strip()}")
-                    break
-        print(f"  {fn.name:28s} {'identical' if ok else 'DIFFERS'} ({where})")
-
     rns = row_namespace(ns, pc41, V)
     print(f"  (section 4.1's rows, {', '.join(ROW_FUNCTIONS)}: pseudocode only, translated by this harness)")
+    api = V.nimlib.RECORDER.api(ns, V.FUNCTIONS + FUNCTIONS)
     br = V.Branches(code, Funcs(tree))
     with Tracer(br, a_filename) as tr:
-        check_functions(ns, rns, tr, V, check)
-        check_decimals(ns, tr, V, check)
-        check_examples(ns, rns, tr, check)
-        check_decimal_examples(ns, tr, check)
-    coverage(br, tr, first_line, check)
-    return ns
+        check_functions(api, rns, tr, V, check)
+        check_decimals(api, tr, V, check)
+        with V.nimlib.traced():
+            check_examples(api, rns, tr, check)
+            check_decimal_examples(api, tr, check)
+    coverage(br, tr, where, V, check)
+    return ns, ("B.1", code, FILENAME, HEAD_LINES)
 
 
 def raises(f, *args):
@@ -369,7 +339,7 @@ def check_functions(ns, rns, tr, V, check):
                 check(is_stored(r) and F(r) == Fraction(a, b) * Fraction(a, d) and not n["gcd"],
                       f"raw entries: product({a}; {b}, {d}) = {r}")
                 counts["product (raw entries)"] += 1
-    print("\nAppendix B.1, and section 4.1's rows, against fractions.Fraction (taken-out values and row values: "
+    print("\nChapter 3, and section 4.1's rows, against fractions.Fraction (taken-out values and row values: "
           "lowest terms, positive denominator):")
     for k in sorted(counts):
         print(f"  {k:36s} {counts[k]:8d} calls")
@@ -695,28 +665,29 @@ def check_decimal_examples(ns, tr, check):
           "scale overflow, alignment as section 2.9, 0.50 as 1/2, 1 / 8, 7 / 2, 1 / 0.3, 0.6 / 0.3")
 
 
-def coverage(br, tr, first_line, check):
-    at = first_line - 1
+def coverage(br, tr, where, V, check):
     missing = []
-    print("\nAppendix B.1 branch coverage (each `if`: times true / times false)")
+    print("\nBranch coverage of the Python reference for chapter 3, by pseudocode line of the paper (each `if`: times "
+          "true / times false)")
     for ln in sorted(br.ifs):
         fn, text, target, terms = br.ifs[ln]
         t = tr.arcs[(ln, target)]
         f = sum(n for (a, b), n in tr.arcs.items() if a == ln and b is not None and b != target)
-        print(f"  {fn:28s} line {at + ln:4d}  if {text:30s} true {t:7d}  false {f:7d}")
+        at = V.where_text(where, ln)
+        print(f"  {fn:28s} line {at}  if {text:30s} true {t:7d}  false {f:7d}")
         if not t:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never true")
+            missing.append(f"{fn} line {at}: `if {text}` never true")
         if not f:
-            missing.append(f"{fn} line {at + ln}: `if {text}` never false")
+            missing.append(f"{fn} line {at}: `if {text}` never false")
         for i, (_, src) in enumerate(terms):
             n = tr.terms[(ln, i)]
             print(f"  {'':28s}            or-term {src:22s} true {n:7d}")
             if not n:
-                missing.append(f"{fn} line {at + ln}: or-term `{src}` never true")
+                missing.append(f"{fn} line {at}: or-term `{src}` never true")
     ran = {ln for (ln, b) in tr.arcs if b is None}
     unrun = sorted(set(br.lines) - ran)
     for ln in unrun:
-        missing.append(f"line {at + ln} ({br.lines[ln]}) never ran")
+        missing.append(f"line {V.where_text(where, ln)} ({br.lines[ln]}) never ran")
     print(f"  statements run: {len(br.lines) - len(unrun)} of {len(br.lines)}")
     for m in missing:
-        check(False, "Appendix B.1 coverage: " + m)
+        check(False, "chapter 3 coverage: " + m)

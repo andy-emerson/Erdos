@@ -17,6 +17,14 @@ for x in (0, 1):
         assert nand(x, y) == (1 + x * y) % 2 and nand(x, y) != (x | y) or (x, y) != (0, 0)
         assert 1 - nand(x, y) == x & y and nand(1 - x, 1 - y) == x | y
 assert nand(0, 0) == 1 and (0 | 0) == 0
+# 1.2: De Morgan's laws
+for x in (0, 1):
+    for y in (0, 1):
+        assert 1 - (x & y) == (1 - x) | (1 - y) and 1 - (x | y) == (1 - x) & (1 - y)
+# 1.3: decimal and binary place value, digit counts
+assert 4 * 10**3 + 7 * 10**2 + 2 * 10 + 5 == 4725 and 1 * 8 + 1 * 4 + 0 * 2 + 1 == 0b1101 == 13
+assert bin(4725)[2:] == "1001001110101" and len(bin(4725)[2:]) == 13
+assert all(n % d == 0 for n in (12, 60) for d in (2, 3, 4, 6))
 # 1.3: column addition: total = digit + 2 carry, digit = XOR of the three, carry = at least two; and 6 + 7
 for x in (0, 1):
     for y in (0, 1):

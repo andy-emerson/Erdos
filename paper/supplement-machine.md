@@ -39,8 +39,22 @@ A **bit** holds one of these two values. Read 0 as false and 1 as true, and the 
 - **AND** (both are true) is multiplication: $x \cdot y$ is 1 only when $x$ and $y$ are both 1.
 - **XOR**, "exclusive or" (exactly one is true), is addition: $x + y$ is 1 when one of them is 1, and $1 + 1 \equiv 0$.
 - **NOT** (the opposite) is adding 1: $1 + 0 = 1$, and $1 + 1 \equiv 0$.
-- **OR** (at least one is true) is built from the others. At least one is true exactly when it is not the case that both are false: $x$ OR $y$ = NOT((NOT $x$) AND (NOT $y$)). This is **De Morgan's law**. As arithmetic it is $1 + (1 + x)(1 + y) = x + y + x \cdot y$, so OR is the one operation that isn't a single step of mod 2 arithmetic.
-- **NAND** ("not and") is NOT applied to AND: NOT($x$ AND $y$), or $1 + x \cdot y$. It is false only when both are true. It is not OR: for two 0s, NAND gives 1 and OR gives 0. NAND alone can build all the others: NOT $x$ = $x$ NAND $x$; $x$ AND $y$ = NOT($x$ NAND $y$); and $x$ OR $y$ = (NOT $x$) NAND (NOT $y$), which is De Morgan's law again.
+
+Two more operations are named in words. **OR** is true when at least one of $x$ and $y$ is true. **NAND** ("not and") is true when they are not both true. Neither is a single step of mod 2 arithmetic, but both follow from the three above by De Morgan's laws.
+
+**De Morgan's laws.** They say how NOT acts on a statement about two things:
+
+- NOT($x$ AND $y$) = (NOT $x$) OR (NOT $y$).
+- NOT($x$ OR $y$) = (NOT $x$) AND (NOT $y$).
+
+In words: to deny that both are true is to say that at least one is false, and to deny that at least one is true is to say that both are false. Take "it is raining" for $x$ and "it is cold" for $y$. "It is not both raining and cold" means it is not raining, or it is not cold, or it is neither. "It is neither raining nor cold", the denial of "raining or cold", means it is not raining and it is not cold. The laws make sense because "both" fails exactly when at least one part fails, and "at least one" fails exactly when every part fails. NOT turns AND into OR and OR into AND, and flips each part along the way.
+
+Now OR and NAND can be written with AND and NOT alone:
+
+- **OR.** Apply NOT to both sides of the second law, and NOT(NOT ...) cancels: $x$ OR $y$ = NOT((NOT $x$) AND (NOT $y$)). As arithmetic, NOT is adding 1, so this is $1 + (1 + x)(1 + y) = x + y + x \cdot y$, with $2 \equiv 0$ removing the extra terms.
+- **NAND** is NOT applied to AND: NOT($x$ AND $y$), which is $1 + x \cdot y$. By the first law it is also (NOT $x$) OR (NOT $y$): at least one is false. It is not OR: for two 0s, NAND gives 1 and OR gives 0.
+
+NAND alone can build all the others: NOT $x$ = $x$ NAND $x$; $x$ AND $y$ = NOT($x$ NAND $y$); and $x$ OR $y$ = (NOT $x$) NAND (NOT $y$), which is the first law with NOT $x$ and NOT $y$ in place of $x$ and $y$.
 
 Together:
 
@@ -55,9 +69,21 @@ These operations are called **Boolean**.
 
 ### 1.3 Binary
 
-A row of bits is read as a number in base 2. Each position is worth twice the one to its right: from the right, 1, 2, 4, 8, and so on. So $1101$ is $8 + 4 + 0 + 1 = 13$. In general, the bits $b_{n-1} \ldots b_1 b_0$ stand for
+A number written in decimal is a sum of products. Each digit is multiplied by a power of 10, and the power depends on the digit's place. In $4725$:
+
+$$4725 = 4 \cdot 10^3 + 7 \cdot 10^2 + 2 \cdot 10^1 + 5 \cdot 10^0 = 4000 + 700 + 20 + 5.$$
+
+The places are the ones ($10^0 = 1$), the tens, the hundreds and the thousands. Each is worth ten times the one to its right, and each digit is between 0 and 9.
+
+Nothing in this needs 10. Any whole number of 2 or more can be the base: the places are its powers, and the digits run from 0 to one less than the base. Machines use base 2, **binary**. The places are $2^0 = 1$, $2^1 = 2$, $2^2 = 4$, $2^3 = 8$ and so on, and each digit is 0 or 1. The same process reads a four-digit binary number:
+
+$$1101 = 1 \cdot 2^3 + 1 \cdot 2^2 + 0 \cdot 2^1 + 1 \cdot 2^0 = 8 + 4 + 0 + 1 = 13.$$
+
+In general, the digits $b_{n-1} \ldots b_1 b_0$ in base 2 stand for
 
 $$b_{n-1} \cdot 2^{n-1} + \cdots + b_1 \cdot 2 + b_0.$$
+
+Each base has its advantages. A larger base needs fewer digits: $4725$ takes 4 digits in decimal but 13 in binary ($1001001110101$). A base can also suit how people count or divide: 10 matches our fingers, and 12 and 60 divide evenly by 2, 3, 4 and 6, which is why they survive in clocks and angles. Binary's advantage is that every digit is 0 or 1, false or true. So any whole number can be written as a row of true-false values, and those are the only values a machine's circuits hold: each wire is either on or off.
 
 **Addition** works column by column from the right, as in decimal. In each column the bits are added, along with any carry from the column before. The total is 0, 1, 2 or 3. The column keeps the total mod 2 and carries the rest: total $=$ digit $+ 2 \cdot$ carry. With no carry coming in, that is section 1.2 again: the digit is $x$ XOR $y$, and the carry is $x$ AND $y$, the 2 that mod 2 dropped from $1 + 1$. With a carry coming in, the digit is the XOR of all three bits, and the carry is 1 when at least two of them are 1. For example, $6 + 7$:
 

@@ -2,9 +2,9 @@
 
 *Temporary notes (Nov 1, 2026). The mathematics of spec 13's two designs, with no code, for the author to compare. To be taken into the book or archived.*
 
-A machine does its arithmetic on a clock. A word of $n$ bits holds the values 0 to $2^n - 1$, and its arithmetic is arithmetic mod $2^n$: a sum that passes the top wraps around to the bottom, and a subtraction that would go below zero wraps around to the top. On a 16-hour clock ($n = 4$), $3 - 5$ lands on 14. The arithmetic we need is on the number line, which has negative numbers, and sometimes on the complex plane, which has numbers off the line altogether. Both designs bridge the gap the same way: they split a number into a **magnitude**, how large it is, and a **direction**, which way it points.
+Machine arithmetic is modular arithmetic. A word of $n$ bits holds the values 0 to $2^n - 1$, and every result is taken mod $2^n$: a sum that passes the top wraps around to the bottom, and a subtraction that would go below zero wraps around to the top. It works like a clock with $2^n$ hours, and these notes use that picture. For example, with $n = 4$, $3 - 5 = -2 \equiv 14 \pmod{16}$: on a 16-hour clock, $3 - 5$ lands on 14. The arithmetic we need is on the number line, which has negative numbers, and sometimes on the complex plane, which has numbers off the line altogether. Both designs bridge the gap the same way: they split a number into a **magnitude**, how large it is, and a **direction**, which way it points.
 
-**Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like the clock: neither has negative values, and neither has a direction. So the machine's clock suits magnitudes, as long as a subtraction is never asked to go below zero.
+**Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like modular arithmetic: neither has negative values, and neither has a direction. So the machine's arithmetic suits magnitudes, as long as a subtraction is never asked to go below zero.
 
 **Direction on the line.** The number line has two directions, positive and negative. One bit $s$ names them: 0 for positive, 1 for negative, and a number is $m \cdot (-1)^s$. Multiplying two numbers multiplies their directions, and $(-1)^{s_1} \cdot (-1)^{s_2} = (-1)^{s_1 + s_2}$, so the bits add mod 2: two negatives make a positive, since $1 + 1 \equiv 0$. Negating flips the bit, which is adding 1 mod 2.
 
@@ -12,9 +12,7 @@ A machine does its arithmetic on a clock. A word of $n$ bits holds the values 0 
 
 $$i^{d_1} \cdot i^{d_2} = i^{d_1 + d_2}, \quad \text{with } d_1 + d_2 \text{ taken mod } 4.$$
 
-Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$, and adding 2 mod 4 between them behaves exactly as adding 1 mod 2 does.
-
-**Further.** The same principle reaches further. The quaternions have eight unit directions, $\pm 1, \pm i, \pm j, \pm k$, and contain the complex plane as the complex plane contains the line. A quaternion along one unit is a magnitude with one of these eight directions. Their directions no longer multiply by a clock, since $ij = k$ but $ji = -k$, so the direction arithmetic becomes a small multiplication table instead of addition mod a number. These notes go no further than the plane.
+Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$. Negating is a half turn in both. The line has two directions, so a half turn is one step, adding 1 mod 2; the plane has four, so a half turn is two steps, adding 2 mod 4.
 
 ## Design A: one magnitude with one direction
 
@@ -49,10 +47,10 @@ Together the two checks place a pair of numbers in one cell of a grid: the magni
 | both 0 | equal | equal | equal |
 | one is 0 | the other's direction decides | the other's direction decides | the other's direction decides |
 | equal, not 0 | equal | the positive one is larger | not ordered; equal absolute values |
-| $m_1 > m_2$ | the magnitudes decide | the positive one is larger | not ordered; the first has the larger absolute value |
-| $m_1 < m_2$ | the magnitudes decide | the positive one is larger | not ordered; the second has the larger absolute value |
+| $m_1 > m_2$ | positive: the first is larger; negative: the second is larger | the positive one is larger | not ordered; the first has the larger absolute value |
+| $m_1 < m_2$ | positive: the second is larger; negative: the first is larger | the positive one is larger | not ordered; the second has the larger absolute value |
 
-In the first two rows the answer is the same in every column, so no direction needs checking: it is either irrelevant or simply carried along. "The other's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. "The magnitudes decide" means that in a positive direction the larger magnitude is the larger number ($7 > 3$), and in a negative direction the smaller magnitude is ($-3 > -7$).
+In the first two rows the answer is the same in every column, so no direction needs checking: it is either irrelevant or simply carried along. "The other's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$).
 
 ### Addition
 

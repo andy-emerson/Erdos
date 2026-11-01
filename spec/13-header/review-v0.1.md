@@ -86,3 +86,54 @@ These cuts and F5 should bring the spec close to spec 12's length.
 - **The mixed job's rate (15/16).** This is the author's call. If the author does not set it, recommend dropping the mixed job. Mixed classes already arise in division and gcd (the factors are at half size), and after F5 nothing in the code is specific to mixed classes. If the job is kept, 15/16 is a reasonable placeholder.
 - **Whether pools shrink.** Recommend never, as the spec says. Shrinking would solve a problem that no job has (optimization rule 2), and it would make indices harder to keep valid.
 - **Two parallel lists and rule 4.** The draft does not list this question in §6, although it was raised. Recommend counting them as one stored structure. They hold one record per number (a header and its word), stored as two lists so that the byte is not padded, which is a layout of one list and not a second structure. Rule 4 says that more than one structure needs discussion, so the spec should say this in one line under Structures and leave the final word to the author.
+
+## Second pass
+
+Nov 1, 2026, on the revised v0.1 (905 words, against 794 for spec 12). Nothing was built or run.
+
+**Verdict: ready after minor fixes.** All three blocking findings are fixed, and the header formulas are correct on 8 bits. What remains are three small should-fix items. Two of them came in with the revision: the claimed rounding cost no longer matches the real-length operands, and the refactor's "one extra word" does not fit a slot. The third, a result predicted to be class 0, was in the first draft and I missed it in the first pass.
+
+### Findings F1 to F17
+
+| Finding | Status | Note |
+| --- | --- | --- |
+| F1 header add | resolved | Checked on 8 bits with `D = 0xC0`. Multiply: 0x80 + 0x80 = 0x100, and the carry falls off to give d = 0. Divide: 0x40 - 0x80 = 0xC0 mod 256, so 1 - 2 = 3. Opposite add: `b shl 7` = 0x80 adds 2. The class bits stay 0 until the result class is ORed in. |
+| F2 signed compare | resolved | Zero against a negative falls under "directions differ", and zero against a positive falls under "both 0". Both are correct. Nothing says what happens for d = 1 or 3, but integers never produce them (minor). |
+| F3 gcd with zero | resolved | Real lengths, and length 0 for zero, so Growing's early return fires. |
+| F4 register path | resolved | Moved to special case (a). |
+| F5 widening | resolved | Nothing is widened, and special cases (a) and (c) of the first draft are gone. |
+| F6 refactor | mostly resolved | The borrow, the destination and gcd's bound are stated. See N2 for the wording "room for one extra word". |
+| F7 correctness check | resolved | §5 Correctness. |
+| F8 W = 32 | resolved | Nothing runs at W = 32. |
+| F9 job 1 uses pools | resolved | §5 Known costs says so, and comparisons are Header × Control only. |
+| F10 jobs and length | resolved | Five jobs, add once, one pairing. The spec is now 14% longer than spec 12, close enough. |
+| F11 growth job | resolved | It is now a workload, not a job. |
+| F12 move-down target | resolved | "The smallest class that holds it (possibly 0)". |
+| F13 class 31 | resolved | A predicted class above 31 is an error. |
+| F14 first capacity | resolved | One slot at first use, then doubling, and the free list ends with all ones. |
+| F15 Control's header | resolved | §2. |
+| F16 zero and axes | resolved | "Zero has no axis". |
+| F17 peak and doubling | resolved | Reported apart. |
+
+### New or remaining findings
+
+**N1. Should fix. §5 Known costs, rounding up.** "To 2× on add, 4× on multiply" was true while operands were widened to the class width. Now that the routines read operands at their real length, rounding adds no arithmetic work. Its costs are memory, up to 2× the bytes per value, plus the scan for the top nonzero word. Because the form is canonical, that word lies in the slot's upper half, so the scan covers at most half the slot. *Fix:* "Rounding up: up to 2× bytes per value, and the scan for an operand's top word. Read from bytes per value and callgrind." The sentence in §4 that rounding "shows against Control" is then about memory, which is still true.
+
+**N2. Should fix. §2 Shared routines, "room for one extra word".** Slots have exactly their class width, so a Header destination cannot always have a spare word. No routine needs one, provided each writes only up to its bound. Each bound fits the predicted class:
+- add writes at most max(n1, n2) + 1 words, which fits class L + 1;
+- multiply writes n1 + n2 words, at most 2^(L+1);
+- absolute difference writes max(n1, n2) words, within class L;
+- division writes n1 - n2 + 1 words, at most n1, within class c1;
+- gcd writes at most min(n1, n2) words.
+
+*Fix:* "Each writes at most its bound (add max + 1, multiply n1 + n2, absolute difference max, division n1 - n2 + 1, gcd min) into a destination of at least that size, and returns the result's length." The returned length is also what the move-down needs.
+
+**N3. Should fix. §3 Result class, a predicted class of 0.** Division with c1 = 0, gcd with a class-0 operand, and opposite add of two class-0 values all predict class 0, which has no slot. The spec says "allocate that slot". This was already in the first draft, and the first pass missed it. *Fix:* "A predicted class 0 writes into a one-word local, and the result goes into the inline word." Under rule 4, that word is the function's one local, or Growing's buffer is, in division and gcd.
+
+**N4. Minor. §3 Result class.** "Then move the result ... and release the slot" reads as though it always happens. *Fix:* add "if it fits a smaller class".
+
+**N5. Minor. §4 Jobs, k = 1.** Lengths from 33 to 64 bits replace spec 12's 1 to 63, so job 1 no longer has small values. This is consistent with the other jobs and needs no change unless the author wants small values.
+
+### Open questions (§6)
+
+The four entries match the first pass: no Inline build, pools never shrink, the parallel lists count as one stored structure, and the mixed job is dropped unless the author sets a rate. I agree with each recommendation.

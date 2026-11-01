@@ -33,6 +33,15 @@ class B:
             dst.zero_rest(n)
         return res.finish(self.pools, n)
 
+    def _fin2(self, rp, dp, lp, rn, dn, ln):
+        """both parts' rests zeroed before either moves down: a move-down can grow a pool and move the other's slot"""
+        for res, dst, n in ((rp, dp, lp), (rn, dn, ln)):
+            if dst.breach:
+                self.breach.append(dst.breach)
+            if res.c:
+                dst.zero_rest(n)
+        return self.join(rp.finish(self.pools, lp), rn.finish(self.pools, ln))
+
     # -------------------------------------------------------------------- outside the operations
     def make(self, p, n=0):
         return self.join(part_from_int(self.pools, p), part_from_int(self.pools, n))
@@ -82,7 +91,7 @@ class B:
         a, ao, la = self._ptr(n1)
         b, bo, lb = self._ptr(n2)
         ln = r_add(dn, a, ao, la, b, bo, lb)
-        return self.join(self._fin(rp, dp, lp), self._fin(rn, dn, ln))
+        return self._fin2(rp, dp, lp, rn, dn, ln)
 
     def add(self, x, y):
         (p1, n1), (p2, n2) = self.parts(x), self.parts(y)
@@ -110,7 +119,7 @@ class B:
         dp, dn = rp.dst(self.pools), rn.dst(self.pools)
         lp = self._mac2(dp, p1, p2, n1, n2)
         ln = self._mac2(dn, p1, n2, n1, p2)
-        return self.join(self._fin(rp, dp, lp), self._fin(rn, dn, ln))
+        return self._fin2(rp, dp, lp, rn, dn, ln)
 
     def collapse(self, x):
         """|P - N| with borrow b: to P when b = 0, else to N; the other part 0"""

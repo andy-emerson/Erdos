@@ -44,9 +44,9 @@ So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$. On each axis, 1 and $i$
 
 ## Design A: one magnitude with one direction
 
-Design A stores each number as one such pair. Its operations begin with comparison, on which addition is built.
+Design A stores each number as one such pair. Its addition begins with a case check, which finds the case before any arithmetic is done.
 
-### Comparison
+### The case check
 
 Adding two numbers in the same direction adds their magnitudes. Adding two in opposite directions subtracts them, since one pulls against the other. That subtraction is the only place a magnitude can go below zero, so it is where the first problem has to be solved. Addition therefore needs two answers before it can work: how the two directions relate, and, when they are opposite, which magnitude is larger. Each is one check.
 
@@ -98,11 +98,11 @@ direction check (XOR)
     └── no zero    → an expression
 ```
 
-**Ordering** two numbers, deciding which is larger, uses the same checks and one more, for zero, since two zeros with different directions are equal. There the zero check is needed for the right answer, not as a shortcut.
+**Not an order.** The same checks, with one more for zero (two zeros with different directions are equal), can say which of two numbers is larger, but only when they share an axis. For two nonzero numbers on different axes there is no answer. This is the **component order**: real parts are compared with real parts and imaginary with imaginary, and when both pairs differ, nothing is decided. It is not a total order. No total order can agree with multiplication either, since such an order makes every nonzero square positive, and $i^2 = -1$. So the case check is a helper inside addition, not a standalone comparison. Addition's two halves, the case check and the rule for each case, are worked out separately here, before they are joined in one routine.
 
 ### Addition
 
-Addition is more involved here than on paper, because of the problem these notes began with: it has to bring a result on the circle back to the right place on the line. The comparison's tree does that, and each of its branches is a case with its own rule.
+Addition is more involved here than on paper, because of the problem these notes began with: it has to bring a result on the circle back to the right place on the line. The case check's tree does that, and each of its branches is a case with its own rule.
 
 **Same direction.** The magnitudes add, and the direction stays. With $d_1 = d_2 = d$,
 
@@ -216,6 +216,10 @@ $$m_0 + m_1 i - m_2 - m_3 i.$$
 
 **Collapse** works on each axis separately: the parts along 1 and $-1$ collapse as an integer does, and so do the parts along $i$ and $-i$.
 
+### Rationals, an open problem
+
+Design B nests the wrong way round for rationals. A rational in B would be a ratio of two of its complex numbers, rather than a complex number whose parts are rationals. Both give the same field, since every ratio of Gaussian integers can be written as $p + qi$ with $p$ and $q$ rational, but they differ in reduction to lowest terms. A pair of rationals reduces with the ordinary gcd of integers. A ratio of Gaussian integers needs a gcd of Gaussian integers, a different and slower algorithm, unique only up to a factor of $1$, $i$, $-1$ or $-i$.
+
 ## Where they differ
 
 | | Design A | Design B |
@@ -235,6 +239,7 @@ Points raised (Nov 1, 2026) and set aside until the addition discussion is settl
 - **A mandatory plain form.** Whether an expression whose real or imaginary term becomes zero must become a plain (non-expression) number, so that each value has one form. The author doubts it fits a design with headers; equality would otherwise have to treat both forms as the same.
 - **Don't build an expression only to collapse it.** For example $(3 + 4i)(3 - 4i) = 25$: work out both axis results first, and produce a plain number when one is zero.
 - **Keeping the common case fast** (both numbers plain, on the same axis): agreed, method open.
+- **Ordering expressions.** Once a number can carry both a real and an imaginary part, two numbers bring four parts to compare. Whether any order is wanted then (the lexicographic one, real part first, is total and agrees with addition but not multiplication) is open.
 - **Zero's direction.** The survey's prior art fixes it; the author keeps it as it falls, since the operations here don't need it fixed.
 
 Sources: [`research/expressions-machine-level.md`](research/expressions-machine-level.md).

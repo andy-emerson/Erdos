@@ -286,6 +286,19 @@ def pool_limit():
     return out
 
 
+def regress():
+    """cases the sets missed, found later. Round 2's build check found the first: B's second part read through a pointer
+    taken before the first part's move-down, which can grow the pool it lives in."""
+    out = []
+    for op, x, y in (("add", (0xFFF0, 0xFF), (0x1, 0xFF)), ("sub", (0xFFF0, 0xFF), (0xFF, 0x1)),
+                     ("mul", (0xFFF0, 0xFF), (0x1, 0xFF))):
+        b = B(Pools())
+        r = getattr(b, op)(b.make(*x), b.make(*y))
+        want = ref(op, x[0] - x[1], y[0] - y[1])
+        out.append((op, x, y, b.value(r) == want and b.canonical(r) is None))
+    return out
+
+
 def main():
     nrand = int(sys.argv[1]) if len(sys.argv) > 1 else 100000
     tasks = []
@@ -311,6 +324,8 @@ def main():
         print(f"axes {k:28} n={v['n']:7} fail={v['fail']}" + (f"  e.g. {v['example']}" if v["fail"] else ""))
     for x in lim:
         print("pool limit", x)
+    for op, x, y, ok in regress():
+        print(f"regress B {op} {x} {y}", "pass" if ok else "FAIL")
     print(f"total {round(time.time() - t0)} s")
 
 

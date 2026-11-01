@@ -146,7 +146,7 @@ A chip carries out a list of **instructions**, its **machine code**. Programs wr
 
 - **Registers** are the chip's own places for numbers. There are 16 of them, and each holds one word. Every step reads some registers and writes its result into one, replacing what was there. In the pseudocode, registers have short names such as `a`, `b`, `q` and `x`.
 - **Memory** is a long row of bytes, each with a number for its place. A step can read a value from a place in memory into a register. The tables in this supplement live in memory.
-- **Flags** are single bits that a step sets as a side effect. The **carry flag** holds the carry out of the top column of an addition (section 1.3): the bit that a word drops when it keeps a result mod $2^{64}$ (section 1.5). The **zero flag** says whether the result was 0. A comparison sets the flags, and a jump reads them.
+- **No flags.** Some chips also keep **flags**, single bits that a step sets as a side effect, such as the carry out of the top column of an addition (section 1.3). Not every chip has them, so this supplement's pseudocode doesn't use them. A carry is computed as an ordinary value instead: after $s \leftarrow x + y$, the carry is 1 exactly when $s < x$, since the sum wrapped around past $2^{64}$ only if it came out smaller than what was added to.
 
 ### 2.2 The steps
 
@@ -260,7 +260,7 @@ ROUTINE long_division(a, b)
     RETURN q
 ```
 
-Here `r` can need one bit more than a word, since it can reach almost $2b$. The machine code in Appendix A keeps that extra bit in the carry flag.
+Here `r` can need one bit more than a word, since it can reach almost $2b$. The machine code in Appendix A keeps that extra bit in a flag (Appendix A says what flags are).
 
 **Cost.** Each division is a chain of 64 steps, and each step needs the remainder from the one before. A real divider settles several quotient bits per cycle rather than one, but it still works through the chain, and it can't start the next division until it finishes. A 64-bit division keeps the divider busy for 7 to 10 cycles (section 2.4). A pair of divisions costs 14 to 20 cycles of divider time.
 
@@ -395,7 +395,7 @@ As section 2.5 explains, big-O can't tell these routines apart, since all of the
 
 The routines of chapter 6 in x86-64 machine code, Intel syntax. The full file is [`verify-machine/division.s`](verify-machine/division.s), and [`verify-machine/test.c`](verify-machine/test.c) checks every routine against the exact quotient.
 
-The registers have names: `rax`, `rcx`, `rdx`, `rsi`, `rdi` and `r8` to `r11` here. The low 32 bits of a register have their own names for 32-bit steps (`eax` is the low half of `rax`, `r8d` of `r8`), and `cl` is the low byte of `rcx`. Two instructions have fixed registers. `div r` divides the two-word number whose high word is in `rdx` and low word in `rax` by the register `r`, and puts the quotient in `rax` and the remainder in `rdx`; to divide one word, `rdx` is first set to 0. `rcl` shifts left by one and brings the carry flag in at the bottom. And `lea rax, [r8+r8*2]` sets `rax` to $3 \cdot$ `r8` in one step.
+The registers have names: `rax`, `rcx`, `rdx`, `rsi`, `rdi` and `r8` to `r11` here. The low 32 bits of a register have their own names for 32-bit steps (`eax` is the low half of `rax`, `r8d` of `r8`), and `cl` is the low byte of `rcx`. Two instructions have fixed registers. `div r` divides the two-word number whose high word is in `rdx` and low word in `rax` by the register `r`, and puts the quotient in `rax` and the remainder in `rdx`; to divide one word, `rdx` is first set to 0. This chip keeps **flags**, single bits that a step sets as a side effect: the **carry flag** holds the bit carried out of the top of an addition or a shift (or the borrow of a subtraction), and a comparison sets flags that the next jump reads. `rcl` shifts left by one and brings the carry flag in at the bottom. And `lea rax, [r8+r8*2]` sets `rax` to $3 \cdot$ `r8` in one step.
 
 The pair routines take $a$ in `rdi`, $a_2$ in `rsi` and $b$ in `rdx`, and write the two quotients to the memory that `rcx` points to. Shifts by a number held in a register must take it from `cl`, the low byte of `rcx`, so routines that shift first move `rcx` to `r10`. The comments name the pseudocode line each instruction carries out.
 

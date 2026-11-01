@@ -37,7 +37,7 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 
 ## Prose
 
-Two lists: what to do, and what not to do. Rules marked *(draft)* await the author's approval. The draft rules come from the author's edits to the machine-level supplement (Nov 1, 2026) and from the survey in [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md). One instance of a pattern is not a fault; a habit of it is.
+Two lists: what to do, and what not to do. Rules marked *(draft)* await the author's approval. The draft rules come from the author's edits to the machine-level supplement (Nov 1, 2026) and from the survey in [`book/research/ai-writing-patterns.md`](book/research/ai-writing-patterns.md). One instance of a pattern is not a fault; a habit of it is.
 
 ### Do
 

@@ -1,0 +1,140 @@
+"""model_a.py: design A (spec 13 §2), a number = (8-bit header, word). Header bits 0-4 class, bit 5 spare, bits 6-7
+direction d (1, i, -1, -i). Every operation follows §2's header arithmetic literally, on 8 bits."""
+from words import (SpecError, Dst, Res, part_len, part_ptr, part_value, part_canonical, part_release, part_from_int,
+                   r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
+
+D = 0xC0
+
+
+class A:
+    def __init__(self, pools):
+        self.pools = pools
+        self.breach = []          # routine bound breaches seen in the current operation
+
+    # -------------------------------------------------------------------- helpers
+    def _len(self, h, w):
+        return part_len(self.pools, h & 31, w)
+
+    def _ptr(self, h, w):
+        return part_ptr(self.pools, h & 31, w)
+
+    def _done(self, res, dst, n, dirbits):
+        if dst.breach:
+            self.breach.append(dst.breach)
+        c, w = res.finish(self.pools, n)
+        if n == 0:
+            return 0, 0                            # zero is header 0
+        return ((dirbits & 0xFF) | c), w
+
+    # -------------------------------------------------------------------- outside the operations
+    def make(self, v):
+        c, w = part_from_int(self.pools, abs(v))
+        if v == 0:
+            return 0, 0
+        return (0x80 if v < 0 else 0) | c, w
+
+    def value(self, x):
+        h, w = x
+        m = part_value(self.pools, h & 31, w)
+        d = (h >> 6) & 3
+        if d == 0:
+            return m
+        if d == 2:
+            return -m
+        raise SpecError(f"direction {d} in an integer")
+
+    def canonical(self, x):
+        h, w = x
+        if h > 0xFF:
+            return "header wider than 8 bits"
+        if h & 0x20:
+            return "spare bit set"
+        e = part_canonical(self.pools, h & 31, w)
+        if e:
+            return e
+        if self._len(h, w) == 0 and (h, w) != (0, 0):
+            return f"zero not header 0, word 0 (header {h:#x})"
+        return None
+
+    def release(self, x):
+        part_release(self.pools, x[0] & 31, x[1])
+
+    # -------------------------------------------------------------------- operations
+    def neg(self, x):
+        h, w = x
+        h ^= 0x80
+        if (h & 31) == 0 and w == 0:
+            h = 0                                  # zero is header 0
+        return h, w
+
+    def add(self, x, y):
+        (h1, w1), (h2, w2) = x, y
+        d1, d2 = h1 & D, h2 & D
+        n1, n2 = self._len(h1, w1), self._len(h2, w2)
+        if d1 == d2:
+            res = Res(self.pools, max(n1, n2) + 1)
+            a, ao, n1 = self._ptr(h1, w1)
+            b, bo, n2 = self._ptr(h2, w2)
+            dst = res.dst(self.pools)
+            n = r_add(dst, a, ao, n1, b, bo, n2)
+            return self._done(res, dst, n, d1)
+        if d1 ^ d2 == 0x80:
+            res = Res(self.pools, max(n1, n2))
+            a, ao, n1 = self._ptr(h1, w1)
+            b, bo, n2 = self._ptr(h2, w2)
+            dst = res.dst(self.pools)
+            n, br = r_absdiff(dst, a, ao, n1, b, bo, n2)
+            return self._done(res, dst, n, d1 + (br << 7))
+        raise SpecError("sum across axes")
+
+    def sub(self, x, y):
+        return self.add(x, self.neg(y))
+
+    def mul(self, x, y):
+        (h1, w1), (h2, w2) = x, y
+        n1, n2 = self._len(h1, w1), self._len(h2, w2)
+        res = Res(self.pools, n1 + n2)
+        a, ao, n1 = self._ptr(h1, w1)
+        b, bo, n2 = self._ptr(h2, w2)
+        dst = res.dst(self.pools)
+        n = r_mac(dst, 0, a, ao, n1, b, bo, n2)
+        return self._done(res, dst, n, (h1 & D) + (h2 & D))
+
+    def _load(self, x, y):
+        """Growing's working buffer: the two operands copied in, a then b"""
+        a, ao, n1 = self._ptr(*x)
+        b, bo, n2 = self._ptr(*y)
+        buf = [POISON] * max(n1 + n2, 1)
+        for i in range(n1):
+            buf[i] = a[ao + i]
+        for i in range(n2):
+            buf[n1 + i] = b[bo + i]
+        return buf, n1, n2
+
+    def div(self, x, y):
+        (h1, w1), (h2, w2) = x, y
+        n1, n2 = self._len(h1, w1), self._len(h2, w2)
+        res = Res(self.pools, max(n1 - n2 + 1, 0))
+        buf, n1, n2 = self._load(x, y)
+        dst = res.dst(self.pools)
+        n = r_div_core(dst, buf, 0, n1, n1, n2, n1, n2)
+        return self._done(res, dst, n, (h1 & D) - (h2 & D))
+
+    def gcd(self, x, y):
+        (h1, w1), (h2, w2) = x, y
+        n1, n2 = self._len(h1, w1), self._len(h2, w2)
+        res = Res(self.pools, min(n1, n2))
+        buf, n1, n2 = self._load(x, y)
+        dst = res.dst(self.pools)
+        n = r_gcd_core(dst, buf, 0, n1, n1, n2)
+        return self._done(res, dst, n, 0)
+
+    def cmp(self, x, y):
+        (h1, w1), (h2, w2) = x, y
+        d1, d2 = (h1 >> 6) & 3, (h2 >> 6) & 3
+        if d1 != d2:
+            return 1 if d1 == 0 else -1
+        a, ao, n1 = self._ptr(h1, w1)
+        b, bo, n2 = self._ptr(h2, w2)
+        c = r_cmp(a, ao, n1, b, bo, n2)
+        return c if d1 == 0 else -c

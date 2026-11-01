@@ -4,7 +4,7 @@
 
 Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. It counts up from $0000$ to $1111$; one more rolls it over to $0000$, and rolling back below $0000$ shows $1111$. Read as numbers, $n$ binary digits show the $2^n$ values from 0 to $2^n - 1$, and the rollover is arithmetic mod $2^n$. That is the same situation in a more useful form, and from here on these notes picture it as a clock with $2^n$ hours. On a 16-hour clock ($n = 4$), $15 + 1 = 16 \equiv 0$ and $3 - 5 = -2 \equiv 14 \pmod{16}$.
 
-So the machine has two problems with ordinary arithmetic, one at each end of its range.
+The arithmetic we want lies on a line, which runs forever in both directions. The machine's arithmetic lies on a circle, which wraps around. So the machine has two problems with ordinary arithmetic, one at each end of its range.
 
 - **Below zero.** The number line has negative numbers, and the clock has none: $3 - 5$ lands on 14, not on $-2$.
 - **Above $2^n - 1$.** The number line has no largest number, and the clock does: $15 + 1$ lands on 0, not on 16. This is **overflow**.
@@ -55,21 +55,27 @@ Adding two numbers in the same direction adds their magnitudes. Adding two in op
 
 00 means the same direction. 10 means opposite: the axis matches and the sign does not. A low bit of 1 means different axes. Integers only ever give 00 or 10.
 
-**The magnitude check** is needed only for opposite directions, and there the subtraction answers it. The machine's subtraction instruction reports whether it had to wrap below zero, as a schoolbook subtraction would need to borrow past its leftmost column. That report is the **borrow** $b$: 1 when $m_1 < m_2$, and 0 otherwise. With $r$ the subtraction's result on the clock, the borrow turns it into a magnitude and a direction:
+**The magnitude check** is needed only for opposite directions, and there the subtraction answers it. The machine's subtraction instruction reports one more thing as it works: whether it had to wrap below zero, as a schoolbook subtraction would need to borrow past its leftmost column. That report is the **borrow**:
 
-$$r \equiv m_1 - m_2 \pmod{2^n}, \qquad b = \begin{cases} 1 & \text{if } m_1 < m_2, \\ 0 & \text{otherwise,} \end{cases}$$
+$$b = \begin{cases} 1 & \text{if } m_1 < m_2, \\ 0 & \text{otherwise.} \end{cases}$$
 
-$$m \equiv (-1)^b \cdot r \pmod{2^n}, \qquad d \equiv d_1 + 2b \pmod 4.$$
+The borrow gives the result's direction at once. A borrow means the second number won, so the first direction turns halfway round:
 
-The second formula for $d$ says that the direction is multiplied by $(-1)^b$: a borrow turns it halfway round. The examples below are $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, on a 16-hour clock, so all arithmetic in the table is mod 16:
+$$d \equiv d_1 + 2b \pmod 4.$$
 
-| Subtraction | Borrow $b$ | Magnitude | Direction | Result |
+It also gives the magnitude, from the same subtraction. A borrow means the clock wrapped, and negating on the clock unwraps it:
+
+$$m \equiv (-1)^b \cdot (m_1 - m_2) \pmod{2^n}.$$
+
+Both are modular, the direction mod 4 and the magnitude mod $2^n$, yet together, as $m \cdot i^d$, they give the answer on the line, even when it is below zero. They do nothing for overflow: a result of $2^n$ or more is still the second problem. The examples below are $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, on a 16-hour clock, so the first direction is 1 and all modular arithmetic in the table is mod 16:
+
+| Subtraction | Borrow $b$ | Modular direction | Modular magnitude | Linear result |
 | --- | --- | --- | --- | --- |
-| $5 - 3 \equiv 2$ | 0 | $(-1)^0 \cdot 2 = 2$ | $(-1)^0 \cdot 1 = 1$ | 2 |
-| $4 - 4 \equiv 0$ | 0 | $(-1)^0 \cdot 0 = 0$ | $(-1)^0 \cdot 1 = 1$ | 0 |
-| $3 - 5 \equiv 14$ | 1 | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $(-1)^1 \cdot 1 = -1$ | $-2$ |
+| $5 - 3 \equiv 2$ | 0 | $(-1)^0 \cdot 1 = 1$ | $(-1)^0 \cdot 2 = 2$ | 2 |
+| $4 - 4 \equiv 0$ | 0 | $(-1)^0 \cdot 1 = 1$ | $(-1)^0 \cdot 0 = 0$ | 0 |
+| $3 - 5 \equiv 14$ | 1 | $(-1)^1 \cdot 1 = -1$ | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $-2$ |
 
-The machine never computes $(-1)^b$. The subtraction gives $r$ and $b$ together. With no borrow, $r$ is the magnitude and nothing more is done. With a borrow, two more instructions run: a negation, which turns 14 into 2, and taking the second number's direction.
+The machine never computes $(-1)^b$. The subtraction gives its result and $b$ together. With no borrow, the result is the magnitude and nothing more is done. With a borrow, two more instructions run: a negation, which turns 14 into 2, and taking the second number's direction.
 
 **Zero** needs no check here. A machine could test for it and skip the arithmetic, but the test costs as much as the addition or subtraction it would skip, so it would only add an instruction. The rules above already give the right answer for a zero in any direction. The one exception is different axes, where $5 + (0, 1)$ must give 5 and not an expression.
 
@@ -90,57 +96,19 @@ direction check (XOR)
 
 ### Addition
 
-Addition is the most involved operation here, and the reason is the problem these notes began with. The arithmetic we want lies on a line, which runs forever in both directions, but the machine's arithmetic lies on a circle, which wraps around. Going from the line to the circle is easy: every number simply lands somewhere on the clock. Coming back, from a result on the clock to the right place on the line, takes care, and addition is where that care is needed. The comparison's tree supplies it, and each of its branches has a rule.
+Addition is more involved here than on paper, because of the problem these notes began with: it has to bring a result on the circle back to the right place on the line. The comparison's tree does that, and each of its branches is a case with its own rule.
 
-**The same direction.** The magnitudes add, and the direction stays:
+**Same direction.** The magnitudes add, and the direction stays: $(m_1, d) + (m_2, d) = (m_1 + m_2,\ d)$, since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 
-$$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
+**Opposite directions.** The magnitudes subtract, and the borrow settles the rest, by the two formulas of the magnitude check:
 
-since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
+$$(m_1, d_1) + (m_2, d_2) = \big((-1)^b \cdot (m_1 - m_2),\ d_1 + 2b\big).$$
 
-**Opposite directions, no borrow.** The numbers pull against each other along one axis, and the first is at least as large. The subtraction did not wrap, so the clock landed on the true difference, and the sum keeps the first direction:
+With no borrow, the first number is at least as large, and the sum is $m_1 - m_2$ in the first direction; equal magnitudes give zero. With a borrow, the second is larger, and the sum is the negated difference in the second direction, since $d_1 + 2 = d_2$. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = (m_1 - m_2) \cdot i^{d_1}$.
 
-$$(m_1, d_1) + (m_2, d_2) = (m_1 - m_2,\ d_1).$$
+**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition becomes one in the same direction: $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. Otherwise a sum such as $3 + 4i$ is not a magnitude times a single direction, and Design A holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
 
-The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$. If the magnitudes are equal, the difference is 0, and the sum is zero.
-
-**Opposite directions, a borrow.** The second number wins. The subtraction wrapped, the clock's negation recovers the magnitude, $-(m_1 - m_2) = m_2 - m_1$, and the sum takes the second direction:
-
-$$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps mod } 2^n.$$
-
-This negation is the clock's, an operation on magnitudes, not the negation of numbers below. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$: the subtraction gives 14 with a borrow, the negation gives 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
-
-**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition continues as one in the same direction: $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. If neither is zero, a sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this branch, since their directions are always 1 and $-1$.
-
-The subtraction is the only place a magnitude is subtracted, and the borrow is the only place the magnitudes decide the direction.
-
-**In pseudocode**, one line per machine instruction, following the tree:
-
-```text
-ROUTINE add(m1, d1, m2, d2)
-    t ← d1 XOR d2                    direction check
-    IF t = 0 THEN GO TO same
-    u ← t AND 1
-    IF u ≠ 0 THEN GO TO axes
-    r ← m1 − m2                      opposite: subtract
-    IF m1 < m2 THEN GO TO borrow
-    RETURN r, d1
-borrow:
-    r ← 0 − r
-    d1 ← d2
-    RETURN r, d1
-axes:                                different axes: zero check
-    IF m1 = 0 THEN GO TO zero_first
-    IF m2 = 0 THEN GO TO same
-    RETURN an expression
-zero_first:
-    d1 ← d2
-same:                                same direction: add
-    r ← m1 + m2
-    RETURN r, d1
-```
-
-`IF m1 < m2` reads the borrow of the subtraction just above it. On RISC-V, which has no borrow flag, the same question is asked by one compare-and-jump instruction placed just before the subtraction, so the count is the same. Not counting the final return, a sum in the same direction takes 3 instructions, and opposite directions take 6, or 8 when the subtraction wraps, on x86-64, ARM64 and RISC-V alike. The routine was checked against the true sum of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/addition.py`](verify-notes/addition.py)).
+The rules were checked against the true sum of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/addition.py`](verify-notes/addition.py)).
 
 ### Negation
 
@@ -152,7 +120,7 @@ since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Nega
 
 ### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the branch, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$: opposite directions with a borrow, which gives $-2$ as above.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the branch, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$: opposite directions with a borrow, which gives $-2$, as in the table.
 
 ### Multiplication
 

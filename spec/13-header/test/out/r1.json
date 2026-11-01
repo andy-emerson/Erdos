@@ -1,0 +1,2542 @@
+{
+ "tasks": [
+  {
+   "design": "A",
+   "set": "random",
+   "op": "add",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 37765,
+   "kinds": {
+    "value": {
+     "count": 37765,
+     "first": {
+      "inputs": [
+       -1490839,
+       0
+      ],
+      "expected": -1490839,
+      "got": -655802263,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       -6,
+       -250
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 2.0
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "sub",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 37701,
+   "kinds": {
+    "value": {
+     "count": 37701,
+     "first": {
+      "inputs": [
+       -14,
+       -885590
+      ],
+      "expected": 885576,
+      "got": 4294804296,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       4,
+       -252
+      ],
+      "expected": 256,
+      "got": 45312,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 2.2
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "neg",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 81978,
+   "kinds": {
+    "release": {
+     "count": 81978,
+     "first": {
+      "inputs": [
+       -3315,
+       null
+      ],
+      "expected": 3315,
+      "got": null,
+      "detail": "pool 2: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       16,
+       null
+      ],
+      "expected": -16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 1,
+   "seconds": 1.5
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "mul",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 65213,
+   "kinds": {
+    "value": {
+     "count": 65213,
+     "first": {
+      "inputs": [
+       2565,
+       -947446716
+      ],
+      "expected": -2430200826540,
+      "got": -18446728911724333740,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       22,
+       12
+      ],
+      "expected": 264,
+      "got": 61704,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 2,
+   "seconds": 3.0
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "div",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 9186,
+   "kinds": {
+    "value": {
+     "count": 9186,
+     "first": {
+      "inputs": [
+       19556510160,
+       -63586
+      ],
+      "expected": -307560,
+      "got": -67416424,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       -272,
+       1
+      ],
+      "expected": -272,
+      "got": -61712,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 2,
+   "seconds": 2.4
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "gcd",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 25251,
+   "kinds": {
+    "error": {
+     "count": 10513,
+     "first": {
+      "inputs": [
+       0,
+       -7206
+      ],
+      "expected": 7206,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       16,
+       0
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "value": {
+     "count": 13999,
+     "first": {
+      "inputs": [
+       -81960,
+       -24871445
+      ],
+      "expected": 3415,
+      "got": 7511,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       267,
+       -267
+      ],
+      "expected": 267,
+      "got": 45323,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    },
+    "bound": {
+     "count": 739,
+     "first": {
+      "inputs": [
+       -13,
+       0
+      ],
+      "expected": 13,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       0,
+       -1
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.6
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "cmp",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 0.9
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "add",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 65280,
+   "kinds": {
+    "value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       -255,
+       -255
+      ],
+      "expected": -510,
+      "got": -61950,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       -255,
+       -1
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.3
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "sub",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 65280,
+   "kinds": {
+    "value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       -255,
+       1
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     },
+     "min": {
+      "inputs": [
+       -255,
+       1
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.3
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "neg",
+   "mode": "literal",
+   "n": 511,
+   "pairs_failed": 480,
+   "kinds": {
+    "release": {
+     "count": 480,
+     "first": {
+      "inputs": [
+       -255,
+       null
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       -16,
+       null
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 1,
+   "seconds": 0.0
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "mul",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 3.0
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "div",
+   "mode": "literal",
+   "n": 6338,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 0.1
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "gcd",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 1020,
+   "kinds": {
+    "error": {
+     "count": 960,
+     "first": {
+      "inputs": [
+       -255,
+       0
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       -16,
+       0
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 60,
+     "first": {
+      "inputs": [
+       -15,
+       0
+      ],
+      "expected": 15,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       -1,
+       0
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 4.3
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "cmp",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 1.8
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "add",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 60483,
+   "kinds": {
+    "collapse value": {
+     "count": 60483,
+     "first": {
+      "inputs": [
+       [
+        126,
+        185
+       ],
+       [
+        91,
+        228794950
+       ]
+      ],
+      "expected": -228794918,
+      "got": -2913149478,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        128,
+        0
+       ],
+       [
+        128,
+        0
+       ]
+      ],
+      "expected": 256,
+      "got": 61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "value": {
+     "count": 45074,
+     "first": {
+      "inputs": [
+       [
+        4070,
+        138
+       ],
+       [
+        0,
+        6800777
+       ]
+      ],
+      "expected": -6796845,
+      "got": -4033328685,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        128,
+        0
+       ],
+       [
+        128,
+        0
+       ]
+      ],
+      "expected": 256,
+      "got": 61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 7,
+   "seconds": 4.5
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "sub",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 59999,
+   "kinds": {
+    "value": {
+     "count": 44490,
+     "first": {
+      "inputs": [
+       [
+        77811,
+        39913
+       ],
+       [
+        14,
+        159
+       ]
+      ],
+      "expected": 38043,
+      "got": 4278228123,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        5,
+        248
+       ],
+       [
+        8,
+        0
+       ]
+      ],
+      "expected": -251,
+      "got": -61691,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 59999,
+     "first": {
+      "inputs": [
+       [
+        77811,
+        39913
+       ],
+       [
+        14,
+        159
+       ]
+      ],
+      "expected": 38043,
+      "got": 4278228123,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        5,
+        248
+       ],
+       [
+        8,
+        0
+       ]
+      ],
+      "expected": -251,
+      "got": -61691,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 7,
+   "seconds": 4.6
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "neg",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 95856,
+   "kinds": {
+    "collapse value": {
+     "count": 53956,
+     "first": {
+      "inputs": [
+       [
+        131286,
+        7337
+       ],
+       null
+      ],
+      "expected": -123949,
+      "got": -4294042669,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        257,
+        0
+       ],
+       null
+      ],
+      "expected": -257,
+      "got": -61697,
+      "detail": "",
+      "fresh_pools": [
+       "collapse value",
+       "release"
+      ]
+     }
+    },
+    "release": {
+     "count": 95856,
+     "first": {
+      "inputs": [
+       [
+        131286,
+        7337
+       ],
+       null
+      ],
+      "expected": -123949,
+      "got": null,
+      "detail": "pool 2: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       [
+        16,
+        0
+       ],
+       null
+      ],
+      "expected": -16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.2
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "mul",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 70040,
+   "kinds": {
+    "value": {
+     "count": 69649,
+     "first": {
+      "inputs": [
+       [
+        204,
+        936777
+       ],
+       [
+        2790640395,
+        4067
+       ]
+      ],
+      "expected": -2613634637623944,
+      "got": 1888865478118776,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        15,
+        6
+       ],
+       [
+        6,
+        15
+       ]
+      ],
+      "expected": -81,
+      "got": -61521,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 70040,
+     "first": {
+      "inputs": [
+       [
+        204,
+        936777
+       ],
+       [
+        2790640395,
+        4067
+       ]
+      ],
+      "expected": -2613634637623944,
+      "got": 1888865478118776,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        15,
+        6
+       ],
+       [
+        6,
+        15
+       ]
+      ],
+      "expected": -81,
+      "got": -61521,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 5,
+   "seconds": 7.7
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "div",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 17846,
+   "kinds": {
+    "collapse value": {
+     "count": 17846,
+     "first": {
+      "inputs": [
+       [
+        245700959,
+        59191
+       ],
+       [
+        241,
+        60729
+       ]
+      ],
+      "expected": -4061,
+      "got": -65501,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        693,
+        15
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": -678,
+      "got": -62118,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "value": {
+     "count": 5808,
+     "first": {
+      "inputs": [
+       [
+        43775781,
+        32421
+       ],
+       [
+        5,
+        9
+       ]
+      ],
+      "expected": -10935840,
+      "got": -4037467680,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        693,
+        15
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": -678,
+      "got": -62118,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 6,
+   "seconds": 4.6
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "gcd",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 27007,
+   "kinds": {
+    "error": {
+     "count": 11564,
+     "first": {
+      "inputs": [
+       [
+        3600,
+        3600
+       ],
+       [
+        296664153,
+        2217
+       ]
+      ],
+      "expected": 296661936,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        22
+       ]
+      ],
+      "expected": 22,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "value": {
+     "count": 13268,
+     "first": {
+      "inputs": [
+       [
+        699,
+        62120897
+       ],
+       [
+        185,
+        218095
+       ]
+      ],
+      "expected": 3962,
+      "got": 65402,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        307,
+        0
+       ],
+       [
+        0,
+        307
+       ]
+      ],
+      "expected": 307,
+      "got": 61747,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 15212,
+     "first": {
+      "inputs": [
+       [
+        699,
+        62120897
+       ],
+       [
+        185,
+        218095
+       ]
+      ],
+      "expected": 3962,
+      "got": 65402,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        307,
+        0
+       ],
+       [
+        0,
+        307
+       ]
+      ],
+      "expected": 307,
+      "got": 61747,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "bound": {
+     "count": 231,
+     "first": {
+      "inputs": [
+       [
+        13,
+        8
+       ],
+       [
+        12,
+        12
+       ]
+      ],
+      "expected": 5,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       [
+        2,
+        0
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 2,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 6,
+   "seconds": 5.8
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "cmp",
+   "mode": "literal",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 4,
+   "seconds": 1.8
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "add",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 65280,
+   "kinds": {
+    "value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        255
+       ]
+      ],
+      "expected": -510,
+      "got": -61950,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        255
+       ]
+      ],
+      "expected": -510,
+      "got": -61950,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 5,
+   "seconds": 6.7
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "sub",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 65280,
+   "kinds": {
+    "value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        1,
+        0
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        1,
+        0
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 65280,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        1,
+        0
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        1,
+        0
+       ]
+      ],
+      "expected": -256,
+      "got": -61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 5,
+   "seconds": 7.0
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "neg",
+   "mode": "literal",
+   "n": 511,
+   "pairs_failed": 480,
+   "kinds": {
+    "release": {
+     "count": 480,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       null
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       null
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 2,
+   "seconds": 0.0
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "mul",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 54928,
+   "kinds": {
+    "value": {
+     "count": 54928,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        16
+       ]
+      ],
+      "expected": 4080,
+      "got": 8176,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       [
+        0,
+        16
+       ]
+      ],
+      "expected": 256,
+      "got": 61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 54928,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        16
+       ]
+      ],
+      "expected": 4080,
+      "got": 8176,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       [
+        0,
+        16
+       ]
+      ],
+      "expected": 256,
+      "got": 61696,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 8.5
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "div",
+   "mode": "literal",
+   "n": 6338,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 0.2
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "gcd",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 1020,
+   "kinds": {
+    "error": {
+     "count": 960,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 60,
+     "first": {
+      "inputs": [
+       [
+        0,
+        15
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 15,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        1
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 4,
+   "seconds": 8.4
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "cmp",
+   "mode": "literal",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 2.7
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "add",
+   "mode": "literal",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.2
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "sub",
+   "mode": "literal",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.2
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "neg",
+   "mode": "literal",
+   "n": 256,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.0
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "mul",
+   "mode": "literal",
+   "n": 65536,
+   "pairs_failed": 876,
+   "kinds": {
+    "value": {
+     "count": 876,
+     "first": {
+      "inputs": [
+       [
+        3,
+        15
+       ],
+       [
+        11,
+        15
+       ]
+      ],
+      "expected": 48,
+      "got": 61488,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        4,
+        15
+       ],
+       [
+        8,
+        15
+       ]
+      ],
+      "expected": 77,
+      "got": 61517,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    },
+    "collapse value": {
+     "count": 876,
+     "first": {
+      "inputs": [
+       [
+        3,
+        15
+       ],
+       [
+        11,
+        15
+       ]
+      ],
+      "expected": 48,
+      "got": 61488,
+      "detail": ""
+     },
+     "min": {
+      "inputs": [
+       [
+        4,
+        15
+       ],
+       [
+        8,
+        15
+       ]
+      ],
+      "expected": 77,
+      "got": 61517,
+      "detail": "",
+      "fresh_pools": [
+       "value",
+       "collapse value"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 1.7
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "div",
+   "mode": "literal",
+   "n": 19712,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.4
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "gcd",
+   "mode": "literal",
+   "n": 65536,
+   "pairs_failed": 7680,
+   "kinds": {
+    "bound": {
+     "count": 7680,
+     "first": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 0,
+   "seconds": 1.5
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "cmp",
+   "mode": "literal",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.6
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "add",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.6
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "sub",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.7
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "neg",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 81978,
+   "kinds": {
+    "release": {
+     "count": 81978,
+     "first": {
+      "inputs": [
+       -3315,
+       null
+      ],
+      "expected": 3315,
+      "got": null,
+      "detail": "pool 2: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       16,
+       null
+      ],
+      "expected": -16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 1,
+   "seconds": 1.3
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "mul",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 2.1
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "div",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 2.3
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "gcd",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 11252,
+   "kinds": {
+    "error": {
+     "count": 10513,
+     "first": {
+      "inputs": [
+       0,
+       -7206
+      ],
+      "expected": 7206,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       16,
+       0
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 739,
+     "first": {
+      "inputs": [
+       -13,
+       0
+      ],
+      "expected": 13,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       0,
+       -1
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.4
+  },
+  {
+   "design": "A",
+   "set": "random",
+   "op": "cmp",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 1.0
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "add",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 2.8
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "sub",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 2.8
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "neg",
+   "mode": "zeroed",
+   "n": 511,
+   "pairs_failed": 480,
+   "kinds": {
+    "release": {
+     "count": 480,
+     "first": {
+      "inputs": [
+       -255,
+       null
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       -16,
+       null
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 1,
+   "seconds": 0.0
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "mul",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 3.0
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "div",
+   "mode": "zeroed",
+   "n": 6338,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 0.1
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "gcd",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 1020,
+   "kinds": {
+    "error": {
+     "count": 960,
+     "first": {
+      "inputs": [
+       -255,
+       0
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       -16,
+       0
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 60,
+     "first": {
+      "inputs": [
+       -15,
+       0
+      ],
+      "expected": 15,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       -1,
+       0
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 4.7
+  },
+  {
+   "design": "A",
+   "set": "signed8",
+   "op": "cmp",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 1.8
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "add",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 7,
+   "seconds": 3.7
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "sub",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 7,
+   "seconds": 3.7
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "neg",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 95856,
+   "kinds": {
+    "release": {
+     "count": 95856,
+     "first": {
+      "inputs": [
+       [
+        131286,
+        7337
+       ],
+       null
+      ],
+      "expected": -123949,
+      "got": null,
+      "detail": "pool 2: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       [
+        16,
+        0
+       ],
+       null
+      ],
+      "expected": -16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 3,
+   "seconds": 3.1
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "mul",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 5,
+   "seconds": 6.4
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "div",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 6,
+   "seconds": 4.5
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "gcd",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 11795,
+   "kinds": {
+    "error": {
+     "count": 11564,
+     "first": {
+      "inputs": [
+       [
+        3600,
+        3600
+       ],
+       [
+        296664153,
+        2217
+       ]
+      ],
+      "expected": 296661936,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        22
+       ]
+      ],
+      "expected": 22,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 231,
+     "first": {
+      "inputs": [
+       [
+        13,
+        8
+       ],
+       [
+        12,
+        12
+       ]
+      ],
+      "expected": 5,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       [
+        2,
+        0
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 2,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 6,
+   "seconds": 5.5
+  },
+  {
+   "design": "B",
+   "set": "random",
+   "op": "cmp",
+   "mode": "zeroed",
+   "n": 100000,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 4,
+   "seconds": 2.0
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "add",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 5,
+   "seconds": 5.9
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "sub",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 5,
+   "seconds": 6.1
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "neg",
+   "mode": "zeroed",
+   "n": 511,
+   "pairs_failed": 480,
+   "kinds": {
+    "release": {
+     "count": 480,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       null
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       null
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "pool 1: slot 0 twice on the free list",
+      "fresh_pools": [
+       "release"
+      ]
+     }
+    }
+   },
+   "max_slots": 2,
+   "seconds": 0.0
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "mul",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 8.1
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "div",
+   "mode": "zeroed",
+   "n": 6338,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 0.3
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "gcd",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 1020,
+   "kinds": {
+    "error": {
+     "count": 960,
+     "first": {
+      "inputs": [
+       [
+        0,
+        255
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 255,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        16
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 16,
+      "got": null,
+      "detail": "SpecError: overflow: word 1 written into a destination of 1 words (bound 0)",
+      "fresh_pools": [
+       "error"
+      ]
+     }
+    },
+    "bound": {
+     "count": 60,
+     "first": {
+      "inputs": [
+       [
+        0,
+        15
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 15,
+      "got": null,
+      "detail": "word 0 written, bound 0"
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        1
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 4,
+   "seconds": 8.3
+  },
+  {
+   "design": "B",
+   "set": "signed8",
+   "op": "cmp",
+   "mode": "zeroed",
+   "n": 261121,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 2,
+   "seconds": 2.9
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "add",
+   "mode": "zeroed",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.2
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "sub",
+   "mode": "zeroed",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.2
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "neg",
+   "mode": "zeroed",
+   "n": 256,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.0
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "mul",
+   "mode": "zeroed",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 3,
+   "seconds": 1.7
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "div",
+   "mode": "zeroed",
+   "n": 19712,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.4
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "gcd",
+   "mode": "zeroed",
+   "n": 65536,
+   "pairs_failed": 7680,
+   "kinds": {
+    "bound": {
+     "count": 7680,
+     "first": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     },
+     "min": {
+      "inputs": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "expected": 1,
+      "got": null,
+      "detail": "word 0 written, bound 0",
+      "fresh_pools": [
+       "bound"
+      ]
+     }
+    }
+   },
+   "max_slots": 0,
+   "seconds": 1.5
+  },
+  {
+   "design": "B",
+   "set": "unc4",
+   "op": "cmp",
+   "mode": "zeroed",
+   "n": 65536,
+   "pairs_failed": 0,
+   "kinds": {},
+   "max_slots": 0,
+   "seconds": 0.6
+  }
+ ],
+ "axes": {
+  "A mul": {
+   "n": 115625,
+   "fail": 0,
+   "example": null
+  },
+  "A neg": {
+   "n": 115625,
+   "fail": 0,
+   "example": null
+  },
+  "A add": {
+   "n": 58205,
+   "fail": 0,
+   "example": null
+  },
+  "A sub": {
+   "n": 58205,
+   "fail": 0,
+   "example": null
+  },
+  "A div": {
+   "n": 108561,
+   "fail": 0,
+   "example": null
+  },
+  "A add (cross-axis error)": {
+   "n": 57420,
+   "fail": 6139,
+   "example": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     1
+    ],
+    "no error",
+    "error"
+   ]
+  },
+  "A sub (cross-axis error)": {
+   "n": 57420,
+   "fail": 6139,
+   "example": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     1
+    ],
+    "no error",
+    "error"
+   ]
+  },
+  "B add": {
+   "n": 165536,
+   "fail": 0,
+   "example": null
+  },
+  "B collapse": {
+   "n": 662144,
+   "fail": 0,
+   "example": null
+  },
+  "B sub": {
+   "n": 165536,
+   "fail": 0,
+   "example": null
+  },
+  "B mul": {
+   "n": 165536,
+   "fail": 0,
+   "example": null
+  },
+  "B neg": {
+   "n": 165536,
+   "fail": 0,
+   "example": null
+  }
+ },
+ "nrand": 100000,
+ "seconds": 104
+}

@@ -68,28 +68,45 @@ $$(m_1, d_1) \div (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 
 ### Addition
 
-Addition depends on how the two directions relate.
+The first step of an addition is a check that identifies its case. It looks at the two directions, and where they are opposite or on different axes, at the magnitudes too. There are five cases.
 
-- **The same direction**, $d_1 = d_2$. The magnitudes add:
-  $$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
-  since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
-- **Opposite directions**, $d_2 = d_1 + 2$. The two numbers pull against each other along one axis, and the one with the larger absolute value wins. So the first step is a comparison of absolute values, that is of magnitudes, as in the comparison section:
-  - If $m_1 > m_2$, the first number wins. The sum points in its direction, and its size is what is left after the smaller cancels part of the larger: $(m_1 - m_2,\ d_1)$.
-  - If $m_2 > m_1$, the second number wins: $(m_2 - m_1,\ d_2)$.
-  - If $m_1 = m_2$, they cancel exactly, and the sum is zero.
+| Case | Directions | Magnitudes |
+| --- | --- | --- |
+| 1 | the same | any |
+| 2 | opposite | $m_1 \geq m_2$ |
+| 3 | opposite | $m_1 < m_2$ |
+| 4 | different axes | at least one is 0 |
+| 5 | different axes | neither is 0 |
 
-  In every case the magnitude is the larger minus the smaller, which is never negative, and the direction is that of the larger magnitude. For example, $5 + (-3)$ is $(5, 0) + (3, 2)$: 5 is larger, so the sum is $(5 - 3,\ 0) = (2, 0)$, which is 2. And $3 + (-5)$ is $(3, 0) + (5, 2)$: 5 is larger, so the sum is $(5 - 3,\ 2) = (2, 2)$, which is $-2$.
+The magnitudes in cases 2 and 3 are compared as in the comparison section. Each case then has its own rule.
 
-  The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$, and when $m_2$ is larger this equals $(m_2 - m_1) \cdot i^{d_1 + 2}$.
-- **Different axes**, such as 3 and $4i$. Their sum $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A cannot add them; a sum across axes needs something beyond the design.
+**Case 1, the same direction.** The magnitudes add, and the direction stays:
 
-Both of the first two cases give the right sum when one number is zero, whatever zero's direction: $(0, d) + (m, d) = (m, d)$, and $(0, d) + (m, d + 2) = (m, d + 2)$. The third case does not: zero lies on both axes, so $5 + (0, 1)$ is 5, though the directions lie on different axes. With directions on different axes, a check that a magnitude is 0 comes first: if it is, the sum is the other number. Integers never reach this case, since their directions are always 1 and $-1$.
+$$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
+
+since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
+
+**Case 2, opposite directions, the first magnitude at least as large.** The numbers pull against each other along one axis, and the first wins. Its magnitude loses the second's, by the clock's subtraction, and the sum keeps the first direction:
+
+$$(m_1, d_1) + (m_2, d_2) = (m_1 - m_2,\ d_1).$$
+
+Since $m_1 \geq m_2$, the subtraction does not wrap, and the clock lands on the true difference. If $m_1 = m_2$, it lands on 0, and the sum is zero. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$.
+
+**Case 3, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's negation.
+
+$$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps on the clock}.$$
+
+The subtraction wraps, and the negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$. The check finds case 3. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
+
+**Case 4, different axes, a zero among them.** Zero lies on both axes, so the sum is the other number. For example, $5 + (0, 1)$ is 5. Integers never reach this case, since their directions are always 1 and $-1$.
+
+**Case 5, different axes, neither zero.** A sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes).
+
+Cases 2 and 3 are the only places a magnitude is subtracted, and the only places where the magnitudes decide the direction.
 
 ### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. The negation only changes the direction of $b$, so subtraction is addition with the second direction turned by 2.
-
-The opposite-direction case of addition is the one place where a magnitude is subtracted. It is also the one place where the two arithmetics meet: the direction of the result depends on which magnitude is larger.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's first step then finds the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case 3, which gives $-2$ as above.
 
 ## Design B: one magnitude per direction
 

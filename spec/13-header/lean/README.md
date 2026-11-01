@@ -2,7 +2,9 @@
 
 This folder proves the mathematics of spec 13's two designs for **all values**. Round 1's Python models (`../test/model_a.py`, `model_b.py`, `axes.py`) check the same rules only on samples. The sources are `../../../book/notes-designs-a-b.md` and `../v0.1.md` §2–§4.
 
-Bookkeeping is **not** covered here: headers and their 8-bit layout, size classes, pools, slots, word-by-word routines and write bounds. The Python tests keep checking those.
+Part two adds the word-level routines of spec §1 that round 1 (§4) runs: multi-word add with carry, subtract with borrow, and absolute difference. They are proved for any word size and any operand lengths, write bounds included (`Header/Words.lean`).
+
+The rest of the bookkeeping is **not** covered: headers and their 8-bit layout, size classes, pools and slots, multiply-accumulate, division, gcd, and `norm` (the returned length). The Python tests keep checking those.
 
 ## How to check
 
@@ -13,9 +15,9 @@ lake build        # builds Header and checks every proof
 
 - Toolchain: **Lean 4.35.0** (`leanprover/lean4:v4.35.0`, pinned in `lean-toolchain`).
 - Dependencies: core Lean only. There is no Mathlib.
-- A clean build (`rm -rf .lake && lake build`) takes about **5 s** wall time and finishes with no errors and no warnings.
+- A clean build (`rm -rf .lake && lake build`) takes about **6 s** wall time and finishes with no errors and no warnings.
 - No file contains `sorry`, `admit`, `native_decide` or a new `axiom`.
-- `#print axioms` was run on all 73 theorems. Each depends only on Lean's standard axioms (`propext`, `Quot.sound`, `Classical.choice`, or a subset of them).
+- `#print axioms` was run on all 101 theorems. Each depends only on Lean's standard axioms (`propext`, `Quot.sound`, `Classical.choice`, or a subset of them).
 - Tactics used: `decide` (finite checks over `Fin 4`), `omega` (linear arithmetic over Nat and Int), `grind` (ring identities) and `simp`.
 
 **Installing the toolchain.** elan downloads from `release.lean-lang.org`, which this workspace's network refuses. The toolchain was therefore taken from the GitHub release `lean-4.35.0-linux.zip` and unpacked into `~/.elan/toolchains/leanprover--lean4---v4.35.0`. elan then finds it by its usual name. On a normal network, `elan` installs it by itself.
@@ -190,16 +192,78 @@ A number is `Num = Fin 4 → Nat`, slots along 1, i, −1, −i. Its value is `v
 | `canonical_unique` | The collapsed form is unique. |
 | **`collapseClock_eq`** | Spec §4's per-axis collapse by the borrow equals it when all slots are `< W`. |
 
+### Word-level routines (`Header/Words.lean`, namespace `Header.Words`)
+
+**The model.** A magnitude is a list of words, low word first, for **any word size `n > 0` and any length**. `Words n l` says every word is `< 2^n`. The value is `val n [w0, w1, …] = w0 + 2^n·w1 + …`.
+
+The routines are `words.py`'s `r_add`, `r_sub_into` and `r_absdiff`, transcribed loop by loop:
+- `& M` is `wrap n a = a &&& (2^n − 1)`, which `wrap_eq_mod` proves is `a % 2^n`.
+- Python's `(a − b) & M` is `wsub n a b`.
+- Every carry and borrow is a value, `int(s < c)` (`lt s c`). There is no flag.
+
+**Unequal lengths** are covered as the code handles them:
+- `r_add` swaps the operands so that `x` is the longer, then carries through `x`'s tail (`addTail`).
+- `r_sub_into` has two tails. When `x` is the longer, the borrow propagates through `x`'s tail (`subTailX`). When `y` is the longer, `x` is read as zero past its end (`subTailY`, which computes `d = (0 − q) & M` and `br = int(q != 0) + int(d < br)`).
+
+**Writes.** Each loop writes word `i` at step `i`, in order, starting where the previous loop stopped. So a routine is modelled by the list of words it writes: the list's length is the number of words written, and the highest index written is the length minus 1. "No write past the bound" means "the list is no longer than the bound".
+
+**Cross-check.** The Lean definitions were run with `#eval` on 300 random operand pairs (`n = 4`, lengths 0–5, with zero and all-ones words weighted). Their results matched `words.py`'s `r_add` and `r_absdiff` word for word, borrow included.
+
+**Building blocks.**
+
+| Theorem | Statement |
+| --- | --- |
+| `carry_lemma`, `carry_lemma'` | For words `a, b`, the wrapped sum `t` and the carry `int(t < b)` (or `int(t < a)`) satisfy `a + b = t + 2^n·carry`. In words: the sum wrapped exactly when it came out below an operand. |
+| `borrow_word` | For a word `a` and `b ≤ 2^n`, the wrapped difference `d` and the borrow `int(a < b)` satisfy `a + 2^n·borrow = d + b`. |
+| `xor_mask` | XOR with the all-ones word is `2^n − 1 − r`. |
+| `val_lt` | A `k`-word list has value below `2^(n·k)`: it lies on the `k`-word clock. |
+| `val_append` | `val (a ++ b) = val a + 2^(n·len a)·val b` |
+| `addTail_spec`, `addCommon_spec` | Loop invariants for add: the carry stays 0 or 1, and the words written plus the carry times `2^(n·len)` equal the operands plus the incoming carry. |
+| `subTailX_spec`, `subTailY_spec`, `subCommon_spec` | The same for subtraction: the borrow stays 0 or 1, the subtraction identity holds, and the common loop writes `max` words. |
+| `negPass_length`, `negPass_words`, `negPass_zero`, `negPass_ones` | The second pass of `r_absdiff` writes as many words as it reads, all of them words. With borrow 0 it changes nothing. With borrow 1 it adds 1 to the one's complement. |
+
+**Item 1, multi-word add with carry.**
+
+| Theorem | Statement |
+| --- | --- |
+| **`add_spec`** | Let `k = max(len x, len y)`. `r_add` writes exactly `k + 1` words, which is the bound `max + 1` and never more. The top word, at index `k`, is the final carry, and it is 0 or 1. Every word written is `< 2^n`. The first `k` words plus the final carry times `2^(n·k)` equal `val x + val y`. |
+| `val_add` | Read as one number, the `k + 1` words are the sum. |
+
+**Item 2, absolute difference with borrow.**
+
+| Theorem | Statement |
+| --- | --- |
+| **`subInto_spec`** | `r_sub_into` writes exactly `k` words. On the `k`-word clock `N = 2^(n·k)`, their value is `Clock.lean`'s `clockSub N (val x) (val y)`. The final borrow is `1` exactly when `val x < val y`, so it is `Clock.lean`'s `borrow (val x) (val y)`. |
+| `negPass_clock` | On the value, the second pass is `Clock.lean`'s `clockNeg N` when the borrow is 1, and the identity when it is 0. |
+| **`absDiff_spec`** | Both passes of `r_absdiff` write exactly `k` words, the bound `max`, never more, and all of them are words. The result is `absDiffClock N (val x) (val y)`, which by the value-level `borrow_lemma` is `\|val x − val y\|`. The returned borrow is `1` exactly when `val x < val y`, and it is 0 or 1. |
+
+Together these tie the word-level routine to the value-level borrow lemma: the first pass is the clock difference, its borrow is the value-level borrow, and the second pass is the clock negation.
+
+**Item 3, write bounds.**
+- Add: `add_spec` shows exactly `max + 1` words are written, with the final carry as the top word.
+- Absolute difference: `subInto_spec` and `absDiff_spec` show exactly `max` words in each pass.
+
+Spec §1 says a routine "writes at most its bound". These routines meet their bounds exactly.
+
 ## Findings
 
 **No statement in the notes or in spec §2–§4 turned out to be false.** Every rule listed above holds for all values under the stated hypotheses, and no counterexample was found.
 
-Four observations do not contradict the documents:
+Five observations do not contradict the documents:
 
 1. **The borrow lemma needs less than it states.** It uses `m2 < N` only. The hypothesis `m1 < N` is never needed, because the no-borrow branch never touches the clock. The theorem keeps both hypotheses, as the spec does.
 2. **Design A's order holds per axis, not across axes.** `cmp` says −1 < 0 and 0 < i, but it refuses to compare −1 with i. This matches spec §2 ("different axes are not ordered") and the notes. It does mean that `cmp` is not a total order on all numbers: on mixed axes, transitivity through zero does not apply. `cmp_correct` states the precise guarantee, which is agreement with the true order along any axis that holds both numbers.
 3. **The zero test in comparison is needed, as the notes say.** Without it, `(0, 0)` and `(0, 2)` would fall into the opposite-direction branch and come out unequal. In addition, `add_value` confirms the notes' claim that no zero test is needed on the same-direction and opposite branches: those branches handle a zero in any direction correctly.
 4. **The four-slot multiplication is written as a sum.** It is defined as slot `k = Σ_j x_j · y_(k−j)`, which is the notes' rule "the product of `d1` and `d2` lands in `d1 + d2`" (`mul_slot` proves the two readings agree).
+
+5. **Word routines, part two.** No counterexample. Three facts the routines rely on are now proved for every word size and length:
+   - the carry and the borrow never exceed 1;
+   - `r_add`'s top word is the carry, written even when it is 0, so the result is always `max + 1` words before `norm`;
+   - the shorter operand is handled as described above (swap for add; read as zero for subtract).
+
+   Two limits of what is proved:
+   - The word size must be positive (`n > 0`); with `n = 0` there are no words.
+   - `norm`, which trims the top zero words to return the length, is not modelled.
 
 ## Files
 
@@ -211,4 +275,5 @@ Four observations do not contradict the documents:
 - `Header/DesignA.lean`: items 1–7.
 - `Header/DesignB.lean`: item 8.
 - `Header/FourSlot.lean`: item 9.
+- `Header/Words.lean`: part two, the word-level routines.
 - `.gitignore`: excludes the build directory `.lake/`.

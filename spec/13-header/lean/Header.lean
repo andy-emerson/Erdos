@@ -3,3 +3,4 @@ import Header.Clock
 import Header.DesignA
 import Header.DesignB
 import Header.FourSlot
+import Header.Words

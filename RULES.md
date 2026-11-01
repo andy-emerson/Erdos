@@ -28,6 +28,8 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 3. **Match the control.** An optimized model gives the same values as the control, value for value.
 4. **Timed runs alone.** Timed runs need a quiet machine, with all other work paused.
 
+6. **Portable pseudocode.** *(Draft, Nov 1, 2026: agreed in discussion; wording awaits the author's approval.)* Machine-level pseudocode uses only steps that x86-64, ARM64 and RISC-V all provide in their common current form. A step one family lacks, such as the carry flag or the 128-by-64 divide, is not used.
+
 ## Reviews
 
 1. **A spec is reviewed against the algorithm design rules** above, before anything is built.
@@ -39,3 +41,19 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 2. **No references, benchmarks or prior art** in the paper.
 3. **Proofs hold only proof** and never use a later fact.
 4. **LaTeX** uses `\text{}` only.
+
+### Draft prose rules (Nov 1, 2026; for the author's approval)
+
+Drawn from the author's edits to the machine-level supplement. Rules on AI writing patterns will be added from the survey in [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md).
+
+5. **One new idea at a time.** A passage finishes one idea before it starts the next.
+6. **An idea comes just before its first use.** Introduced earlier, it is forgotten by the time it is needed; a short pause inside a section is better.
+7. **Easy before hard.** Order follows difficulty, and the text never calls anything hard.
+8. **Familiar before abstract.** Start from what the reader already knows, such as a clock before modular arithmetic or decimal before binary.
+9. **Like things, like treatment.** If one item of a kind gets prose and a formula, every item of that kind does.
+10. **Reasons, not measurements.** Explain why a method is faster; readers can run the code to measure it.
+11. **Answer the informed reader's question where it arises.** Where the text departs from what an expert expects, it says why at that point.
+12. **Meaning over syntax; general over brand names.** Teach what an operation does rather than how a tool spells it, and name a language, product or chip only where the point needs it.
+
+Open conflicts with the rules above: rule 2 (no references) and the supplement's citation of published instruction costs; rule 4 (`\text{}` only) and one use of `\big(` in the supplement.
+

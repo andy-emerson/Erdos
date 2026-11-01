@@ -42,12 +42,13 @@ def a_neg(x):
     return a_mk(h >> 6 & 3, x[1])
 
 
-def a_add(x, y):
+def a_add(x, y, flip=0):
+    """flip = 0x80 is subtract: the add rules with h2 xor 0x80 in place of h2"""
     if y[1] == 0:
         return x
     if x[1] == 0:
-        return y
-    h1, h2 = a_hd(x) & D, a_hd(y) & D
+        return a_neg(y) if flip else y
+    h1, h2 = a_hd(x) & D, (a_hd(y) ^ flip) & D
     if h1 == h2:
         return a_mk(h1 >> 6, x[1] + y[1])
     if h1 ^ h2 == 0x80:
@@ -57,11 +58,7 @@ def a_add(x, y):
 
 
 def a_sub(x, y):
-    if y[1] == 0:
-        return x
-    if x[1] == 0:
-        return a_neg(y)
-    return a_add(x, a_neg(y))
+    return a_add(x, y, 0x80)
 
 
 def a_mul(x, y):
@@ -96,7 +93,8 @@ def b_add(x, y):
 
 
 def b_sub(x, y):
-    return b_add(x, b_neg(y))
+    """slot k of y is added to slot k + 2: the crossed parts"""
+    return tuple(x[k] + y[(k + 2) % 4] for k in range(4))
 
 
 def b_mul(x, y):

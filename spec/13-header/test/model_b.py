@@ -1,7 +1,7 @@
 """model_b.py: design B (spec 13 §3), a number = (16-bit header, P's word, N's word), value P - N. Header: P's class in
-bits 0-4, N's in bits 8-12, bits 5-7 and 13-15 spare. Collapse is the only subtraction. Revised spec: negate copies,
+bits 0-4, N's in bits 8-12, bits 5-7 and 13-15 spare. Collapse is the only subtraction. Revised spec: negate copies, subtract adds crossed parts,
 results zero the rest of their slot, gcd's bound for a zero operand, gcd(0, 0) an error."""
-from words import (SpecError, Res, part_copy, part_len, part_ptr, part_value, part_canonical, part_release,
+from words import (COUNT, SpecError, Res, part_copy, part_len, part_ptr, part_value, part_canonical, part_release,
                    part_from_int, Dst, r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
 
 
@@ -60,6 +60,7 @@ class B:
         return None
 
     def release(self, x):
+        COUNT["value_release"] += 1
         p, n = self.parts(x)
         part_release(self.pools, *p)
         part_release(self.pools, *n)
@@ -70,8 +71,8 @@ class B:
         p, n = self.parts(x)
         return self.join(part_copy(self.pools, *n), part_copy(self.pools, *p))
 
-    def add(self, x, y):
-        (p1, n1), (p2, n2) = self.parts(x), self.parts(y)
+    def _add(self, p1, p2, n1, n2):
+        """(p1 + p2, n1 + n2), both result slots allocated first"""
         rp = Res(self.pools, max(self._len(p1), self._len(p2)) + 1)
         rn = Res(self.pools, max(self._len(n1), self._len(n2)) + 1)
         dp, dn = rp.dst(self.pools), rn.dst(self.pools)
@@ -83,12 +84,14 @@ class B:
         ln = r_add(dn, a, ao, la, b, bo, lb)
         return self.join(self._fin(rp, dp, lp), self._fin(rn, dn, ln))
 
+    def add(self, x, y):
+        (p1, n1), (p2, n2) = self.parts(x), self.parts(y)
+        return self._add(p1, p2, n1, n2)
+
     def sub(self, x, y):
-        """negate, then add; the negation is a copy the subtract owns, so it releases it"""
-        t = self.neg(y)
-        r = self.add(x, t)
-        self.release(t)
-        return r
+        """the crossed parts, P1 + N2 and N1 + P2, copying nothing"""
+        (p1, n1), (p2, n2) = self.parts(x), self.parts(y)
+        return self._add(p1, n2, n1, p2)
 
     def _mac2(self, dst, a, b, c, d):
         """dst = a*b + c*d by two multiply-accumulates"""

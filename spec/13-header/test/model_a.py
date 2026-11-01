@@ -1,7 +1,8 @@
 """model_a.py: design A (spec 13 §2), a number = (8-bit header, word). Header bits 0-4 class, bit 5 spare, bits 6-7
 direction d (1, i, -1, -i). Every operation follows §2's header arithmetic literally, on 8 bits (revised spec:
-zero has no axis, negate copies, results zero the rest of their slot)."""
-from words import (SpecError, Res, part_len, part_copy, part_ptr, part_value, part_canonical, part_release, part_from_int,
+zero has no axis, negate copies, subtract flips h2's direction, results zero the rest of their slot)."""
+from words import (COUNT, SpecError, Res, part_len, part_copy, part_ptr, part_value, part_canonical, part_release,
+                   part_from_int,
                    r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
 
 D = 0xC0
@@ -60,6 +61,7 @@ class A:
         return None
 
     def release(self, x):
+        COUNT["value_release"] += 1
         part_release(self.pools, x[0] & 31, x[1])
 
     # -------------------------------------------------------------------- operations
@@ -77,12 +79,14 @@ class A:
         h, w = self._copy(x)
         return h ^ 0x80, w
 
-    def add(self, x, y):
-        if self._zero(y):                          # zero has no axis: return the other
+    def add(self, x, y, flip=0):
+        """flip = 0x80 is subtract: the add rules with h2 xor 0x80 in place of h2, copying nothing"""
+        if self._zero(y):                          # zero has no axis: a copy of the other
             return self._copy(x)
-        if self._zero(x):
-            return self._copy(y)
+        if self._zero(x):                          # (a subtract, a negated copy of the second)
+            return self.neg(y) if flip else self._copy(y)
         (h1, w1), (h2, w2) = x, y
+        h2 ^= flip
         d1, d2 = h1 & D, h2 & D
         n1, n2 = self._len(h1, w1), self._len(h2, w2)
         if d1 == d2:
@@ -102,16 +106,7 @@ class A:
         raise SpecError("sum across axes")
 
     def sub(self, x, y):
-        """adds the negation; with a zero operand, the other (the second negated). The negation is a copy (§1), a
-        value the subtract owns, so it releases it."""
-        if self._zero(y):
-            return self._copy(x)
-        if self._zero(x):
-            return self.neg(y)
-        t = self.neg(y)
-        r = self.add(x, t)
-        self.release(t)
-        return r
+        return self.add(x, y, 0x80)
 
     def mul(self, x, y):
         (h1, w1), (h2, w2) = x, y

@@ -8,7 +8,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 1.6
+   "seconds": 1.8
   },
   {
    "design": "A",
@@ -17,8 +17,13 @@
    "n": 100000,
    "pairs_failed": 0,
    "kinds": {},
-   "max_slots": 4,
-   "seconds": 1.7
+   "max_slots": 3,
+   "seconds": 2.1,
+   "sub_slots": {
+    "subs": 361121,
+    "max_alloc": 2,
+    "movedowns": 98268
+   }
   },
   {
    "design": "A",
@@ -38,7 +43,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 2.0
+   "seconds": 2.1
   },
   {
    "design": "A",
@@ -48,7 +53,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 2.2
+   "seconds": 2.3
   },
   {
    "design": "A",
@@ -58,7 +63,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 3.2
+   "seconds": 3.3
   },
   {
    "design": "A",
@@ -68,7 +73,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 0.9
+   "seconds": 1.0
   },
   {
    "design": "A",
@@ -78,7 +83,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 2.7
+   "seconds": 2.8
   },
   {
    "design": "A",
@@ -87,8 +92,13 @@
    "n": 261121,
    "pairs_failed": 0,
    "kinds": {},
-   "max_slots": 4,
-   "seconds": 2.9
+   "max_slots": 3,
+   "seconds": 3.2,
+   "sub_slots": {
+    "subs": 261121,
+    "max_alloc": 2,
+    "movedowns": 79410
+   }
   },
   {
    "design": "A",
@@ -108,7 +118,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 2.9
+   "seconds": 3.2
   },
   {
    "design": "A",
@@ -128,7 +138,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 4.6
+   "seconds": 4.9
   },
   {
    "design": "A",
@@ -138,7 +148,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 1.7
+   "seconds": 1.8
   },
   {
    "design": "B",
@@ -148,7 +158,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 7,
-   "seconds": 3.6
+   "seconds": 3.9
   },
   {
    "design": "B",
@@ -157,8 +167,13 @@
    "n": 100000,
    "pairs_failed": 0,
    "kinds": {},
-   "max_slots": 8,
-   "seconds": 3.8
+   "max_slots": 7,
+   "seconds": 4.0,
+   "sub_slots": {
+    "subs": 100000,
+    "max_alloc": 4,
+    "movedowns": 75689
+   }
   },
   {
    "design": "B",
@@ -168,7 +183,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 5,
-   "seconds": 2.2
+   "seconds": 2.4
   },
   {
    "design": "B",
@@ -178,7 +193,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 5,
-   "seconds": 6.3
+   "seconds": 6.6
   },
   {
    "design": "B",
@@ -188,7 +203,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 6,
-   "seconds": 4.3
+   "seconds": 4.6
   },
   {
    "design": "B",
@@ -198,7 +213,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 6,
-   "seconds": 5.6
+   "seconds": 5.7
   },
   {
    "design": "B",
@@ -208,7 +223,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 4,
-   "seconds": 1.8
+   "seconds": 1.9
   },
   {
    "design": "B",
@@ -218,7 +233,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 5,
-   "seconds": 6.0
+   "seconds": 6.4
   },
   {
    "design": "B",
@@ -228,7 +243,12 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 5,
-   "seconds": 6.3
+   "seconds": 7.0,
+   "sub_slots": {
+    "subs": 622242,
+    "max_alloc": 4,
+    "movedowns": 423918
+   }
   },
   {
    "design": "B",
@@ -248,7 +268,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 7.8
+   "seconds": 8.2
   },
   {
    "design": "B",
@@ -278,7 +298,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 2.8
+   "seconds": 2.9
   },
   {
    "design": "B",
@@ -288,7 +308,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 1.2
+   "seconds": 1.3
   },
   {
    "design": "B",
@@ -298,7 +318,12 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 1.3
+   "seconds": 1.5,
+   "sub_slots": {
+    "subs": 687778,
+    "max_alloc": 4,
+    "movedowns": 493038
+   }
   },
   {
    "design": "B",
@@ -318,7 +343,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 1.7
+   "seconds": 1.8
   },
   {
    "design": "B",
@@ -338,7 +363,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 0,
-   "seconds": 1.4
+   "seconds": 1.5
   },
   {
    "design": "B",
@@ -428,5 +453,5 @@
   }
  ],
  "nrand": 100000,
- "seconds": 52
+ "seconds": 55
 }

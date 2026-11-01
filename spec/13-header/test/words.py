@@ -10,6 +10,7 @@ the rest of its slot, and the move-down zero-fills (§1, revised).
 W = 4
 M = (1 << W) - 1          # a word's mask; also the free list's end marker (all ones)
 POISON = M
+COUNT = {"alloc": 0, "release": 0, "value_release": 0, "movedown": 0}   # for the subtract temporaries check
 MAX_SLOTS = (1 << W) - 1   # a slot index is W bits and all ones ends the free list
 
 
@@ -283,6 +284,7 @@ class Pool:
         self.c, self.size, self.mem, self.cap, self.next, self.head = c, 1 << c, [], 0, 0, M
 
     def alloc(self):
+        COUNT["alloc"] += 1
         if self.head != M:                          # pop the free list
             i = self.head
             self.head = self.mem[i * self.size]
@@ -302,6 +304,7 @@ class Pool:
         return i
 
     def release(self, i):
+        COUNT["release"] += 1
         self.mem[i * self.size] = self.head
         self.head = i
 
@@ -429,6 +432,7 @@ class Res:
         if t == 0:
             mem, off = pools.ptr(self.c, self.i)
             w = mem[off] if n == 1 else 0
+            COUNT["movedown"] += 1
             pools.p[self.c].release(self.i)
             return 0, w
         j = pools.p[t].alloc()
@@ -438,6 +442,7 @@ class Res:
             dst[do + k] = src[so + k]
         for k in range(n, 1 << t):                  # zero-filled
             dst[do + k] = 0
+        COUNT["movedown"] += 1
         pools.p[self.c].release(self.i)
         return t, j
 

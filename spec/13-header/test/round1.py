@@ -7,6 +7,8 @@ Each pair: operands built (test setup), the operation, then the checks:
   (division, gcd) have one part zero;
 - output collapse (B): each result is also output once as a single value, by collapse, and checked like a result;
 - bound: no routine wrote past its §1 bound;
+- temporary (subtract): the operation releases no value, every slot it releases is a move-down's, and the slots it
+  allocates less those it releases are the result's own;
 - release: after the operands, the result (and B's output collapse) are released, every slot is on its pool's free list;
 - error: the operation raised (overflow past a destination, class above 31, an index too wide for a word, or a Python
   fault such as reading past memory).
@@ -29,6 +31,7 @@ import axes
 
 OPS = ("add", "sub", "neg", "mul", "div", "gcd", "cmp")
 OUT = Path(__file__).resolve().parent / "out"
+TEMP = {"subs": 0, "max_alloc": 0, "movedowns": 0}
 
 
 def ref(op, a, b):
@@ -65,7 +68,16 @@ def run_pair(design, op, xa, xb, pools):
     try:
         x = mk(xa)
         y = mk(xb) if xb is not None else None
+        c0 = dict(words.COUNT)
         r = getattr(m, op)(x, y) if y is not None else m.neg(x)
+        if op == "sub":                             # no temporary beyond the move-down slot
+            d = {k: words.COUNT[k] - c0[k] for k in c0}
+            held = sum(1 for c in ([r[0] & 31] if design == "A" else [r[0] & 31, (r[0] >> 8) & 31]) if c)
+            if d["value_release"] or d["release"] != d["movedown"] or d["alloc"] - d["release"] != held:
+                fails.append(("temporary", str(d), held))
+            TEMP["subs"] += 1
+            TEMP["max_alloc"] = max(TEMP["max_alloc"], d["alloc"])
+            TEMP["movedowns"] += d["movedown"]
         if op == "cmp":
             if r != want:
                 fails.append(("value", "", r))
@@ -211,6 +223,7 @@ def size(c):
 # ------------------------------------------------------------------------------------------------ one task
 def task(args):
     design, setname, op, nrand, seed = args
+    TEMP.update(subs=0, max_alloc=0, movedowns=0)
     t0 = time.time()
     pools = Pools()
     stats = {"design": design, "set": setname, "op": op, "n": 0, "pairs_failed": 0, "kinds": {},
@@ -236,6 +249,8 @@ def task(args):
         _, f = run_pair(design, op, c[0], c[1], Pools())
         k["min"]["fresh_pools"] = [x[0] for x in f]
     stats["seconds"] = round(time.time() - t0, 1)
+    if op == "sub":
+        stats["sub_slots"] = dict(TEMP)
     return stats
 
 
@@ -278,7 +293,8 @@ def main():
     for s in res:
         ks = ", ".join(f"{k} {v['count']}" for k, v in s["kinds"].items()) or "pass"
         print(f"{s['design']} {s['set']:7} {s['op']:4} n={s['n']:7} fail={s['pairs_failed']:7}"
-              f"  slots<={s['max_slots']:2} {s['seconds']:6}s  {ks}")
+              f"  slots<={s['max_slots']:2} {s['seconds']:6}s  {ks}"
+              + (f"  sub slots {s['sub_slots']}" if 'sub_slots' in s else ""))
     for k, v in ax.items():
         print(f"axes {k:28} n={v['n']:7} fail={v['fail']}" + (f"  e.g. {v['example']}" if v["fail"] else ""))
     for x in lim:

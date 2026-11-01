@@ -30,30 +30,80 @@ On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the *
 
 Comparison comes first, because addition is built on it. Two numbers on the same axis can be compared in both magnitude and direction: on the real axis, $-7 < -3 < 3 < 7$, and on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$. Numbers on different axes cannot be ordered, but their magnitudes can: dropping the direction gives the **absolute value**, $|(m, d)| = m$, and absolute values compare as magnitudes.
 
-A comparison is made of three checks, each with three possible answers.
+A comparison is made of three checks, each with three possible answers. Each check is a question or two that the machine answers in one instruction each. The instructions below are given for the three families of chips in common use (x86-64, ARM64 and RISC-V), and each is followed by the line of pseudocode that stands for it. Here $m_1$, $d_1$, $m_2$ and $d_2$ are held in registers.
 
-- **The zero check** asks whether each magnitude is 0. Both are 0, one is 0, or neither is.
-- **The direction check** asks how the two directions relate. They are the same, opposite, or on different axes.
-- **The magnitude check** asks how the two magnitudes relate. They are equal, the first is larger, or the second is larger.
+**The zero check** asks whether each magnitude is 0. Both are 0, one is 0, or neither is. Both are 0 exactly when $m_1$ OR $m_2$ is 0, since an OR has a 1 wherever either has one, so a single OR followed by a single test answers "both". Then one test of $m_1$ answers which one, if only one is.
 
-Not every check is needed every time. Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So a zero's direction tells nothing, and the zero check comes first. Its answer decides what, if anything, to check next, and so on down a tree:
+| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
+| --- | --- | --- | --- | --- |
+| are both 0? | `or` then `jz` | `orr` then `cbz` | `or` then `beqz` | `t ← m1 OR m2`, then `IF t = 0 THEN ...` |
+| is $m_1$ 0? | `test` then `jz` | `cbz` | `beqz` | `IF m1 = 0 THEN ...` |
+
+On ARM64 and RISC-V, "compare with zero and jump" is a single instruction (`cbz`, `beqz`). On x86-64 it is two: `test` sets a flag, and `jz` ("jump if zero") reads it.
+
+**The direction check** asks how the two directions relate. The quickest way is XOR, bit by bit: $d_1$ XOR $d_2$ is 0 when the directions are the same, 2 when they are opposite, and odd (1 or 3) when they lie on different axes. This works because opposite directions differ by 2, which changes only the high bit of $d$, and directions on different axes differ by 1 or 3, which changes the low bit. It gives the same three answers as $d_1 - d_2$ mod 4, in one instruction instead of two.
+
+| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
+| --- | --- | --- | --- | --- |
+| how do they relate? | `xor` | `eor` | `xor` | `t ← d1 XOR d2` |
+| different axes? | `test` then `jnz` | `tbnz` (bit 0) | `andi` then `bnez` | `IF (t AND 1) = 1 THEN ...` |
+| opposite? | `cmp` then `je` | `cmp` then `b.eq` | `li` then `beq` | `IF t = 2 THEN ...` |
+
+Otherwise the directions are the same. A related question, needed below, is whether one direction is positive: the positive directions, 1 and $i$, are 0 and 1, and the negative ones, $-1$ and $-i$, are 2 and 3, so a direction is negative exactly when its high bit is 1. In pseudocode that is `IF (d AND 2) = 0 THEN ...` for "positive" (x86-64 `test` then `jz`; ARM64 `tbz`; RISC-V `andi` then `beqz`).
+
+**The magnitude check** asks how the two magnitudes relate. They are equal, the first is larger, or the second is larger. Two questions answer it: "are they equal?" and "is the first smaller?"
+
+| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
+| --- | --- | --- | --- | --- |
+| equal? | `cmp` then `je` | `cmp` then `b.eq` | `beq` | `IF m1 = m2 THEN ...` |
+| first smaller? | (same `cmp`) then `jb` | (same `cmp`) then `b.lo` | `bltu` | `IF m1 < m2 THEN ...` |
+
+On x86-64 and ARM64, one `cmp` answers both questions: it sets flags, and each jump reads the flag it needs (`je` "equal", `jb` "below"). RISC-V has no flags, so it asks twice, each time with a single compare-and-jump instruction (`beq`, `bltu`). The "u" in `bltu` and the "b" in `jb` mean the numbers are compared as magnitudes, never as signed values. For magnitudes longer than one word, the same question is asked word by word from the top, and the first unequal word answers it.
+
+**The order of the checks.** Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So a zero's direction tells nothing, and the zero check comes first. Its answer decides what, if anything, to check next, and so on down a tree:
 
 ```text
 zero check
 ├── both zero      → equal
 ├── one zero       → the other number's direction decides
 └── neither zero   → direction check
-    ├── the same       → magnitude check
-    │   ├── equal          → equal
-    │   ├── first larger   → positive: the first is larger;  negative: the second is larger
-    │   └── second larger  → positive: the second is larger; negative: the first is larger
+    ├── different axes → not ordered
     ├── opposite       → the positive one is larger
-    └── different axes → not ordered; the magnitude check compares their absolute values
+    └── the same       → magnitude check
+        ├── equal          → equal
+        ├── second larger  → positive: the second is larger; negative: the first is larger
+        └── first larger   → positive: the first is larger;  negative: the second is larger
 ```
 
-"The other number's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$).
+"The other number's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$). Numbers on different axes are not ordered, but their absolute values can still be compared by the magnitude check alone.
 
-Every path through the tree asks at most three questions, and the magnitude check is needed on only one branch.
+**The whole comparison** in pseudocode, in the conventions of chapter 2 of Part 1. It returns one of four answers: `EQUAL`, `FIRST` (the first is larger), `SECOND` (the second is larger) or `NOT ORDERED`.
+
+```text
+ROUTINE compare(m1, d1, m2, d2)
+    t ← m1 OR m2
+    IF t = 0 THEN RETURN EQUAL                 both zero
+    IF m1 = 0 THEN GO TO first_zero
+    IF m2 = 0 THEN GO TO second_zero
+    t ← d1 XOR d2
+    IF (t AND 1) = 1 THEN RETURN NOT ORDERED   different axes
+    IF t = 2 THEN GO TO larger_is_positive     opposite directions
+    IF m1 = m2 THEN RETURN EQUAL               same direction, equal magnitudes
+    IF m1 < m2 THEN GO TO second_magnitude
+    GO TO larger_is_positive                   the first magnitude is larger
+second_magnitude:
+    IF (d1 AND 2) = 0 THEN RETURN SECOND       positive: the larger magnitude wins
+    RETURN FIRST                               negative: the smaller magnitude wins
+first_zero:
+    IF (d2 AND 2) = 0 THEN RETURN SECOND       a positive second is larger than zero
+    RETURN FIRST
+second_zero:
+larger_is_positive:
+    IF (d1 AND 2) = 0 THEN RETURN FIRST        the first is positive, so it is larger
+    RETURN SECOND
+```
+
+The label `larger_is_positive` serves three cases that share an answer: the second number is zero, the directions are opposite, or the first magnitude is larger in a common direction. In each, the first number is the larger exactly when its direction is positive. The longest path, two numbers in the same direction with different magnitudes, asks seven questions, each one or two instructions; the shortest, two zeros, asks one. The pseudocode was checked against the true order of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/comparison.py`](verify-notes/comparison.py)).
 
 ### Addition
 

@@ -18,35 +18,75 @@ A number is a pair $(m, d)$ of a magnitude $m$ and a direction $d$. Its value is
 
 $$m \cdot i^d.$$
 
-So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$. Zero is the magnitude 0, which has no direction, so it is always written $(0, 0)$. Every other number has exactly one pair.
+So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$.
 
-**Multiplication** multiplies the magnitudes and adds the directions:
+**Zero** is any pair with magnitude 0. Zero lies on both axes and in all four directions, and it means the same thing in each, so its direction is irrelevant: $(0, d)$ is zero for every $d$. A zero keeps whatever direction the operation that produced it left, and no step sets it. Every number other than zero has exactly one pair.
+
+On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1 or 3, as 1 and $i$ do.
+
+### Negation
+
+Negation adds 2 to the direction:
+
+$$-(m, d) = (m,\ d + 2),$$
+
+since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Negating zero gives a zero.
+
+### Comparison
+
+Two numbers on the same axis can be compared, in both direction and magnitude. On the real axis, $-7 < -3 < 3 < 7$; on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$.
+
+**Equality.** Two numbers are equal when their magnitudes are equal and their directions are equal, or when both magnitudes are 0, whatever their directions.
+
+**Order** takes two steps.
+
+1. **Directions.** If the directions are opposite, the number with the positive direction is larger.
+2. **Magnitudes.** If the directions are the same, the magnitudes decide. In a positive direction, the larger magnitude is the larger number: $7 > 3$. In a negative direction, the smaller magnitude is the larger number: $-3 > -7$.
+
+**Zero in a comparison.** Zero lies on every axis, so it can be compared with any number, and it is neither positive nor negative. The two steps already handle a zero whose direction happens to lie on the same axis as the other number. For example, $(0, 2)$ against $-3 = (3, 2)$ has the same direction, and the smaller magnitude is larger, so $0 > -3$. Two cases need a check that a magnitude is 0 before the steps:
+
+- **Both zero:** the numbers are equal, whatever their directions. Without the check, step 1 would call $(0, 0)$ larger than $(0, 2)$.
+- **One zero:** the other number's direction alone decides. A positive number is larger than zero and a negative number smaller. This covers a zero whose direction lies on the other axis, such as $(0, 0)$ against $3i$: zero lies on the imaginary axis too, so $0 < 3i$.
+
+**Different axes.** Directions on different axes cannot be compared: $-i$ is not less than 1, and $-1$ is not less than $i$. Their magnitudes can be. Dropping the direction gives the **absolute value**,
+
+$$|(m, d)| = m,$$
+
+and absolute values compare as magnitudes. So the absolute values of 3 and $-5i$ compare as $3 < 5$, though the numbers themselves do not compare.
+
+### Multiplication
+
+Multiplication multiplies the magnitudes and adds the directions:
 
 $$(m_1, d_1) \cdot (m_2, d_2) = (m_1 m_2,\ d_1 + d_2).$$
 
-This holds because $m_1 i^{d_1} \cdot m_2 i^{d_2} = m_1 m_2 \cdot i^{d_1 + d_2}$. For example, $(-3) \cdot (-5)$ is $(3, 2) \cdot (5, 2) = (15, 0)$, which is 15, since $2 + 2 = 4 \equiv 0$.
+This holds because $m_1 i^{d_1} \cdot m_2 i^{d_2} = m_1 m_2 \cdot i^{d_1 + d_2}$. For example, $(-3) \cdot (-5)$ is $(3, 2) \cdot (5, 2) = (15, 0)$, which is 15, since $2 + 2 = 4 \equiv 0$. A product with a zero factor has magnitude 0, so it is zero, whatever its direction.
 
-**Exact division** divides the magnitudes and subtracts the directions, when $m_2$ divides $m_1$:
+### Exact division
+
+Exact division divides the magnitudes and subtracts the directions, when $m_2$ is not 0 and divides $m_1$:
 
 $$(m_1, d_1) \div (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 
-**Negation** adds 2 to the direction: $-(m, d) = (m, d + 2)$, since $-1 \cdot i^d = i^{d+2}$.
+### Addition
 
-**Addition** depends on how the two directions relate. If either number is zero, the sum is the other number. Otherwise there are three cases.
+Addition depends on how the two directions relate.
 
 - **The same direction**, $d_1 = d_2$. The magnitudes add:
   $$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
   since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 - **Opposite directions**, $d_2 = d_1 + 2$. Then $m_1 i^{d_1} + m_2 i^{d_1 + 2} = (m_1 - m_2) \cdot i^{d_1}$. If $m_1 \geq m_2$, that is $(m_1 - m_2, d_1)$. Otherwise it is $(m_2 - m_1) \cdot (-i^{d_1}) = (m_2 - m_1) \cdot i^{d_2}$. In both cases the magnitude is $|m_1 - m_2|$, and the direction is that of the larger magnitude:
   $$(m_1, d_1) + (m_2, d_2) = (|m_1 - m_2|,\ \text{the direction of the larger}).$$
-  If $m_1 = m_2$, the sum is zero, $(0, 0)$.
+  If $m_1 = m_2$, the sum has magnitude 0, so it is zero.
 - **Different axes**, such as 3 and $4i$. Their sum $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A cannot add them; a sum across axes needs something beyond the design.
+
+Both of the first two cases give the right sum when one number is zero, whatever zero's direction: $(0, d) + (m, d) = (m, d)$, and $(0, d) + (m, d + 2) = (m, d + 2)$. The third case does not: zero lies on both axes, so $5 + (0, 1)$ is 5, though the directions lie on different axes. With directions on different axes, a check that a magnitude is 0 comes first: if it is, the sum is the other number. Integers never reach this case, since their directions are always 1 and $-1$.
 
 For example, $5 + (-3)$ is $(5, 0) + (3, 2)$: opposite directions, and 5 is larger, so the sum is $(2, 0)$, which is 2. And $3 + (-5)$ is $(3, 0) + (5, 2)$: the larger magnitude is 5, along direction 2, so the sum is $(2, 2)$, which is $-2$.
 
-**Subtraction** is addition of the negation: $a - b = a + (-b)$. The negation only changes the direction of $b$, so subtraction is addition with the second direction turned by 2.
+### Subtraction
 
-**Comparison** of two integers, with directions 0 and 2: a positive number is larger than a negative one; two positive numbers compare by magnitude; and two negative numbers compare by magnitude, reversed, since $-7 < -3$ although $7 > 3$.
+Subtraction is addition of the negation: $a - b = a + (-b)$. The negation only changes the direction of $b$, so subtraction is addition with the second direction turned by 2.
 
 The opposite-direction case of addition is the one place where a magnitude is subtracted. It is also the one place where the two arithmetics meet: the direction of the result depends on which magnitude is larger.
 

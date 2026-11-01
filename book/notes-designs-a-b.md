@@ -38,52 +38,61 @@ since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Nega
 
 Two numbers on the same axis can be compared, in both magnitude and direction. On the real axis, $-7 < -3 < 3 < 7$; on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$. Numbers on different axes cannot be ordered, but their magnitudes can: dropping the direction gives the **absolute value**, $|(m, d)| = m$, and absolute values compare as magnitudes.
 
-A comparison checks the magnitudes first, since the zero cases are the ones that most need catching. Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So when a magnitude is 0, its direction tells nothing, and only the other number's direction can matter. When neither magnitude is 0, the directions are checked. The outcome is one of six cases:
+A comparison makes two checks. The magnitude check comes first, since the zero cases are the ones that most need catching. It finds whether both magnitudes are 0, one is 0, or neither, and if neither, whether they are equal or which is larger. Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So when a magnitude is 0, its direction tells nothing. The direction check comes second, and it finds whether the directions are the same, opposite, or on different axes.
 
-| Case | Magnitudes | Directions | What the comparison finds |
+Together the two checks place a pair of numbers in one cell of a grid: the magnitude check picks the row, and the direction check the column.
+
+| Magnitudes | Same direction | Opposite directions | Different axes |
 | --- | --- | --- | --- |
-| 1 | both 0 | any | the numbers are equal |
-| 2 | one is 0 | any | the other number's direction decides: a positive number is larger than zero, a negative one smaller |
-| 3 | neither is 0 | the same | the magnitudes decide: in a positive direction the larger magnitude is larger ($7 > 3$), in a negative direction the smaller magnitude is larger ($-3 > -7$) |
-| 4 | neither is 0, $m_1 \geq m_2$ | opposite | the positive one is larger; the first has the larger absolute value, or they are equal |
-| 5 | neither is 0, $m_1 < m_2$ | opposite | the positive one is larger; the second has the larger absolute value |
-| 6 | neither is 0 | different axes | the numbers cannot be ordered; only their absolute values can |
+| both 0 | equal | equal | equal |
+| one is 0 | the other's direction decides | the other's direction decides | the other's direction decides |
+| equal, not 0 | equal | the positive one is larger | not ordered; equal absolute values |
+| $m_1 > m_2$ | the magnitudes decide | the positive one is larger | not ordered; the first has the larger absolute value |
+| $m_1 < m_2$ | the magnitudes decide | the positive one is larger | not ordered; the second has the larger absolute value |
 
-In cases 1 and 2, no direction is checked: it is either irrelevant or simply carried along. In case 2, zero's own direction may even lie on the other axis, as in $(0, 0)$ against $3i$; zero lies on both axes, so $0 < 3i$. For ordering, cases 4 and 5 give the same answer. They are kept apart because addition needs to know which absolute value is larger.
+In the first two rows the answer is the same in every column, so no direction needs checking: it is either irrelevant or simply carried along. "The other's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. "The magnitudes decide" means that in a positive direction the larger magnitude is the larger number ($7 > 3$), and in a negative direction the smaller magnitude is ($-3 > -7$).
 
 ### Addition
 
-The first step of an addition is the comparison. Its six cases are the six cases of addition, and each has its own rule.
+The first step of an addition is the comparison's two checks. They place the pair in the same grid, and each cell now gives the sum. The cells fall into six cases, A to F:
 
-**Case 1, both zero.** The sum is zero.
+| Magnitudes | Same direction | Opposite directions | Different axes |
+| --- | --- | --- | --- |
+| both 0 | **A** zero | **A** zero | **A** zero |
+| one is 0 | **B** the other number | **B** the other number | **B** the other number |
+| equal, not 0 | **C** add the magnitudes | **A** zero | **F** an expression |
+| $m_1 > m_2$ | **C** add the magnitudes | **D** subtract, first direction | **F** an expression |
+| $m_1 < m_2$ | **C** add the magnitudes | **E** subtract and negate, second direction | **F** an expression |
 
-**Case 2, one zero.** The sum is the other number, as it stands. For example, $5 + (0, 1)$ is 5, though zero's direction lies on the other axis.
+**Case A, zero.** The sum is zero: either both numbers are zero, or two equal magnitudes point in opposite directions and cancel. The checks have already found this, so no arithmetic is done.
 
-**Case 3, the same direction.** The magnitudes add, and the direction stays:
+**Case B, one zero.** The sum is the other number, as it stands. For example, $5 + (0, 1)$ is 5, though zero's direction lies on the other axis.
+
+**Case C, the same direction.** The magnitudes add, and the direction stays:
 
 $$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
 
 since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 
-**Case 4, opposite directions, the first magnitude at least as large.** The numbers pull against each other along one axis, and the first wins. Its magnitude loses the second's, by the clock's subtraction, and the sum keeps the first direction:
+**Case D, opposite directions, the first magnitude larger.** The numbers pull against each other along one axis, and the first wins. Its magnitude loses the second's, by the clock's subtraction, and the sum keeps the first direction:
 
 $$(m_1, d_1) + (m_2, d_2) = (m_1 - m_2,\ d_1).$$
 
-Since $m_1 \geq m_2$, the subtraction does not wrap, and the clock lands on the true difference. If $m_1 = m_2$, it lands on 0, and the sum is zero. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$.
+Since $m_1 > m_2$, the subtraction does not wrap, and the clock lands on the true difference. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$.
 
-**Case 5, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's negation.
+**Case E, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's negation.
 
 $$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps on the clock}.$$
 
-The subtraction wraps, and the negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$. The comparison finds case 5. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
+The subtraction wraps, and the negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$, case E. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
 
-**Case 6, different axes.** A sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this case, since their directions are always 1 and $-1$.
+**Case F, different axes.** A sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this case, since their directions are always 1 and $-1$.
 
-Cases 4 and 5 are the only places a magnitude is subtracted, and the only places where the magnitudes decide the direction.
+Cases D and E are the only places a magnitude is subtracted, and the only places where the magnitudes decide the direction.
 
 ### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's comparison then finds the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case 5, which gives $-2$ as above.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's two checks then find the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case E, which gives $-2$ as above.
 
 ### Multiplication
 

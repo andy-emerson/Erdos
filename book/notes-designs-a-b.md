@@ -6,6 +6,8 @@ Both designs are built from two kinds of number.
 
 A **magnitude** is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude.
 
+A machine keeps a magnitude in a word, and a word's arithmetic is a clock: arithmetic mod $2^w$, whose values run from 0 to $2^w - 1$. Neither magnitudes nor the clock have negative values. On the clock, a subtraction that would go below zero wraps around to the top instead: on a 16-hour clock, $3 - 5$ lands on 14. So the absolute difference, which looks like a subtraction with an extra step, suits the machine: the clock never produces a negative, and a magnitude never needs one.
+
 A **direction** is one of the four units $1, i, -1, -i$. Each is a power of $i$: $1 = i^0$, $i = i^1$, $-1 = i^2$ and $-i = i^3$, and $i^4 = 1$ again. So a direction is named by its exponent $d$, a number from 0 to 3. Multiplying two directions adds their exponents mod 4:
 
 $$i^{d_1} \cdot i^{d_2} = i^{d_1 + d_2}, \quad \text{with } d_1 + d_2 \text{ taken mod } 4.$$

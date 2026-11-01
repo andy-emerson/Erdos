@@ -28,129 +28,99 @@ On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the *
 
 ### Comparison
 
-Comparison comes first, because addition is built on it. Two numbers on the same axis can be compared in both magnitude and direction: on the real axis, $-7 < -3 < 3 < 7$, and on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$. Numbers on different axes cannot be ordered, but their magnitudes can: dropping the direction gives the **absolute value**, $|(m, d)| = m$, and absolute values compare as magnitudes.
+Addition has to know how its two numbers relate before it can work. The numbers are split into a magnitude and a direction, and the checks follow the same split: one check on the directions, and one on the magnitudes.
 
-A comparison is made of three checks, each with three possible answers. Each check is a question or two that the machine answers in one instruction each. The instructions below are given for the three families of chips in common use (x86-64, ARM64 and RISC-V), and each is followed by the line of pseudocode that stands for it. Here $m_1$, $d_1$, $m_2$ and $d_2$ are held in registers.
+**Zero.** Mathematically, zero is a special case: it lies on both axes and in no direction. A machine could check for it and skip the arithmetic when a number is zero, but it would gain nothing. Checking a magnitude for zero takes an instruction, and so does the addition or subtraction the check would skip. When the check comes back false, which is nearly always, the machine has done one instruction more for nothing. So addition never checks for zero, and the rules below give the right answer for a zero in any direction without it. The one exception is directions on different axes, where a zero must be caught: otherwise $5 + (0, 1)$ would become an expression instead of 5.
 
-**The zero check** asks whether each magnitude is 0. Both are 0, one is 0, or neither is. Both are 0 exactly when $m_1$ OR $m_2$ is 0, since an OR has a 1 wherever either has one, so a single OR followed by a single test answers "both". Then one test of $m_1$ answers which one, if only one is.
+**The direction check** is a single XOR. Written in two bits, the directions are 00 for 1, 01 for $i$, 10 for $-1$ and 11 for $-i$. XOR compares them bit by bit and gives a 1 wherever they differ:
 
-| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
+| $d_1$ \ $d_2$ | 00 | 01 | 10 | 11 |
 | --- | --- | --- | --- | --- |
-| are both 0? | `or` then `jz` | `orr` then `cbz` | `or` then `beqz` | `t ← m1 OR m2`, then `IF t = 0 THEN ...` |
-| is $m_1$ 0? | `test` then `jz` | `cbz` | `beqz` | `IF m1 = 0 THEN ...` |
+| **00** | 00 same | 01 diff | 10 opp | 11 diff |
+| **01** | 01 diff | 00 same | 11 diff | 10 opp |
+| **10** | 10 opp | 11 diff | 00 same | 01 diff |
+| **11** | 11 diff | 10 opp | 01 diff | 00 same |
 
-On ARM64 and RISC-V, "compare with zero and jump" is a single instruction (`cbz`, `beqz`). On x86-64 it is two: `test` sets a flag, and `jz` ("jump if zero") reads it.
+A result of 00 means the same direction. 10 means opposite: only the high bit differs, so the axis matches and the sign does not. A low bit of 1 means different axes. Integers use only 00 and 10, so for them the result is always 00 or 10.
 
-**The direction check** asks how the two directions relate. The quickest way is XOR, bit by bit: $d_1$ XOR $d_2$ is 0 when the directions are the same, 2 when they are opposite, and odd (1 or 3) when they lie on different axes. This works because opposite directions differ by 2, which changes only the high bit of $d$, and directions on different axes differ by 1 or 3, which changes the low bit. It gives the same three answers as $d_1 - d_2$ mod 4, in one instruction instead of two.
+**The magnitude check** is the subtraction itself. Opposite directions mean the magnitudes must be subtracted, and the subtraction also reports whether it had to wrap past zero, its **borrow** $b$. The borrow is exactly the answer to "was the first magnitude smaller?", and it is what turns the modular answer into an answer on the line:
 
-| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
-| --- | --- | --- | --- | --- |
-| how do they relate? | `xor` | `eor` | `xor` | `t ← d1 XOR d2` |
-| different axes? | `test` then `jnz` | `tbnz` (bit 0) | `andi` then `bnez` | `IF (t AND 1) = 1 THEN ...` |
-| opposite? | `cmp` then `je` | `cmp` then `b.eq` | `li` then `beq` | `IF t = 2 THEN ...` |
+| Subtraction | Borrow $b$ | Mathematical meaning | Machine meaning |
+| --- | --- | --- | --- |
+| $5 - 3 \equiv 2 \pmod{16}$ | 0 | magnitude $(-1)^0 \cdot 2 = 2$; answer $(-1)^0 \cdot 2 = 2$ | the subtraction gives 2: the magnitude, and the direction stays |
+| $4 - 4 \equiv 0 \pmod{16}$ | 0 | magnitude $(-1)^0 \cdot 0 = 0$; answer 0 | the subtraction gives 0: the magnitude, and the answer is zero |
+| $3 - 5 \equiv 14 \pmod{16}$ | 1 | magnitude $(-1)^1 \cdot 14 = -14 \equiv 2 \pmod{16}$; answer $(-1)^1 \cdot 2 = -2$ | the subtraction gives 14; a negation turns 14 into 2, the magnitude, and the direction flips |
 
-Otherwise the directions are the same. A related question, needed below, is whether one direction is positive: the positive directions, 1 and $i$, are 0 and 1, and the negative ones, $-1$ and $-i$, are 2 and 3, so a direction is negative exactly when its high bit is 1. In pseudocode that is `IF (d AND 2) = 0 THEN ...` for "positive" (x86-64 `test` then `jz`; ARM64 `tbz`; RISC-V `andi` then `beqz`).
+In the first two rows the subtraction is all there is: the modular answer is already the answer on the line. The third row is where modular arithmetic and the line part ways. The subtraction wrapped, and the borrow says so. The borrow then separates the two parts of the answer. The factor $(-1)^b$, applied to the modular result and reduced mod 16 again, gives the magnitude, 2. Applied to the direction, it turns the result to point the other way, giving $-2$. On the machine, the first is one negation instruction, and the second is taking the other number's direction. So no comparison of magnitudes is made before subtracting: the subtraction answers the question as it works.
 
-**The magnitude check** asks how the two magnitudes relate. They are equal, the first is larger, or the second is larger. Two questions answer it: "are they equal?" and "is the first smaller?"
-
-| Question | x86-64 | ARM64 | RISC-V | Pseudocode |
-| --- | --- | --- | --- | --- |
-| equal? | `cmp` then `je` | `cmp` then `b.eq` | `beq` | `IF m1 = m2 THEN ...` |
-| first smaller? | (same `cmp`) then `jb` | (same `cmp`) then `b.lo` | `bltu` | `IF m1 < m2 THEN ...` |
-
-On x86-64 and ARM64, one `cmp` answers both questions: it sets flags, and each jump reads the flag it needs (`je` "equal", `jb` "below"). RISC-V has no flags, so it asks twice, each time with a single compare-and-jump instruction (`beq`, `bltu`). The "u" in `bltu` and the "b" in `jb` mean the numbers are compared as magnitudes, never as signed values. For magnitudes longer than one word, the same question is asked word by word from the top, and the first unequal word answers it.
-
-**The order of the checks.** Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So a zero's direction tells nothing, and the zero check comes first. Its answer decides what, if anything, to check next, and so on down a tree:
+**The tree.** The checks run in the order the machine finds cheapest:
 
 ```text
-zero check
-├── both zero      → equal
-├── one zero       → the other number's direction decides
-└── neither zero   → direction check
-    ├── different axes → not ordered
-    ├── opposite       → the positive one is larger
-    └── the same       → magnitude check
-        ├── equal          → equal
-        ├── second larger  → positive: the second is larger; negative: the first is larger
-        └── first larger   → positive: the first is larger;  negative: the second is larger
+direction check (XOR)
+├── same           → add the magnitudes
+├── opposite       → subtract; the borrow is the magnitude check
+│   ├── no borrow  → the difference, first direction
+│   └── borrow     → negate it, second direction
+└── different axes → zero check
+    ├── a zero     → it takes the other's direction, then add
+    └── no zero    → an expression
 ```
 
-"The other number's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$). Numbers on different axes are not ordered, but their absolute values can still be compared by the magnitude check alone.
-
-**The whole comparison** in pseudocode, in the conventions of chapter 2 of Part 1. It returns one of four answers: `EQUAL`, `FIRST` (the first is larger), `SECOND` (the second is larger) or `NOT ORDERED`.
-
-```text
-ROUTINE compare(m1, d1, m2, d2)
-    t ← m1 OR m2
-    IF t = 0 THEN RETURN EQUAL                 both zero
-    IF m1 = 0 THEN GO TO first_zero
-    IF m2 = 0 THEN GO TO second_zero
-    t ← d1 XOR d2
-    IF (t AND 1) = 1 THEN RETURN NOT ORDERED   different axes
-    IF t = 2 THEN GO TO larger_is_positive     opposite directions
-    IF m1 = m2 THEN RETURN EQUAL               same direction, equal magnitudes
-    IF m1 < m2 THEN GO TO second_magnitude
-    GO TO larger_is_positive                   the first magnitude is larger
-second_magnitude:
-    IF (d1 AND 2) = 0 THEN RETURN SECOND       positive: the larger magnitude wins
-    RETURN FIRST                               negative: the smaller magnitude wins
-first_zero:
-    IF (d2 AND 2) = 0 THEN RETURN SECOND       a positive second is larger than zero
-    RETURN FIRST
-second_zero:
-larger_is_positive:
-    IF (d1 AND 2) = 0 THEN RETURN FIRST        the first is positive, so it is larger
-    RETURN SECOND
-```
-
-The label `larger_is_positive` serves three cases that share an answer: the second number is zero, the directions are opposite, or the first magnitude is larger in a common direction. In each, the first number is the larger exactly when its direction is positive. The longest path, two numbers in the same direction with different magnitudes, asks eight questions, each one or two instructions; the shortest, two zeros, asks one. The pseudocode was checked against the true order of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/comparison.py`](verify-notes/comparison.py)).
+**Ordering** two numbers, deciding which is larger, uses the same two checks and one more, for zero. Two zeros with different directions are equal, and a zero against a number on the other axis still compares, since zero lies on both: $0 < 3i$. There the zero check is needed for the right answer, not as a shortcut.
 
 ### Addition
 
-Addition is the most involved operation here, and the reason is the problem these notes began with. The arithmetic we want lies on a line, which runs forever in both directions, but the machine's arithmetic lies on a circle, which wraps around. Going from the line to the circle is easy: every number simply lands somewhere on the clock. Coming back, from a result on the clock to the right place on the line, takes care, and addition is where that care is needed. The comparison's checks are what supply it.
+Addition is the most involved operation here, and the reason is the problem these notes began with. The arithmetic we want lies on a line, which runs forever in both directions, but the machine's arithmetic lies on a circle, which wraps around. Going from the line to the circle is easy: every number simply lands somewhere on the clock. Coming back, from a result on the clock to the right place on the line, takes care, and addition is where that care is needed. The comparison's tree supplies it, and each of its branches has a rule.
 
-So an addition begins with the same checks, in the same tree, and each leaf now gives the sum. The magnitude check moves to a different branch: addition needs it for opposite directions, where comparison did not, and does not need it for the same direction, where comparison did.
-
-```text
-zero check
-├── both zero      → A: zero
-├── one zero       → B: the other number
-└── neither zero   → direction check
-    ├── the same       → C: add the magnitudes
-    ├── opposite       → magnitude check
-    │   ├── equal          → A: zero
-    │   ├── first larger   → D: subtract, first direction
-    │   └── second larger  → E: subtract and negate, second direction
-    └── different axes → F: an expression
-```
-
-There are six cases, A to F.
-
-**Case A, zero.** The sum is zero: either both numbers are zero, or two equal magnitudes point in opposite directions and cancel. The checks have already found this, so no arithmetic is done.
-
-**Case B, one zero.** The sum is the other number, as it stands. For example, $5 + (0, 1)$ is 5, though zero's direction lies on the other axis.
-
-**Case C, the same direction.** The magnitudes add, and the direction stays:
+**The same direction.** The magnitudes add, and the direction stays:
 
 $$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
 
 since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 
-**Case D, opposite directions, the first magnitude larger.** The numbers pull against each other along one axis, and the first wins. Its magnitude loses the second's, by the clock's subtraction, and the sum keeps the first direction:
+**Opposite directions, no borrow.** The numbers pull against each other along one axis, and the first is at least as large. The subtraction did not wrap, so the clock landed on the true difference, and the sum keeps the first direction:
 
 $$(m_1, d_1) + (m_2, d_2) = (m_1 - m_2,\ d_1).$$
 
-Since $m_1 > m_2$, the subtraction does not wrap, and the clock lands on the true difference. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$.
+The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$. If the magnitudes are equal, the difference is 0, and the sum is zero.
 
-**Case E, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's own negation, which is an operation on magnitudes, not the negation of numbers below.
+**Opposite directions, a borrow.** The second number wins. The subtraction wrapped, the clock's negation recovers the magnitude, $-(m_1 - m_2) = m_2 - m_1$, and the sum takes the second direction:
 
-$$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps on the clock}.$$
+$$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps mod } 2^n.$$
 
-The subtraction wraps, and the clock's negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$, case E. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
+This negation is the clock's, an operation on magnitudes, not the negation of numbers below. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$: the subtraction gives 14 with a borrow, the negation gives 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
 
-**Case F, different axes.** A sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this case, since their directions are always 1 and $-1$.
+**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition continues as one in the same direction: $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. If neither is zero, a sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this branch, since their directions are always 1 and $-1$.
 
-Cases D and E are the only places a magnitude is subtracted, and the only places where the magnitudes decide the direction.
+The subtraction is the only place a magnitude is subtracted, and the borrow is the only place the magnitudes decide the direction.
+
+**In pseudocode**, one line per machine instruction, following the tree:
+
+```text
+ROUTINE add(m1, d1, m2, d2)
+    t ← d1 XOR d2                    direction check
+    IF t = 0 THEN GO TO same
+    u ← t AND 1
+    IF u ≠ 0 THEN GO TO axes
+    r ← m1 − m2                      opposite: subtract
+    IF m1 < m2 THEN GO TO borrow
+    RETURN r, d1
+borrow:
+    r ← 0 − r
+    d1 ← d2
+    RETURN r, d1
+axes:                                different axes: zero check
+    IF m1 = 0 THEN GO TO zero_first
+    IF m2 = 0 THEN GO TO same
+    RETURN an expression
+zero_first:
+    d1 ← d2
+same:                                same direction: add
+    r ← m1 + m2
+    RETURN r, d1
+```
+
+`IF m1 < m2` reads the borrow of the subtraction just above it. On RISC-V, which has no borrow flag, the same question is asked by one compare-and-jump instruction placed just before the subtraction, so the count is the same. Not counting the final return, a sum in the same direction takes 3 instructions, and opposite directions take 6, or 8 when the subtraction wraps, on x86-64, ARM64 and RISC-V alike. The routine was checked against the true sum of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/addition.py`](verify-notes/addition.py)).
 
 ### Negation
 
@@ -162,7 +132,7 @@ since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Nega
 
 ### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case E, which gives $-2$ as above.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the branch, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$: opposite directions with a borrow, which gives $-2$ as above.
 
 ### Multiplication
 

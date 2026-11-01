@@ -2,15 +2,29 @@
 
 *Temporary notes (Nov 1, 2026). The mathematics of spec 13's two designs, with no code, for the author to compare. To be taken into the book or archived.*
 
-Machine arithmetic is modular arithmetic. A word of $n$ bits holds the values 0 to $2^n - 1$, and every result is taken mod $2^n$: a sum that passes the top wraps around to the bottom, and a subtraction that would go below zero wraps around to the top. It works like a clock with $2^n$ hours, and these notes use that picture. For example, with $n = 4$, $3 - 5 = -2 \equiv 14 \pmod{16}$: on a 16-hour clock, $3 - 5$ lands on 14. The arithmetic we need is on the number line, which has negative numbers, and sometimes on the complex plane, which has numbers off the line altogether. Both designs bridge the gap the same way: they split a number into a **magnitude**, how large it is, and a **direction**, which way it points.
+Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. It counts up from $0000$ to $1111$; one more rolls it over to $0000$, and rolling back below $0000$ shows $1111$. Read as numbers, $n$ binary digits show the $2^n$ values from 0 to $2^n - 1$, and the rollover is arithmetic mod $2^n$. That is the same situation in a more useful form, and from here on these notes picture it as a clock with $2^n$ hours. On a 16-hour clock ($n = 4$), $15 + 1 = 16 \equiv 0$ and $3 - 5 = -2 \equiv 14 \pmod{16}$.
 
-**Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like modular arithmetic: neither has negative values, and neither has a direction. So the machine's arithmetic suits magnitudes, as long as a subtraction is never asked to go below zero.
+So the machine has two problems with ordinary arithmetic, one at each end of its range.
+
+- **Below zero.** The number line has negative numbers, and the clock has none: $3 - 5$ lands on 14, not on $-2$.
+- **Above $2^n - 1$.** The number line has no largest number, and the clock does: $15 + 1$ lands on 0, not on 16. This is **overflow**.
+
+Both designs solve the first problem by splitting a number into a **magnitude**, how large it is, and a **direction**, which way it points. These notes are about that split. Overflow is solved separately, by spec 13's size classes and pools, and these notes leave it aside.
+
+**Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like modular arithmetic: neither has negative values, and neither has a direction. Adding magnitudes can overflow but never goes below zero. Subtracting them is where the first problem lives.
 
 **Direction on the line.** The number line has two directions, positive and negative. One bit $s$ names them: 0 for positive, 1 for negative, and a number is $m \cdot (-1)^s$. Multiplying two numbers multiplies their directions, and $(-1)^{s_1} \cdot (-1)^{s_2} = (-1)^{s_1 + s_2}$, so the bits add mod 2: two negatives make a positive, since $1 + 1 \equiv 0$. Negating flips the bit, which is adding 1 mod 2.
 
 **Direction in the plane.** The complex plane has four directions along its two axes, the units $1, i, -1, -i$. Each is a power of $i$: $1 = i^0$, $i = i^1$, $-1 = i^2$ and $-i = i^3$, and $i^4 = 1$ again. So a direction is named by its exponent $d$, a number from 0 to 3, and multiplying two directions adds their exponents mod 4:
 
 $$i^{d_1} \cdot i^{d_2} = i^{d_1 + d_2}, \quad \text{with } d_1 + d_2 \text{ taken mod } 4.$$
+
+Stored in a machine, the exponent is two bits, so a direction is read three ways:
+
+| Binary | 00 | 01 | 10 | 11 |
+| --- | --- | --- | --- | --- |
+| Exponent $d$ (mod 4) | 0 | 1 | 2 | 3 |
+| Direction $i^d$ | 1 | $i$ | $-1$ | $-i$ |
 
 Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$. Negating is a half turn in both. The line has two directions, so a half turn is one step, adding 1 mod 2; the plane has four, so a half turn is two steps, adding 2 mod 4.
 
@@ -28,11 +42,9 @@ On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the *
 
 ### Comparison
 
-Addition has to know how its two numbers relate before it can work. The numbers are split into a magnitude and a direction, and the checks follow the same split: one check on the directions, and one on the magnitudes.
+Adding two numbers in the same direction adds their magnitudes. Adding two in opposite directions subtracts them, since one pulls against the other. That subtraction is the only place a magnitude can go below zero, so it is where the first problem has to be solved. Addition therefore needs two answers before it can work: how the two directions relate, and, when they are opposite, which magnitude is larger. Each is one check.
 
-**Zero.** Mathematically, zero is a special case: it lies on both axes and in no direction. A machine could check for it and skip the arithmetic when a number is zero, but it would gain nothing. Checking a magnitude for zero takes an instruction, and so does the addition or subtraction the check would skip. When the check comes back false, which is nearly always, the machine has done one instruction more for nothing. So addition never checks for zero, and the rules below give the right answer for a zero in any direction without it. The one exception is directions on different axes, where a zero must be caught: otherwise $5 + (0, 1)$ would become an expression instead of 5.
-
-**The direction check** is a single XOR. Written in two bits, the directions are 00 for 1, 01 for $i$, 10 for $-1$ and 11 for $-i$. XOR compares them bit by bit and gives a 1 wherever they differ:
+**The direction check** is one XOR of the two directions' bits, from the table above. It gives a 1 wherever the bits differ:
 
 | $d_1$ \ $d_2$ | 00 | 01 | 10 | 11 |
 | --- | --- | --- | --- | --- |
@@ -41,11 +53,15 @@ Addition has to know how its two numbers relate before it can work. The numbers 
 | **10** | 10 opp | 11 diff | 00 same | 01 diff |
 | **11** | 11 diff | 10 opp | 01 diff | 00 same |
 
-A result of 00 means the same direction. 10 means opposite: only the high bit differs, so the axis matches and the sign does not. A low bit of 1 means different axes. Integers use only 00 and 10, so for them the result is always 00 or 10.
+00 means the same direction. 10 means opposite: the axis matches and the sign does not. A low bit of 1 means different axes. Integers only ever give 00 or 10.
 
-**The magnitude check** is the subtraction itself. Opposite directions mean the magnitudes must be subtracted, and the machine's subtraction instruction reports one more thing as it works: its **borrow**. In schoolbook subtraction, a column that is too small borrows from the column to its left. The machine subtracts in binary the same way, and when the first magnitude is smaller, the last column has nothing left to borrow from: the subtraction runs past zero and wraps around. The borrow $b$ is 1 when that happened and 0 when it did not, so it answers "was the first magnitude smaller?" without a separate question. On x86-64 and ARM64 the subtraction leaves the borrow in a flag, and the next instruction can jump on it; RISC-V, which has no flags, asks the same question with one compare-and-jump instruction.
+**The magnitude check** is needed only for opposite directions, and there the subtraction answers it. The machine's subtraction instruction reports whether it had to wrap below zero, as a schoolbook subtraction would need to borrow past its leftmost column. That report is the **borrow** $b$: 1 when $m_1 < m_2$, and 0 otherwise. With $r$ the subtraction's result on the clock, the borrow turns it into a magnitude and a direction:
 
-The borrow is also what turns the modular answer into an answer on the line. The table works three examples, $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, so the first number's direction is 1. All its arithmetic is mod 16, a 4-bit word, and $\equiv$ marks a congruence mod 16 where $=$ would not be true on the line.
+$$r \equiv m_1 - m_2 \pmod{2^n}, \qquad b = \begin{cases} 1 & \text{if } m_1 < m_2, \\ 0 & \text{otherwise,} \end{cases}$$
+
+$$m \equiv (-1)^b \cdot r \pmod{2^n}, \qquad d \equiv d_1 + 2b \pmod 4.$$
+
+The second formula for $d$ says that the direction is multiplied by $(-1)^b$: a borrow turns it halfway round. The examples below are $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, on a 16-hour clock, so all arithmetic in the table is mod 16:
 
 | Subtraction | Borrow $b$ | Magnitude | Direction | Result |
 | --- | --- | --- | --- | --- |
@@ -53,11 +69,9 @@ The borrow is also what turns the modular answer into an answer on the line. The
 | $4 - 4 \equiv 0$ | 0 | $(-1)^0 \cdot 0 = 0$ | $(-1)^0 \cdot 1 = 1$ | 0 |
 | $3 - 5 \equiv 14$ | 1 | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $(-1)^1 \cdot 1 = -1$ | $-2$ |
 
-Both columns use the same factor, $(-1)^b$. It multiplies the modular result, which is reduced mod 16 again, to give the magnitude, and it multiplies the first number's direction to give the result's direction. With directions written as exponents, multiplying by $(-1)^b$ is adding $2b$ mod 4, so a borrow turns the direction halfway round. The result is the magnitude times the direction.
+The machine never computes $(-1)^b$. The subtraction gives $r$ and $b$ together. With no borrow, $r$ is the magnitude and nothing more is done. With a borrow, two more instructions run: a negation, which turns 14 into 2, and taking the second number's direction.
 
-In the first two rows the subtraction is all there is: the modular answer is already the answer on the line. The third row is where modular arithmetic and the line part ways, and the borrow separates the two parts of the answer.
-
-The table looks like more work than the machine does. The machine never computes $(-1)^b$ or multiplies by it. It subtracts, which produces the borrow, and jumps on the borrow. When there is no borrow, as in the first two rows, that is all. When there is one, it does two more instructions: a negation, which turns 14 into 2, and taking the second number's direction, which is $-1$. So the whole table is one subtraction and one jump, plus two instructions in the wrapped case. No comparison of magnitudes is made before subtracting: the subtraction answers the question as it works.
+**Zero** needs no check here. A machine could test for it and skip the arithmetic, but the test costs as much as the addition or subtraction it would skip, so it would only add an instruction. The rules above already give the right answer for a zero in any direction. The one exception is different axes, where $5 + (0, 1)$ must give 5 and not an expression.
 
 **The tree.** The checks run in the order the machine finds cheapest:
 
@@ -72,7 +86,7 @@ direction check (XOR)
     └── no zero    → an expression
 ```
 
-**Ordering** two numbers, deciding which is larger, uses the same two checks and one more, for zero. Two zeros with different directions are equal, and a zero against a number on the other axis still compares, since zero lies on both: $0 < 3i$. There the zero check is needed for the right answer, not as a shortcut.
+**Ordering** two numbers, deciding which is larger, uses the same checks and one more, for zero, since two zeros with different directions are equal. There the zero check is needed for the right answer, not as a shortcut.
 
 ### Addition
 
@@ -226,7 +240,7 @@ $$m_0 + m_1 i - m_2 - m_3 i.$$
 | --- | --- | --- |
 | A number | one magnitude, one direction | one magnitude per direction: two for integers, four for complex numbers |
 | Forms of one number | exactly one | many, until collapsed |
-| Addition | three cases, one with an absolute difference | one formula, additions only |
+| Addition | a direction check; for opposite directions, a subtraction and its borrow | one formula, additions only |
 | Multiplication | one product, directions added | four products for integers, sixteen for complex numbers |
 | Where magnitudes are subtracted | in every addition of opposite directions | only in collapse |
 | Sums across axes | not held | held directly |

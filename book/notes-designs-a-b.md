@@ -103,7 +103,7 @@ larger_is_positive:
     RETURN SECOND
 ```
 
-The label `larger_is_positive` serves three cases that share an answer: the second number is zero, the directions are opposite, or the first magnitude is larger in a common direction. In each, the first number is the larger exactly when its direction is positive. The longest path, two numbers in the same direction with different magnitudes, asks seven questions, each one or two instructions; the shortest, two zeros, asks one. The pseudocode was checked against the true order of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/comparison.py`](verify-notes/comparison.py)).
+The label `larger_is_positive` serves three cases that share an answer: the second number is zero, the directions are opposite, or the first magnitude is larger in a common direction. In each, the first number is the larger exactly when its direction is positive. The longest path, two numbers in the same direction with different magnitudes, asks eight questions, each one or two instructions; the shortest, two zeros, asks one. The pseudocode was checked against the true order of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/comparison.py`](verify-notes/comparison.py)).
 
 ### Addition
 

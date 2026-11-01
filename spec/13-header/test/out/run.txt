@@ -1,0 +1,50 @@
+A random  add  n= 100000 fail=      0  slots<= 3    1.7s  pass
+A random  sub  n= 100000 fail=      0  slots<= 3    1.9s  pass  sub slots {'subs': 100000, 'max_alloc': 2, 'movedowns': 18858}
+A random  neg  n= 100000 fail=      0  slots<= 2    0.9s  pass
+A random  mul  n= 100000 fail=      0  slots<= 2    2.2s  pass
+A random  div  n= 100000 fail=      0  slots<= 2    2.3s  pass
+A random  gcd  n= 100000 fail=      0  slots<= 3    3.4s  pass
+A random  cmp  n= 100000 fail=      0  slots<= 2    0.9s  pass
+A signed8 add  n= 261121 fail=      0  slots<= 3    2.8s  pass
+A signed8 sub  n= 261121 fail=      0  slots<= 3    3.2s  pass  sub slots {'subs': 261121, 'max_alloc': 2, 'movedowns': 79410}
+A signed8 neg  n=    511 fail=      0  slots<= 2    0.0s  pass
+A signed8 mul  n= 261121 fail=      0  slots<= 2    3.1s  pass
+A signed8 div  n=   6338 fail=      0  slots<= 2    0.1s  pass
+A signed8 gcd  n= 261121 fail=      0  slots<= 3    5.0s  pass
+A signed8 cmp  n= 261121 fail=      0  slots<= 2    1.8s  pass
+B random  add  n= 100000 fail=      0  slots<= 7    3.8s  pass
+B random  sub  n= 100000 fail=      0  slots<= 7    4.1s  pass  sub slots {'subs': 100000, 'max_alloc': 4, 'movedowns': 75689}
+B random  neg  n= 100000 fail=      0  slots<= 5    2.4s  pass
+B random  mul  n= 100000 fail=      0  slots<= 5    6.6s  pass
+B random  div  n= 100000 fail=      0  slots<= 6    4.5s  pass
+B random  gcd  n= 100000 fail=      0  slots<= 6    5.8s  pass
+B random  cmp  n= 100000 fail=      0  slots<= 4    1.9s  pass
+B signed8 add  n= 261121 fail=      0  slots<= 5    6.4s  pass
+B signed8 sub  n= 261121 fail=      0  slots<= 5    7.4s  pass  sub slots {'subs': 261121, 'max_alloc': 4, 'movedowns': 325650}
+B signed8 neg  n=    511 fail=      0  slots<= 3    0.0s  pass
+B signed8 mul  n= 261121 fail=      0  slots<= 3    8.4s  pass
+B signed8 div  n=   6338 fail=      0  slots<= 3    0.2s  pass
+B signed8 gcd  n= 261121 fail=      0  slots<= 4    8.8s  pass
+B signed8 cmp  n= 261121 fail=      0  slots<= 2    2.9s  pass
+B unc4    add  n=  65536 fail=      0  slots<= 3    1.3s  pass
+B unc4    sub  n=  65536 fail=      0  slots<= 3    1.5s  pass  sub slots {'subs': 65536, 'max_alloc': 2, 'movedowns': 69120}
+B unc4    neg  n=    256 fail=      0  slots<= 0    0.0s  pass
+B unc4    mul  n=  65536 fail=      0  slots<= 3    1.8s  pass
+B unc4    div  n=  19712 fail=      0  slots<= 0    0.4s  pass
+B unc4    gcd  n=  65536 fail=      0  slots<= 0    1.4s  pass
+B unc4    cmp  n=  65536 fail=      0  slots<= 0    0.6s  pass
+axes A mul                        n= 115625 fail=0
+axes A neg                        n= 115625 fail=0
+axes A add                        n=  64344 fail=0
+axes A sub                        n=  64344 fail=0
+axes A div                        n= 108561 fail=0
+axes A add (cross-axis error)     n=  51281 fail=0
+axes A sub (cross-axis error)     n=  51281 fail=0
+axes B add                        n= 165536 fail=0
+axes B collapse                   n= 662144 fail=0
+axes B sub                        n= 165536 fail=0
+axes B mul                        n= 165536 fail=0
+axes B neg                        n= 165536 fail=0
+pool limit {'design': 'A', 'slots': 15, 'error_on_next': True, 'free_list': 'all free'}
+pool limit {'design': 'B', 'slots': 15, 'error_on_next': True, 'free_list': 'all free'}
+total 55 s

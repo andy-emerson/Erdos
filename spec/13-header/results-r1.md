@@ -1,8 +1,10 @@
-# Spec 13, round 1: results (second run)
+# Spec 13, round 1: results (third run)
 
-Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 52 s on 2 cores. No random count was reduced.
+Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 55 s on 2 cores. No random count was reduced.
 
-**Verdict: both designs pass every check.** Two new spec points (N1, N2) concern wording and rule 4, not correctness.
+**Verdict: both designs pass every check, and subtract holds no temporary beyond the move-down slot.** No open spec issues.
+
+**Third run, the change:** subtract now copies nothing. A applies the add rules with `h2 xor 0x80` in place of h2, and B adds the crossed parts $P_1 + N_2$ and $N_1 + P_2$. An add with a zero operand returns a copy of the other; a subtract with a zero first operand returns a negated copy of the second. (The second run passed too, but its subtract copied the negation, N1, and the zero rule's "returns the other" did not say copy, N2. The spec now takes both fixes.)
 
 ## First run (superseded)
 
@@ -35,7 +37,8 @@ Pool growth copies memory to a new list and poisons the old one, so a stale poin
 The revision is followed literally:
 - every routine zeroes the rest of its slot after writing, and the move-down zero-fills;
 - negate copies a pool number into a new slot, and an inline number copies its word;
-- A's add and subtract return the other operand when one is zero (for a subtract with a zero first operand, the negated second), before any direction rule;
+- A's add and subtract, before any direction rule, return a copy of the other operand when one is zero (for a subtract with a zero first operand, a negated copy of the second);
+- A's subtract applies the add rules with `h2 xor 0x80` in place of h2, and B's subtract adds the crossed parts, both copying nothing;
 - negating zero gives header 0;
 - gcd's bound is the nonzero operand's length when one is zero, and gcd(0, 0) raises an error before any allocation;
 - division writes exactly n1 − n2 + 1 words, reading dividend words past its current length as 0;
@@ -48,7 +51,8 @@ Each case runs the operation and then these checks. A failing case resets the po
 - **canonical:** every A result, every part of every B result and every collapsed B result (division, gcd) is in its smallest class, zero is class 0 word 0 (A header 0), and spare bits are 0.
 - **output collapse (B):** each B result is also output once as a single value, by collapse. Its value and its canonical form (one part zero) are checked. This exercises collapse into a slot. The spec now collapses only when a single value is needed, and this output step is that case.
 - **bound:** no routine writes past its §1 bound. The zero-fill of the rest of the slot is the spec's own write and is exempt.
-- **release:** after the operands and every result are released, every slot of every pool is on its free list exactly once. Subtract's internal negation is released by the subtract (N1).
+- **temporary (subtract):** the subtract releases no value; every slot it releases is a move-down's predicted slot; and the slots it allocates, less those it releases, are exactly the slots its result holds. So the only temporary is the move-down slot. A copying subtract fails this check: I tried the second run's subtract, which allocates and then releases the negation.
+- **release:** after the operands and every result are released, every slot of every pool is on its free list exactly once.
 - **error:** no operation raises an error the spec does not call for: an overflow past a slot or the one-word local, a class above 31, a full pool, or a Python fault.
 
 The sets:
@@ -68,11 +72,13 @@ The gcd(0, 0) error cases are 1 in each signed8 set, 256 in unc4, 535 in A rando
 | B | unc4 | 65536 pass | 65536 pass | 256 pass | 65536 pass | 19712 pass | 65536 pass | 65536 pass |
 | B | random | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass |
 
-"Pass" covers every check above with zero failures: value, canonical, spare bits, output collapse (B), bound, release and error. The most slots a pool held at once was 4 in A and 8 in B.
+"Pass" covers every check above with zero failures: value, canonical, spare bits, output collapse (B), bound, temporary (subtract), release and error. The most slots a pool held at once was 3 in A and 7 in B.
+
+**Subtract slots.** Every subtract (787,778 in all) passed the temporary check. An A subtract allocates at most 2 slots: the predicted result slot and, on a move-down, the smaller slot it moves to, after which the predicted slot is released. A B subtract allocates at most 4 slots, that pair for each part. The move-downs were 79,410 in A signed8, 18,858 in A random, 325,650 in B signed8, 69,120 in B unc4 and 75,689 in B random.
 
 **Pool limit.** For each design, 15 class-1 values were made. The 16th allocation raised the error, and after release all 15 slots were on the free list. Pass for both.
 
-**The checks still catch faults.** I reran 3,000 random cases per operation with one revision undone. Without the zero-fill, 11 of the 14 operation and design pairs failed. Only both compares and A's negate passed, since they write no new slot words. B's negate failed through its output collapse. Without negate's copy, A's add, subtract and negate and B's subtract and negate failed the release check. So the passes above test the new rules, not an idle harness.
+**The checks still catch faults.** I reran 3,000 random cases per operation with one revision undone. Without the zero-fill, 11 of the 14 operation and design pairs failed. Only both compares and A's negate passed, since they write no new slot words. B's negate failed through its output collapse. Without negate's copy, the release check failed (second run's harness). So the passes above test the new rules, not an idle harness.
 
 ### Four directions (value only, against Gaussian integers)
 
@@ -95,9 +101,11 @@ A: every pair with magnitude below $2^5$ in all four directions, plus 100,000 ra
 
 ## Spec issues
 
-1. **N1. Subtract's negation is now a copy, which is a temporary that rule 4 does not list.** Subtract "adds the negation" and negate copies (§1 Operations), so a subtract allocates the copy (one slot in A, up to two in B), runs the add, and must release the copy itself. The model does this, and the release check passes. But §3 Structures lists the only temporary as "a slot on a move-down". With the copy, an A subtract can hold two temporaries (the copy and a move-down), and a B subtract up to four. It also costs a copy of the operand's slot on every subtract. A simpler rule needs no copy: A applies the add rules with `h2 xor 0x80` in place of `h2`, and B adds crossed parts, $(P_1 + N_2, N_1 + P_2)$. This is for the author. It is not a correctness failure.
-2. **N2. "Returns the other" must mean a copy.** In A, an add or subtract with a zero operand "returns the other". Returned as the same value, the result would share the operand's slot, and releasing both would release the slot twice: the first run's F2 again. The mutation test confirms this. The model copies, following §1's "no two numbers share a slot". The spec could say "a copy of the other".
-3. **Reading, not an issue:** the output-collapse check runs collapse once on each B result, as the "single value needed" case. The spec now limits collapse to that need, and the check counts as exactly that.
+None open. The second run's N1 and N2 are now in the spec:
+- **N1:** subtract copied its negation, a temporary beyond the move-down slot. The temporary check above confirms it is gone.
+- **N2:** "returns the other" now says "a copy".
+
+**Reading, not an issue:** the output-collapse check runs collapse once on each B result, as the "single value needed" case.
 
 Builder's choices (not spec issues):
 - operands are built by test setup, which zero-fills their slots;

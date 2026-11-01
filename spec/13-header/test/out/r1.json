@@ -8,7 +8,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 1.8
+   "seconds": 1.7
   },
   {
    "design": "A",
@@ -18,11 +18,11 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 2.1,
+   "seconds": 1.9,
    "sub_slots": {
-    "subs": 361121,
+    "subs": 100000,
     "max_alloc": 2,
-    "movedowns": 98268
+    "movedowns": 18858
    }
   },
   {
@@ -43,7 +43,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 2.1
+   "seconds": 2.2
   },
   {
    "design": "A",
@@ -63,7 +63,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 3.3
+   "seconds": 3.4
   },
   {
    "design": "A",
@@ -73,7 +73,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 1.0
+   "seconds": 0.9
   },
   {
    "design": "A",
@@ -118,7 +118,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 2,
-   "seconds": 3.2
+   "seconds": 3.1
   },
   {
    "design": "A",
@@ -138,7 +138,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 4.9
+   "seconds": 5.0
   },
   {
    "design": "A",
@@ -158,7 +158,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 7,
-   "seconds": 3.9
+   "seconds": 3.8
   },
   {
    "design": "B",
@@ -168,7 +168,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 7,
-   "seconds": 4.0,
+   "seconds": 4.1,
    "sub_slots": {
     "subs": 100000,
     "max_alloc": 4,
@@ -203,7 +203,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 6,
-   "seconds": 4.6
+   "seconds": 4.5
   },
   {
    "design": "B",
@@ -213,7 +213,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 6,
-   "seconds": 5.7
+   "seconds": 5.8
   },
   {
    "design": "B",
@@ -243,11 +243,11 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 5,
-   "seconds": 7.0,
+   "seconds": 7.4,
    "sub_slots": {
-    "subs": 622242,
+    "subs": 261121,
     "max_alloc": 4,
-    "movedowns": 423918
+    "movedowns": 325650
    }
   },
   {
@@ -268,7 +268,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 3,
-   "seconds": 8.2
+   "seconds": 8.4
   },
   {
    "design": "B",
@@ -288,7 +288,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 4,
-   "seconds": 8.6
+   "seconds": 8.8
   },
   {
    "design": "B",
@@ -320,9 +320,9 @@
    "max_slots": 3,
    "seconds": 1.5,
    "sub_slots": {
-    "subs": 687778,
-    "max_alloc": 4,
-    "movedowns": 493038
+    "subs": 65536,
+    "max_alloc": 2,
+    "movedowns": 69120
    }
   },
   {
@@ -363,7 +363,7 @@
    "pairs_failed": 0,
    "kinds": {},
    "max_slots": 0,
-   "seconds": 1.5
+   "seconds": 1.4
   },
   {
    "design": "B",

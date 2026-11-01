@@ -2,17 +2,19 @@
 
 *Temporary notes (Nov 1, 2026). The mathematics of spec 13's two designs, with no code, for the author to compare. To be taken into the book or archived.*
 
-Both designs are built from two kinds of number.
+A machine does its arithmetic on a clock. A word of $n$ bits holds the values 0 to $2^n - 1$, and its arithmetic is arithmetic mod $2^n$: a sum that passes the top wraps around to the bottom, and a subtraction that would go below zero wraps around to the top. On a 16-hour clock ($n = 4$), $3 - 5$ lands on 14. The arithmetic we need is on the number line, which has negative numbers, and sometimes on the complex plane, which has numbers off the line altogether. Both designs bridge the gap the same way: they split a number into a **magnitude**, how large it is, and a **direction**, which way it points.
 
-A **magnitude** is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude.
+**Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like the clock: neither has negative values, and neither has a direction. So the machine's clock suits magnitudes, as long as a subtraction is never asked to go below zero.
 
-A machine keeps a magnitude in a word, and a word's arithmetic is a clock: arithmetic mod $2^w$, whose values run from 0 to $2^w - 1$. Neither magnitudes nor the clock have negative values. On the clock, a subtraction that would go below zero wraps around to the top instead: on a 16-hour clock, $3 - 5$ lands on 14. So the absolute difference, which looks like a subtraction with an extra step, suits the machine: the clock never produces a negative, and a magnitude never needs one.
+**Direction on the line.** The number line has two directions, positive and negative. One bit $s$ names them: 0 for positive, 1 for negative, and a number is $m \cdot (-1)^s$. Multiplying two numbers multiplies their directions, and $(-1)^{s_1} \cdot (-1)^{s_2} = (-1)^{s_1 + s_2}$, so the bits add mod 2: two negatives make a positive, since $1 + 1 \equiv 0$. Negating flips the bit, which is adding 1 mod 2.
 
-A **direction** is one of the four units $1, i, -1, -i$. Each is a power of $i$: $1 = i^0$, $i = i^1$, $-1 = i^2$ and $-i = i^3$, and $i^4 = 1$ again. So a direction is named by its exponent $d$, a number from 0 to 3. Multiplying two directions adds their exponents mod 4:
+**Direction in the plane.** The complex plane has four directions along its two axes, the units $1, i, -1, -i$. Each is a power of $i$: $1 = i^0$, $i = i^1$, $-1 = i^2$ and $-i = i^3$, and $i^4 = 1$ again. So a direction is named by its exponent $d$, a number from 0 to 3, and multiplying two directions adds their exponents mod 4:
 
 $$i^{d_1} \cdot i^{d_2} = i^{d_1 + d_2}, \quad \text{with } d_1 + d_2 \text{ taken mod } 4.$$
 
-Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis.
+Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$, and adding 2 mod 4 between them behaves exactly as adding 1 mod 2 does.
+
+**Further.** The same principle reaches further. The quaternions have eight unit directions, $\pm 1, \pm i, \pm j, \pm k$, and contain the complex plane as the complex plane contains the line. A quaternion along one unit is a magnitude with one of these eight directions. Their directions no longer multiply by a clock, since $ij = k$ but $ji = -k$, so the direction arithmetic becomes a small multiplication table instead of addition mod a number. These notes go no further than the plane.
 
 ## Design A: one magnitude with one direction
 

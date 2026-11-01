@@ -122,3 +122,7 @@ Builder's choices (not spec issues):
 - B's compare uses one local in two halves;
 - division and gcd each use one working buffer, which B's collapse writes straight into;
 - half of the random gcd pairs share a factor.
+
+## Fifth run (Nov 1, 2026): model B pointer fix
+
+Round 2's build check found a latent bug in model B: in add, subtract and multiply it zeroed the second part's slot through a pointer taken before the first part's move-down, and that move-down can grow the pool the second part lives in. At W = 4, (0xFFF0, 0xFF) + (0x1, 0xFF) gave 3571 instead of 65011. The sets above never reached it. Model B now zeroes both parts before either moves down, the spec says pointers are taken again after a move-down, and `round1.py` checks the case for add, subtract and multiply. Rerun: all 48 tasks pass with 0 failures, the three regressions pass, 68 s.

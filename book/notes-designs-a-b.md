@@ -20,9 +20,9 @@ $$m \cdot i^d.$$
 
 So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$.
 
-**Zero** is any pair with magnitude 0. Zero lies on both axes and in all four directions, and it means the same thing in each, so its direction is irrelevant: $(0, d)$ is zero for every $d$. A zero keeps whatever direction the operation that produced it left, and no step sets it. Every number other than zero has exactly one pair.
+**Zero** is any pair with magnitude 0. Zero is both real and imaginary, since it lies on both axes, and it is neither positive nor negative, since it lies in no direction. So its direction is irrelevant: $(0, d)$ is zero for every $d$. A zero keeps whatever direction the operation that produced it left, and no step sets it. Every number other than zero has exactly one pair.
 
-On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1 or 3, as 1 and $i$ do.
+On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1, as 1 and $i$ do. A difference of 1 can run either way: 1 and $-i$ differ by $-1$, which is 3 mod 4.
 
 ### Negation
 
@@ -38,15 +38,13 @@ Two numbers on the same axis can be compared, in both direction and magnitude. O
 
 **Equality.** Two numbers are equal when their magnitudes are equal and their directions are equal, or when both magnitudes are 0, whatever their directions.
 
-**Order** takes two steps.
+**Order** takes three steps, magnitudes first, since zero is the case that most needs catching.
 
-1. **Directions.** If the directions are opposite, the number with the positive direction is larger.
-2. **Magnitudes.** If the directions are the same, the magnitudes decide. In a positive direction, the larger magnitude is the larger number: $7 > 3$. In a negative direction, the smaller magnitude is the larger number: $-3 > -7$.
+1. **Zero.** If both magnitudes are 0, the numbers are equal, whatever their directions. If one magnitude is 0, the other number's direction alone decides: a positive number is larger than zero, and a negative number smaller. Zero lies on both axes, so this holds even when zero's direction lies on the other axis: $(0, 0)$ against $3i$ gives $0 < 3i$.
+2. **Directions.** Otherwise, if the directions are opposite, the number with the positive direction is larger.
+3. **Magnitudes.** If the directions are the same, the magnitudes decide. In a positive direction, the larger magnitude is the larger number: $7 > 3$. In a negative direction, the smaller magnitude is the larger number: $-3 > -7$.
 
-**Zero in a comparison.** Zero lies on every axis, so it can be compared with any number, and it is neither positive nor negative. The two steps already handle a zero whose direction happens to lie on the same axis as the other number. For example, $(0, 2)$ against $-3 = (3, 2)$ has the same direction, and the smaller magnitude is larger, so $0 > -3$. Two cases need a check that a magnitude is 0 before the steps:
-
-- **Both zero:** the numbers are equal, whatever their directions. Without the check, step 1 would call $(0, 0)$ larger than $(0, 2)$.
-- **One zero:** the other number's direction alone decides. A positive number is larger than zero and a negative number smaller. This covers a zero whose direction lies on the other axis, such as $(0, 0)$ against $3i$: zero lies on the imaginary axis too, so $0 < 3i$.
+Without step 1, step 2 would call $(0, 0)$ larger than $(0, 2)$, though both are zero.
 
 **Different axes.** Directions on different axes cannot be compared: $-i$ is not less than 1, and $-1$ is not less than $i$. Their magnitudes can be. Dropping the direction gives the **absolute value**,
 

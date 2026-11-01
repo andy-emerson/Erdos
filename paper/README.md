@@ -4,6 +4,8 @@ A concept paper explaining the idea behind the exact-rational work: the problem 
 
 **Status: active.** The current draft is [v0.7](v0.7.md), in progress; [v0.6](v0.6.md) is done.
 
+**Book plan (author, Nov 1, 2026; not yet carried out).** The paper and the supplement become one book: Part 1, the machine (instruction-level routines for the library's most-used operations, such as gcd and exact division, costed in cycles, in portable pseudocode with machine code per chip family); Part 2, the library (compiled, costed in big-O built on Part 1's cycle counts). Working format for now: Part 1's chapter 1 holds all the mathematics (including magnitude and direction: subtraction as addition with negation, negation as adding 2 to the unit counter mod 4) and its chapter 2 all the code, so the mathematics can be checked first. Once both are correct, the book may be reordered to alternate an idea with its code. Only one of spec 13's two number designs (A or B) goes into the book, chosen by its results.
+
 **Supplement:** [arithmetic at the machine level](supplement-machine.md) (draft): the mathematics of bits and words, machine code and its pseudocode, and division: long division, the 32-bit divide, reusing the inverse, the start table, and their combination. Addition, subtraction and multiplication are to come. Checked by [`verify-machine/`](verify-machine/README.md).
 
 - [v0.1](../archive/paper/v0.1.md): sections 1–6 (problem and core idea).

@@ -68,4 +68,8 @@ for _ in range(100000):
     assert o * x % M == 1
 # 6.4: the 16-bit table's size
 assert 2**15 * 2 == 64 * 1024
+# 2.1: the carry of a word addition is (s < x)
+for _ in range(100000):
+    x, y = rng.getrandbits(64), rng.getrandbits(64)
+    assert ((x + y) % M < x) == (x + y >= M)
 print("every claim holds")

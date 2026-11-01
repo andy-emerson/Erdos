@@ -13,32 +13,38 @@ Both designs solve the first problem by splitting a number into a **magnitude**,
 
 **Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like modular arithmetic: neither has negative values, and neither has a direction. Adding magnitudes can overflow but never goes below zero. Subtracting them is where the first problem lives.
 
-**Direction on the line.** The number line has two directions, positive and negative. One bit $s$ names them: 0 for positive, 1 for negative, and a number is $m \cdot (-1)^s$. Multiplying two numbers multiplies their directions, and $(-1)^{s_1} \cdot (-1)^{s_2} = (-1)^{s_1 + s_2}$, so the bits add mod 2: two negatives make a positive, since $1 + 1 \equiv 0$. Negating flips the bit, which is adding 1 mod 2.
+**Direction on the line.** The number line has two directions, positive and negative. A direction can be split off from a number as a power of $-1$: every number on the line is a magnitude times $(-1)^s$,
 
-**Direction in the plane.** The complex plane has four directions along its two axes, the units $1, i, -1, -i$. Each is a power of $i$: $1 = i^0$, $i = i^1$, $-1 = i^2$ and $-i = i^3$, and $i^4 = 1$ again. So a direction is named by its exponent $d$, a number from 0 to 3, and multiplying two directions adds their exponents mod 4:
+$$m \cdot (-1)^s,$$
+
+with $s = 0$ for a positive number and $s = 1$ for a negative one, so $-5 = 5 \cdot (-1)^1$. Only whether $s$ is even or odd matters: $(-1)^s$ is 1 for every even $s$ and $-1$ for every odd $s$. So $s$ can be kept mod 2, as 0 for even and 1 for odd. Multiplying two numbers adds their exponents, $(-1)^{s_1} \cdot (-1)^{s_2} = (-1)^{s_1 + s_2}$, and two negatives make a positive because $1 + 1 \equiv 0 \pmod 2$. Negating adds 1 to $s$.
+
+This is why the split works on a machine. Neither the magnitude nor the exponent is ever negative: the magnitude is kept mod $2^n$ and the exponent mod 2, and both suit modular arithmetic. The $-1$ itself is never computed; it is a fixed base that only says how to read the exponent. Two modular numbers, read together as $m \cdot (-1)^s$, give a value on the line, negative or not.
+
+**Direction in the plane.** The complex plane has four directions along its two axes, the units $1, i, -1, -i$, and the same trick works with $i$ as the base. Every unit is a power of $i$, and the powers repeat every four steps, since $i^4 = 1$. So the exponent can be kept mod 4, and multiplying two directions adds their exponents:
 
 $$i^{d_1} \cdot i^{d_2} = i^{d_1 + d_2}, \quad \text{with } d_1 + d_2 \text{ taken mod } 4.$$
 
-Stored in a machine, the exponent is two bits, so a direction is read three ways:
+Stored in a machine, the exponent is two bits, so a direction can be read three ways:
 
 | Binary | 00 | 01 | 10 | 11 |
 | --- | --- | --- | --- | --- |
 | Exponent $d$ (mod 4) | 0 | 1 | 2 | 3 |
 | Direction $i^d$ | 1 | $i$ | $-1$ | $-i$ |
 
-Negating is multiplying by $-1 = i^2$, so it adds 2 to the exponent. The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$. Negating is a half turn in both. The line has two directions, so a half turn is one step, adding 1 mod 2; the plane has four, so a half turn is two steps, adding 2 mod 4.
+The directions 1 and $-1$ lie on one line, the real axis, and $i$ and $-i$ on another, the imaginary axis. The line's two directions are contained in the plane's four: $d = 0$ and $d = 2$ are the line's $s = 0$ and $s = 1$. Negating is a half turn in both. The line has two directions, so a half turn is one step, adding 1 mod 2; the plane has four, so a half turn is two steps, adding 2 mod 4.
 
-## Design A: one magnitude with one direction
-
-A number is a pair $(m, d)$ of a magnitude $m$ and a direction $d$. Its value is
+**A number** is then a pair $(m, d)$ of a magnitude $m$ and a direction $d$, with value
 
 $$m \cdot i^d.$$
 
-So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$.
+So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$. On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1, as 1 and $i$ do. A difference of 1 can run either way: 1 and $-i$ differ by $-1$, which is 3 mod 4.
 
 **Zero** is any pair with magnitude 0. Zero is both real and imaginary, since it lies on both axes, and it is neither positive nor negative, since it lies in no direction. So its direction is irrelevant: $(0, d)$ is zero for every $d$. A zero keeps whatever direction the operation that produced it left, and no step sets it. Every number other than zero has exactly one pair.
 
-On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1, as 1 and $i$ do. A difference of 1 can run either way: 1 and $-i$ differ by $-1$, which is 3 mod 4.
+## Design A: one magnitude with one direction
+
+Design A stores each number as one such pair. Its operations begin with comparison, on which addition is built.
 
 ### Comparison
 
@@ -98,7 +104,11 @@ direction check (XOR)
 
 Addition is more involved here than on paper, because of the problem these notes began with: it has to bring a result on the circle back to the right place on the line. The comparison's tree does that, and each of its branches is a case with its own rule.
 
-**Same direction.** The magnitudes add, and the direction stays: $(m_1, d) + (m_2, d) = (m_1 + m_2,\ d)$, since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
+**Same direction.** The magnitudes add, and the direction stays. With $d_1 = d_2 = d$,
+
+$$(m_1, d_1) + (m_2, d_2) = (m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
+
+since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 
 **Opposite directions.** The magnitudes subtract, and the borrow settles the rest, by the two formulas of the magnitude check:
 
@@ -106,7 +116,11 @@ $$(m_1, d_1) + (m_2, d_2) = \big((-1)^b \cdot (m_1 - m_2),\ d_1 + 2b\big).$$
 
 With no borrow, the first number is at least as large, and the sum is $m_1 - m_2$ in the first direction; equal magnitudes give zero. With a borrow, the second is larger, and the sum is the negated difference in the second direction, since $d_1 + 2 = d_2$. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = (m_1 - m_2) \cdot i^{d_1}$.
 
-**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition becomes one in the same direction: $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. Otherwise a sum such as $3 + 4i$ is not a magnitude times a single direction, and Design A holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
+**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition becomes one in the same direction. With $m_2 = 0$,
+
+$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d_1) + (0, d_2) \\ &= (m_1, d_1) + (0, d_1) \\ &= (m_1 + 0,\ d_1) = (m_1, d_1), \end{aligned}$$
+
+and similarly when $m_1 = 0$. For example, $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. If neither magnitude is zero, a sum such as $3 + 4i$ is not a magnitude times a single direction, and Design A holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
 
 The rules were checked against the true sum of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/addition.py`](verify-notes/addition.py)).
 

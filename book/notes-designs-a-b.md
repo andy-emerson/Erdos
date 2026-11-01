@@ -4,12 +4,12 @@
 
 Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. It counts up from $0000$ to $1111$; one more rolls it over to $0000$, and rolling back below $0000$ shows $1111$. Read as numbers, $n$ binary digits show the $2^n$ values from 0 to $2^n - 1$, and the rollover is arithmetic mod $2^n$. That is the same situation in a more useful form, and from here on these notes picture it as a clock with $2^n$ hours. On a 16-hour clock ($n = 4$), $15 + 1 = 16 \equiv 0$ and $3 - 5 = -2 \equiv 14 \pmod{16}$.
 
-The arithmetic we want lies on a line, which runs forever in both directions. The machine's arithmetic lies on a circle, which wraps around. So the machine has two problems with ordinary arithmetic, one at each end of its range.
+Modular arithmetic is circular: like the face of an analog clock, it comes back around to where it began. The arithmetic we want is linear: the number line runs forever in both directions. Turning modular arithmetic into linear arithmetic meets two problems, one at each end of the machine's range.
 
-- **Below zero.** The number line has negative numbers, and the clock has none: $3 - 5$ lands on 14, not on $-2$.
-- **Above $2^n - 1$.** The number line has no largest number, and the clock does: $15 + 1$ lands on 0, not on 16. This is **overflow**.
+- **Below zero.** The number line has negative numbers, and modular arithmetic has none: $3 - 5$ lands on 14, not on $-2$.
+- **Above $2^n - 1$.** The number line has no largest number, and modular arithmetic does: $15 + 1$ lands on 0, not on 16. This is **overflow**.
 
-Both designs solve the first problem by splitting a number into a **magnitude**, how large it is, and a **direction**, which way it points. These notes are about that split. Overflow is solved separately, by spec 13's size classes and pools, and these notes leave it aside.
+Splitting a number into a **magnitude**, how large it is, and a **direction**, which way it points, lets each problem be solved on its own. These notes solve the first: they build arithmetic operations that account for direction, so that results below zero come out right. The second needs a number system for large magnitudes, spec 13's size classes and pools, and is left aside here. In these notes a magnitude is treated as the machine already treats it, as a single word, and the examples keep magnitudes small, which is why the clock has only 16 hours.
 
 **Magnitude.** A magnitude is a whole number, $0, 1, 2, \ldots$. Magnitudes can be added and multiplied, and the result is again a magnitude. They cannot always be subtracted: $3 - 5$ is not a magnitude. What can always be taken is the **absolute difference** $|a - b|$, the larger minus the smaller, which is a magnitude. In this, magnitudes are like modular arithmetic: neither has negative values, and neither has a direction. Adding magnitudes can overflow but never goes below zero. Subtracting them is where the first problem lives.
 

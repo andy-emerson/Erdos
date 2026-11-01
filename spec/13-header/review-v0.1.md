@@ -252,3 +252,86 @@ Class-0 results still go to the one-word local (§1 Result class), which is righ
 **U3. Should fix. §3 Structures, B's collapse in division and gcd.** If the operands are collapsed into "the one temporary buffer", a division whose result moves down holds two temporaries: the collapse buffer and the predicted slot. Growing's routine also copies the operands a second time into its own local buffer. *Fix:* collapse straight into the routine's working buffer, writing |P − N| where Growing now copies the operand. That uses one local and no temporary, and removes one copy and the second half of open question (e).
 
 **U4. Minor. §3 Special case (b).** "Allocating for its result without the carry word" should say "allocating the class that holds max words". With length-based prediction, that is the same as before unless max is a power of 2.
+
+## Fifth pass
+
+Nov 1, 2026, on the substantially revised spec (1485 words): Design A after the author's notes (`book/notes-designs-a-b.md`), round 1 split into a Lean proof and Python tests, and round 2 in three parts. Nothing was built or run.
+
+**Verdict: round 1 is ready after minor fixes, but round 2 needs revision.** Design A's revised rules are correct and match the notes. Round 1's split has one gap: the word-level routines are provable but are only tested. In round 2, part (a) is not buildable as worded (V1), and the jobs that the author's process rules require have gone (V3). Round 2 waits for round 1 anyway, so this blocks nothing yet.
+
+### Design A against the notes
+
+I checked every branch with zeros in every direction.
+
+- **Same direction (t = 0):** m1 + m2 in direction d1 is correct for any zeros. For example, 0 in direction 2 plus 5 in direction 2 gives −5.
+- **Opposite (t = 0x80):** the borrow rule handles zeros with no test.
+  - 0 in direction 2 plus 5 in direction 0: 0 − 5 borrows, the magnitude is 5 and the direction is 2 + 2 = 0, so +5.
+  - 5 in direction 0 plus 0 in direction 2: no borrow, so +5.
+  - x + (−x) gives a zero in direction d1. The notes allow that.
+- **Different axes (t = 0x40 or 0xC0):** a zero takes the other's direction and the add runs as same-direction, so two zeros give a zero. Two nonzero values are an error (an expression). This matches the notes' tree exactly.
+- **Subtract** (add with `h2 xor 0x80`), **negate**, **multiply** (d1 + d2, so a zero factor gives a zero in any direction) and **divide** (d1 − d2) match the notes.
+- **Compare:**
+  - two zeros are equal in any directions, as the notes require;
+  - with one zero, the other's sign decides;
+  - otherwise, opposite directions mean the positive one is larger, and the same direction means comparing magnitudes, reversed when negative.
+
+  All of this is correct for integers.
+
+  "1 and i positive" defines an order along each axis, not an order of complex numbers. *Minor:* say "ordered along their shared axis; zero lies on both", so that the Lean statement has a reference order to prove against.
+- **Canonical.** "Zero is class 0, word 0" (§1) together with "a zero keeps whatever direction" (§2) means equal values can have different headers. Compare handles that, and nothing else in the spec tests headers for equality. The round-1 test must not compare whole headers for zeros. Its results file says it already compares values, which is fine.
+
+### Round 1: proof against test
+
+- **Mathematical but only tested (V2, should fix).** "Anything countable or provable is proved rather than tested", but the Lean part proves the rules on values (magnitudes as natural numbers). These are provable and left to the Python tests at W = 4:
+  - the word-level routines: schoolbook add with its carry, absolute difference with its borrow, multiply-accumulate, Hensel division and binary gcd;
+  - the write bounds (n1 + n2 words hold the product; a quotient fits in n1 − n2 + 1 words; the B part bound).
+
+  The borrow from the multi-word subtraction is what Design A rests on: it is the notes' "magnitude check", and it is exactly what the proof leaves out. *Fix:* either prove the word-level add and absolute difference with borrow, and the write bounds, in Lean, for any W and any lengths (these are short induction proofs), and list Hensel division and binary gcd as tested, or change the sentence to "the value rules are proved; the word-level routines, bounds and bookkeeping are tested".
+- **Bookkeeping claimed as proved.** None. Headers, classes, pools, free lists and canonical form are all on the test side.
+- **Rule 5 against Lean's libraries (V4, should fix).** The spec does not say whether the proof uses Mathlib (for example its `GaussianInt`). Rule 5 forbids outside libraries for the work. *Fix:* one line stating either "proofs may use Mathlib; builds may not", for the author to confirm, or "Lean core only".
+- **Test sets.** The line on division operands (a = bq) and nonzero divisors was lost in the rewrite. *Minor:* restore "division on a = bq, divisor nonzero".
+
+### Round 2 against RULES.md and for buildability
+
+**V1. Blocking for round 2. §5 (a), proving machine-level counts in Lean.** As worded, (a) proves path counts for x86-64 machine code, and the example claims the same counts on x86-64, ARM64 and RISC-V. Proving facts about real machine code needs a formal model of each instruction set in Lean, which is a project far larger than this spec. The counts also differ between the three:
+- x86-64 uses two-operand forms and branches on flags;
+- RISC-V has no flags and branches by comparing registers;
+- ARM64 sits between the two.
+
+The example (a one-word add in 3 instructions in the same direction, 6 opposite, 8 with a borrow) also leaves out the carry test that chooses the result class, the class OR into the header, and the loads and stores. As a spec statement it is a prediction presented as fact.
+
+*Fix:* define the portable pseudocode as a small instruction set in Lean, with each step one instruction on every family (rule 6). Prove path counts and coverage over that, with counts for multi-word routines as formulas in the lengths. Then give a table of how each step maps to x86-64, ARM64 and RISC-V, checked by inspecting the disassembly, not proved. Drop the numeric example, or mark it "to be proved".
+
+**V3. Should fix. §5 (c), the jobs and "every operation on every build".** The round-2 jobs (sizes k ∈ {1, 2, 4, 8, 16}, 1024 operations, division and gcd operands as in spec 12) and the growth workload are gone. "Jobs are set after round 1" is also gone. The trials as written vary only signs and which magnitude is larger, which are add's branches. The author's rule says every operation runs on every build, with no exceptions. *Fix:* one line: "Every operation runs on every build at sizes k ∈ {1, 2, 4, 8, 16} words, 1024 operations each, under each sign mix; division and gcd operands as spec 12."
+
+**V5. Should fix. §5 (c), the branch-free rows.** "A branch-free row per design" adds two builds, against the author's dislike of extra builds. B's add has no sign branch to remove, so its branch-free row is undefined. Loops over lengths and carries are branches too. *Fix:*
+- one branch-free row, for A only;
+- define it: the sign and borrow branches replaced by masks (`0 − b`, AND, XOR); length loops and the carry into the next class are kept;
+- add B's later only if collapse proves costly.
+
+**V6. Minor. Rule 6 and conditional moves.** "Base RISC-V lacks conditional moves" is true of RV64I. However, the RVA23 profile, which is arguably the "common current form", includes Zicond (`czero.eqz` and `czero.nez`). Masks are portable either way, so the choice stands. *Fix:* say "RV64I, the base, lacks them" and let the author decide whether RVA23 counts once rule 6's wording is approved.
+
+**V7. Minor. §5 (a), cost-model cycles.** "Published per-instruction costs" is fine in a spec (the prose rule against references is for the paper). Name the table to be used, so that the predictions are reproducible.
+
+### Rules check (algorithm design), for this revision
+
+| Rule | Status | Reason |
+| --- | --- | --- |
+| 1 Exact | holds | Unchanged. |
+| 2 General before special | holds | Design A has no zero test except where the notes require one (different axes, compare). The special cases are named, not built. |
+| 3 Shared solutions | holds | One routine set serves A, B and Control. |
+| 4 One structure each | holds | The author has decided (c) and (e). Subtract copies nothing, and collapse goes into the working buffer, so there is no new temporary. |
+| 5 Self-contained | unclear | Lean libraries (V4). |
+| 6 Portable pseudocode | holds for the designs, violated in wording by §5 (a) | The rules use only XOR, AND, add, the borrow as a value, and masks. Proving counts on three real instruction sets is not portable pseudocode (V1). |
+
+### Length
+
+1485 words is 87% over spec 12, and longer than the fourth pass's 1079. About 450 words can go with no loss:
+- §6, now decided, becomes one line of decisions (about 90 words);
+- §2's compare and add paragraphs can point to the notes for the reasoning and keep only the formulas (about 100);
+- the examples in §5 (a) and (b) (about 80; see V1);
+- the cost note on zeroing in §1 Routines, and the "copying nothing" asides (about 40);
+- the parenthetical lists in round 1's sets (about 60);
+- §5 (c)'s list of other known costs, already in earlier passes and in the branch inventory (about 50).
+
+That brings the spec to about 1000 words.

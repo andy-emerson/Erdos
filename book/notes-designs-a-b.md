@@ -43,15 +43,21 @@ Addition has to know how its two numbers relate before it can work. The numbers 
 
 A result of 00 means the same direction. 10 means opposite: only the high bit differs, so the axis matches and the sign does not. A low bit of 1 means different axes. Integers use only 00 and 10, so for them the result is always 00 or 10.
 
-**The magnitude check** is the subtraction itself. Opposite directions mean the magnitudes must be subtracted, and the subtraction also reports whether it had to wrap past zero, its **borrow** $b$. The borrow is exactly the answer to "was the first magnitude smaller?", and it is what turns the modular answer into an answer on the line:
+**The magnitude check** is the subtraction itself. Opposite directions mean the magnitudes must be subtracted, and the machine's subtraction instruction reports one more thing as it works: its **borrow**. In schoolbook subtraction, a column that is too small borrows from the column to its left. The machine subtracts in binary the same way, and when the first magnitude is smaller, the last column has nothing left to borrow from: the subtraction runs past zero and wraps around. The borrow $b$ is 1 when that happened and 0 when it did not, so it answers "was the first magnitude smaller?" without a separate question. On x86-64 and ARM64 the subtraction leaves the borrow in a flag, and the next instruction can jump on it; RISC-V, which has no flags, asks the same question with one compare-and-jump instruction.
 
-| Subtraction | Borrow $b$ | Mathematical meaning | Machine meaning |
-| --- | --- | --- | --- |
-| $5 - 3 \equiv 2 \pmod{16}$ | 0 | magnitude $(-1)^0 \cdot 2 = 2$; answer $(-1)^0 \cdot 2 = 2$ | the subtraction gives 2: the magnitude, and the direction stays |
-| $4 - 4 \equiv 0 \pmod{16}$ | 0 | magnitude $(-1)^0 \cdot 0 = 0$; answer 0 | the subtraction gives 0: the magnitude, and the answer is zero |
-| $3 - 5 \equiv 14 \pmod{16}$ | 1 | magnitude $(-1)^1 \cdot 14 = -14 \equiv 2 \pmod{16}$; answer $(-1)^1 \cdot 2 = -2$ | the subtraction gives 14; a negation turns 14 into 2, the magnitude, and the direction flips |
+The borrow is also what turns the modular answer into an answer on the line. The table works three examples, $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, so the first number's direction is 1. All its arithmetic is mod 16, a 4-bit word, and $\equiv$ marks a congruence mod 16 where $=$ would not be true on the line.
 
-In the first two rows the subtraction is all there is: the modular answer is already the answer on the line. The third row is where modular arithmetic and the line part ways. The subtraction wrapped, and the borrow says so. The borrow then separates the two parts of the answer. The factor $(-1)^b$, applied to the modular result and reduced mod 16 again, gives the magnitude, 2. Applied to the direction, it turns the result to point the other way, giving $-2$. On the machine, the first is one negation instruction, and the second is taking the other number's direction. So no comparison of magnitudes is made before subtracting: the subtraction answers the question as it works.
+| Subtraction | Borrow $b$ | Magnitude | Direction | Result |
+| --- | --- | --- | --- | --- |
+| $5 - 3 \equiv 2$ | 0 | $(-1)^0 \cdot 2 = 2$ | $(-1)^0 \cdot 1 = 1$ | 2 |
+| $4 - 4 \equiv 0$ | 0 | $(-1)^0 \cdot 0 = 0$ | $(-1)^0 \cdot 1 = 1$ | 0 |
+| $3 - 5 \equiv 14$ | 1 | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $(-1)^1 \cdot 1 = -1$ | $-2$ |
+
+Both columns use the same factor, $(-1)^b$. It multiplies the modular result, which is reduced mod 16 again, to give the magnitude, and it multiplies the first number's direction to give the result's direction. With directions written as exponents, multiplying by $(-1)^b$ is adding $2b$ mod 4, so a borrow turns the direction halfway round. The result is the magnitude times the direction.
+
+In the first two rows the subtraction is all there is: the modular answer is already the answer on the line. The third row is where modular arithmetic and the line part ways, and the borrow separates the two parts of the answer.
+
+The table looks like more work than the machine does. The machine never computes $(-1)^b$ or multiplies by it. It subtracts, which produces the borrow, and jumps on the borrow. When there is no borrow, as in the first two rows, that is all. When there is one, it does two more instructions: a negation, which turns 14 into 2, and taking the second number's direction, which is $-1$. So the whole table is one subtraction and one jump, plus two instructions in the wrapped case. No comparison of magnitudes is made before subtracting: the subtraction answers the question as it works.
 
 **The tree.** The checks run in the order the machine finds cheapest:
 

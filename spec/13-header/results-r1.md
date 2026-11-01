@@ -1,6 +1,6 @@
 # Spec 13, round 1: results (fourth run)
 
-Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 56 s on 2 cores. No random count was reduced.
+Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 55 s on 2 cores. No random count was reduced.
 
 **Verdict: both designs pass every check, A under its revised §2, and subtract still holds no temporary beyond the move-down slot.** No new spec issues.
 
@@ -99,6 +99,7 @@ A: every pair with magnitude below $2^5$ in all four directions, zeros in every 
 | A subtract (same) | 65103 | 0 |
 | A add, error raised exactly for nonzero sums across axes | 51281 | 0 |
 | A subtract, same | 51281 | 0 |
+| A compare: every pair with magnitudes 0..15 in all four directions, zeros in every direction, against the true order along an axis (1,800 not-ordered errors expected and raised, 76 equal, 2,220 ordered) | 4096 | 0 |
 | B add (across axes included) | 165536 | 0 |
 | B subtract | 165536 | 0 |
 | B negate | 165536 | 0 |
@@ -107,7 +108,7 @@ A: every pair with magnitude below $2^5$ in all four directions, zeros in every 
 
 ## Spec issues
 
-None new. One note: compare across four directions (for example, $i$ against $-i$, or a zero against $-i$) is defined in §2 but is in neither round 1 list. The integer runs give it only directions 0 and 2, and the four-direction check does not cover compare. The model implements it but nothing checks it.
+None new. A's compare across four directions, a gap noted in the fourth run, is now in the four-direction check and passes. A compare without the zero-first test fails 252 of its 4,096 pairs; the first is two zeros in directions 0 and 1, which must be equal.
 
 Earlier runs' issues, all in the spec now. The second run's N1 and N2:
 - **N1:** subtract copied its negation, a temporary beyond the move-down slot. The temporary check above confirms it is gone.

@@ -73,6 +73,36 @@ def a_div(x, y):
     return (((a_hd(x) & D) - (a_hd(y) & D)) & 0xFF) >> 6, x[1] // y[1]
 
 
+def a_cmp(x, y):
+    """§2 compare: zero first (two zeros equal; one zero, the other's sign decides, 1 and i positive); then opposite
+    directions, the positive one larger; same direction, magnitudes, reversed when negative; different axes, an error"""
+    (d1, m1), (d2, m2) = x, y
+    pos = lambda d: d in (0, 1)                                         # noqa: E731
+    if m1 == 0 and m2 == 0:
+        return 0
+    if m1 == 0:
+        return -1 if pos(d2) else 1
+    if m2 == 0:
+        return 1 if pos(d1) else -1
+    t = d1 ^ d2
+    if t == 2:
+        return 1 if pos(d1) else -1
+    if t != 0:
+        raise AxisError("not ordered")
+    c = (m1 > m2) - (m1 < m2)
+    return c if pos(d1) else -c
+
+
+def true_order(x, y):
+    """the order along an axis: a value's signed coordinate on its axis; zero lies on both axes; different axes with no
+    zero are not ordered (None)"""
+    coord = lambda v: v[1] if v[0] in (0, 1) else -v[1]               # noqa: E731
+    if x[1] and y[1] and x[0] % 2 != y[0] % 2:
+        return None
+    a, b = coord(x), coord(y)
+    return (a > b) - (a < b)
+
+
 def a_canonical(x):
     """any direction 0..3; a zero in any direction"""
     return 0 <= x[0] < 4 and x[1] >= 0
@@ -163,6 +193,17 @@ def run(nrand, seed):
                 a = a_mul(y, x)
                 r = a_div(a, y)
                 rec("A div", a_val(r) == vx and a_canonical(r), (a, y, vx, r))
+
+    # A compare: every pair with magnitudes 0..15 in all four directions, zeros in every direction
+    vals = [(d, m) for d in range(4) for m in range(16)]
+    for x in vals:
+        for y in vals:
+            want = true_order(x, y)
+            try:
+                got = a_cmp(x, y)
+            except AxisError:
+                got = None
+            rec("A compare", got == want, (x, y, want, got))
 
     # B: every pair of four-slot values with each slot below 4; then random slots up to 32 words of 4 bits
     small = [(a, b, c, d) for a in range(4) for b in range(4) for c in range(4) for d in range(4)]

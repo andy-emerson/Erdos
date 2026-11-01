@@ -210,3 +210,45 @@ The second option needs no new slot at all and is the general one I recommend.
 - **(d) Mixed job.** Drop it unless the author sets a rate.
 - **(e) Two slots per B number.** I agree that it should be allowed, since B cannot exist without it. The author should also be asked about collapse temporaries (T4).
 - **(f) Collapsing beyond the required points.** I agree: never in this round. Parts growing until collapse is the thing being measured.
+
+## Fourth pass
+
+Nov 1, 2026, on the changed parts only (1079 words). Nothing was built. One check was run in Python at W = 4 (below).
+
+**Verdict: needs revision, but only two one-line bound fixes.** Now that result classes come from real lengths, two routines can write one word past their slot or local. Once those two lines are fixed, the spec is ready to build round 1.
+
+### Third-pass items
+
+- **T1 (multiply-accumulate bound): applied, but see U1.**
+- **T2 (machine-level Control): resolved.** Control is now also written as pseudocode and then machine code.
+- **T3 (four-slot model): accepted as reduced.** A value-only check against Gaussian integers, with no headers, classes or pools, needs nothing more than the spec says.
+- **T4 (collapse temporaries): resolved for compare, mostly resolved for division and gcd.** See U3.
+- **T5 (length): improved.** 1079 words is still 36% over spec 12. Open questions (a) and (d) could go as decided, which leaves it at about 1040. I would accept it as is.
+- **T6 (round 1 coverage): resolved.**
+- **T7 (prediction from lengths): applied.**
+- **T8 ("L" wording): moot,** now that L is gone.
+
+### Write bounds against the predicted class (the rule "the smallest class holding the bound")
+
+| Routine | Bound | Fits? |
+| --- | --- | --- |
+| add (A same-direction, B parts) | max + 1 | Yes. Two class-0 values give 2 words, class 1. Growing writes lx + 1. |
+| A opposite add, absolute difference | max | Yes. Class-0 operands go to the one-word local. |
+| A multiply, multiply-accumulate with r = 0 | n1 + n2 | Yes. No carry word is written when r = 0. A zero operand gives n2 words, which Growing's zeroing loop respects. |
+| B multiply parts, two accumulates | stated as max(n_r, n1 + n2), plus a carry word "only when nonzero" | **No.** See U1. |
+| exact division | n1 − n2 + 1 | **No.** See U2. |
+| gcd | min | Yes, provided the refactored routine writes only the gcd's length. That is now covered by "writes at most its bound". |
+| B compare sums | max + 1 each, local | Yes. |
+| collapse | max(n_P, n_N) | Yes. |
+
+Class-0 results still go to the one-word local (§1 Result class), which is right for every routine except division (U2).
+
+### Findings
+
+**U1. Blocking. §1, the prediction for B's multiply parts.** The slot is allocated before the routine runs, so the prediction must be the worst case of both accumulates. However, n_r for the second accumulate is not known until the first one has run, and whether the carry word appears is known only at the end. Read literally, "the smallest class holding the bound" gives max(n_P1 + n_P2, n_N1 + n_N2) words, and the carry can then land one word past the slot. *Fix:* state the predictions per operation in one line: "A multiply n1 + n2; B part max(n_a + n_b, n_c + n_d) + 1 for its two products a·b + c·d".
+
+**U2. Blocking. §1, the bound for exact division.** Growing's Hensel routine shifts both operands by the divisor's trailing zeros, normalizes, and then writes nx − ny + 1 words. That can be one more than n1 − n2 + 1, because the shift can drop a word from the divisor but not from the dividend. I checked every exact pair with a below 2^12 at W = 4: the excess is at most 1 word and does occur. One example is a = 234, b = 18, which gives a bound of 1 word against 2 written. The extra word is always 0, but it lands past the one-word local or the slot. The old prediction, class c1, always had room for it, but the length-based prediction does not. *Fix:* "division writes exactly n1 − n2 + 1 words (the routine stops there, since the quotient never needs more)". Alternatively, use n1 − n2 + 2 as the bound, but stopping the loop is simpler and avoids a needless move-down.
+
+**U3. Should fix. §3 Structures, B's collapse in division and gcd.** If the operands are collapsed into "the one temporary buffer", a division whose result moves down holds two temporaries: the collapse buffer and the predicted slot. Growing's routine also copies the operands a second time into its own local buffer. *Fix:* collapse straight into the routine's working buffer, writing |P − N| where Growing now copies the operand. That uses one local and no temporary, and removes one copy and the second half of open question (e).
+
+**U4. Minor. §3 Special case (b).** "Allocating for its result without the carry word" should say "allocating the class that holds max words". With length-based prediction, that is the same as before unless max is a power of 2.

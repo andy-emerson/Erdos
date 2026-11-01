@@ -37,39 +37,41 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 
 ## Prose
 
+Two lists: what to do, and what not to do. Rules marked *(draft)* await the author's approval. The draft rules come from the author's edits to the machine-level supplement (Nov 1, 2026) and from the survey in [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md). One instance of a pattern is not a fault; a habit of it is.
+
+### Do
+
 1. **Standard terms.** Use the field's standard term; define the paper's own words where they are introduced.
-2. **No references, benchmarks or prior art** in the paper.
-3. **Proofs hold only proof** and never use a later fact.
-4. **LaTeX** uses `\text{}` only.
+2. **Proofs hold only proof** and use only earlier facts.
+3. **LaTeX** uses `\text{}` only.
+4. **One new idea at a time.** A passage finishes one idea before it starts the next. *(draft)*
+5. **An idea comes just before its first use.** Introduced earlier, it is forgotten by the time it is needed; a short pause inside a section is better. *(draft)*
+6. **Easy before hard.** Order follows difficulty. *(draft)*
+7. **Familiar before abstract.** Start from what the reader already knows, such as a clock before modular arithmetic or decimal before binary. *(draft)*
+8. **Like things, like treatment.** If one item of a kind gets prose and a formula, every item of that kind does. *(draft)*
+9. **Reasons, not measurements.** Explain why a method is faster; readers can run the code to measure it. *(draft)*
+10. **Answer the informed reader's question where it arises.** Where the text departs from what an expert expects, it says why at that point. *(draft)*
+11. **Meaning over syntax.** Teach what an operation does rather than how a tool spells it. *(draft)*
+12. **Plain words.** Prefer the plain verb ("is", "has", "uses"). *(draft)*
+13. **Count before listing.** A list has as many items as there are. *(draft)*
+14. **Paragraphs by default.** A list is for separable, parallel items such as the steps of an algorithm. *(draft)*
+15. **End on content.** A section ends on its last point. *(draft)*
+16. **Hedge only real uncertainty,** and say what the uncertainty is. *(draft)*
+17. **Cut any sentence a reader would not miss.** *(draft)*
 
-### Draft prose rules (Nov 1, 2026; for the author's approval)
+### Don't
 
-Drawn from the author's edits to the machine-level supplement. Rules on AI writing patterns will be added from the survey in [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md).
+1. **No references, benchmarks or prior art** in the paper.
+2. **No brand names without need.** Name a language, product or chip only where the point needs it. *(draft)*
+3. **Don't call anything hard.** *(draft)*
+4. **No reflexive three.** Never three items because three sounds complete. *(draft)*
+5. **No inflated words,** such as crucial, pivotal, delve, underscore, showcase, intricate and meticulous. The list drifts and is reviewed now and then. *(draft)*
+6. **Dashes rarely.** No dash where a comma, parentheses, a colon or a full stop will do. *(draft)*
+7. **No "not X but Y"** unless X is something readers actually believe. *(draft)*
+8. **No trailing "-ing" comments.** A sentence does not end with a clause that interprets it (", ensuring...", ", highlighting..."); a reason gets its own sentence or is cut. *(draft)*
+9. **No bold except where a term is defined.** *(draft)*
+10. **No recap** of the section just read, and **no offer** of more. *(draft)*
+11. **No labelled verdict at the start** of a passage ("Short answer:", "Yes, with one caveat"); a condition belongs inside the sentence it limits. *(draft)*
+12. **No drumrolls.** No "Here's the thing", and no rhetorical question answered in the next fragment. A colon introduces a definition, list, equation or consequence, not a punchline. *(draft)*
 
-5. **One new idea at a time.** A passage finishes one idea before it starts the next.
-6. **An idea comes just before its first use.** Introduced earlier, it is forgotten by the time it is needed; a short pause inside a section is better.
-7. **Easy before hard.** Order follows difficulty, and the text never calls anything hard.
-8. **Familiar before abstract.** Start from what the reader already knows, such as a clock before modular arithmetic or decimal before binary.
-9. **Like things, like treatment.** If one item of a kind gets prose and a formula, every item of that kind does.
-10. **Reasons, not measurements.** Explain why a method is faster; readers can run the code to measure it.
-11. **Answer the informed reader's question where it arises.** Where the text departs from what an expert expects, it says why at that point.
-12. **Meaning over syntax; general over brand names.** Teach what an operation does rather than how a tool spells it, and name a language, product or chip only where the point needs it.
-
-Open conflicts with the rules above: rule 2 (no references) and the supplement's citation of published instruction costs; rule 4 (`\text{}` only) and one use of `\big(` in the supplement.
-
-
-### Draft rules against AI writing patterns (Nov 1, 2026; for the author's approval)
-
-Chosen from the candidates in the survey, [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md), for a mathematical book. One instance of a pattern is not a fault; a habit of it is.
-
-13. **Dashes rarely.** Use a dash only where a comma, parentheses, a colon or a full stop will not do.
-14. **Count before listing.** A list has as many items as there are; never three by reflex.
-15. **Plain words.** Prefer the plain verb ("is", "has", "uses") to the inflated one, and drop words such as crucial, pivotal, delve, underscore, showcase, intricate and meticulous. The list drifts and is reviewed now and then.
-16. **No "not X but Y"** unless X is something readers actually believe.
-17. **No trailing "-ing" comments.** A sentence does not end with a clause that interprets it (", ensuring...", ", highlighting..."); a reason gets its own sentence or is cut.
-18. **Paragraphs by default.** A list is for separable, parallel items such as the steps of an algorithm. Bold marks a term only where it is defined.
-19. **End on content.** No recap of the section just read, and no offer of more.
-20. **Vary openings.** No labelled verdict at the start of a passage ("Short answer:", "Yes, with one caveat"); a condition belongs inside the sentence it limits.
-21. **Hedge only real uncertainty,** and say what the uncertainty is.
-22. **No drumrolls.** No "Here's the thing", and no rhetorical question answered in the next fragment. A colon introduces a definition, list, equation or consequence, not a punchline.
-23. **Cut any sentence a reader would not miss.**
+Open conflicts: Don't 1 (no references) and the supplement's citation of published instruction costs; Do 3 (`\text{}` only) and one use of `\big(` in the supplement.

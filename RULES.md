@@ -57,3 +57,19 @@ Drawn from the author's edits to the machine-level supplement. Rules on AI writi
 
 Open conflicts with the rules above: rule 2 (no references) and the supplement's citation of published instruction costs; rule 4 (`\text{}` only) and one use of `\big(` in the supplement.
 
+
+### Draft rules against AI writing patterns (Nov 1, 2026; for the author's approval)
+
+Chosen from the candidates in the survey, [`paper/research/ai-writing-patterns.md`](paper/research/ai-writing-patterns.md), for a mathematical book. One instance of a pattern is not a fault; a habit of it is.
+
+13. **Dashes rarely.** Use a dash only where a comma, parentheses, a colon or a full stop will not do.
+14. **Count before listing.** A list has as many items as there are; never three by reflex.
+15. **Plain words.** Prefer the plain verb ("is", "has", "uses") to the inflated one, and drop words such as crucial, pivotal, delve, underscore, showcase, intricate and meticulous. The list drifts and is reviewed now and then.
+16. **No "not X but Y"** unless X is something readers actually believe.
+17. **No trailing "-ing" comments.** A sentence does not end with a clause that interprets it (", ensuring...", ", highlighting..."); a reason gets its own sentence or is cut.
+18. **Paragraphs by default.** A list is for separable, parallel items such as the steps of an algorithm. Bold marks a term only where it is defined.
+19. **End on content.** No recap of the section just read, and no offer of more.
+20. **Vary openings.** No labelled verdict at the start of a passage ("Short answer:", "Yes, with one caveat"); a condition belongs inside the sentence it limits.
+21. **Hedge only real uncertainty,** and say what the uncertainty is.
+22. **No drumrolls.** No "Here's the thing", and no rhetorical question answered in the next fragment. A colon introduces a definition, list, equation or consequence, not a punchline.
+23. **Cut any sentence a reader would not miss.**

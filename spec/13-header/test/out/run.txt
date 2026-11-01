@@ -1,83 +1,50 @@
-literal A random  add  n= 100000 fail=  37765  slots<= 3    2.0s  value 37765
-literal A random  sub  n= 100000 fail=  37701  slots<= 3    2.2s  value 37701
-literal A random  neg  n= 100000 fail=  81978  slots<= 1    1.5s  release 81978
-literal A random  mul  n= 100000 fail=  65213  slots<= 2    3.0s  value 65213
-literal A random  div  n= 100000 fail=   9186  slots<= 2    2.4s  value 9186
-literal A random  gcd  n= 100000 fail=  25251  slots<= 3    3.6s  error 10513, value 13999, bound 739
-literal A random  cmp  n= 100000 fail=      0  slots<= 2    0.9s  pass
-literal A signed8 add  n= 261121 fail=  65280  slots<= 3    3.3s  value 65280
-literal A signed8 sub  n= 261121 fail=  65280  slots<= 3    3.3s  value 65280
-literal A signed8 neg  n=    511 fail=    480  slots<= 1    0.0s  release 480
-literal A signed8 mul  n= 261121 fail=      0  slots<= 2    3.0s  pass
-literal A signed8 div  n=   6338 fail=      0  slots<= 2    0.1s  pass
-literal A signed8 gcd  n= 261121 fail=   1020  slots<= 3    4.3s  error 960, bound 60
-literal A signed8 cmp  n= 261121 fail=      0  slots<= 2    1.8s  pass
-literal B random  add  n= 100000 fail=  60483  slots<= 7    4.5s  collapse value 60483, value 45074
-literal B random  sub  n= 100000 fail=  59999  slots<= 7    4.6s  value 44490, collapse value 59999
-literal B random  neg  n= 100000 fail=  95856  slots<= 3    3.2s  collapse value 53956, release 95856
-literal B random  mul  n= 100000 fail=  70040  slots<= 5    7.7s  value 69649, collapse value 70040
-literal B random  div  n= 100000 fail=  17846  slots<= 6    4.6s  collapse value 17846, value 5808
-literal B random  gcd  n= 100000 fail=  27007  slots<= 6    5.8s  error 11564, value 13268, collapse value 15212, bound 231
-literal B random  cmp  n= 100000 fail=      0  slots<= 4    1.8s  pass
-literal B signed8 add  n= 261121 fail=  65280  slots<= 5    6.7s  value 65280, collapse value 65280
-literal B signed8 sub  n= 261121 fail=  65280  slots<= 5    7.0s  value 65280, collapse value 65280
-literal B signed8 neg  n=    511 fail=    480  slots<= 2    0.0s  release 480
-literal B signed8 mul  n= 261121 fail=  54928  slots<= 3    8.5s  value 54928, collapse value 54928
-literal B signed8 div  n=   6338 fail=      0  slots<= 3    0.2s  pass
-literal B signed8 gcd  n= 261121 fail=   1020  slots<= 4    8.4s  error 960, bound 60
-literal B signed8 cmp  n= 261121 fail=      0  slots<= 2    2.7s  pass
-literal B unc4    add  n=  65536 fail=      0  slots<= 3    1.2s  pass
-literal B unc4    sub  n=  65536 fail=      0  slots<= 3    1.2s  pass
-literal B unc4    neg  n=    256 fail=      0  slots<= 0    0.0s  pass
-literal B unc4    mul  n=  65536 fail=    876  slots<= 3    1.7s  value 876, collapse value 876
-literal B unc4    div  n=  19712 fail=      0  slots<= 0    0.4s  pass
-literal B unc4    gcd  n=  65536 fail=   7680  slots<= 0    1.5s  bound 7680
-literal B unc4    cmp  n=  65536 fail=      0  slots<= 0    0.6s  pass
-zeroed  A random  add  n= 100000 fail=      0  slots<= 3    1.6s  pass
-zeroed  A random  sub  n= 100000 fail=      0  slots<= 3    1.7s  pass
-zeroed  A random  neg  n= 100000 fail=  81978  slots<= 1    1.3s  release 81978
-zeroed  A random  mul  n= 100000 fail=      0  slots<= 2    2.1s  pass
-zeroed  A random  div  n= 100000 fail=      0  slots<= 2    2.3s  pass
-zeroed  A random  gcd  n= 100000 fail=  11252  slots<= 3    3.4s  error 10513, bound 739
-zeroed  A random  cmp  n= 100000 fail=      0  slots<= 2    1.0s  pass
-zeroed  A signed8 add  n= 261121 fail=      0  slots<= 3    2.8s  pass
-zeroed  A signed8 sub  n= 261121 fail=      0  slots<= 3    2.8s  pass
-zeroed  A signed8 neg  n=    511 fail=    480  slots<= 1    0.0s  release 480
-zeroed  A signed8 mul  n= 261121 fail=      0  slots<= 2    3.0s  pass
-zeroed  A signed8 div  n=   6338 fail=      0  slots<= 2    0.1s  pass
-zeroed  A signed8 gcd  n= 261121 fail=   1020  slots<= 3    4.7s  error 960, bound 60
-zeroed  A signed8 cmp  n= 261121 fail=      0  slots<= 2    1.8s  pass
-zeroed  B random  add  n= 100000 fail=      0  slots<= 7    3.7s  pass
-zeroed  B random  sub  n= 100000 fail=      0  slots<= 7    3.7s  pass
-zeroed  B random  neg  n= 100000 fail=  95856  slots<= 3    3.1s  release 95856
-zeroed  B random  mul  n= 100000 fail=      0  slots<= 5    6.4s  pass
-zeroed  B random  div  n= 100000 fail=      0  slots<= 6    4.5s  pass
-zeroed  B random  gcd  n= 100000 fail=  11795  slots<= 6    5.5s  error 11564, bound 231
-zeroed  B random  cmp  n= 100000 fail=      0  slots<= 4    2.0s  pass
-zeroed  B signed8 add  n= 261121 fail=      0  slots<= 5    5.9s  pass
-zeroed  B signed8 sub  n= 261121 fail=      0  slots<= 5    6.1s  pass
-zeroed  B signed8 neg  n=    511 fail=    480  slots<= 2    0.0s  release 480
-zeroed  B signed8 mul  n= 261121 fail=      0  slots<= 3    8.1s  pass
-zeroed  B signed8 div  n=   6338 fail=      0  slots<= 3    0.3s  pass
-zeroed  B signed8 gcd  n= 261121 fail=   1020  slots<= 4    8.3s  error 960, bound 60
-zeroed  B signed8 cmp  n= 261121 fail=      0  slots<= 2    2.9s  pass
-zeroed  B unc4    add  n=  65536 fail=      0  slots<= 3    1.2s  pass
-zeroed  B unc4    sub  n=  65536 fail=      0  slots<= 3    1.2s  pass
-zeroed  B unc4    neg  n=    256 fail=      0  slots<= 0    0.0s  pass
-zeroed  B unc4    mul  n=  65536 fail=      0  slots<= 3    1.7s  pass
-zeroed  B unc4    div  n=  19712 fail=      0  slots<= 0    0.4s  pass
-zeroed  B unc4    gcd  n=  65536 fail=   7680  slots<= 0    1.5s  bound 7680
-zeroed  B unc4    cmp  n=  65536 fail=      0  slots<= 0    0.6s  pass
+A random  add  n= 100000 fail=      0  slots<= 3    1.6s  pass
+A random  sub  n= 100000 fail=      0  slots<= 4    1.7s  pass
+A random  neg  n= 100000 fail=      0  slots<= 2    0.9s  pass
+A random  mul  n= 100000 fail=      0  slots<= 2    2.0s  pass
+A random  div  n= 100000 fail=      0  slots<= 2    2.2s  pass
+A random  gcd  n= 100000 fail=      0  slots<= 3    3.2s  pass
+A random  cmp  n= 100000 fail=      0  slots<= 2    0.9s  pass
+A signed8 add  n= 261121 fail=      0  slots<= 3    2.7s  pass
+A signed8 sub  n= 261121 fail=      0  slots<= 4    2.9s  pass
+A signed8 neg  n=    511 fail=      0  slots<= 2    0.0s  pass
+A signed8 mul  n= 261121 fail=      0  slots<= 2    2.9s  pass
+A signed8 div  n=   6338 fail=      0  slots<= 2    0.1s  pass
+A signed8 gcd  n= 261121 fail=      0  slots<= 3    4.6s  pass
+A signed8 cmp  n= 261121 fail=      0  slots<= 2    1.7s  pass
+B random  add  n= 100000 fail=      0  slots<= 7    3.6s  pass
+B random  sub  n= 100000 fail=      0  slots<= 8    3.8s  pass
+B random  neg  n= 100000 fail=      0  slots<= 5    2.2s  pass
+B random  mul  n= 100000 fail=      0  slots<= 5    6.3s  pass
+B random  div  n= 100000 fail=      0  slots<= 6    4.3s  pass
+B random  gcd  n= 100000 fail=      0  slots<= 6    5.6s  pass
+B random  cmp  n= 100000 fail=      0  slots<= 4    1.8s  pass
+B signed8 add  n= 261121 fail=      0  slots<= 5    6.0s  pass
+B signed8 sub  n= 261121 fail=      0  slots<= 5    6.3s  pass
+B signed8 neg  n=    511 fail=      0  slots<= 3    0.0s  pass
+B signed8 mul  n= 261121 fail=      0  slots<= 3    7.8s  pass
+B signed8 div  n=   6338 fail=      0  slots<= 3    0.2s  pass
+B signed8 gcd  n= 261121 fail=      0  slots<= 4    8.6s  pass
+B signed8 cmp  n= 261121 fail=      0  slots<= 2    2.8s  pass
+B unc4    add  n=  65536 fail=      0  slots<= 3    1.2s  pass
+B unc4    sub  n=  65536 fail=      0  slots<= 3    1.3s  pass
+B unc4    neg  n=    256 fail=      0  slots<= 0    0.0s  pass
+B unc4    mul  n=  65536 fail=      0  slots<= 3    1.7s  pass
+B unc4    div  n=  19712 fail=      0  slots<= 0    0.4s  pass
+B unc4    gcd  n=  65536 fail=      0  slots<= 0    1.4s  pass
+B unc4    cmp  n=  65536 fail=      0  slots<= 0    0.6s  pass
 axes A mul                        n= 115625 fail=0
 axes A neg                        n= 115625 fail=0
-axes A add                        n=  58205 fail=0
-axes A sub                        n=  58205 fail=0
+axes A add                        n=  64344 fail=0
+axes A sub                        n=  64344 fail=0
 axes A div                        n= 108561 fail=0
-axes A add (cross-axis error)     n=  57420 fail=6139  e.g. ((0, 0), (1, 1), 'no error', 'error')
-axes A sub (cross-axis error)     n=  57420 fail=6139  e.g. ((0, 0), (1, 1), 'no error', 'error')
+axes A add (cross-axis error)     n=  51281 fail=0
+axes A sub (cross-axis error)     n=  51281 fail=0
 axes B add                        n= 165536 fail=0
 axes B collapse                   n= 662144 fail=0
 axes B sub                        n= 165536 fail=0
 axes B mul                        n= 165536 fail=0
 axes B neg                        n= 165536 fail=0
-total 104 s
+pool limit {'design': 'A', 'slots': 15, 'error_on_next': True, 'free_list': 'all free'}
+pool limit {'design': 'B', 'slots': 15, 'error_on_next': True, 'free_list': 'all free'}
+total 52 s

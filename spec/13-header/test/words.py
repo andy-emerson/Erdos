@@ -4,13 +4,13 @@ Routines follow Growing (spec 12, src/growing.nim) word by word: carries and bor
 their real length, each writing into a destination that checks the spec's bound and its own capacity.
 Pools, slots, the free list and the move-down are §1 Pools and §1 Result class.
 
-Memory the model has not written holds POISON (all ones), so a read of an unwritten word shows. ZERO_SLOTS (a
-diagnostic, not the spec) makes every allocation zero its slot.
+Memory the model has not written holds POISON (all ones), so a read of an unwritten word shows. Each result zeroes
+the rest of its slot, and the move-down zero-fills (§1, revised).
 """
 W = 4
 M = (1 << W) - 1          # a word's mask; also the free list's end marker (all ones)
 POISON = M
-ZERO_SLOTS = False        # set by round1.py for the diagnostic run
+MAX_SLOTS = (1 << W) - 1   # a slot index is W bits and all ones ends the free list
 
 
 class SpecError(Exception):
@@ -47,6 +47,11 @@ class Dst:
 
     def get(self, i):
         return self.mem[self.off + i]
+
+    def zero_rest(self, n):
+        """§1: the routine zeroes the rest of its slot, from the result's length to the slot's end"""
+        for i in range(n, self.cap):
+            self.mem[self.off + i] = 0
 
 
 def norm(mem, off, n):
@@ -282,19 +287,18 @@ class Pool:
             i = self.head
             self.head = self.mem[i * self.size]
         else:
-            if self.next == self.cap:               # double, from one slot at first use
+            if self.next == MAX_SLOTS:
+                raise SpecError(f"pool {self.c} full ({MAX_SLOTS} slots)")
+            if self.next == self.cap:               # double, from one slot at first use, at most MAX_SLOTS
                 old = self.mem
-                self.cap = max(1, 2 * self.cap)
+                self.cap = min(max(1, 2 * self.cap), MAX_SLOTS)
                 self.mem = old + [POISON] * (self.cap * self.size - len(old))
                 for k in range(len(old)):
                     old[k] = POISON
             i = self.next
             self.next += 1
-        if i > M:
-            raise SpecError(f"slot index {i} does not fit a {W}-bit word (pool {self.c})")
-        if ZERO_SLOTS:
-            for k in range(self.size):
-                self.mem[i * self.size + k] = 0
+        if i >= M:
+            raise SpecError(f"slot index {i} is the end marker or does not fit a {W}-bit word (pool {self.c})")
         return i
 
     def release(self, i):
@@ -432,5 +436,19 @@ class Res:
         dst, do = pools.ptr(t, j)
         for k in range(n):
             dst[do + k] = src[so + k]
+        for k in range(n, 1 << t):                  # zero-filled
+            dst[do + k] = 0
         pools.p[self.c].release(self.i)
         return t, j
+
+
+def part_copy(pools, c, w):
+    """§1 Operations: a pool number's words copied into a new slot; an inline number copies its word"""
+    if c == 0:
+        return 0, w
+    j = pools.p[c].alloc()
+    src, so = pools.ptr(c, w)
+    dst, do = pools.ptr(c, j)
+    for k in range(1 << c):
+        dst[do + k] = src[so + k]
+    return c, j

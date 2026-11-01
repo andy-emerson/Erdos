@@ -2,17 +2,16 @@
 value-only four-direction check, and writes out/r1.json and a summary.
 
 Each pair: operands built (test setup), the operation, then the checks:
-- value: the model's own word-by-word readout equals Python's (B: P - N);
+- value: the model's own word-by-word readout equals Python's (B: P - N); gcd(0, 0) must raise its error;
 - canonical: smallest class, zero as class 0 word 0 (A: header 0), spare bits 0; B: every part, and collapsed results
-  (division, gcd, and the output collapse run on every B result) have one part zero;
+  (division, gcd) have one part zero;
+- output collapse (B): each result is also output once as a single value, by collapse, and checked like a result;
 - bound: no routine wrote past its §1 bound;
 - release: after the operands, the result (and B's output collapse) are released, every slot is on its pool's free list;
 - error: the operation raised (overflow past a destination, class above 31, an index too wide for a word, or a Python
   fault such as reading past memory).
-After a failing pair the pools are reset, so one fault does not cascade.
-
-Modes: "literal" is the spec as written (unwritten memory holds all ones). "zeroed" is a diagnostic, not the spec:
-every allocation zeroes its slot, to see what fails besides stale words.
+After a failing pair the pools are reset, so one fault does not cascade. Unwritten memory holds all ones.
+A last check fills one pool to its 2^W - 1 slots: the next allocation must raise, and all must come back free.
 Usage: python3 round1.py [random pairs per operation, default 100000]"""
 import json
 import math
@@ -44,8 +43,25 @@ def run_pair(design, op, xa, xb, pools):
     mk = (lambda v: m.make(v)) if design == "A" else (lambda v: m.make(*v))
     val = (lambda v: v) if design == "A" else (lambda v: v[0] - v[1])
     a, b = val(xa), (val(xb) if xb is not None else None)
-    want = ref(op, a, b)
+    want = "error" if op == "gcd" and a == 0 and b == 0 else ref(op, a, b)
     fails = []
+    if want == "error":
+        try:
+            x, y = mk(xa), mk(xb)
+            try:
+                r = m.gcd(x, y)
+                fails.append(("value", "no error", m.value(r)))
+            except words.SpecError as ex:
+                if "gcd(0, 0)" not in str(ex):
+                    fails.append(("error", str(ex), None))
+            m.release(x)
+            m.release(y)
+            e = pools.check()
+            if e:
+                fails.append(("release", e, None))
+        except Exception as ex:                     # noqa: BLE001
+            fails.append(("error", f"{type(ex).__name__}: {ex}", None))
+        return want, fails
     try:
         x = mk(xa)
         y = mk(xb) if xb is not None else None
@@ -194,11 +210,10 @@ def size(c):
 
 # ------------------------------------------------------------------------------------------------ one task
 def task(args):
-    design, setname, op, mode, nrand, seed = args
-    words.ZERO_SLOTS = mode == "zeroed"
+    design, setname, op, nrand, seed = args
     t0 = time.time()
     pools = Pools()
-    stats = {"design": design, "set": setname, "op": op, "mode": mode, "n": 0, "pairs_failed": 0, "kinds": {},
+    stats = {"design": design, "set": setname, "op": op, "n": 0, "pairs_failed": 0, "kinds": {},
              "max_slots": 0}
     for c in cases(design, setname, op, nrand, seed):
         stats["n"] += 1
@@ -224,29 +239,50 @@ def task(args):
     return stats
 
 
+def pool_limit():
+    """§1 Pools: a pool holds at most 2^W - 1 slots; the next allocation is an error; all come back free"""
+    out = []
+    for design in ("A", "B"):
+        pools = Pools()
+        m = A(pools) if design == "A" else B(pools)
+        mk = (lambda v: m.make(v)) if design == "A" else (lambda v: m.make(v, 0))
+        vs = [mk(16 + k) for k in range(words.MAX_SLOTS)]
+        try:
+            mk(16 + words.MAX_SLOTS)
+            ok = False
+        except words.SpecError:
+            ok = True
+        for v in vs:
+            m.release(v)
+        e = pools.check()
+        out.append({"design": design, "slots": len(vs), "error_on_next": ok, "free_list": e or "all free"})
+    return out
+
+
 def main():
     nrand = int(sys.argv[1]) if len(sys.argv) > 1 else 100000
-    modes = sys.argv[2].split(",") if len(sys.argv) > 2 else ["literal", "zeroed"]
     tasks = []
-    for mode in modes:
-        for design, sets in (("A", ("signed8", "random")), ("B", ("signed8", "unc4", "random"))):
-            for s in sets:
-                for i, op in enumerate(OPS):
-                    tasks.append((design, s, op, mode, nrand, 20261101 + 100 * i + (design == "B")))
+    for design, sets in (("A", ("signed8", "random")), ("B", ("signed8", "unc4", "random"))):
+        for s in sets:
+            for i, op in enumerate(OPS):
+                tasks.append((design, s, op, nrand, 20261101 + 100 * i + (design == "B")))
     t0 = time.time()
     with Pool(2) as p:
         res = list(p.imap_unordered(task, tasks))
         ax = axes.run(nrand, 20261101)
+    lim = pool_limit()
     OUT.mkdir(exist_ok=True)
-    res.sort(key=lambda s: (s["mode"], s["design"], s["set"], OPS.index(s["op"])))
-    (OUT / "r1.json").write_text(json.dumps({"tasks": res, "axes": ax, "nrand": nrand,
+    res.sort(key=lambda s: (s["design"], s["set"], OPS.index(s["op"])))
+    (OUT / "r1.json").write_text(json.dumps({"tasks": res, "axes": ax, "pool_limit": lim, "nrand": nrand,
                                              "seconds": round(time.time() - t0)}, indent=1, default=str))
     for s in res:
         ks = ", ".join(f"{k} {v['count']}" for k, v in s["kinds"].items()) or "pass"
-        print(f"{s['mode']:7} {s['design']} {s['set']:7} {s['op']:4} n={s['n']:7} fail={s['pairs_failed']:7}"
+        print(f"{s['design']} {s['set']:7} {s['op']:4} n={s['n']:7} fail={s['pairs_failed']:7}"
               f"  slots<={s['max_slots']:2} {s['seconds']:6}s  {ks}")
     for k, v in ax.items():
         print(f"axes {k:28} n={v['n']:7} fail={v['fail']}" + (f"  e.g. {v['example']}" if v["fail"] else ""))
+    for x in lim:
+        print("pool limit", x)
     print(f"total {round(time.time() - t0)} s")
 
 

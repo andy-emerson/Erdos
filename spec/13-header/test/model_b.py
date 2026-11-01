@@ -1,7 +1,8 @@
 """model_b.py: design B (spec 13 §3), a number = (16-bit header, P's word, N's word), value P - N. Header: P's class in
-bits 0-4, N's in bits 8-12, bits 5-7 and 13-15 spare. Collapse is the only subtraction."""
-from words import (Res, part_len, part_ptr, part_value, part_canonical, part_release, part_from_int, Dst,
-                   r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
+bits 0-4, N's in bits 8-12, bits 5-7 and 13-15 spare. Collapse is the only subtraction. Revised spec: negate copies,
+results zero the rest of their slot, gcd's bound for a zero operand, gcd(0, 0) an error."""
+from words import (SpecError, Res, part_copy, part_len, part_ptr, part_value, part_canonical, part_release,
+                   part_from_int, Dst, r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
 
 
 class B:
@@ -28,6 +29,8 @@ class B:
     def _fin(self, res, dst, n):
         if dst.breach:
             self.breach.append(dst.breach)
+        if res.c:
+            dst.zero_rest(n)
         return res.finish(self.pools, n)
 
     # -------------------------------------------------------------------- outside the operations
@@ -63,8 +66,9 @@ class B:
 
     # -------------------------------------------------------------------- operations
     def neg(self, x):
+        """swap P and N, each part copied (§1: no two numbers share a slot)"""
         p, n = self.parts(x)
-        return self.join(n, p)
+        return self.join(part_copy(self.pools, *n), part_copy(self.pools, *p))
 
     def add(self, x, y):
         (p1, n1), (p2, n2) = self.parts(x), self.parts(y)
@@ -80,7 +84,11 @@ class B:
         return self.join(self._fin(rp, dp, lp), self._fin(rn, dn, ln))
 
     def sub(self, x, y):
-        return self.add(x, self.neg(y))
+        """negate, then add; the negation is a copy the subtract owns, so it releases it"""
+        t = self.neg(y)
+        r = self.add(x, t)
+        self.release(t)
+        return r
 
     def _mac2(self, dst, a, b, c, d):
         """dst = a*b + c*d by two multiply-accumulates"""
@@ -156,7 +164,9 @@ class B:
 
     def gcd(self, x, y):
         buf, (m1, _), yo, (m2, _) = self._load(x, y)
-        res = Res(self.pools, min(m1, m2))
+        if m1 == 0 and m2 == 0:
+            raise SpecError("gcd(0, 0)")
+        res = Res(self.pools, min(m1, m2) if m1 and m2 else max(m1, m2))
         dst = res.dst(self.pools)
         n = r_gcd_core(dst, buf, 0, m1, yo, m2)
         return self.join(self._fin(res, dst, n), (0, 0))

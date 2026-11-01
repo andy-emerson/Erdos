@@ -1,6 +1,7 @@
 """model_a.py: design A (spec 13 §2), a number = (8-bit header, word). Header bits 0-4 class, bit 5 spare, bits 6-7
-direction d (1, i, -1, -i). Every operation follows §2's header arithmetic literally, on 8 bits."""
-from words import (SpecError, Dst, Res, part_len, part_ptr, part_value, part_canonical, part_release, part_from_int,
+direction d (1, i, -1, -i). Every operation follows §2's header arithmetic literally, on 8 bits (revised spec:
+zero has no axis, negate copies, results zero the rest of their slot)."""
+from words import (SpecError, Res, part_len, part_copy, part_ptr, part_value, part_canonical, part_release, part_from_int,
                    r_add, r_mac, r_absdiff, r_cmp, r_div_core, r_gcd_core, POISON)
 
 D = 0xC0
@@ -21,6 +22,8 @@ class A:
     def _done(self, res, dst, n, dirbits):
         if dst.breach:
             self.breach.append(dst.breach)
+        if res.c:
+            dst.zero_rest(n)
         c, w = res.finish(self.pools, n)
         if n == 0:
             return 0, 0                            # zero is header 0
@@ -60,14 +63,25 @@ class A:
         part_release(self.pools, x[0] & 31, x[1])
 
     # -------------------------------------------------------------------- operations
+    @staticmethod
+    def _zero(x):
+        return x == (0, 0)
+
+    def _copy(self, x):
+        c, w = part_copy(self.pools, x[0] & 31, x[1])
+        return (x[0] & ~31) | c, w
+
     def neg(self, x):
-        h, w = x
-        h ^= 0x80
-        if (h & 31) == 0 and w == 0:
-            h = 0                                  # zero is header 0
-        return h, w
+        if self._zero(x):
+            return 0, 0                            # negating zero gives zero
+        h, w = self._copy(x)
+        return h ^ 0x80, w
 
     def add(self, x, y):
+        if self._zero(y):                          # zero has no axis: return the other
+            return self._copy(x)
+        if self._zero(x):
+            return self._copy(y)
         (h1, w1), (h2, w2) = x, y
         d1, d2 = h1 & D, h2 & D
         n1, n2 = self._len(h1, w1), self._len(h2, w2)
@@ -88,7 +102,16 @@ class A:
         raise SpecError("sum across axes")
 
     def sub(self, x, y):
-        return self.add(x, self.neg(y))
+        """adds the negation; with a zero operand, the other (the second negated). The negation is a copy (§1), a
+        value the subtract owns, so it releases it."""
+        if self._zero(y):
+            return self._copy(x)
+        if self._zero(x):
+            return self.neg(y)
+        t = self.neg(y)
+        r = self.add(x, t)
+        self.release(t)
+        return r
 
     def mul(self, x, y):
         (h1, w1), (h2, w2) = x, y
@@ -123,7 +146,9 @@ class A:
     def gcd(self, x, y):
         (h1, w1), (h2, w2) = x, y
         n1, n2 = self._len(h1, w1), self._len(h2, w2)
-        res = Res(self.pools, min(n1, n2))
+        if n1 == 0 and n2 == 0:
+            raise SpecError("gcd(0, 0)")
+        res = Res(self.pools, min(n1, n2) if n1 and n2 else max(n1, n2))
         buf, n1, n2 = self._load(x, y)
         dst = res.dst(self.pools)
         n = r_gcd_core(dst, buf, 0, n1, n1, n2)

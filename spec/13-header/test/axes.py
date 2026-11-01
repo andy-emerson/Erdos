@@ -1,10 +1,10 @@
 """axes.py: the four-direction check of spec 13 §4, value only (no headers' classes, words or pools), against Gaussian
 integers held as (re, im) pairs of Python integers.
 
-A: a number is (d, m), value m * i^d, with §2's direction arithmetic on the header's direction bits (8 bits, D = 0xC0).
+A: a number is (d, m), value m * i^d, with §2's direction arithmetic on the header's direction bits (8 bits, D = 0xC0);
+zero has no axis: an add with a zero operand returns the other (a subtract, the second negated).
 B: a number is four magnitudes (m0, m1, m2, m3) on 1, i, -1, -i; a product of slots j and k lands in slot (j + k) mod 4.
-Collapse (the spec gives B's two-slot rule; four slots use it per axis): |m0 - m2| to slot 0 or 2 by its borrow, and
-|m1 - m3| to slot 1 or 3."""
+Collapse per axis (§4): |m0 - m2| to slot 0 or 2 by its borrow, and |m1 - m3| to slot 1 or 3."""
 import random
 
 D = 0xC0
@@ -43,6 +43,10 @@ def a_neg(x):
 
 
 def a_add(x, y):
+    if y[1] == 0:
+        return x
+    if x[1] == 0:
+        return y
     h1, h2 = a_hd(x) & D, a_hd(y) & D
     if h1 == h2:
         return a_mk(h1 >> 6, x[1] + y[1])
@@ -53,6 +57,10 @@ def a_add(x, y):
 
 
 def a_sub(x, y):
+    if y[1] == 0:
+        return x
+    if x[1] == 0:
+        return a_neg(y)
     return a_add(x, a_neg(y))
 
 

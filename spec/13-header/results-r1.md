@@ -1,10 +1,12 @@
-# Spec 13, round 1: results (third run)
+# Spec 13, round 1: results (fourth run)
 
-Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 55 s on 2 cores. No random count was reduced.
+Nov 1, 2026. Round 1 of [`v0.1.md`](v0.1.md) §4, as revised the same day, correctness only, in Python at $W = 4$. Code: [`test/`](test/) (`words.py` shared routines, pools and result classes; `model_a.py`; `model_b.py`; `axes.py` the four-direction check; `round1.py` the harness). Raw output: `test/out/r1.json`, `test/out/run.txt`. Run with `python3 test/round1.py` from `spec/13-header`. The full run takes 56 s on 2 cores. No random count was reduced.
 
-**Verdict: both designs pass every check, and subtract holds no temporary beyond the move-down slot.** No open spec issues.
+**Verdict: both designs pass every check, A under its revised §2, and subtract still holds no temporary beyond the move-down slot.** No new spec issues.
 
-**Third run, the change:** subtract now copies nothing. A applies the add rules with `h2 xor 0x80` in place of h2, and B adds the crossed parts $P_1 + N_2$ and $N_1 + P_2$. An add with a zero operand returns a copy of the other; a subtract with a zero first operand returns a negated copy of the second. (The second run passed too, but its subtract copied the negation, N1, and the zero rule's "returns the other" did not say copy, N2. The spec now takes both fixes.)
+**Fourth run, the change:** A's §2 now follows the author's notes (`book/notes-designs-a-b.md`). A zero keeps whatever direction its operation gives, and negate is `h xor 0x80` for zero too. Add branches on `t = (h1 xor h2) and D`, and a zero's only test is in the different-axes branch. Compare tests zero first. B is unchanged.
+
+**Third run (also passed):** subtract now copies nothing. A applies the add rules with `h2 xor 0x80` in place of h2, and B adds the crossed parts $P_1 + N_2$ and $N_1 + P_2$. An add with a zero operand returns a copy of the other; a subtract with a zero first operand returns a negated copy of the second. (The second run passed too, but its subtract copied the negation, N1, and the zero rule's "returns the other" did not say copy, N2. The spec now takes both fixes.)
 
 ## First run (superseded)
 
@@ -12,7 +14,7 @@ The first run, on v0.1 before the revision, failed in both designs from four cau
 - **F1:** words above a value's length in its slot were never zeroed, so the length scan read stale words (for example, 0xFF + 1 gave 0xF100). Now results and the move-down zero-fill their slot.
 - **F2:** negate shared the operand's slot, so releasing both released it twice. Now negate copies into a new slot.
 - **F3:** gcd's bound min(n1, n2) was 0 when one operand was zero (gcd(16, 0) overflowed the one-word local). Now the bound is the nonzero operand's length, and gcd(0, 0) is an error.
-- **F4:** in A, zero plus an off-axis value hit the cross-axis error. Now an add with a zero operand returns the other.
+- **F4:** in A, zero plus an off-axis value hit the cross-axis error. Since the fourth run, a zero on a different axis takes the other operand's direction, and the add runs as same-direction.
 
 The first run's spec issues are resolved by the same revision:
 - division writes exactly n1 − n2 + 1 words and reads past its length as 0;
@@ -37,9 +39,13 @@ Pool growth copies memory to a new list and poisons the old one, so a stale poin
 The revision is followed literally:
 - every routine zeroes the rest of its slot after writing, and the move-down zero-fills;
 - negate copies a pool number into a new slot, and an inline number copies its word;
-- A's add and subtract, before any direction rule, return a copy of the other operand when one is zero (for a subtract with a zero first operand, a negated copy of the second);
-- A's subtract applies the add rules with `h2 xor 0x80` in place of h2, and B's subtract adds the crossed parts, both copying nothing;
-- negating zero gives header 0;
+- A's add branches on `t = (h1 xor h2) and D`:
+  - same ($t = 0$): $m_1 + m_2$, direction `h1 and D`;
+  - opposite (`0x80`): the absolute difference with borrow $b$, direction `(h1 and D) + (b shl 7)`;
+  - different axes (`0x40` or `0xC0`): if $m_1 = 0$, h1 takes h2's direction; if $m_2 = 0$, h1's stays; the add then runs as same-direction; otherwise the cross-axis error. A zero is tested nowhere else.
+- A's subtract runs add with `h2 xor 0x80`, and B's adds the crossed parts, both copying nothing.
+- A zero keeps the direction its operation gives: $-5 + 5$, $-5 \cdot 0$, $0 / {-3}$, $\text{neg}(0)$ and $-300 - (-300)$ each give header `0x80`, word 0; $5 + (-5)$ and $0 - 0$ give header 0. Negate is `h xor 0x80` for zero too, and nothing normalises zero.
+- A's compare: two zeros are equal; with one zero, the other's sign decides (1 and $i$ positive); then opposite directions (the positive is larger), then the same direction (magnitudes, reversed when negative); different axes raise an error.
 - gcd's bound is the nonzero operand's length when one is zero, and gcd(0, 0) raises an error before any allocation;
 - division writes exactly n1 − n2 + 1 words, reading dividend words past its current length as 0;
 - a pool's 16th allocation is an error.
@@ -47,8 +53,8 @@ The revision is followed literally:
 ## Checks
 
 Each case runs the operation and then these checks. A failing case resets the pools, though none failed.
-- **value:** the model's word-by-word readout equals Python's result (for B, $P - N$). For gcd(0, 0), the operation must raise its error.
-- **canonical:** every A result, every part of every B result and every collapsed B result (division, gcd) is in its smallest class, zero is class 0 word 0 (A header 0), and spare bits are 0.
+- **value:** the model's word-by-word readout equals Python's result (for A, $m \cdot i^d$, any zero equal to any zero; for B, $P - N$). For gcd(0, 0), with zeros in any direction, the operation must raise its error.
+- **canonical:** every A result is in its smallest class with spare bit 0 (a zero in any direction, §2). Every part of every B result and every collapsed B result (division, gcd) is in its smallest class, with zero as class 0 word 0 and spare bits 0.
 - **output collapse (B):** each B result is also output once as a single value, by collapse. Its value and its canonical form (one part zero) are checked. This exercises collapse into a slot. The spec now collapses only when a single value is needed, and this output step is that case.
 - **bound:** no routine writes past its §1 bound. The zero-fill of the rest of the slot is the spec's own write and is exempt.
 - **temporary (subtract):** the subtract releases no value; every slot it releases is a move-down's predicted slot; and the slots it allocates, less those it releases, are exactly the slots its result holds. So the only temporary is the move-down slot. A copying subtract fails this check: I tried the second run's subtract, which allocates and then releases the negation.
@@ -56,17 +62,17 @@ Each case runs the operation and then these checks. A failing case resets the po
 - **error:** no operation raises an error the spec does not call for: an overflow past a slot or the one-word local, a class above 31, a full pool, or a Python fault.
 
 The sets:
-- **signed8:** every pair of signed values $|v| < 2^8$ (261,121 pairs). For negate, every value (511). For division, every pair with $b \ne 0$ and $b \mid a$ (6,338). B takes the collapsed form.
+- **signed8:** every pair of signed values $|v| < 2^8$. A has zero in both directions 0 and 2: 262,144 pairs, 512 values for negate, 6,848 division pairs. B (collapsed form) has 261,121 pairs, 511 values and 6,338 division pairs. Division pairs have $b \ne 0$ and $b \mid a$.
 - **unc4 (B only):** every pair of uncollapsed $(P, N)$ with both parts below $2^4$ (65,536 pairs; negate 256; division 19,712 pairs whose value divides).
-- **random:** 100,000 cases per operation and design. Values have up to 8 words, with zeros and equal magnitudes each forced at 1/16. B's parts are drawn on their own, and $P = N$ is forced at 1/16. Division builds $a = bq$. Gcd gives half its pairs a common factor.
+- **random:** 100,000 cases per operation and design. Values have up to 8 words, with zeros and equal magnitudes each forced at 1/16. B's parts are drawn on their own, and $P = N$ is forced at 1/16. Division builds $a = bq$. Gcd gives half its pairs a common factor. A's random zeros take direction 0 or 2 at even odds (6,372 and 6,362 zero operands in the add set).
 
-The gcd(0, 0) error cases are 1 in each signed8 set, 256 in unc4, 535 in A random and 613 in B random. All raised the error and left every slot free.
+The gcd(0, 0) error cases are 4 in A signed8 (each pair of zero directions), 1 in B signed8, 256 in unc4, 562 in A random and 613 in B random. All raised the error and left every slot free.
 
 ### Results per design, set and operation
 
 | design | set | add | sub | neg | mul | div | gcd | cmp |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A | signed8 | 261121 pass | 261121 pass | 511 pass | 261121 pass | 6338 pass | 261121 pass | 261121 pass |
+| A | signed8 | 262144 pass | 262144 pass | 512 pass | 262144 pass | 6848 pass | 262144 pass | 262144 pass |
 | A | random | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass | 100000 pass |
 | B | signed8 | 261121 pass | 261121 pass | 511 pass | 261121 pass | 6338 pass | 261121 pass | 261121 pass |
 | B | unc4 | 65536 pass | 65536 pass | 256 pass | 65536 pass | 19712 pass | 65536 pass | 65536 pass |
@@ -74,7 +80,7 @@ The gcd(0, 0) error cases are 1 in each signed8 set, 256 in unc4, 535 in A rando
 
 "Pass" covers every check above with zero failures: value, canonical, spare bits, output collapse (B), bound, temporary (subtract), release and error. The most slots a pool held at once was 3 in A and 7 in B.
 
-**Subtract slots.** Every subtract (787,778 in all) passed the temporary check. An A subtract allocates at most 2 slots: the predicted result slot and, on a move-down, the smaller slot it moves to, after which the predicted slot is released. A B subtract allocates at most 4 slots, that pair for each part. The move-downs were 79,410 in A signed8, 18,858 in A random, 325,650 in B signed8, 69,120 in B unc4 and 75,689 in B random.
+**Subtract slots.** Every subtract (788,801 in all) passed the temporary check. An A subtract allocates at most 2 slots: the predicted result slot and, on a move-down, the smaller slot it moves to, after which the predicted slot is released. A B subtract allocates at most 4 slots, that pair for each part. The move-downs were 80,430 in A signed8, 21,630 in A random, 325,650 in B signed8, 69,120 in B unc4 and 75,689 in B random.
 
 **Pool limit.** For each design, 15 class-1 values were made. The 16th allocation raised the error, and after release all 15 slots were on the free list. Pass for both.
 
@@ -82,15 +88,15 @@ The gcd(0, 0) error cases are 1 in each signed8 set, 256 in unc4, 535 in A rando
 
 ### Four directions (value only, against Gaussian integers)
 
-A: every pair with magnitude below $2^5$ in all four directions, plus 100,000 random pairs with up to 128-bit magnitudes. B: every pair of four-slot values with each slot below 4, plus 100,000 random pairs.
+A: every pair with magnitude below $2^5$ in all four directions, zeros in every direction included, plus 100,000 random pairs with up to 128-bit magnitudes. B: every pair of four-slot values with each slot below 4, plus 100,000 random pairs.
 
 | check | cases | failures |
 | --- | --- | --- |
-| A multiply | 115625 | 0 |
-| A divide ($a = bq$) | 108561 | 0 |
-| A negate | 115625 | 0 |
-| A add (within an axis, or a zero operand) | 64344 | 0 |
-| A subtract (same) | 64344 | 0 |
+| A multiply | 116384 | 0 |
+| A divide ($a = bq$) | 108933 | 0 |
+| A negate | 116384 | 0 |
+| A add (within an axis, or a zero operand in any direction) | 65103 | 0 |
+| A subtract (same) | 65103 | 0 |
 | A add, error raised exactly for nonzero sums across axes | 51281 | 0 |
 | A subtract, same | 51281 | 0 |
 | B add (across axes included) | 165536 | 0 |
@@ -101,7 +107,9 @@ A: every pair with magnitude below $2^5$ in all four directions, plus 100,000 ra
 
 ## Spec issues
 
-None open. The second run's N1 and N2 are now in the spec:
+None new. One note: compare across four directions (for example, $i$ against $-i$, or a zero against $-i$) is defined in §2 but is in neither round 1 list. The integer runs give it only directions 0 and 2, and the four-direction check does not cover compare. The model implements it but nothing checks it.
+
+Earlier runs' issues, all in the spec now. The second run's N1 and N2:
 - **N1:** subtract copied its negation, a temporary beyond the move-down slot. The temporary check above confirms it is gone.
 - **N2:** "returns the other" now says "a copy".
 

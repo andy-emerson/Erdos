@@ -41,10 +41,10 @@ def ref(op, a, b):
 
 # ------------------------------------------------------------------------------------------------ one pair
 def run_pair(design, op, xa, xb, pools):
-    """xa, xb: A ints; B (P, N) pairs. Returns a list of (kind, detail, got)."""
+    """xa, xb: A ints, or "-0" for zero in direction 2; B (P, N) pairs. Returns a list of (kind, detail, got)."""
     m = A(pools) if design == "A" else B(pools)
-    mk = (lambda v: m.make(v)) if design == "A" else (lambda v: m.make(*v))
-    val = (lambda v: v) if design == "A" else (lambda v: v[0] - v[1])
+    mk = (lambda v: m.make(0, 2) if v == "-0" else m.make(v)) if design == "A" else (lambda v: m.make(*v))
+    val = (lambda v: iv(v)) if design == "A" else (lambda v: v[0] - v[1])
     a, b = val(xa), (val(xb) if xb is not None else None)
     want = "error" if op == "gcd" and a == 0 and b == 0 else ref(op, a, b)
     fails = []
@@ -115,12 +115,18 @@ def run_pair(design, op, xa, xb, pools):
 
 
 # ------------------------------------------------------------------------------------------------ the sets
-def signed8(op):
-    vs = range(-255, 256)
+def iv(v):
+    """an A input's value: "-0" is zero in direction 2"""
+    return 0 if v == "-0" else v
+
+
+def signed8(op, zeros=(0,)):
+    """every signed value below 2^8; zeros lists the zeros (A: 0 and "-0", zero in directions 0 and 2)"""
+    vs = list(range(-255, 0)) + list(zeros) + list(range(1, 256))
     if op == "neg":
         return [(a, None) for a in vs]
     if op == "div":
-        return [(a, b) for b in vs if b for a in vs if a % b == 0]
+        return [(a, b) for b in vs if iv(b) for a in vs if iv(a) % iv(b) == 0]
     return [(a, b) for a in vs for b in vs]
 
 
@@ -150,6 +156,12 @@ def sgn(rng, v):
 
 
 def rand_a(op, rng):
+    a, b = rand_a1(op, rng)
+    z = lambda v: "-0" if v == 0 and rng.random() < 0.5 else v          # noqa: E731  zeros in direction 0 or 2
+    return z(a), (None if b is None else z(b))
+
+
+def rand_a1(op, rng):
     if op == "div":
         b = sgn(rng, mag(rng, zero=False))
         q = 1 if rng.random() < 1 / 16 else mag(rng, 1, 8 - nwords(b) + 1)
@@ -199,7 +211,7 @@ def rand_b(op, rng):
 
 def cases(design, setname, op, nrand, seed):
     if setname == "signed8":
-        cs = signed8(op)
+        cs = signed8(op, (0, "-0") if design == "A" else (0,))
         if design == "B":
             cs = [((a, 0) if a >= 0 else (0, -a), None if b is None else ((b, 0) if b >= 0 else (0, -b)))
                   for a, b in cs]
@@ -216,7 +228,7 @@ def size(c):
     for v in c:
         if v is None:
             continue
-        flat += list(v) if isinstance(v, tuple) else [v]
+        flat += list(v) if isinstance(v, tuple) else [iv(v)]
     return max(abs(v).bit_length() for v in flat), sum(abs(v) for v in flat)
 
 

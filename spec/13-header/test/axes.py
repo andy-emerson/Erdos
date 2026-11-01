@@ -1,8 +1,10 @@
 """axes.py: the four-direction check of spec 13 §4, value only (no headers' classes, words or pools), against Gaussian
 integers held as (re, im) pairs of Python integers.
 
-A: a number is (d, m), value m * i^d, with §2's direction arithmetic on the header's direction bits (8 bits, D = 0xC0);
-zero has no axis: an add with a zero operand returns the other (a subtract, the second negated).
+A: a number is (d, m), value m * i^d, with §2's direction arithmetic on the header's direction bits (8 bits, D = 0xC0).
+A zero keeps whatever direction its operation gives. Add branches on t = (h1 xor h2) and D; on different axes a zero
+operand takes the other's direction and the add runs as same-direction, else the cross-axis error. Subtract is add
+with h2 xor 0x80.
 B: a number is four magnitudes (m0, m1, m2, m3) on 1, i, -1, -i; a product of slots j and k lands in slot (j + k) mod 4.
 Collapse per axis (§4): |m0 - m2| to slot 0 or 2 by its borrow, and |m1 - m3| to slot 1 or 3."""
 import random
@@ -30,7 +32,7 @@ def a_val(x):
 
 
 def a_mk(d, m):
-    return (0, 0) if m == 0 else (d, m)
+    return d, m
 
 
 def a_hd(x):
@@ -38,23 +40,24 @@ def a_hd(x):
 
 
 def a_neg(x):
-    h = a_hd(x) ^ 0x80
-    return a_mk(h >> 6 & 3, x[1])
+    return (((a_hd(x) ^ 0x80) & 0xFF) >> 6, x[1])
 
 
 def a_add(x, y, flip=0):
-    """flip = 0x80 is subtract: the add rules with h2 xor 0x80 in place of h2"""
-    if y[1] == 0:
-        return x
-    if x[1] == 0:
-        return a_neg(y) if flip else y
+    """flip = 0x80 is subtract: add with h2 xor 0x80"""
     h1, h2 = a_hd(x) & D, (a_hd(y) ^ flip) & D
-    if h1 == h2:
-        return a_mk(h1 >> 6, x[1] + y[1])
-    if h1 ^ h2 == 0x80:
-        b = int(x[1] < y[1])
-        return a_mk(((h1 + (b << 7)) & 0xFF) >> 6, abs(x[1] - y[1]))
-    raise AxisError("sum across axes")
+    m1, m2 = x[1], y[1]
+    t = (h1 ^ h2) & D
+    if t in (0x40, 0xC0):
+        if m1 == 0:
+            h1 = h2
+        elif m2 != 0:
+            raise AxisError("sum across axes")
+        t = 0
+    if t == 0:
+        return h1 >> 6, m1 + m2
+    b = int(m1 < m2)
+    return ((h1 + (b << 7)) & 0xFF) >> 6, abs(m1 - m2)
 
 
 def a_sub(x, y):
@@ -62,16 +65,17 @@ def a_sub(x, y):
 
 
 def a_mul(x, y):
-    return a_mk((((a_hd(x) & D) + (a_hd(y) & D)) & 0xFF) >> 6, x[1] * y[1])
+    return (((a_hd(x) & D) + (a_hd(y) & D)) & 0xFF) >> 6, x[1] * y[1]
 
 
 def a_div(x, y):
     assert x[1] % y[1] == 0
-    return a_mk((((a_hd(x) & D) - (a_hd(y) & D)) & 0xFF) >> 6, x[1] // y[1])
+    return (((a_hd(x) & D) - (a_hd(y) & D)) & 0xFF) >> 6, x[1] // y[1]
 
 
 def a_canonical(x):
-    return x[1] != 0 or x == (0, 0)
+    """any direction 0..3; a zero in any direction"""
+    return 0 <= x[0] < 4 and x[1] >= 0
 
 
 # ------------------------------------------------------------------------------------------------ B
@@ -131,8 +135,9 @@ def run(nrand, seed):
             if c["example"] is None:
                 c["example"] = case
 
-    # A: every pair with magnitudes below 2^5, all four directions; then random magnitudes up to 32 words of 4 bits
-    small = [(0, 0)] + [(d, m) for d in range(4) for m in range(1, 32)]
+    # A: every pair with magnitudes below 2^5, all four directions, zeros in every direction; then random magnitudes up
+    # to 32 words of 4 bits
+    small = [(d, m) for d in range(4) for m in range(32)]
     big = lambda: a_mk(rng.randrange(4), 0 if rng.random() < 1 / 16 else rng.getrandbits(rng.randint(1, 128)))  # noqa
     for xs in (small, None):
         pairs = ([(x, y) for x in xs for y in xs] if xs else

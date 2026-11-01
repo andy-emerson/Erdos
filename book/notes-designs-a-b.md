@@ -26,43 +26,55 @@ So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$.
 
 On each axis, 1 and $i$ are the **positive** directions, and $-1$ and $-i$ the **negative** ones. Two directions are **opposite** when they differ by 2, as 1 and $-1$ do, and lie on **different axes** when they differ by 1, as 1 and $i$ do. A difference of 1 can run either way: 1 and $-i$ differ by $-1$, which is 3 mod 4.
 
-### Negation
-
-Negation adds 2 to the direction:
-
-$$-(m, d) = (m,\ d + 2),$$
-
-since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Negating zero gives a zero.
-
 ### Comparison
 
-Two numbers on the same axis can be compared, in both magnitude and direction. On the real axis, $-7 < -3 < 3 < 7$; on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$. Numbers on different axes cannot be ordered, but their magnitudes can: dropping the direction gives the **absolute value**, $|(m, d)| = m$, and absolute values compare as magnitudes.
+Comparison comes first, because addition is built on it. Two numbers on the same axis can be compared in both magnitude and direction: on the real axis, $-7 < -3 < 3 < 7$, and on the imaginary axis, in the same way, $-7i < -3i < 3i < 7i$. Numbers on different axes cannot be ordered, but their magnitudes can: dropping the direction gives the **absolute value**, $|(m, d)| = m$, and absolute values compare as magnitudes.
 
-A comparison makes two checks. The magnitude check comes first, since the zero cases are the ones that most need catching. It finds whether both magnitudes are 0, one is 0, or neither, and if neither, whether they are equal or which is larger. Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So when a magnitude is 0, its direction tells nothing. The direction check comes second, and it finds whether the directions are the same, opposite, or on different axes.
+A comparison is made of three checks, each with three possible answers.
 
-Together the two checks place a pair of numbers in one cell of a grid: the magnitude check picks the row, and the direction check the column.
+- **The zero check** asks whether each magnitude is 0. Both are 0, one is 0, or neither is.
+- **The direction check** asks how the two directions relate. They are the same, opposite, or on different axes.
+- **The magnitude check** asks how the two magnitudes relate. They are equal, the first is larger, or the second is larger.
 
-| Magnitudes | Same direction | Opposite directions | Different axes |
-| --- | --- | --- | --- |
-| both 0 | equal | equal | equal |
-| one is 0 | the other's direction decides | the other's direction decides | the other's direction decides |
-| equal, not 0 | equal | the positive one is larger | not ordered; equal absolute values |
-| $m_1 > m_2$ | positive: the first is larger; negative: the second is larger | the positive one is larger | not ordered; the first has the larger absolute value |
-| $m_1 < m_2$ | positive: the second is larger; negative: the first is larger | the positive one is larger | not ordered; the second has the larger absolute value |
+Not every check is needed every time. Zero is neither positive nor negative, since it lies in no direction, and it is both real and imaginary, since it lies on both axes. So a zero's direction tells nothing, and the zero check comes first. Its answer decides what, if anything, to check next, and so on down a tree:
 
-In the first two rows the answer is the same in every column, so no direction needs checking: it is either irrelevant or simply carried along. "The other's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$).
+```text
+zero check
+├── both zero      → equal
+├── one zero       → the other number's direction decides
+└── neither zero   → direction check
+    ├── the same       → magnitude check
+    │   ├── equal          → equal
+    │   ├── first larger   → positive: the first is larger;  negative: the second is larger
+    │   └── second larger  → positive: the second is larger; negative: the first is larger
+    ├── opposite       → the positive one is larger
+    └── different axes → not ordered; the magnitude check compares their absolute values
+```
+
+"The other number's direction decides" means that a positive number is larger than zero and a negative one smaller. This holds even when zero's own direction lies on the other axis, as in $(0, 0)$ against $3i$: zero lies on both axes, so $0 < 3i$. In the same direction, the larger magnitude is the larger number when the direction is positive ($7 > 3$), and the smaller number when it is negative ($-7 < -3$).
+
+Every path through the tree asks at most three questions, and the magnitude check is needed on only one branch.
 
 ### Addition
 
-The first step of an addition is the comparison's two checks. They place the pair in the same grid, and each cell now gives the sum. The cells fall into six cases, A to F:
+Addition is the most involved operation here, and the reason is the problem these notes began with. The arithmetic we want lies on a line, which runs forever in both directions, but the machine's arithmetic lies on a circle, which wraps around. Going from the line to the circle is easy: every number simply lands somewhere on the clock. Coming back, from a result on the clock to the right place on the line, takes care, and addition is where that care is needed. The comparison's checks are what supply it.
 
-| Magnitudes | Same direction | Opposite directions | Different axes |
-| --- | --- | --- | --- |
-| both 0 | **A** zero | **A** zero | **A** zero |
-| one is 0 | **B** the other number | **B** the other number | **B** the other number |
-| equal, not 0 | **C** add the magnitudes | **A** zero | **F** an expression |
-| $m_1 > m_2$ | **C** add the magnitudes | **D** subtract, first direction | **F** an expression |
-| $m_1 < m_2$ | **C** add the magnitudes | **E** subtract and negate, second direction | **F** an expression |
+So an addition begins with the same checks, in the same tree, and each leaf now gives the sum. The magnitude check moves to a different branch: addition needs it for opposite directions, where comparison did not, and does not need it for the same direction, where comparison did.
+
+```text
+zero check
+├── both zero      → A: zero
+├── one zero       → B: the other number
+└── neither zero   → direction check
+    ├── the same       → C: add the magnitudes
+    ├── opposite       → magnitude check
+    │   ├── equal          → A: zero
+    │   ├── first larger   → D: subtract, first direction
+    │   └── second larger  → E: subtract and negate, second direction
+    └── different axes → F: an expression
+```
+
+There are six cases, A to F.
 
 **Case A, zero.** The sum is zero: either both numbers are zero, or two equal magnitudes point in opposite directions and cancel. The checks have already found this, so no arithmetic is done.
 
@@ -80,19 +92,27 @@ $$(m_1, d_1) + (m_2, d_2) = (m_1 - m_2,\ d_1).$$
 
 Since $m_1 > m_2$, the subtraction does not wrap, and the clock lands on the true difference. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$.
 
-**Case E, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's negation.
+**Case E, opposite directions, the first magnitude smaller.** The second number wins, so the sum takes the second direction. Its magnitude is $m_2 - m_1$, which is $-(m_1 - m_2)$: the clock's subtraction $m_1 - m_2$, followed by the clock's own negation, which is an operation on magnitudes, not the negation of numbers below.
 
 $$(m_1, d_1) + (m_2, d_2) = (-(m_1 - m_2),\ d_2), \quad \text{both steps on the clock}.$$
 
-The subtraction wraps, and the negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$, case E. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
+The subtraction wraps, and the clock's negation undoes the wrap. For example, on a 16-hour clock, $3 + (-5)$ is $(3, 0) + (5, 2)$, case E. The clock's $3 - 5$ lands on 14, its negation of 14 lands on 2, and the direction is the second's, 2. The sum is $(2, 2)$, which is $-2$.
 
 **Case F, different axes.** A sum such as $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A holds it as an expression, which is still to be worked out (see the end of these notes). Integers never reach this case, since their directions are always 1 and $-1$.
 
 Cases D and E are the only places a magnitude is subtracted, and the only places where the magnitudes decide the direction.
 
+### Negation
+
+Negation adds 2 to the direction:
+
+$$-(m, d) = (m,\ d + 2),$$
+
+since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Negating zero gives a zero.
+
 ### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's two checks then find the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case E, which gives $-2$ as above.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the case, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$, case E, which gives $-2$ as above.
 
 ### Multiplication
 

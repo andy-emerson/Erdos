@@ -137,3 +137,76 @@ Nov 1, 2026, on the revised v0.1 (905 words, against 794 for spec 12). Nothing w
 ### Open questions (§6)
 
 The four entries match the first pass: no Inline build, pools never shrink, the parallel lists count as one stored structure, and the mixed job is dropped unless the author sets a rate. I agree with each recommendation.
+
+## Third pass
+
+Nov 1, 2026, on the revision with two designs, A and B, and two rounds (1289 words, against 794 for spec 12). Nothing was built or run.
+
+**Verdict: needs revision, but small.** B's rules are correct: collapse, zero, negation and the L + 2 prediction all hold. There is one blocking item, which a one-line fix settles: the shared multiply-accumulate bound now lets A's multiply write one word past its slot. Four should-fix items remain. Three are design points:
+- the timed builds are hand machine code, while Control is compiled Nim;
+- round 1's four-slot B model is not specified;
+- B's collapse adds temporaries that rule 4 counts.
+
+The fourth is length: about 400 words can go.
+
+### Second-pass items
+
+N1 (rounding cost), N3 (predicted class 0) and N4 (move-down wording) are resolved. N2 (bounds) is resolved for every routine except multiply-accumulate (T1). N5 is unchanged and stays minor.
+
+### B's rules checked
+
+- **Value and negation.** P − N is preserved by add, (P1 + P2) − (N1 + N2). Negate is a swap. Multiply holds because (P1 − N1)(P2 − N2) = (P1P2 + N1N2) − (P1N2 + N1P2).
+- **Collapse.** When P = N, |P − N| = 0 with borrow 0, so the result goes to P and N becomes 0, giving (0, 0). When P ≠ N, the nonzero part is the magnitude and the borrow picks its side. So collapse never produces a negative zero: the only collapsed zero is (0, 0), class 0 in both bytes. Uncollapsed zeros such as (5, 5) exist, but compare, division, gcd and output always collapse first, so none of them is ever seen.
+- **Add prediction L + 1.** This is sound: two parts of class at most L sum to at most 2^L words plus one bit.
+- **Multiply prediction L + 2.** This is sound and is the smallest class bound. Each product fills at most class L + 1 exactly (2^(L+1) words), and the sum of two such products can carry one more bit, so the next class is L + 2. Two class-0 inputs give at most 2 words plus a bit, which is class 2. The cost is that almost every B multiply allocates two slots four times too wide and moves both down. That is the honest general cost and is already listed among the known costs (T7 suggests a cheaper general prediction).
+- **Collapse prediction max(c_P, c_N).** This is sound.
+- **Compare on uncollapsed operands.** Collapsing both operands and then using A's rule is correct, because each collapsed operand has direction 0 (P) or 2 (N).
+- **Division and gcd.** These collapse their operands, then follow A's direction rules: the quotient goes to P when d1 − d2 = 0 and to N when it is 2, and gcd goes to P. Correct. A divisor such as (5, 5) collapses to zero, so the rule "divisors are nonzero" must hold for the value, not just for the parts. The generator gives only collapsed divisors, so this cannot arise.
+
+### Findings
+
+**T1. Blocking. §1 Routines, the multiply-accumulate bound against A's multiply.** "Multiply-accumulate writes at most n1 + n2 + 1" is right for B, whose class L + 2 has room. A multiplies through the same routine but predicts L + 1, whose slot is exactly n1 + n2 words when both operands fill class L. The extra word is a carry that is always 0 when r starts at 0, but writing it overwrites the first word of the next slot in the pool. The bound is also incomplete for B's second accumulate, where r already holds up to n(P1) + n(P2) words. *Fix:* "multiply-accumulate writes at most max(n_r, n1 + n2) words, plus a final carry word only when it is nonzero, so r = 0 writes n1 + n2". A's L + 1 and B's L + 2 both fit then.
+
+**T2. Should fix. §5 Round 2, machine code against compiled Control.** A and B are to be written as x86-64 machine code, while Control is Growing in Nim compiled by gcc. A comparison of A or B with Control would then mix the design with the change from compiler to hand-written code, so it would not measure one idea. *Fix:* build Control the same way, as machine code from the same portable pseudocode, or keep all three in Nim. This sentence also limits the timed builds to x86-64 only, although rule 6 is about portability. That is fine for timing on this machine, but the spec should say so.
+
+**T3. Should fix. §4, B's four-slot model.** This model is a third representation: four magnitudes for 1, i, −1 and −i, checked against Gaussian integers. The spec never defines its header, its classes or its collapse result. It is outside the agreed scope (integers, with complex values left to a later spec), and only round 1 uses it. A builder would have to invent it. *Fix:* drop it, and A's four-axis tests too. Integers use only d = 0 and 2, and A's cross-axis error needs only one test line. If the author wants a complex check, that belongs in the later complex spec. This removes about 130 words.
+
+**T4. Should fix. §3 Structures, temporaries from collapse (rule 4).** Values are immutable, so collapsing both operands of a compare, a division or a gcd creates up to two new values, each possibly holding a slot. Together with the predicted result slot, that is up to three temporary structures in one operation, and rule 4 allows one. Open question (e) covers only the stored side. *Fix:* add this to (e) for the author. Two simpler options follow the rules more closely:
+- compare without collapsing, as P1 + N2 against P2 + N1, which also keeps B's rule of never subtracting outside collapse (two adds, but each sum can live in the one local buffer, used in two halves);
+- collapse into the operation's one local buffer, as division and gcd already copy their operands into Growing's buffer.
+
+The second option needs no new slot at all and is the general one I recommend.
+
+**T5. Should fix. Length.** At 1289 words the spec is 62% longer than spec 12. The cuts, which together come to about 400 words:
+- T3 (about 130 words);
+- the details of §5 Round 2: the spec says "details wait for round 1", so round 2 needs only Control, the builds and "A × Control, B × Control", about 100 words;
+- open questions (a) and (d), already answered or dropped (the mixed job), about 40 words;
+- the parentheticals in the round 1 counts (pair counts, coordinator's-call markers) folded into one line;
+- the spec's version history in the opening line.
+
+**T6. Minor. §4 Round 1 coverage.** Round 1 covers every operation of both designs, including collapse, negate and release, with pool checks. Two gaps remain:
+- the exhaustive uncollapsed B set keeps both parts below 2^4, which is class 0 at W = 4, so uncollapsed parts above class 0 are covered only by the random set. Say that random B operands are uncollapsed, with each part drawn on its own.
+- the pass test checks canonical form only for collapsed B results. It should also check that each part of every B result is in its smallest class, since move-down applies to every part.
+
+**T7. Minor. §1 Result class, predicting from lengths.** The routines already know each operand's real length, so predicting the class from lengths rather than from classes is equally general. For example, a B product part gets the smallest class holding max(n(P1) + n(P2), n(N1) + n(N2)) + 1 words. That would avoid most of B's four-times-too-wide slots and the move-downs that follow, without adding a special case. This is for the author to weigh, and it could wait for round 2.
+
+**T8. Minor. §3 B result class wording.** "L the largest class among the inputs" should say "among that part's inputs": both parts of an operand for multiply, and only the matching parts for add.
+
+### Rules check (algorithm design), for the revision
+
+| Rule | Status | Reason |
+| --- | --- | --- |
+| 1 Exact | holds | Both designs are exact, and a prediction above class 31 is an error. |
+| 2 General before special | holds | Special cases (a) and (b) are named and not built. |
+| 3 Shared solutions | holds | One routine set in §1 serves A, B and Control. |
+| 4 One structure each | needs discussion | Stored: B holds two slots per number (open question e). Temporary: collapse of two operands adds up to two more (T4). A's parallel lists are open question (c). |
+| 5 Self-contained | holds | Nothing outside the project is used. |
+| 6 Portable pseudocode | holds, with a note | Borrows are values (a < b), and the 64 × 64 → 128 product is common to all three families. The timed builds are x86-64 only (T2). |
+
+### Open questions
+
+- **(a) Inline build and (b) pools shrinking.** I agree with no and never.
+- **(c) A's parallel lists.** I agree that they are one structure.
+- **(d) Mixed job.** Drop it unless the author sets a rate.
+- **(e) Two slots per B number.** I agree that it should be allowed, since B cannot exist without it. The author should also be asked about collapse temporaries (T4).
+- **(f) Collapsing beyond the required points.** I agree: never in this round. Parts growing until collapse is the thing being measured.

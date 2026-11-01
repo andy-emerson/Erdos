@@ -167,3 +167,15 @@ $$m_0 + m_1 i - m_2 - m_3 i.$$
 | Multiplication | one product, directions added | four products for integers, sixteen for complex numbers |
 | Where magnitudes are subtracted | in every addition of opposite directions | only in collapse |
 | Sums across axes | not held | held directly |
+
+## To return to: expressions in Design A
+
+Points raised (Nov 1, 2026) and set aside until the addition discussion is settled:
+
+- **Two 1-bit fields or one 2-bit field.** A direction $d$ can be read as two bits, $d = 2s + a$: an axis bit $a$ (0 real, 1 imaginary) and a sign bit $s$ (0 positive, 1 negative). Multiplying directions is then $a = a_1 \text{ XOR } a_2$ and $s = s_1 \text{ XOR } s_2 \text{ XOR } (a_1 \text{ AND } a_2)$, the rule of the 2002 Clifford coprocessor in the survey. This is separate from storing an expression's terms in fixed slots by axis (slot 0 real, slot 1 imaginary), which the author accepted.
+- **A mandatory plain form.** Whether an expression whose real or imaginary term becomes zero must become a plain (non-expression) number, so that each value has one form. The author doubts it fits a design with headers; equality would otherwise have to treat both forms as the same.
+- **Don't build an expression only to collapse it.** For example $(3 + 4i)(3 - 4i) = 25$: work out both axis results first, and produce a plain number when one is zero.
+- **Keeping the common case fast** (both numbers plain, on the same axis): agreed, method open.
+- **Zero's direction.** The survey's prior art fixes it; the author keeps it as it falls, since the operations here don't need it fixed.
+
+Sources: [`research/expressions-machine-level.md`](research/expressions-machine-level.md).

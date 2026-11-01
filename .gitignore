@@ -3,3 +3,4 @@ spec/11-matrix/nim/build/
 __pycache__/
 spec/12-integers/build/
 spec/13-header/build/
+spec/13-header/src/*.s

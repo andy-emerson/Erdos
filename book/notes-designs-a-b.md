@@ -73,14 +73,17 @@ Addition depends on how the two directions relate.
 - **The same direction**, $d_1 = d_2$. The magnitudes add:
   $$(m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
   since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
-- **Opposite directions**, $d_2 = d_1 + 2$. Then $m_1 i^{d_1} + m_2 i^{d_1 + 2} = (m_1 - m_2) \cdot i^{d_1}$. If $m_1 \geq m_2$, that is $(m_1 - m_2, d_1)$. Otherwise it is $(m_2 - m_1) \cdot (-i^{d_1}) = (m_2 - m_1) \cdot i^{d_2}$. In both cases the magnitude is $|m_1 - m_2|$, and the direction is that of the larger magnitude:
-  $$(m_1, d_1) + (m_2, d_2) = (|m_1 - m_2|,\ \text{the direction of the larger}).$$
-  If $m_1 = m_2$, the sum has magnitude 0, so it is zero.
+- **Opposite directions**, $d_2 = d_1 + 2$. The two numbers pull against each other along one axis, and the one with the larger absolute value wins. So the first step is a comparison of absolute values, that is of magnitudes, as in the comparison section:
+  - If $m_1 > m_2$, the first number wins. The sum points in its direction, and its size is what is left after the smaller cancels part of the larger: $(m_1 - m_2,\ d_1)$.
+  - If $m_2 > m_1$, the second number wins: $(m_2 - m_1,\ d_2)$.
+  - If $m_1 = m_2$, they cancel exactly, and the sum is zero.
+
+  In every case the magnitude is the larger minus the smaller, which is never negative, and the direction is that of the larger magnitude. For example, $5 + (-3)$ is $(5, 0) + (3, 2)$: 5 is larger, so the sum is $(5 - 3,\ 0) = (2, 0)$, which is 2. And $3 + (-5)$ is $(3, 0) + (5, 2)$: 5 is larger, so the sum is $(5 - 3,\ 2) = (2, 2)$, which is $-2$.
+
+  The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = m_1 i^{d_1} - m_2 i^{d_1} = (m_1 - m_2) \cdot i^{d_1}$, and when $m_2$ is larger this equals $(m_2 - m_1) \cdot i^{d_1 + 2}$.
 - **Different axes**, such as 3 and $4i$. Their sum $3 + 4i$ is not a magnitude times a single direction, so no pair holds it. Design A cannot add them; a sum across axes needs something beyond the design.
 
 Both of the first two cases give the right sum when one number is zero, whatever zero's direction: $(0, d) + (m, d) = (m, d)$, and $(0, d) + (m, d + 2) = (m, d + 2)$. The third case does not: zero lies on both axes, so $5 + (0, 1)$ is 5, though the directions lie on different axes. With directions on different axes, a check that a magnitude is 0 comes first: if it is, the sum is the other number. Integers never reach this case, since their directions are always 1 and $-1$.
-
-For example, $5 + (-3)$ is $(5, 0) + (3, 2)$: opposite directions, and 5 is larger, so the sum is $(2, 0)$, which is 2. And $3 + (-5)$ is $(3, 0) + (5, 2)$: the larger magnitude is 5, along direction 2, so the sum is $(2, 2)$, which is $-2$.
 
 ### Subtraction
 

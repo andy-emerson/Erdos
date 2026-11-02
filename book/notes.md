@@ -10,7 +10,7 @@ The machine counts in base 2, binary, and each binary digit is a bit, so a count
 
 $$2^{64} = 18446744073709551616,$$
 
-so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the clock has $2^4 = 16$ hours.
+so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the modular clock has $2^4 = 16$ hours.
 
 On the number line, 15 hours plus 3 hours is 18 hours. However, on a 16-hour clock 3 hours past 15 displays 2, and so we say that 18 is *congruent* to 2 mod 16.
 

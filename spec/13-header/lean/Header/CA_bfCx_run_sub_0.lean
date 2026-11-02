@@ -34,7 +34,6 @@ theorem bfCx_run_sub_0 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
   have hsub2 : m2 - m1 < W := by omega
   have hs2 : clockAdd W m1 m2 < W := by rw [← wadd_clock hm1 hm2]; exact wadd_lt _ _
   have k0 : (128 : Nat) % W = 128 := by decide
-  have c00 : clockAdd W 0 0 = 0 := by decide
   have k1 : (0 : Nat) % W = 0 := by decide
   have w0_0 : wadd 0 0 = 0 := by decide
   have w0_128 : wadd 0 128 = 128 := by decide
@@ -58,6 +57,7 @@ theorem bfCx_run_sub_0 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
       select_ones hs hd', select_ones' hs2 hsub1, select_ones' hs2 hsub2, select_ones' hs2 hm1, select_ones' hs2 hm2, wsub_zero hsub1, wsub_zero hsub2, wsub_zero hm1, wsub_zero hm2, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
       wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
+  all_goals decide
 
 end PA
 end Header

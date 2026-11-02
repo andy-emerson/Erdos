@@ -5,3 +5,13 @@ import Header.DesignB
 import Header.DesignC
 import Header.FourSlot
 import Header.Words
+import Header.Isa
+import Header.Control
+import Header.ProgA
+import Header.CorrectA
+import Header.ProgB
+import Header.CorrectB
+import Header.ProgC
+import Header.CorrectC
+import Header.Registry
+import Header.Counts

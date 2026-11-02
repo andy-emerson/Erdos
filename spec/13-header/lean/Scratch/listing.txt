@@ -712,3 +712,73 @@
 45: sd zero, 16(r3)
 46: sd zero, 24(r3)
 47: sd r18, 0(r19)
+### C add
+0: ld r10, 0(r1)
+1: ld r11, 0(r2)
+2: xor r12, r10, r11
+3: andi r12, r12, 1
+4: beqz r12, 12
+5: mv r14, r10
+6: sltiu r15, r11, 2
+7: bnez r15, 14
+8: mv r14, r11
+9: sltiu r15, r10, 2
+10: bnez r15, 14
+11: trap
+12: andi r13, r11, 18446744073709551614
+13: add r14, r10, r13
+14: sd r14, 0(r3)
+### C sub
+0: ld r10, 0(r1)
+1: ld r11, 0(r2)
+2: xor r12, r10, r11
+3: andi r12, r12, 1
+4: beqz r12, 14
+5: mv r14, r10
+6: sltiu r15, r11, 2
+7: bnez r15, 16
+8: andi r16, r11, 1
+9: slli r16, r16, 1
+10: sub r14, r16, r11
+11: sltiu r15, r10, 2
+12: bnez r15, 16
+13: trap
+14: andi r13, r11, 18446744073709551614
+15: sub r14, r10, r13
+16: sd r14, 0(r3)
+### C neg
+0: ld r10, 0(r1)
+1: andi r12, r10, 1
+2: slli r12, r12, 1
+3: sub r14, r12, r10
+4: sd r14, 0(r3)
+### C mul
+0: ld r10, 0(r1)
+1: ld r11, 0(r2)
+2: srai r12, r10, 1
+3: andi r13, r11, 18446744073709551614
+4: mul r12, r12, r13
+5: and r14, r10, r11
+6: andi r14, r14, 1
+7: neg r14, r14
+8: xor r12, r12, r14
+9: sub r12, r12, r14
+10: xor r15, r10, r11
+11: andi r15, r15, 1
+12: or r12, r12, r15
+13: sd r12, 0(r3)
+### C div
+0: ld r10, 0(r1)
+1: ld r11, 0(r2)
+2: andi r12, r10, 18446744073709551614
+3: andi r13, r11, 18446744073709551614
+4: div r12, r12, r13
+5: xor r14, r10, r11
+6: andi r14, r14, 1
+7: and r15, r14, r11
+8: neg r15, r15
+9: xor r12, r12, r15
+10: sub r12, r12, r15
+11: slli r12, r12, 1
+12: add r12, r12, r14
+13: sd r12, 0(r3)

@@ -1,6 +1,7 @@
 import Header.Control
 import Header.ProgA
 import Header.ProgB
+import Header.ProgC
 /-!
 # Round 2: every program and every path, in one list
 
@@ -15,6 +16,12 @@ open Isa
 
 def fs : List (String × Form) := [("notes", .notes), ("perArm", .perArm)]
 def subs : List (String × Bool) := [("add", false), ("sub", true)]
+/-- The borrow pairs `(real, imaginary)` an operand on an axis can give: at most one. -/
+def feas : List (String × Bool × String × Bool) := [("0", false, "0", false), ("0", false, "1", true), ("1", true, "0", false)]
+
+def cPaths : List (String × PC.Path) :=
+  [("same axis", .same), ("cross, y = 0", .yZero), ("cross, x = 0", .xZero), ("cross, expression", .expr)]
+
 def bools : List (String × Bool) := [("0", false), ("1", true)]
 
 def aPaths : List (String × PA.Path) :=
@@ -61,8 +68,13 @@ def registry : List (String × String × Prog × List (String × List Nat)) :=
     bools.flatMap fun (b1n, b1) => bools.map fun (b2n, b2) =>
       ("borrows re " ++ b1n ++ ", im " ++ b2n, PB.ccollapseTrace f b1 b2))) ++
   (fs.map fun (fn, f) => ("B", "cx div (" ++ fn ++ ")", PB.cdiv f,
-    bools.flatMap fun (a, ba) => bools.flatMap fun (b, bb) => bools.flatMap fun (c, bc) => bools.map fun (d, bd) =>
-      ("borrows x " ++ a ++ b ++ ", y " ++ c ++ d, PB.cdivTrace f ba bb bc bd)))
+    feas.flatMap fun (a, ba, b, bb) => feas.map fun (c, bc, d, bd) =>
+      ("borrows x " ++ a ++ b ++ ", y " ++ c ++ d, PB.cdivTrace f ba bb bc bd))) ++
+  [("C", "add", PC.add, cPaths.map fun (n, p) => (n, PC.addTrace p)),
+   ("C", "sub", PC.sub, cPaths.map fun (n, p) => (n, PC.subTrace p)),
+   ("C", "neg", PC.neg, [("one", List.range 5)]),
+   ("C", "mul", PC.mul, [("one", List.range 14)]),
+   ("C", "div", PC.div, [("one", List.range 14)])]
 
 end Reg
 end Header

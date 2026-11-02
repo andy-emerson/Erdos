@@ -219,17 +219,17 @@ theorem cdiv_run (x y z : Nat) (mem : Nat → Nat) (x0 x1 x2 x3 y0 y1 y2 y3 : Na
       s.stores = [(z, 0), (z + 8, 0), (z + 16, 0), (z + 24, 0),
         (z + 8 * (A.div (toA x0 x1 x2 x3) (toA y0 y1 y2 y3)).d.val,
           (A.div (toA x0 x1 x2 x3) (toA y0 y1 y2 y3)).m)] := by
-  rcases (by omega : x1 = x3 ∨ (x1 ≠ x3 ∧ x0 = x2)) with hx13 | ⟨hx13, hx02⟩ <;>
-    rcases (by omega : y1 = y3 ∨ (y1 ≠ y3 ∧ y0 = y2)) with hy13 | ⟨hy13, hy02⟩
-  all_goals (try subst hx13) <;> (try subst hx02) <;> (try subst hy13) <;> (try subst hy02)
-  all_goals cases f
-  all_goals try rcases lt_cases x0 x2 with ⟨a, a', a''⟩ | ⟨a, a', a''⟩
-  all_goals try rcases lt_cases x1 x3 with ⟨b, b', b''⟩ | ⟨b, b', b''⟩
-  all_goals try rcases lt_cases y0 y2 with ⟨c, c', c''⟩ | ⟨c, c', c''⟩
-  all_goals try rcases lt_cases y1 y3 with ⟨d, d', d''⟩ | ⟨d, d', d''⟩
-  all_goals try (exfalso; omega)
+  rcases lt_cases x0 x2 with ⟨a, a', a''⟩ | ⟨a, a', a''⟩ <;>
+    rcases lt_cases x1 x3 with ⟨b, b', b''⟩ | ⟨b, b', b''⟩ <;>
+    rcases lt_cases y0 y2 with ⟨c, c', c''⟩ | ⟨c, c', c''⟩ <;>
+    rcases lt_cases y1 y3 with ⟨d, d', d''⟩ | ⟨d, d', d''⟩
   all_goals try (have p1 : x3 < x1 := by omega)
   all_goals try (have p2 : y3 < y1 := by omega)
+  all_goals rcases (by omega : x1 = x3 ∨ (x1 ≠ x3 ∧ x0 = x2)) with hx13 | ⟨hx13, hx02⟩ <;>
+    rcases (by omega : y1 = y3 ∨ (y1 ≠ y3 ∧ y0 = y2)) with hy13 | ⟨hy13, hy02⟩
+  all_goals try (exfalso; omega)
+  all_goals (try subst hx13) <;> (try subst hx02) <;> (try subst hy13) <;> (try subst hy02)
+  all_goals cases f
   all_goals run_prog [cdiv, cdivTrace, cdivColl, cdivCollTrace, cdivCollLen, divColl, divCollTrace, divCollLen,
     ld8, regs3, ex0, ex1, ex2, ex3, ey0, ey1, ey2, ey3, List.range, List.range.loop, wsltu,
     wsub_of_le h0, wsub_of_le h1, wsub_of_le h2, wsub_of_le h3, wsub_of_le g0, wsub_of_le g1, wsub_of_le g2,

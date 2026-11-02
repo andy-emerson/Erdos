@@ -442,6 +442,8 @@ The "Header form" add of `prior-art.md` (round 1: `lean/Header/LargerRow.lean`):
 - `lgInt_run` (integer directions): the stores are `A.add`'s (subtract: `A.sub`'s), with no exception.
 - `Reg.lgRow_no_branch`: the four programs have no conditional branch and no jump.
 
+`lake build` builds every module (BF_sub_3 was killed once for memory, exit 137, beside other builds, and built alone). No sorry, admit, native_decide or bv_decide; `#print axioms`: `lgRow_gen` and `lg_core` `propext`, `Quot.sound`; `lgCx_run`, `lgInt_run` also `Classical.choice`; `lgRow_no_branch`, `table_eq` `propext`.
+
 **Counts** (`Reg.table_eq`, rows "A-lg"):
 
 | Design | Operation | Path | Steps | Branches (taken) | Jumps | Loads | Stores | x86-64 | ARM64 | RV64 |

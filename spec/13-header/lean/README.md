@@ -512,3 +512,24 @@ Split, `w = s · 2^63 + 2m + a` (`Split`):
 | `T3_xor`, `T3_and`, `T3_or`, `shl63`, `T3_dec` | A split word as three fields `T3 s m a`; AND, OR and XOR act on the fields separately. |
 
 `#print axioms`: the main theorems use `propext`, `Classical.choice`, `Quot.sound` (or fewer).
+
+## The header form's add and subtract, round 2 (`Header/ProgLg.lean`, `Header/LgRun.lean`)
+
+`Isa.lean` gains `lb`, the sign-extending byte load (`wsxb`: the byte, plus `2^64 − 256` when bit 7 is set); `Counts.lean`
+counts it as a load (one instruction on each family). `PA.lgRow cx sub` is the formula of `LargerRow.lean` as a
+program: integers (`cx = false`) 18 steps for add, 19 for subtract; complex numbers 23 and 24, with the expression flag
+left in register 21. Subtract is `xori h2, h2, −128` after the loads.
+
+| Theorem | Statement |
+| --- | --- |
+| `PA.lg_core` | The formula `A.largerAddX`, written with the machine's steps in the program's order (`wsra x 63`, `wneg (wsltu a b)`, `wsltu 0 m`, `wadd`, `wsub`). |
+| `PA.wsxb_sx`, `PA.sx_lt`, `PA.wsra63`, `PA.ltMask_eq`, `PA.nz_eq` | `lb` is round 1's `sx`; `srai 63` is `sar63`; `0 − (a <u b)` is `ltMask`; `0 <u m` is `m ≠ 0`. |
+| `PA.lgRow_gen` | For every input, each of the four programs runs every instruction once, ends normally, stores the header byte and magnitude of `A.largerAdd` (subtract: `A.largerSub`) on the stored header bytes, and (complex) leaves its flag in register 21. One symbolic run per program (no case split), cut in three parts by `Isa.run_split` (`lgGen_int_add`, `lgGen_int_sub`, `lgGen_cx_add`, `lgGen_cx_sub`). |
+| `PA.lgOut_some`, `PA.lgOut_none` | Through `larger_add_eq` / `larger_sub_eq`: when `A.add W x (yEff sub y)` gives `r`, the formula gives `r`'s header (except two zeros on different axes: `x`'s), `r.m` and flag 0; when it gives an expression, flag 1. |
+| `PA.lgCx_run` | Complex programs, all directions: register 21 is 1 exactly when `A.add W x (yEff sub y)` gives an expression; otherwise 0 and the stores are its header byte and magnitude, with the both-zeros-on-different-axes exception. |
+| `PA.lgInt_run` | Integer programs, integer directions: the stores are `A.add`'s (subtract: `A.sub`'s), no exception. |
+| `Reg.lgRow_no_branch` | The four programs have no conditional branch and no jump. |
+| `Reg.table_eq` | Now includes the rows "A-lg" (18/19/23/24 steps; x86-64 21/22/31/32, ARM64 19/20/26/27, RV64IM 18/19/23/24). |
+
+`#print axioms`: `lgRow_gen`, `lg_core` use `propext`, `Quot.sound`; `lgCx_run`, `lgInt_run`, `lgOut_some`, `lgOut_none`
+also `Classical.choice`; `lgRow_no_branch` and `table_eq` `propext` only.

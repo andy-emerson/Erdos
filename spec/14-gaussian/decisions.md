@@ -23,3 +23,11 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 **Tricks to try later** (after correctness and speed of the textbook version)
 - A packed multiply: multiply the whole word without splitting it into halves first.
+- Lazy reduction for mod n (shelved, not archived): add 1 instruction, subtract 2, but n < 2^29 (3 bits of headroom per half), which matrix multiplication would feel quickly.
+- Complex multiply with three products instead of four; real and imaginary partial products formed together in one word (from study 3).
+- Vector compares for the infinity check (first test when the vector build exists).
+
+**Open questions**
+- Which special values the type wants: ∞, undefined (NaN-like), null (missing, as in q), an overflow pointer. One reserved value with the other half free gives room for all.
+- Whether stacks of words have a fixed maximum height (then the top word's −2^31 can give symmetry and an overflow marker) or always grow.
+- Multiply in a stack wraps (the low words of the product, like the machine's multiply); overflow detection is separate.

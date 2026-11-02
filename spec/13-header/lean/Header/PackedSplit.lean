@@ -165,6 +165,11 @@ theorem xm_lt {m1 m2 : Nat} (h1 : m1 < Q) (h2 : m2 < Q) : m1 ^^^ m2 < Q :=
 theorem axor_lt : ∀ d1 d2 : Fin 4, d1.val % 2 ^^^ d2.val % 2 < 2 := by decide
 theorem sxor : ∀ d1 d2 : Fin 4, d1.val / 2 ^^^ d2.val / 2 = if d1.val / 2 = d2.val / 2 then 0 else 1 := by decide
 
+theorem fv0 : ((0 : Fin 4) : Nat) = 0 := rfl
+theorem fv1 : ((1 : Fin 4) : Nat) = 1 := rfl
+theorem fv2 : ((2 : Fin 4) : Nat) = 2 := rfl
+theorem fv3 : ((3 : Fin 4) : Nat) = 3 := rfl
+
 theorem two_T3 (m : Nat) : 2 * m = T3 0 m 0 := by simp only [T3]; omega
 
 /-! ## Add and subtract -/
@@ -178,7 +183,7 @@ theorem sp_sar (h1 : m1 < Q) (h2 : m2 < Q) :
   rw [sp_xor h1 h2, sxor]
   have := xm_lt h1 h2; have := axor_lt d1 d2
   unfold sar63 T3
-  split <;> rename_i h <;> simp only [h, if_true, if_false] <;> qomega
+  by_cases h : d1.val / 2 = d2.val / 2 <;> simp only [h, ↓reduceIte] <;> split <;> qomega
 
 theorem sp_t_lt (h1 : m1 < Q) (h2 : m2 < Q) : spEnc m1 d1 ^^^ spEnc m2 d2 < 2 ^ 64 :=
   Nat.xor_lt_two_pow (sp_lt h1) (sp_lt h2)
@@ -198,9 +203,9 @@ theorem spL0_eq (h1 : m1 < Q) (h2 : m2 < Q) (t : Nat) :
   have := alt d1; have := alt d2
   by_cases h : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
   · have : 4 * m1 + 2 * (d1.val % 2) < 4 * m2 + 2 * (d2.val % 2) := by omega
-    simp only [h, this, if_true]; decide
+    simp only [h, this, ↓reduceIte]; decide
   · have : ¬ 4 * m1 + 2 * (d1.val % 2) < 4 * m2 + 2 * (d2.val % 2) := by omega
-    simp only [h, this, if_false]; decide
+    simp only [h, this, ↓reduceIte]; decide
 
 theorem sflip : ∀ d1 d2 : Fin 4, d1.val / 2 ^^^ ((d1.val / 2 ^^^ d2.val / 2) &&& 1) = d2.val / 2 := by decide
 
@@ -214,8 +219,8 @@ theorem spL1_eq (h1 : m1 < Q) (h2 : m2 < Q) :
   have : T3 (d2.val / 2) m1 (d1.val % 2) < spEnc m2 d2 ↔ 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 := by
     simp only [spEnc, T3]; omega
   by_cases h : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
-  · simp only [h, this.mpr h, if_true]; decide
-  · simp only [h, (iff_false_left h).mp this, if_false]; decide
+  · simp only [h, this.mpr h, ↓reduceIte]; decide
+  · simp only [h, mt this.mp h, ↓reduceIte]; decide
 
 /-- `W ± v`: the sum on the same sign, the difference otherwise. -/
 theorem sp_addsub {mW mv : Nat} {dW : Fin 4} (p : Prop) [Decidable p] (hle : mv ≤ mW) (hs : mW + mv < Q) :
@@ -223,8 +228,8 @@ theorem sp_addsub {mW mv : Nat} {dW : Fin 4} (p : Prop) [Decidable p] (hle : mv 
       if p then spEnc (mW + mv) dW else spEnc (mW - mv) dW := by
   have := dlt dW; have := alt dW
   by_cases h : p
-  · simp only [h, if_true, Nat.xor_zero, spEnc, T3]; qomega
-  · simp only [h, if_false, xor_ones64 (by qomega : 2 * mv < 2 ^ 64), spEnc, T3]; qomega
+  · simp only [h, ↓reduceIte, Nat.xor_zero, spEnc, T3]; qomega
+  · simp only [h, ↓reduceIte, xor_ones64 (by qomega : 2 * mv < 2 ^ 64), spEnc, T3]; qomega
 
 variable (Lf : Nat → Nat → Nat → Nat)
 
@@ -241,10 +246,10 @@ theorem spAddWith_eval (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   simp only [spAddWith, hL, sp_sar h1 h2]
   have := alt d1; have := alt d2
   by_cases hc : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
-  · simp only [hc, if_true, and_ones64 (sp_t_lt h1 h2), xor_xor_cancel, xor_xor_cancel', sp_and_F h1,
+  · simp only [hc, ↓reduceIte, and_ones64 (sp_t_lt h1 h2), xor_xor_cancel, xor_xor_cancel', sp_and_F h1,
       sp_t1 h1 h2]
     rw [sp_addsub _ (by omega) (by omega)]
-  · simp only [hc, if_false, Nat.and_zero, Nat.xor_zero]
+  · simp only [hc, ↓reduceIte, Nat.and_zero, Nat.xor_zero]
     rw [xor_xor_cancel, sp_and_F h2, sp_t1 h1 h2, sp_addsub _ (by omega) (by omega)]
 
 /-- The add body, decoded. -/
@@ -256,11 +261,13 @@ theorem spAddWith_dec (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
           (if d1.val / 2 = d2.val / 2 then ⟨m2 + m1, d2⟩ else ⟨m2 - m1, d2⟩)
         else (if d1.val / 2 = d2.val / 2 then ⟨m1 + m2, d1⟩ else ⟨m1 - m2, d1⟩)) := by
   rw [spAddWith_eval Lf h1 h2 hs hL]
-  split_ifs <;> exact spEnc_dec _ _ (by omega)
+  by_cases ha : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 <;> by_cases hb : d1.val / 2 = d2.val / 2 <;>
+    simp only [ha, hb, ↓reduceIte] <;> exact spEnc_dec _ _ (by omega)
 
 /-- **Split add**, for either compare: with no overflow (`m1 + m2 < 2^62`), the flag is 0 and the word decodes to
 round 1's sum (its magnitude, and its direction unless the sum is zero) whenever round 1 gives a number, and the flag
 is 1 when round 1 reports an expression. -/
+set_option maxRecDepth 20000 in
 theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
     (hL : Lf (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
       if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0) :
@@ -273,12 +280,13 @@ theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   have hf := congrArg Prod.snd (spAddWith_eval Lf h1 h2 hs hL)
   simp only at hf
   rw [hd, hf]
+  clear hd hf hL
   rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases hl : m1 < m2 <;> by_cases he : m1 = m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
   all_goals try (exfalso; omega)
-  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, he, z1, z2, nzb,
-    Fin.ext_iff]
-  all_goals (repeat' split) <;> qomega
+  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb, fv0, fv1,
+    fv2, fv3, Fin.ext_iff]
+  all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;> qomega
 
 end
 

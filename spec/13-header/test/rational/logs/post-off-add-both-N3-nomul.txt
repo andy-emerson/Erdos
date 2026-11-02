@@ -1,0 +1,6 @@
+N=3 layout=off op=add target=both mode=1 mul=0 small=0 lanes=312
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 270 nodes
+L=3: 0 hits, 54621 nodes
+L=4: 0 hits, 11065601 nodes
+L=5: 0 hits, 2513767453 nodes

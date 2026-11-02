@@ -1,0 +1,15 @@
+N=4 layout=neg op=mul target=num mode=1 mul=1 small=0 lanes=6464
+  input Q already is den
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 285 nodes
+L=3: 0 hits, 60980 nodes
+  v1=d1 and d2; v2=sar N-1 v1; v3=P + v2; v4=v2 xor v3;  [num = last]
+  v1=d1 and d2; v2=sar N-1 v1; v3=P xor v2; v4=v3 - v2;  [num = last]
+  v1=d1 and d2; v2=sar N-1 v1; v3=v2 or 1; v4=P * v3;  [num = last]
+  v1=d1 andn Q; v2=sar N-1 v1; v3=P + v2; v4=v2 xor v3;  [num = last]
+  v1=d1 andn Q; v2=sar N-1 v1; v3=P xor v2; v4=v3 - v2;  [num = last]
+  v1=d1 andn Q; v2=sar N-1 v1; v3=v2 or 1; v4=P * v3;  [num = last]
+  v1=d2 andn Q; v2=sar N-1 v1; v3=P + v2; v4=v2 xor v3;  [num = last]
+  v1=d2 andn Q; v2=sar N-1 v1; v3=P xor v2; v4=v3 - v2;  [num = last]
+  v1=d2 andn Q; v2=sar N-1 v1; v3=v2 or 1; v4=P * v3;  [num = last]
+L=4: 9 hits, 13275577 nodes

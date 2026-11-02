@@ -281,6 +281,16 @@ theorem straight_line : ([Ctl.add, Ctl.sub, Ctl.neg, Ctl.mul, Ctl.div, Ctl.cadd,
     PB.add, PB.sub, PB.neg, PB.mul, PB.cadd, PB.csub, PB.cneg, PB.cmul, PC.neg, PC.mul, PC.div].all
     fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
 
+/-- With the class code 0 (headers `64·d`), every `and D` of A is redundant: the direction check's XOR is already
+clear in bits 0–5, and the result header, stored as a byte, has bits 0–5 clear without it. -/
+theorem andD_redundant : ∀ d1 d2 : Fin 4,
+    (PA.hdr d1 ^^^ PA.hdr d2) &&& 0xC0 = PA.hdr d1 ^^^ PA.hdr d2 ∧
+    ((PA.hdr d1 + PA.hdr d2) &&& 0xC0) % 256 = (PA.hdr d1 + PA.hdr d2) % 256 ∧
+    ((PA.hdr d1 + 128) &&& 0xC0) % 256 = (PA.hdr d1 + 128) % 256 ∧
+    (PA.hdr d1 &&& 0xC0) % 256 = PA.hdr d1 % 256 ∧
+    (Isa.wsub (PA.hdr d1) (PA.hdr d2) &&& 0xC0) % 256 = Isa.wsub (PA.hdr d1) (PA.hdr d2) % 256 := by
+  decide
+
 end Reg
 
 end Header

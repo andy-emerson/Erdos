@@ -284,5 +284,63 @@ def counts (p : Prog) (tr : List Nat) : Counts :=
     loads := (is.filter Instr.isLoad).length
     stores := (is.filter Instr.isStore).length }
 
+
+/-! ## Word lemmas -/
+
+theorem ofInt_lt (z : Int) : ofInt z < W := by unfold ofInt W; omega
+
+theorem ofInt_cast (z : Int) : ((ofInt z : Nat) : Int) = z % (W : Int) := by
+  unfold ofInt W; omega
+
+theorem wadd_ofInt (a b : Int) : wadd (ofInt a) (ofInt b) = ofInt (a + b) := by
+  unfold wadd ofInt W; omega
+
+theorem wsub_ofInt (a b : Int) : wsub (ofInt a) (ofInt b) = ofInt (a - b) := by
+  unfold wsub ofInt W; omega
+
+theorem wneg_ofInt (a : Int) : wneg (ofInt a) = ofInt (-a) := by
+  unfold wneg wsub ofInt W; omega
+
+theorem wmul_ofInt (a b : Int) : wmul (ofInt a) (ofInt b) = ofInt (a * b) := by
+  have e : ((wmul (ofInt a) (ofInt b) : Nat) : Int) = ((ofInt a : Nat) : Int) * ((ofInt b : Nat) : Int) % (W : Int) := by
+    simp only [wmul, Int.natCast_emod, Int.natCast_mul]
+  rw [ofInt_cast, ofInt_cast, ← Int.mul_emod, ← ofInt_cast] at e
+  exact Int.ofNat.inj e
+
+/-- A signed integer that fits in a word: `-2^63 ≤ z < 2^63`. -/
+def Fits (z : Int) : Prop := -(H : Int) ≤ z ∧ z < H
+
+theorem toInt_ofInt {z : Int} (h : Fits z) : toInt (ofInt z) = z := by
+  unfold toInt ofInt Fits H W at *; split <;> omega
+
+theorem wdiv_ofInt {a b : Int} (ha : Fits a) (hb : Fits b) : wdiv (ofInt a) (ofInt b) = ofInt (a.tdiv b) := by
+  simp [wdiv, toInt_ofInt ha, toInt_ofInt hb]
+
+/-- The all-ones word, `W - 1`. -/
+theorem ones_eq : (18446744073709551615 : Nat) = 2 ^ 64 - 1 := by decide
+
+theorem xor_ones {x : Nat} (h : x < W) : x ^^^ 18446744073709551615 = 18446744073709551615 - x := by
+  have := Words.xor_mask (n := 64) (r := x) (by rw [← W_eq]; exact h)
+  simpa [Words.M] using this
+
+theorem and_ones {x : Nat} (h : x < W) : x &&& 18446744073709551615 = x := by
+  rw [ones_eq, Nat.and_two_pow_sub_one_eq_mod, Nat.mod_eq_of_lt (by rw [← W_eq]; exact h)]
+
+theorem xor_lt {x y : Nat} (hx : x < W) (hy : y < W) : x ^^^ y < W := by
+  rw [W_eq] at *; exact Nat.xor_lt_two_pow hx hy
+
+theorem xor_cancel (s d : Nat) : s ^^^ (d ^^^ s) = d := by
+  rw [Nat.xor_comm d s, ← Nat.xor_assoc, Nat.xor_self, Nat.zero_xor]
+
+/-! ## Running a program symbolically
+
+`run_prog [facts]` unfolds the interpreter step by step with `simp`, using the given program, register file and
+memory facts. Every program here is forward, so this terminates after at most one pass. -/
+
+syntax "run_prog" " [" Lean.Parser.Tactic.simpArg,* "]" : tactic
+macro_rules
+  | `(tactic| run_prog [$args,*]) =>
+    `(tactic| simp [exe, run, start, exec, St.set, St.get, St.store, St.goto, St.next, $args,*])
+
 end Isa
 end Header

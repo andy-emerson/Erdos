@@ -136,7 +136,6 @@ def main():
         builds = ("b",) if op == "collapse" else BUILDS
         order = builds + (builds[0] + "-2",)
         if a.ir:
-            fn = f"loop_{'int' if build_of(builds[0]) in ('a', 'abf') else kind}_{op}"
             for b in builds:
                 f = f"loop_{'int' if b in ('a', 'abf') else kind}_{op}"
                 irs[f"{b}|{name}"] = ir(b, path, f, out)

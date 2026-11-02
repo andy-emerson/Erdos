@@ -56,7 +56,7 @@ theorem mul_run : ∃ s, exe mul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1
 /-- Exact division: when `a = q·b` and `a, b` fit, the stored word is `q`. -/
 theorem div_run (hfa : Fits a) (hfb : Fits b) (q : Int) (hq : a = q * b) (hb0 : b ≠ 0) :
     ∃ s, exe div (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧ s.stores = [(z, ofInt q)] := by
-  run_prog [div, regs3, ha, hb, wdiv_ofInt hfa hfb, hq, Int.mul_tdiv_cancel _ hb0]
+  subst hq; run_prog [div, regs3, ha, hb, wdiv_ofInt hfa hfb, Int.mul_tdiv_cancel _ hb0]
 
 end
 
@@ -89,17 +89,17 @@ variable (x y z : Nat) (mem : Nat → Nat) (a b : GI)
   (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
 include ha ha' hb hb'
 
-theorem cadd_run : ∃ s, exe cadd (regs3 x y z) mem = .done s ∧ s.trace = List.range 8 ∧
+theorem cadd_run : ∃ s, exe cadd (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
     s.stores = [(z, ofInt (a + b).re), (z + 8, ofInt (a + b).im)] := by
-  run_prog [cadd, regs3, ha, ha', hb, hb', wadd_ofInt, List.range, List.range.loop]
+  run_prog [cadd, regs3, ha, ha', hb, hb', wadd_ofInt]
 
-theorem csub_run : ∃ s, exe csub (regs3 x y z) mem = .done s ∧ s.trace = List.range 8 ∧
+theorem csub_run : ∃ s, exe csub (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
     s.stores = [(z, ofInt (a - b).re), (z + 8, ofInt (a - b).im)] := by
-  run_prog [csub, regs3, ha, ha', hb, hb', wsub_ofInt, List.range, List.range.loop]
+  run_prog [csub, regs3, ha, ha', hb, hb', wsub_ofInt]
 
-theorem cmul_run : ∃ s, exe cmul (regs3 x y z) mem = .done s ∧ s.trace = List.range 12 ∧
+theorem cmul_run : ∃ s, exe cmul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] ∧
     s.stores = [(z, ofInt (a * b).re), (z + 8, ofInt (a * b).im)] := by
-  run_prog [cmul, regs3, ha, ha', hb, hb', wadd_ofInt, wsub_ofInt, wmul_ofInt, List.range, List.range.loop]
+  run_prog [cmul, regs3, ha, ha', hb, hb', wadd_ofInt, wsub_ofInt, wmul_ofInt]
 
 /-- The two paths of complex division: real divisor (`b_im = 0`) and imaginary divisor. -/
 def cdivTrace (bim0 : Bool) : List Nat :=
@@ -130,9 +130,9 @@ end
 
 theorem cneg_run (x y z : Nat) (mem : Nat → Nat) (a : GI)
     (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) :
-    ∃ s, exe cneg (regs3 x y z) mem = .done s ∧ s.trace = List.range 6 ∧
+    ∃ s, exe cneg (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5] ∧
       s.stores = [(z, ofInt (-a).re), (z + 8, ofInt (-a).im)] := by
-  run_prog [cneg, regs3, ha, ha', wneg_ofInt, List.range, List.range.loop]
+  run_prog [cneg, regs3, ha, ha', wneg_ofInt]
 
 end Ctl
 end Header

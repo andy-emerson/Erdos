@@ -74,6 +74,32 @@ x \text{ AND } m &= 0110 \text{ AND } 1111 \\
 &= 6
 \end{aligned}$$
 
+**Conditional choice.** AND and XOR together choose between two words, $a$ and $c$:
+
+$$a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
+
+$a \text{ XOR } c$ marks the bits where the two words differ. AND with the mask keeps those marks or deletes them, and XOR applies whatever is left to $a$: flipping exactly the bits where $a$ and $c$ differ turns $a$ into $c$, and flipping nothing leaves $a$.
+
+For example, take $a = 0110$ (6) and $c = 0011$ (3). With $k = 1$, the mask is $m = 1111$, and the choice is $c$:
+
+$$\begin{aligned}
+a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } \big((0110 \text{ XOR } 0011) \text{ AND } 1111\big) \\
+&= 0110 \text{ XOR } (0101 \text{ AND } 1111) \\
+&= 0110 \text{ XOR } 0101 \\
+&= 0011 \\
+&= 3
+\end{aligned}$$
+
+With $k = 0$, the mask is $m = 0000$, and the choice is $a$:
+
+$$\begin{aligned}
+a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } \big((0110 \text{ XOR } 0011) \text{ AND } 0000\big) \\
+&= 0110 \text{ XOR } (0101 \text{ AND } 0000) \\
+&= 0110 \text{ XOR } 0000 \\
+&= 0110 \\
+&= 6
+\end{aligned}$$
+
 ## Arithmetic operations
 
 *(Placeholder.)*

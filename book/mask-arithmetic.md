@@ -16,7 +16,11 @@ For example, $1010 \text{ sar } 3 = 1111$ and $0110 \text{ sar } 3 = 0000$. The 
 
 ## XOR
 
-XOR with a mask leaves a word alone or flips every bit of it:
+XOR compares two words bit by bit: each bit of the result is 1 where the words differ and 0 where they agree. So it is 0 exactly when they are equal:
+
+$$a \text{ XOR } b = \begin{cases} 0000 & a = b \\ \text{not } 0000 & a \ne b \end{cases}$$
+
+Against a mask, the comparison becomes a flip. Compared with 0000, a word differs exactly where it has a 1, so it comes back unchanged. Compared with 1111, it differs exactly where it has a 0, so every bit flips. So XOR with a mask leaves a word alone or flips every bit of it:
 
 $$x \text{ XOR } m = \begin{cases} x & m = 0000 \\ 15 - x & m = 1111 \end{cases}$$
 
@@ -67,12 +71,6 @@ $$(x \text{ XOR } m) - m = \begin{cases} x & m = 0000 \\ -x & m = 1111 \end{case
 XOR with a constant $c$ flips the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
 
 $$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ flipped} & \text{bit of } c = 1 \end{cases}$$
-
-### Comparing
-
-XOR of two words is 0 exactly when they are equal, and otherwise marks the bits where they differ:
-
-$$a \text{ XOR } b = \begin{cases} 0000 & a = b \\ \text{not } 0000 & a \ne b \end{cases}$$
 
 ## AND
 

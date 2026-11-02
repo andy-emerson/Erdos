@@ -23,7 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 SEED = 20261101
-N = 1024
+N = int(__import__("os").environ.get("R3_N", 1024))  # operations per row; R3_N overrides (the long-row rerun)
 KINDS = ("int", "cx")
 OPS = ("add", "sub", "neg", "mul", "div", "collapse")
 SIGNS = {"pos": 0.0, "most": 1 / 16, "rand": 1 / 2}

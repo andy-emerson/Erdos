@@ -389,6 +389,24 @@ theorem wsub_and1 {a b : Nat} (ha : a < 2) (hb : b < 2) : wsub a b &&& 1 = (a + 
 
 theorem wadd_addr {n z : Nat} (hn : n ≤ 24) (hz : z + 24 < W) : wadd n z = z + n := by unfold wadd; unfold W at *; omega
 
+/-- `wsub` on small constants. -/
+theorem wsub_0_0 : wsub 0 0 = 0 := by decide
+theorem wsub_0_1 : wsub 0 1 = 18446744073709551615 := by decide
+theorem wsub_0_2 : wsub 0 2 = 18446744073709551614 := by decide
+theorem wsub_0_3 : wsub 0 3 = 18446744073709551613 := by decide
+theorem wsub_1_0 : wsub 1 0 = 1 := by decide
+theorem wsub_1_1 : wsub 1 1 = 0 := by decide
+theorem wsub_1_2 : wsub 1 2 = 18446744073709551615 := by decide
+theorem wsub_1_3 : wsub 1 3 = 18446744073709551614 := by decide
+theorem wsub_2_0 : wsub 2 0 = 2 := by decide
+theorem wsub_2_1 : wsub 2 1 = 1 := by decide
+theorem wsub_2_2 : wsub 2 2 = 0 := by decide
+theorem wsub_2_3 : wsub 2 3 = 18446744073709551615 := by decide
+theorem wsub_3_0 : wsub 3 0 = 3 := by decide
+theorem wsub_3_1 : wsub 3 1 = 2 := by decide
+theorem wsub_3_2 : wsub 3 2 = 1 := by decide
+theorem wsub_3_3 : wsub 3 3 = 0 := by decide
+
 /-! ## Running a program symbolically
 
 `run_prog [facts]` unfolds the interpreter step by step with `simp`, using the given program, register file and

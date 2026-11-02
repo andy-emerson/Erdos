@@ -54,10 +54,13 @@ theorem cxAdd_run (f : Form) (sub : Bool) (d1 d2 : Fin 4) (e1 : mem xh = hdr d1)
   all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
   all_goals first | (have h'' : m1 ≤ m2 := by omega) | (have h'' : True := trivial)
   all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
+  all_goals try (exfalso; omega)
+  all_goals try subst z1
+  all_goals try subst z2
   all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
   all_goals run_prog [cxAdd, pre, kk, cxTrace, preT, path, regs6, hdr, e1, e2, e3, e4,
       borrow_lemma hm1 hm2, absDiff, borrow, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, h, h', h'', z1, z2]
+      wneg_wsub hm1 hm2, *]
 
 end
 
@@ -130,11 +133,14 @@ theorem bfCx_run (sub : Bool) (d1 d2 : Fin 4) (e1 : mem xh = hdr d1) (e2 : mem y
   all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
   all_goals first | (have h'' : m1 ≤ m2 := by omega) | (have h'' : True := trivial)
   all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
+  all_goals try (exfalso; omega)
+  all_goals try subst z1
+  all_goals try subst z2
   all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
   all_goals run_prog [bfCx, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
       select_ones hs hd', wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, h, h', h'', z1, z2, Nat.lt_one_iff]
+      wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
 
 end
 

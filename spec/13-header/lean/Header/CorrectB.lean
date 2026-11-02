@@ -61,7 +61,8 @@ theorem div_run (f : Form) (hP1 : P1 < W) (hN1 : N1 < W) (hP2 : P2 < W) (hN2 : N
   all_goals run_prog [div, divTrace, divColl, divCollTrace, divCollLen, ld4, regs3, e1, e2, e3, e4,
       List.range, List.range.loop, wsltu, wsub_of_le hP1, wsub_of_le hN1, wsub_of_le hP2, wsub_of_le hN2,
       wneg_wsub hP1 hN1, wneg_wsub hP2 hN2, absDiff, wdivu, h1, h2, h1', h2', h1'', h2'',
-      wsub_and1, mod_W_small, wadd_addr _ hz]
+      
+      wsub_0_0, wsub_0_1, wsub_0_2, wsub_0_3, wsub_1_0, wsub_1_1, wsub_1_2, wsub_1_3, wsub_2_0, wsub_2_1, wsub_2_2, wsub_2_3, wsub_3_0, wsub_3_1, wsub_3_2, wsub_3_3, mod_W_small, wadd_addr _ hz]
 
 end
 
@@ -236,7 +237,8 @@ theorem cdiv_run (f : Form) (hx : x1 = x3 ∨ x0 = x2) (hy : y1 = y3 ∨ y0 = y2
         ld8, regs3, ex0, ex1, ex2, ex3, ey0, ey1, ey2, ey3, List.range, List.range.loop, wsltu,
         wsub_of_le h0, wsub_of_le h2, wsub_of_le h3, wsub_of_le g0, wsub_of_le g2, wsub_of_le g3,
         wneg_wsub h0 h2, wneg_wsub g0 g2, r, q, r', q', r'', q'', toA, A.div, absDiff, wdivu,
-        wsub_and3, mod_W_small, wadd_addr _ hz]
+        
+        wsub_0_0, wsub_0_1, wsub_0_2, wsub_0_3, wsub_1_0, wsub_1_1, wsub_1_2, wsub_1_3, wsub_2_0, wsub_2_1, wsub_2_2, wsub_2_3, wsub_3_0, wsub_3_1, wsub_3_2, wsub_3_3, mod_W_small, wadd_addr _ hz]
     · sorry
   · sorry
 

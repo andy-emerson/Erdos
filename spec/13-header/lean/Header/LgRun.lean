@@ -27,9 +27,9 @@ theorem sx_lt (v : Nat) : A.sx (v % 256) < W := by
   unfold A.sx A.Wd W; split <;> omega
 
 theorem wsra63 {x : Nat} (hx : x < W) : wsra x 63 = A.sar63 x := by
-  unfold wsra ofInt toInt H A.sar63 W at *
+  unfold wsra ofInt toInt H A.sar63 A.Wd W at *
   simp only [Int.reducePow]
-  split <;> split <;> omega
+  split <;> omega
 
 theorem sar63_lt (x : Nat) : A.sar63 x < W := by unfold A.sar63 W; split <;> decide
 

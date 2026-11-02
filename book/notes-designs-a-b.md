@@ -226,7 +226,7 @@ Design C keeps the two bits of a direction apart. In the table of directions abo
 
 ### The sign inside the value
 
-The machine has a second way to read a word, beside reading it as a magnitude. Read **signed**, the upper half of the clock stands for the negative numbers: on a 16-hour clock, the hours 8 to 15 are read as $-8$ to $-1$. In binary, the top bit then counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**. Nothing about the clock changes, only the reading: $3 - 5$ still lands on 14, and 14 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays between $-2^{n-1}$ and $2^{n-1} - 1$. Outside that range is overflow, the second problem, which now starts at half the clock.
+The machine has a second way to read a word, beside reading it as a magnitude. Read **signed**, the upper half of the clock stands for the negative numbers: on a 16-hour clock, the hours 8 to 15 are read as $-8$ to $-1$. In binary, the top bit then counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**. Nothing about the clock changes, only the reading: $3 - 5$ still lands on 14, and 14 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays between $-2^{n-1}$ and $2^{n-1} - 1$. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for C below.
 
 ### A number
 
@@ -296,7 +296,7 @@ Exact division divides the values and subtracts the axes. Dividing by $i$ is mul
 
 $$(v_1, a_1) / (v_2, a_2) = \big((-1)^{(1 - a_1) a_2}\, v_1 / v_2,\ a_1 \text{ XOR } a_2\big),$$
 
-when $v_2$ is not 0 and divides $v_1$. On words, $2v_1 / v_2$ is the first word with its axis bit cleared divided by the second word shifted, which is already doubled.
+when $v_2$ is not 0 and divides $v_1$. On words, both axis bits are cleared and the words divided, $2v_1 / 2v_2 = v_1 / v_2$, and the quotient is doubled back by a shift. Dividing the cleared first word by the shifted second, $2v_1 / v_2$, would save the shift, but it can divide $-2^{n-1}$ by $-1$, which overflows inside the division even when the result, as for $(-2^{n-2}) / (-i)$, is in range. With both words cleared the divisor is even, never $-1$.
 
 ### What C gives up
 

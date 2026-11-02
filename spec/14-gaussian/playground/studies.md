@@ -107,3 +107,33 @@ Montgomery's costs outside the multiply: n must be odd (Barrett takes any n), an
 | Gaussian product, 2 reductions | 2.16–2.19 [2.12, 2.24] | 2.31–2.36 [2.21, 2.39] | 5.25–5.28 |
 
 The ranges are the medians over the four n. For the scalar kernel, the Barrett and Montgomery quartile ranges overlap, so no difference is shown beyond the noise. For the Gaussian kernel, Barrett's median is about 7% lower than Montgomery's for all four n, and again in a second full run (Barrett 2.16–2.23, Montgomery 2.31–2.42). The quartile ranges touch or barely separate, so the difference is small but repeatable on this machine. It runs against the instruction count (Montgomery has two fewer instructions per product); the cause was not investigated. Both are about 2.4 times faster than the hardware divide here. Max values up to 18 ns are single outliers from the VM.
+
+## Study 5: the mod p split (split.py)
+
+**What was checked.** For a prime p ≡ 1 (mod 4), s = c^((p−1)/4) for a non-residue c has s² ≡ −1. The map φ(a + bi) = (a + bs, a − bs) mod p takes Z[i]/p to F_p × F_p, with inverse a = (u + v)/2 and b = (u − v)/(2s). Both forms keep one residue pair per word. Reductions use study 4's Barrett.
+
+The map was checked to be a ring isomorphism: it is bijective (p² distinct images), it inverts (ψ(φ(z)) = z), φ(x + y) = φ(x) + φ(y), φ(xy) = φ(x)φ(y) with the split product componentwise, and φ(1) = (1, 1). Also checked: the direct Gaussian product mod p, that inverting the split product gives the direct product, that conjugation becomes a swap of the components, and that the norm a² + b² is u·v.
+
+**Cases.** Exhaustive for p = 5, 13, 17, 29, 37: all p² elements and all p⁴ pairs (1,874,161 pairs at p = 37). Random for the four largest primes ≡ 1 (mod 4) below 2^31 (2,147,483,629, 2,147,483,549, 2,147,483,497, 2,147,483,489): 20,000 elements plus 16 edge pairs from {0, 1, p − 1, ⌊p/2⌋}, and 20,000 pairs, each. In all, 2,774,149 pairs and 82,757 elements. **Failures: none.**
+
+**Costs** (word operations; Barrett 7 with 2 multiplies; a + b mod p 5; a − b mod p 4; halving mod p, adding p when odd and shifting, 5):
+
+| operation | instructions | multiplies | longest chain |
+|---|---|---|---|
+| to split form (extract 2, b·s: MUL + reduce 8, a + bs 5, a − bs 4, pack 2) | 21 | 3 | 15 |
+| from split form (extract 2, (u + v)/2: 5 + 5, (u − v)·(2s)^−1: 4 + 8, pack 2) | 26 | 3 | 15 |
+| product, split (extract 4, 2 MUL, 2 reductions, pack 2) | 22 | 6 | 11 |
+| product, direct (study 4) | 27 | 8 | 13 |
+| add, either form (lane for lane the same) | 16 | 0 | 8 |
+| conjugate, split (swap: one rotate) | 1 | 0 | 1 |
+| norm, split (u·v: extract 2, MUL, reduce 7) | 10 | 3 | 9 |
+
+The chain for the split product is extract 1, MUL 1, reduction 7, pack 2.
+
+The split product saves 5 instructions, 2 multiplies and 2 chain steps per product. Converting a value in and out costs 47 instructions and 6 multiplies, so the split pays only when each converted value takes part in about ten or more products. For a value kept in split form for a whole computation, conversion happens only at the boundary. Multiply by i is dearer in split form: i ↦ (s, −s), two products by constants, where the direct form needs only a swap and one negation.
+
+**p ≡ 3 (mod 4).** −1 is not a square mod p, so x² + 1 is irreducible, Z[i]/p is the field with p² elements, and there is no split. The product stays at 4 products (or 3 by the ac, bd, (a + b)(c + d) arrangement).
+
+**p = 2.** 2 = −i(1 + i)², so 2 ramifies, and Z[i]/2 = F_2[i] with (1 + i)² = 0. It is not a product of fields (1 + i is nilpotent), so there is no split. Its four elements are two bits, and arithmetic on them is trivial bit logic.
+
+**Composite n.** For a composite n whose prime factors are all ≡ 1 (mod 4), the split holds factor by factor through the Chinese remainder theorem (s² ≡ −1 mod n exists then); this was not checked.

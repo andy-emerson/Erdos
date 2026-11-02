@@ -44,6 +44,18 @@ class L:
         return w1 ^ ((w1 ^ b) & ~self.G & self.F)
     def add_bridge_flag(self, w1, w2):            # OF of the bridge add, the add instruction itself
         return self.of_add(w1 ^ self.G, w2)
+    def add_readd(self, w1, w2):                  # 5: add, xor, and, xor | add  (found by the superoptimizer)
+        d = (w1 ^ ((w1 + w2) & self.F)) & self.G      # delta*G: axis XOR count carry
+        return (w2 + (w1 ^ d)) & self.F
+    def add_readd_flag(self, w1, w2):             # OF of the LAST add
+        d = (w1 ^ ((w1 + w2) & self.F)) & self.G
+        return self.of_add(w1 ^ d, w2)
+    def add_precarry(self, w1, w2):               # 5: and, add, and, xor | add  (carry from the counts alone)
+        d = ((w2 + (w1 & self.C)) & self.F) & self.G  # bit G = a XOR gamma
+        return (w2 + (w1 ^ d)) & self.F
+    def add_precarry_flag(self, w1, w2):
+        d = ((w2 + (w1 & self.C)) & self.F) & self.G
+        return self.of_add(w1 ^ d, w2)
     def add_carry3(self, w1, w2):                 # 5 with x86 lea / 6: add, xor, and, (lea 3e | shl, xor), xor
         s = (w1 + w2) & self.F
         e = (s ^ w1) & self.G                     # bit G = axis XOR carry out of the count
@@ -143,12 +155,13 @@ def check(n, pairs, words):
             s, d = v1 + v2, v1 - v2
             ws, wd = Lw.enc(s, a1), Lw.enc(d, a1)
             os_, od = int(not Lw.inrange(s)), int(not Lw.inrange(d))
-            for f in ('add_bridge', 'add_bridge_b', 'add_carry3', 'add_orand', 'add_pdep'):
+            for f in ('add_bridge', 'add_bridge_b', 'add_readd', 'add_precarry', 'add_carry3', 'add_orand', 'add_pdep'):
                 r = getattr(Lw, f)(w1, w2)
                 if r != ws: bad(f, w1, w2)
                 if Lw.ovf_add(w1, w2, r) != os_: bad('ovf_add/' + f, w1, w2)
                 if Lw.ovf_add_andn(w1, w2, r) != os_: bad('ovf_add_andn/' + f, w1, w2)
-            if Lw.add_bridge_flag(w1, w2) != os_: bad('add_bridge_flag', w1, w2)
+            for f in ('add_bridge_flag', 'add_readd_flag', 'add_precarry_flag'):
+                if getattr(Lw, f)(w1, w2) != os_: bad(f, w1, w2)
             if Lw.add_carry3_flag(w1, w2) != os_: fails.append(('EXPECTED add_carry3_flag', w1, w2))
             for f in ('sub', 'sub_b'):
                 r = getattr(Lw, f)(w1, w2)

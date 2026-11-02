@@ -89,6 +89,8 @@ def truth(op, n1, D1, a1, n2, D2, a2):
         return n1 * n2 * (-1 if a1 & a2 else 1), D1 * D2, a1 ^ a2
     if op == 'neg':                       # unary, on (n1, D1, a1)
         return -n1, D1, a1
+    if op == 'conj':                      # unary: conjugate, i -> -i
+        return (-n1 if a1 else n1), D1, a1
     if op == 'div':                       # (n1/D1 i^a1) / (n2/D2 i^a2) = n1 D2 / (D1 n2) * i^(a1-a2)
         if n2 == 0:
             return None
@@ -106,7 +108,7 @@ def cases_small(n, op):
     rows = []
     Ds = range(1, T)
     ns = range(-T, T)
-    unary = op == 'neg'
+    unary = op in ('neg', 'conj')
     for D1 in Ds:
         for D2 in ([1] if unary else Ds):
             if op != 'div' and D1 * D2 >= T:
@@ -141,7 +143,7 @@ def cases_random(op, count, n=64, seed=1):
     random.seed(seed)
     T = 1 << (n - 1)
     rows = []
-    unary = op == 'neg'
+    unary = op in ('neg', 'conj')
     while len(rows) < count:
         bD1 = random.randint(1, n - 2)
         bD2 = 1 if unary else random.randint(1, max(1, n - 1 - bD1))
@@ -192,7 +194,14 @@ def cases_random(op, count, n=64, seed=1):
     return rows + ext
 
 
-def pack(rows, n):
+def dword(D, a, n, layout):
+    """The denominator word. offset: D + T*a (the design). neg: (-1)^a * D in two's complement
+    (top bit is still a, since 1 <= D < T)."""
+    T = 1 << (n - 1); F = (1 << n) - 1
+    return (D + T * a) & F if layout == 'offset' else ((-D if a else D) & F)
+
+
+def pack(rows, n, layout='offset'):
     """rows -> env of uint64 arrays (words) plus expected words."""
     T = 1 << (n - 1); F = (1 << n) - 1
     cols = list(zip(*rows))
@@ -200,35 +209,40 @@ def pack(rows, n):
     A = lambda xs: np.array([x & F for x in xs], dtype=U)
     env = {
         'n1': A(n1), 'n2': A(n2),
-        'd1': A([D + T * a for D, a in zip(D1, a1)]),
-        'd2': A([D + T * a for D, a in zip(D2, a2)]),
+        'd1': A([dword(D, a, n, layout) for D, a in zip(D1, a1)]),
+        'd2': A([dword(D, a, n, layout) for D, a in zip(D2, a2)]),
     }
     exp_num = A(tn)
-    exp_den = A([D + T * a for D, a in zip(tD, ta)])
+    exp_den = A([dword(D, a, n, layout) for D, a in zip(tD, ta)])
+    alt_den = A([dword(D, 1 - a, n, layout) for D, a in zip(tD, ta)])   # the other zero
     zero = np.array([x == 0 for x in tn])
-    return env, exp_num, exp_den, zero
+    return env, exp_num, exp_den, alt_den, zero
 
 
 _cache = {}
 
 
-def data(op, n, rand_count=200000):
-    key = (op, n)
+_rows = {}
+
+
+def data(op, n, layout='offset', rand_count=200000):
+    key = (op, n, layout)
     if key not in _cache:
-        rows = cases_small(n, op) if n <= 8 else cases_random(op, rand_count, n)
-        _cache[key] = (len(rows),) + pack(rows, n)
+        if (op, n) not in _rows:
+            _rows[(op, n)] = cases_small(n, op) if n <= 8 else cases_random(op, rand_count, n)
+        rows = _rows[(op, n)]
+        _cache[key] = (len(rows),) + pack(rows, n, layout)
     return _cache[key]
 
 
-def check(prog, op, n, out=('num', 'den'), zero_any_axis=True):
+def check(prog, op, n, out=('num', 'den'), zero_any_axis=True, layout='offset'):
     """Number of failing cases (0 = correct) and the number of cases."""
-    cnt, env, en, ed, zero = data(op, n)
+    cnt, env, en, ed, alt, zero = data(op, n, layout)
     w = W(n)
     r = run(prog, env, w)
     bad = r[out[0]] != en
-    dmask = w.F if not zero_any_axis else None
     if zero_any_axis:
-        bad |= np.where(zero, (r[out[1]] & ~w.T) != (ed & ~w.T), r[out[1]] != ed)
+        bad |= np.where(zero, (r[out[1]] != ed) & (r[out[1]] != alt), r[out[1]] != ed)
     else:
         bad |= r[out[1]] != ed
     return int(bad.sum()), cnt

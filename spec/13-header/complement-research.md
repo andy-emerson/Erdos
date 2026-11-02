@@ -224,3 +224,75 @@ Reproduce: `gcc -O3 -o so superopt.c && ./so 6 add 4 && ./so 4 add 5 2000 && ./s
 - The "either zero" relaxation did not shorten add at length ≤ 4. Length 5 was not run for it.
 - Length 6 was not searched, and length 5 only at $N = 4$ (the $N = 6$ run would take about 2 hours on this machine). The full add (16) and the multiply/divide (18) are hand-built, not searched.
 - Nothing is timed. The x86-64 and ARM64 counts are by hand.
+
+## Round 2: optimization
+
+Nov 2, 2026. Cheaper arithmetic for the complement layout. Conventions as above: one instruction per operator, constants ($G$, $\lnot G$, $S$) free, `mov` copies not counted; *(hand)* means not assembled. Counts below are without loads and stores (add 3 for the harness's loop counts: round 1's mul 18 is `results-cpl.md`'s 21).
+
+### M1: multiply and exact division, by reasoning
+
+Script: [`test/complement/m1.py`](test/complement/m1.py), about 15 s. Every program is a list of instructions, so its count is its length; x86-64 and ARM64 instructions (`lea`, one-operand `imul`, `shrd`, `test`/`cmov`, `pext`/`pdep`, `bfxil`, `bfi`, `ubfx`, shifted-operand `eor`/`tst`/`bics`, `cneg`) are modelled at width $n$. It is checked exhaustively on $n = 4, 6, 8$ (every pair) and on 43,611 random and edge pairs at $n = 64$. **No in-range failures and no divide traps.** Division is checked on every nonzero divisor, exact or not (truncating).
+
+**Three facts** (checked exhaustively in the script). Write $h = (w \text{ shl } 1) \text{ sar } 1$ (the word with the axis bit copied into bit $n-1$) and $e = a \text{ XOR } s$.
+
+$$
+\text{(I1)}\ \ w + h \equiv 2v \pmod{2^n} \qquad
+\text{(I2)}\ \ w_1 w_2 \equiv v_1 v_2 + 2^{n-2}\,(e_1 c_{2,0} \oplus e_2 c_{1,0}) \pmod{2^{n-1}} \qquad
+\text{(I3)}\ \ (w_1 \text{ shl } 1)(w_2 \text{ shl } 1) \equiv 4 v_1 v_2 \pmod{2^n}
+$$
+
+- (I1): $2v = 2c - 2^{n-1}s$ fits in $n$ bits, so **$2v$ costs 3** (`shl`, `sar`, `add`; x86 `lea`, `sar`, `lea`), one less than the sign extension $x$ (4). It also leaves $L = w \text{ shl } 1$, whose top bit is $a$.
+- (I2) is the predicted-fix idea applied to the raw words. The count bits of $w_1 w_2$ are already right. The sign bit is off by a parity term $e_1 c_{2,0} \oplus e_2 c_{1,0}$, which needs both $e$'s and both low bits (about 9 operations). That is more than converting the operands, so **the raw product is not used.**
+- (I3) is exact but loses bit $n-2$ of the product (the sign). Only a widening multiply gets the sign back.
+
+**Multiply** (result $(-1)^{a_1 a_2} v_1 v_2$ on axis $a_1 \oplus a_2$):
+
+| Form | Formula | Count | Overflow |
+| --- | --- | --- | --- |
+| round 1 | $x_1, x_2$ (4 each); $m = ((w_1 \text{ AND } w_2) \text{ shl } 1) \text{ sar } (n{-}1)$; $p = ((x_1 \oplus m) - m)\,x_2$; fix | 18 | not the wrap |
+| **generic, scaled** | $L_i = w_i \text{ shl } 1,\ h_i = L_i \text{ sar } 1,\ D_i = w_i + h_i$ (3 each); $x_2 = D_2 \text{ sar } 1$; $m = (L_1 \text{ AND } L_2) \text{ sar } (n{-}1)$; $P = ((D_1 \oplus m) - m)\,x_2$ ($= \pm 2p$); $p = P \text{ sar } 1$; fix | **17** | **wrap** |
+| generic | the same with $x_1 = D_1 \text{ sar } 1$ and no final `sar` | 17 | not the wrap |
+| **x86-64** *(hand)* | $D_i$ by `lea`/`sar`/`lea` (3 each); `test L1,L2` (SF $= a_1 a_2$), `neg`, `cmovs` on $D_1$; one-operand `imul` → rdx:rax $= \pm 4p$; $A = (L_1 \oplus L_2) \text{ shr } (n{-}1)$; `lea hi,[A+2*rdx]`; `shrd rax,hi,2` | **14** (+3 `mov`) | **wrap** |
+| x86-64 BMI2 *(hand)* | $y_i = \text{pext}(w_i, \lnot G)$; `and t,w1,w2; bt t,62` (CF $= a_1 a_2$), `neg`, `cmovc` on $y_1$; $P = y_1 y_2$; $r = \text{pdep}(P, \lnot G) \text{ OR } ((w_1 \oplus w_2) \text{ AND } G)$ | **11** (12 with a mask instead of `cmov`) | **wrap** |
+| **ARM64** *(hand)* | `asr x,w,#1; bfxil x,w,#0,#62` (×2); `mul p,x1,x2`; `ubfx t,w1,#62,#1; tst t,w2,lsr #62; cneg p,p,ne`; `eor u,t,w2,lsr #62; bfi p,u,#62,#1` | **10** | not the wrap |
+| generic `mul`+`mulh` (RV64) | the x86 route without a widening multiply or funnel shift | 19 | wrap |
+
+The fix is round 1's $r = p \oplus ((p \oplus w_1 \oplus w_2) \text{ AND } G)$, 4 operations.
+
+- **Where the saving is.**
+  - $D = 2v$ costs 3 where $x$ costs 4.
+  - The mask comes from $L_1 \text{ AND } L_2$, whose top bit is $a_1 a_2$, in 2 operations rather than 3.
+  - **Scaled form.** $(\pm 2v_1) \cdot x_2 = \pm 2p$ exactly mod $2^n$, so $p = P \text{ sar } 1$ copies bit $n-2$ of the product into the sign. The overflow is then **the $(n-1)$-bit wrap on the right axis, as for add.** Round 1's form is not (its bit $n-1$ is bit $n-1$ of the $n$-bit product).
+- **x86-64.** $\pm 4p$ fits in 128 bits. When $p$ fits, `rdx` is $0$ or $-1$ (the sign). `lea hi,[A+2*rdx]` puts $A$ in bit 0 and the sign in bit 1, and `shrd rax,hi,2` moves the count down and those two bits into bits 62–63. On overflow, bit 0 of `rdx` is bit $n-2$ of $p$, so it wraps. BMI2 `mulx` would do the same without flags.
+- **BMI2.** `pext` removes the axis bit, which leaves the 63-bit two's-complement value (bit 63 is 0, so it is right mod $2^{63}$, which is all the product needs). `pdep` re-inserts the gap, and the OR writes $A$. `pext`/`pdep` are 1 µop and 3 cycles on Intel since Haswell and on AMD since Zen 3, but microcoded and slow on Zen 1/2 *(from memory)*.
+- **ARM64.**
+  - `ubfx` isolates $a_1$ in bit 0. A shifted-operand `tst` then sets Z $= \lnot(a_1 a_2)$ in one instruction, and the same `t` gives $A$ in bit 0 for `bfi` through a shifted `eor`. So the i·i sign and the axis fix together cost 5, not 6.
+  - The ARM64 forms keep the round 1 overflow (not the wrap). Using $D_i$ (`and D,w,#S; bfi D,w,#1,#62`, 2) plus `asr` would give the wrap for +1.
+
+**Exact (and truncating) division** (result $\operatorname{trunc}(v_1/v_2) \cdot (-1)^{a_2 \bar a_1}$ on axis $a_1 \oplus a_2$):
+
+| Form | Formula | Count |
+| --- | --- | --- |
+| round 1 | $x_1 \div x_2$, mask $((w_2 \text{ AND NOT } w_1) \text{ shl } 1) \text{ sar } (n{-}1)$, condneg, fix | 18 with `andn` (19 without, as `results-cpl.md` found) |
+| **generic** | $D_1 \div D_2$ ($= v_1 / v_2$: the quotient is unchanged by scaling both); $m = (L_2 \text{ AND NOT } L_1) \text{ sar } (n{-}1)$; $q' = (q \oplus m) - m$; fix | **15** (16 without `andn`) |
+| x86-64 *(hand)* | $D_i$ (3 each); `cqo; idiv`; `andn k,L1,L2` (sets SF $= a_2 \bar a_1$), `neg`, `cmovs`; fix | **15** with BMI1 (16 with `not; test`) |
+| **ARM64** *(hand)* | sign extensions (2 each); `sdiv`; `ubfx t,w2,#62,#1; bics xzr,t,w1,lsr #62; cneg q,q,ne`; `eor u,t,w1,lsr #62; bfi q,u,#62,#1` | **10** |
+
+- **No trap.** $D_2$ is even, so $D_1 \div D_2$ never meets $\text{INT\_MIN} \div -1$; $D_1 = -2^{63}$ only with $D_2 = \pm 2$ or larger.
+- **Overflow.** The only overflowing quotient is $+2^{n-2}$ (from $-2^{n-2}$ divided by $\pm 1$ with the sign rule). Every form, round 1's included, returns **0 on the right axis** for it, not the wrap $-2^{n-2}$.
+- The scaled route works because a quotient does not change when both operands are scaled. The multiply's scaled route costs an extra `sar` at the end, so it only ties there.
+
+**Summary of M1** (operation only; +3 for loads and the store):
+
+| | Round 1 | Generic (RV64) | x86-64 *(hand)* | ARM64 *(hand)* |
+| --- | --- | --- | --- | --- |
+| multiply | 18 | **17**, wraps | **14** (BMI2: **11**), wraps | **10** |
+| divide | 18 (19 no `andn`) | **15** (16) | **15** (16 no BMI1) | **10** |
+
+Control (pair of int64) is 9 for multiply and 7 for divide on the same basis. The layout still pays about 6–8 for the conversions and the i·i sign on generic machines, and 1–3 on ARM64.
+
+**Not used, and why.**
+- **The raw product with a predicted fix (I2):** the parity correction costs more than the conversion.
+- **(I3) with `mulh` to recover the sign:** 19 on generic machines. It only pays with x86's widening `imul` + `shrd` (14).
+- **Folding the i·i negation into $D$:** $-2v = w - 3h$ holds, but a conditional form costs as much as `xor`/`sub` after it.
+- **A cheaper sign extension:** none of length ≤ 3 is known; M2 searches for one.

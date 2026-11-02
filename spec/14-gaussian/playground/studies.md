@@ -137,3 +137,46 @@ The split product saves 5 instructions, 2 multiplies and 2 chain steps per produ
 **p = 2.** 2 = −i(1 + i)², so 2 ramifies, and Z[i]/2 = F_2[i] with (1 + i)² = 0. It is not a product of fields (1 + i is nilpotent), so there is no split. Its four elements are two bits, and arithmetic on them is trivial bit logic.
 
 **Composite n.** For a composite n whose prime factors are all ≡ 1 (mod 4), the split holds factor by factor through the Chinese remainder theorem (s² ≡ −1 mod n exists then); this was not checked.
+
+## Study 6: GCD and division (gcd.py)
+
+**What was checked.** Halves are in the symmetric range. The arithmetic runs on extracted halves in 2K-bit signed words, as at K = 32 with 64-bit registers. a/b = a·conj(b)/N(b) with x = a₁b₁ + a₂b₂, y = a₂b₁ − a₁b₂ and N = b₁² + b₂², all below 2^(2K−1) in size. Division uses the machine's signed truncating divide of 2K-bit words (x86-64 `idiv`, ARM64 `sdiv`, RISC-V `div`), and the rounding is fixed by masks.
+
+- **Exact division** (b divides a): q = (x/N, y/N).
+- **Division with remainder:** each part of q is rounded to the nearest integer, halves up, and r = a − qb. The rounding is the truncated quotient, then a floor correction by the remainder's sign mask, then +1 where r ≥ N − r (2r ≥ N without forming 2r, which could overflow at K = 32). Then N(r) ≤ N(b)/2 < N(b).
+- **Gaussian gcd:** Euclid, (a, b) ← (b, a mod b) until b = 0, normalised to the associate with real part > 0 and imaginary part ≥ 0 (gcd(0, 0) = 0).
+- **Division by 0:** x86-64 traps on a zero divisor, so N is replaced by 1 when it is 0 (compare, OR), and the quotient becomes the infinity marker by conditional choice. a/0 = ∞ for a ≠ 0, and 0/0 (undefined) also gives ∞.
+
+The reference is separate code using Python rationals and big integers: rounded division, and an extended Euclid that gives g = ua + vb. Each gcd was checked to equal the reference after normalisation and to carry a certificate: g divides a, g divides b, and g = ua + vb, so every common divisor divides g. At K ≤ 4 it was also checked against brute force: N(g) equals the largest norm of any common divisor, found by searching all candidates with |parts| ≤ 2·HI. Division was checked for: q and r matching the reference, a = qb + r, N(r) ≤ N(b)/2, and q and r in range. Exact division was checked as (qb)/b = q for every in-range product.
+
+**Cases.**
+- Exhaustive over all pairs of in-range values: K = 3 (2,401 pairs), K = 4 (50,625 pairs, with brute force), K = 5 (923,521 pairs).
+- K = 32: 100,006 pairs for division and gcd. A quarter are fully random, a quarter have a divisor up to 2^12, and half are built with a common factor of size 2^4 to 2^15, plus edge pairs such as (HI + HI·i, HI + HI·i) and (0, 0). Also 100,000 exact divisions with the divisor's parts up to 2^30 and quotients sized to keep products in range, and 1,007 divisions by zero.
+- **Failures: none.**
+
+**Euclid steps** (one division with remainder each):
+
+| K | max | mean | bound ⌊log₂ N(b)⌋ + 1 |
+|---|---|---|---|
+| 3 | 3 | 1.88 | 5 |
+| 4 | 4 | 2.58 | 7 |
+| 5 | 6 | 3.24 | 9 |
+| 32 (random) | 27 | 14.07 | 63 |
+
+N(r) ≤ N(b)/2 halves the norm at every step, which gives the bound.
+
+**Instruction counts** (scalar, on extracted halves; a divide is 1 instruction, and is far dearer than a multiply on all three families):
+
+| operation | instructions | multiplies | divides |
+|---|---|---|---|
+| exact division (extract 6, N 3, zero guard 2, x and y 6, 2 DIV, pack 3, infinity choice 4) | 26 | 6 | 2 |
+| division with remainder (extract 6, N 3, x and y 6, rounding 2 × 10, r = a − qb 8, pack q and r 6) | 49 | 12 | 2 |
+| rounding of one part (DIV, MUL, SUB, SAR, ADD, AND, ADD, SUB, compare, ADD) | 10 | 1 | 1 |
+| normalise (extract 3, sign of (y, x) lexicographically: SHL, ADD, SAR 3, conditional negation 4, compare 1, mask 1, multiply by −i by choice 7, pack 3) | 22 | 0 | 0 |
+| gcd | steps × (49 + 1 loop test) + 22 | 12 per step | 2 per step |
+
+The divide's remainder costs a MUL and a SUB (one `msub` on ARM64; x86-64 `idiv` returns it for free). The division-with-remainder count does not include the zero guard, because Euclid never divides by 0.
+
+**The gcd loop is data-dependent.** Its step count varies, and the loop test is a branch. A branch-free version would run the bound's 63 steps at K = 32, with masks holding (a, b) once b = 0 (zero guard 2, conditional choice of two words 6, about 57 per step). That is about 3,600 instructions, against about 14 × 50 + 22 ≈ 720 for the observed mean. This was not implemented. Infinity inputs to the gcd are outside this study.
+
+**Binary-gcd analogue (literature; details unverified).** A. Weilert, "(1+i)-ary GCD computation in Z[i] as an analogue to the binary GCD algorithm", J. Symbolic Computation 30 (2000). Its title was found by search; the journal details are from memory and were not checked. It plays (1 + i), the prime above 2, the part that 2 plays in the binary gcd. a + bi is divisible by 1 + i exactly when a ≡ b (mod 2), and (a + bi)/(1 + i) = ((a + b) + (b − a)i)/2, an add, a subtract and two shifts, with no divide. I. Damgård and G. S. Frandsen, "Efficient algorithms for gcd and cubic residuosity in the ring of Eisenstein integers", BRICS RS-03-8 (2003). Its abstract was read; it generalises the binary gcd to the Eisenstein integers in O(n²) time and states that the technique gives equally fast algorithms for gcd and quartic residuosity in Z[i]. S. Agarwal and G. S. Frandsen, "Binary GCD like algorithms for some complex quadratic rings", ANTS 2004, is from memory and was not checked. None of these was implemented or tested here; a (1+i)-ary gcd would replace the two divides per step by shifts and masks, at the cost of more steps.

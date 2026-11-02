@@ -1,4 +1,7 @@
-import Header.ProgA
+import Header.CA_bfCx_run_sub_0
+import Header.CA_bfCx_run_sub_1
+import Header.CA_bfCx_run_sub_2
+import Header.CA_bfCx_run_sub_3
 /-!
 # Round 2: Design A's programs are correct, and every input takes one listed path
 
@@ -27,22 +30,11 @@ theorem bfCx_run_sub (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh
         s.trace = List.range (bfCx true).length ∧ s.r 21 = 0 ∧ s.stores = [(zh, hdr r.d), (zm, r.m)]
     | none => ∃ s, exe ((bfCx true)) (regs6 xh xm yh ym zh zm) mem = .done s ∧
         s.trace = List.range (bfCx true).length ∧ s.r 21 = 1 := by
-  have hs := wadd_lt m1 m2
-  have hd := wsub_lt' m1 m2
-  have hd' := wneg_lt (wsub m1 m2)
-  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
-  all_goals by_cases h : m1 < m2
-  all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
-  all_goals first | (have h'' : m1 ≤ m2 := by omega) | (have h'' : True := trivial)
-  all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
-  all_goals try (exfalso; omega)
-  all_goals try subst z1
-  all_goals try subst z2
-  all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
-  all_goals run_prog [bfCx, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
-      borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
-      select_ones hs hd', wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl
+  · exact bfCx_run_sub_0 m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 _ d2 rfl e1 e2
+  · exact bfCx_run_sub_1 m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 _ d2 rfl e1 e2
+  · exact bfCx_run_sub_2 m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 _ d2 rfl e1 e2
+  · exact bfCx_run_sub_3 m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 _ d2 rfl e1 e2
 
 end PA
 end Header

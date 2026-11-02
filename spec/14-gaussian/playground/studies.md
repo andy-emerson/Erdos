@@ -220,3 +220,31 @@ A run is acc = x₀ followed by acc = op(acc, xⱼ) or op(xⱼ, acc), with the s
 The deferred test saves 10 instructions per add or sub and 11 per mul against study 2's canonical form. It moves the input test from every operation to once per external input. The once-per-element costs (6 per input, 5 at the end) are paid once, however long the run. A run of R operations with R + 1 fresh inputs costs 16R + 6(R + 1) + 5 for adds. That is 33 against 32 at R = 1 (no gain) and 99 against 128 at R = 4. The saving grows when inputs are reused across many operations, as in a product of matrices, where an input element is tested once and used many times.
 
 Structure, per RULES' "one structure each": in V1 the sticky word is local to an element's run when the run is fused into one loop. Across separate passes over an array, V1 would need a stored sticky array, a second structure. V2 keeps one word, but its slow path needs the inputs kept for the recomputation.
+
+## Study 8: Gauss's three-multiply product (gauss3.py)
+
+**What was checked.** k₁ = c(a + b), k₂ = a(d − c), k₃ = b(c + d); re = k₁ − k₃ = ac − bd, im = k₁ + k₂ = ad + bc. It was compared with the four-multiply product, in two forms. The arithmetic runs on extracted halves in 2K-bit words (64-bit registers at K = 32), wrapping like the machine.
+
+- **Wrapping** (study 1's multiply): halves are int-K, MIN included, and result halves wrap mod 2^K. Checked: the three-multiply result equals the four-multiply result and the true value mod 2^K. For halves in the symmetric range, the 2K-bit re and im are also the exact true values, so study 2's range test applies unchanged.
+- **Mod n**, with Barrett as in study 4: every intermediate is kept non-negative. a + b < 2n, (d + n) − c lies in (0, 2n), and c + d < 2n, so k₁, k₂, k₃ < 2n². Then re_t = (k₁ + 2n²) − k₃ lies in (0, 4n²), and im_t = k₁ + k₂ = ad + bc + an ≡ ad + bc (mod n), < 4n². Since n < 2^(K−1), 4n² < 2^(2K), so one Barrett reduction still leaves r < 2n.
+
+**Cases.**
+- Wrapping, exhaustive over all word pairs: K = 3 (4,096), K = 4 (65,536), K = 5 (1,048,576).
+- Mod n, exhaustive over all residue quadruples for every n from 2 to 2^(K−1) − 1: up to n = 15 at K = 5 (178,311 quadruples).
+- K = 32: 200,000 random wrapping pairs (a quarter built from 0, ±1, ±HI, MIN, HI − 1, ±2^16). Mod n: 25,000 random quadruples (a fifth from the edges 0, 1, n − 1, n − 2, ⌊n/2⌋) for each of eight moduli: 2,147,483,647, 2,147,483,629, 2,147,483,587, 2,147,483,579, 2,147,483,646 (even), 2,147,483,645, 65,537 and 3.
+- **Failures: none.** One input at each small K and 9 at K = 32 gave a 2K-bit re or im that was not the true value. All of them have a MIN half, which is infinity. For example (MIN, MIN)·(MIN, MIN) has im = 2·MIN² = 2^(2K−1), one past the 2K-bit signed range; the four-multiply product overflows the same way. Their halves mod 2^K are still right.
+
+**Proxies (not speed).**
+
+| product | instructions | multiplies | longest chain |
+|---|---|---|---|
+| wrapping, four multiplies (extract 6, 4 MUL, 2 add/sub, pack 3) | 15 | 4 | 6 |
+| wrapping, three multiplies (extract 6, 3 add/sub, 3 MUL, 2 add/sub, pack 3) | 17 | 3 | 7 |
+| mod n, four multiplies (study 4) | 27 | 8 | 13 |
+| mod n, three multiplies (extract 4, a + b 1, (d + n) − c 2, c + d 1, 3 MUL, re 2, im 1, 2 Barrett 14, pack 2) | 30 | 7 | 14 |
+| wrapping, y fixed (y's sums precomputed), four / three | 12 / 12 | 4 / 3 | |
+| mod n, y fixed, four / three | 25 / 25 | 8 / 7 | |
+
+On a product of two fresh values, Gauss trades one multiply for three more adds and subtracts when wrapping (two more instructions in all) and four more mod n (three more in all), and the chain gets one step longer (the add before the multiply). When one operand is fixed across many products (a constant, or a matrix entry reused), its sums c, d − c, c + d (or c, (d + n) − c, c + d) are computed once. The trade is then one multiply for one add, at equal instruction counts. Both chains contain exactly one multiply, so the chain comparison does not depend on how dear a multiply is. The three-multiply form gains only where a multiply costs more than an add in throughput, and these proxies cannot show that.
+
+**Intermediate widening.** a + b, c + d and d − c need one more bit than a half: K + 1 bits signed, so 33 bits at K = 32. With extracted halves in 64-bit registers this costs nothing, and the products c(a + b) etc. stay below 2^(2K−1) for halves in the symmetric range. In vector lanes it matters. A 32 × 32 → 64 widening multiply (x86-64 `pmuldq`, ARM64 `smull`, RISC-V `vwmul`) takes 32-bit inputs, so a 33-bit a + b does not fit. The choices are a 64-bit lane multiply, which ARM64's base vector unit lacks as far as I know (unverified), or giving up the exact value. Wrapping alone does not need the extra bit, since a + b mod 2^K gives the right low K bits. But then the exact 2K-bit value that study 2's range test needs is lost. Mod n has no such problem: n < 2^(K−1) leaves a spare bit, so a + b < 2n < 2^K fits an unsigned K-bit lane, and the unsigned widening multiply (`pmuludq`, `umull`, `vwmulu`) applies.

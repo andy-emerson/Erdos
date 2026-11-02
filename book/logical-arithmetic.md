@@ -339,3 +339,26 @@ $$a + (b \text{ XOR } m) + k = \begin{cases} a + b & m = 0000,\ k = 0 \\ a - b &
 Instructions: 3
 
 OR counts each bit set in either word once, and AND counts again the bits set in both.
+
+## Glossary
+
+- **Absolute value** (XOR): $x$ or $-x$, by the sign's mask. 2 instructions.
+- **Addition from AND and OR** (arithmetic): $a + b$ as AND plus OR. 3.
+- **Addition from XOR and AND** (arithmetic): $a + b$ as the sum without carries plus the carries. 4.
+- **Combining flags** (OR): 1 if either flag is 1. 1.
+- **Comparing** (XOR): 0 exactly when two words are equal. 1.
+- **Conditional add** (AND): adds $y$ or nothing. 2.
+- **Conditional choice** (combinations): $a$ or $c$. 3.
+- **Conditional choice with OR** (combinations): $a$ or $c$, kept and combined. 4, or 3 with `andn` or `bic`.
+- **Conditional deletion** (AND): $x$ or 0. 1.
+- **Conditional keeping** (NOT): $x$ or 0, the opposite way. 2, or 1 with `andn` or `bic`.
+- **Conditional negation** (XOR): $x$ or $-x$. 2.
+- **Conditional subtraction** (arithmetic): $a + b$ or $a - b$. 3.
+- **Conditional swap** (combinations): $(a, b)$ or $(b, a)$. 4.
+- **Congruence** (AND): $x \bmod 2^j$. 1, or 3 when $j$ varies.
+- **Minimum and maximum** (combinations): the smaller or larger word. 3 each, 4 for both.
+- **Negation** (NOT): $-x$. 2.
+- **Opposite mask** (NOT): the mask of the other flag. 1.
+- **Setting chosen bits** (OR): sets the bits of a constant. 1.
+- **Subtraction from logic** (arithmetic): $a - b$ as adding the negation. 3.
+- **Toggling chosen bits** (XOR): toggles the bits of a constant. 1.

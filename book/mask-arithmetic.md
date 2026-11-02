@@ -112,6 +112,24 @@ x \text{ AND } m &= 0110 \text{ AND } 1111 \\
 
 $$x + (y \text{ AND } m) = \begin{cases} x & m = 0000,\ k = 0 \\ x + y & m = 1111,\ k = 1 \end{cases}$$
 
+For example, take $x = 0110$ (6) and $y = 0011$ (3). With $k = 1$, the mask is $m = 1111$, and $y$ is added:
+
+$$\begin{aligned}
+x + (y \text{ AND } m) &= 0110 + (0011 \text{ AND } 1111) \\
+&= 0110 + 0011 \\
+&= 1001 \\
+&= 9
+\end{aligned}$$
+
+With $k = 0$, the mask is $m = 0000$, and nothing is added:
+
+$$\begin{aligned}
+x + (y \text{ AND } m) &= 0110 + (0011 \text{ AND } 0000) \\
+&= 0110 + 0000 \\
+&= 0110 \\
+&= 6
+\end{aligned}$$
+
 ### Remainder by a power of two
 
 Keeping the low $j$ bits is the remainder by $2^j$:

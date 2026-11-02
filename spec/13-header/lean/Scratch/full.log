@@ -10,3 +10,7 @@ Hint: Omit it from the simp argument list.
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
 ✔ [14/27] Built Header.CA_cxAdd_run_perArm_add (33s)
 ✔ [15/27] Built Header.CA_cxAdd_run_perArm_sub (36s)
+✔ [16/27] Built Header.CA_cxAdd_run_notes_add (35s)
+✔ [17/27] Built Header.CA_cxAdd_run_notes_sub (41s)
+✔ [18/27] Built Header.Registry (490ms)
+✔ [19/27] Built Header.CorrectC (4.9s)

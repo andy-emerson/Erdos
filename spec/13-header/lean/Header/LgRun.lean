@@ -81,35 +81,58 @@ def LgGen (cx sub : Bool) : Prop :=
       s.stores = [(zh, (lgOut sub h1 m1 h2 m2).1), (zm, (lgOut sub h1 m1 h2 m2).2.1)] ∧
       (cx = true → s.r 21 = (lgOut sub h1 m1 h2 m2).2.2)
 
-/-- Run the first `k` instructions (all of them) with `stepN`, read off the end state, and finish with `run_split`. -/
-syntax "lg_tac" term:max term:max num : tactic
+/-- Run the program in three parts with `stepN` (the loads and `t`, `s`, `L`; the flag, empty for integers; the rest
+and the stores), read off each part's end state, and join them with `run_split`. Cutting the run keeps the kernel's
+check small. -/
+syntax "lg_tac" term:max term:max num num num : tactic
 set_option hygiene false in
 macro_rules
-  | `(tactic| lg_tac $cx $sb $k) => `(tactic| (
+  | `(tactic| lg_tac $cx $sb $k1 $k2 $k3) => `(tactic| (
     intro h1 h2 m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
     have g1 : wsxb h1 < W := sx_lt h1
     have g2 : wsxb h2 < W := sx_lt h2
     have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by unfold W; omega)
     first
-      | rw [lgOut_eq, if_neg Bool.false_ne_true, lg_core _ _ _ _ g1 g2]
-      | rw [lgOut_eq, if_pos rfl, lg_core _ _ _ _ g1 g2']
-    cases hst : stepN (lgRow $cx $sb) $k (start (regs6 xh xm yh ym zh zm) mem) with
-    | none => simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6] at hst
-    | some S =>
-      have f := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 21)) hst
-      simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6, e1, e2, e3, e4] at f
-      obtain ⟨fpc, ftr, fsto, f21⟩ := f
-      rw [exe, show (lgRow $cx $sb).length + 1 = 1 + $k from rfl, run_split _ $k 1 _ _ hst]
-      refine ⟨S, ?_, ?_, ?_, ?_⟩
-      · simp [run, ← fpc, lgRow, preL, lgFlag]
-      · rw [← ftr]; rfl
-      · rw [← fsto]
-      · first | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← f21])))
+      | rw [lgOut_eq, ite_cond_eq_false _ _ (by decide), lg_core _ _ _ _ g1 g2]
+      | rw [lgOut_eq, ite_cond_eq_true _ _ (by decide), lg_core _ _ _ _ g1 g2']
+    cases hs1 : stepN (lgRow $cx $sb) $k1 (start (regs6 xh xm yh ym zh zm) mem) with
+    | none => simp [stepN, start, exec, St.set, St.get, lgRow, preL, lgFlag, regs6] at hs1
+    | some S1 =>
+    have f1 := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 10, s.r 12, s.r 13, s.r 14, s.r 15,
+      s.r 17, s.r 21, s.r 5, s.r 6)) hs1
+    simp [stepN, start, exec, St.set, St.get, lgRow, preL, lgFlag, regs6, e1, e2, e3, e4] at f1
+    obtain ⟨p1, t1, o1, a10, a12, a13, a14, a15, a17, a21, a5, a6⟩ := f1
+    have o1' : S1.stores = [] := by first | exact o1 | exact o1.symm
+    cases hs2 : stepN (lgRow $cx $sb) $k2 S1 with
+    | none => simp [stepN, exec, St.set, St.get, lgRow, preL, lgFlag, ← p1, ← a12, ← a13, ← a14] at hs2
+    | some S2 =>
+    have f2 := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 10, s.r 12, s.r 13, s.r 14, s.r 15,
+      s.r 17, s.r 21, s.r 5, s.r 6)) hs2
+    simp [stepN, exec, St.set, St.get, lgRow, preL, lgFlag, ← p1, ← t1, o1', ← a10, ← a12, ← a13, ← a14, ← a15,
+      ← a17, ← a21, ← a5, ← a6] at f2
+    obtain ⟨p2, t2, o2, b10, b12, b13, b14, b15, b17, b21, b5, b6⟩ := f2
+    have o2' : S2.stores = [] := by first | exact o2 | exact o2.symm | exact o2.symm.trans o1'
+    cases hs3 : stepN (lgRow $cx $sb) $k3 S2 with
+    | none => simp [stepN, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, ← p2] at hs3
+    | some S3 =>
+    have f3 := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 21)) hs3
+    simp [stepN, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, ← p2, ← t2, o2', ← b10, ← b12, ← b13,
+      ← b14, ← b15, ← b17, ← b21, ← b5, ← b6] at f3
+    obtain ⟨p3, t3, o3, c21⟩ := f3
+    rw [exe, show (lgRow $cx $sb).length + 1 = ((1 + $k3) + $k2) + $k1 from rfl, run_split _ $k1 _ _ _ hs1,
+      run_split _ $k2 _ _ _ hs2, run_split _ $k3 _ _ _ hs3]
+    refine ⟨S3, ?_, ?_, ?_, ?_⟩
+    · simp [run, ← p3, lgRow, preL, lgFlag]
+    · rw [← t3]; rfl
+    · rw [← o3]
+    · first | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← c21])))
 
-theorem lgGen_int_add : LgGen false false := by lg_tac false false 18
-theorem lgGen_int_sub : LgGen false true := by lg_tac false true 19
-theorem lgGen_cx_add : LgGen true false := by lg_tac true false 23
-theorem lgGen_cx_sub : LgGen true true := by lg_tac true true 24
+set_option maxHeartbeats 1000000
+
+theorem lgGen_int_add : LgGen false false := by lg_tac false false 8 0 10
+theorem lgGen_int_sub : LgGen false true := by lg_tac false true 9 0 10
+theorem lgGen_cx_add : LgGen true false := by lg_tac true false 8 5 10
+theorem lgGen_cx_sub : LgGen true true := by lg_tac true true 9 5 10
 
 /-- **The header form's program, every input.** It runs every instruction once and ends normally; it stores the
 formula's header byte and magnitude; the complex program leaves the formula's expression flag in register 21. -/

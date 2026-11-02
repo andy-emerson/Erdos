@@ -15,6 +15,7 @@
      and add/sub/rsub/and/or/xor/candn with c in {1, ~1, G, ~G, S, ~S, K, C}.
 
    usage: superopt2 N target Lmax [maxprint] [ext]      ext = letters from "MDZQU"
+   resumable: SO_LMIN=L SO_START=k starts length L at first-instruction chunk k and logs each chunk done
    targets:
      sext   w -> v as an N-bit signed integer                 (every word)
      mod    the same, top bit free (v mod 2^(N-1))
@@ -172,6 +173,15 @@ static void emit(Ins I, int pos) {
     if (live_count(nv + 1) <= L - 1 - pos) gen(pos + 1);
     uses[I.a]--; if (ISBIN(I.op)) uses[I.b]--;
 }
+static long firstidx, startidx;        /* resumable runs: chunks = first instructions (env SO_START) */
+static void emit0(Ins I, int pos) {
+    if (pos != 0) { emit(I, pos); return; }
+    long i = firstidx++;
+    if (i < startidx) return;
+    emit(I, pos);
+    if (startidx >= 0) printf("  [chunk %ld done: %lld hits, %lld nodes so far]\n", i, hits, nodes); fflush(stdout);
+}
+#define emit emit0
 static void gen(int pos) {
     int nv = NIN + pos; Ins I;
     for (int a = 0; a < nv; a++) {
@@ -299,8 +309,13 @@ int main(int argc, char **argv) {
         x = care[i]; care[i] = care[j]; care[j] = x;
     }
     printf("N=%d target=%s lanes=%d ext=%s\n", N, t, NL, argc > 5 ? argv[5] : "-");
-    for (L = 1; L <= Lmax; L++) {
+    int Lmin = getenv("SO_LMIN") ? atoi(getenv("SO_LMIN")) : 1;
+    long st = getenv("SO_START") ? atol(getenv("SO_START")) : 0;
+    int chunks = getenv("SO_START") != NULL;
+    for (L = Lmin; L <= Lmax; L++) {
         nodes = hits = 0; memset(uses, 0, sizeof uses);
+        firstidx = 0; startidx = (L == Lmax) ? st : 0;
+        if (!chunks || L < Lmax) startidx = -1;   /* no chunk log unless asked */
         gen(0);
         printf("L=%d: %lld hits, %lld nodes\n", L, hits, nodes); fflush(stdout);
         if (hits) break;

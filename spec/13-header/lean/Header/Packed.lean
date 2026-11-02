@@ -30,6 +30,12 @@ abbrev W64 : Nat := 18446744073709551616
 theorem Q_eq : Q = 2 ^ 62 := rfl
 theorem W64_eq : W64 = 2 ^ 64 := rfl
 
+/-- `2^63`, the sign bit (top and split layouts). -/
+abbrev SB : Nat := 9223372036854775808
+
+theorem fin4_ofNat_val (d : Fin 4) : Fin.ofNat 4 d.val = d := by
+  apply Fin.ext; simp [Fin.ofNat]
+
 /-- `omega` after unfolding the word constants. -/
 macro "qomega" : tactic => `(tactic| ((try simp only [Q, W64, Nat.reducePow] at *) <;> omega))
 
@@ -139,6 +145,35 @@ theorem xor_parts {a b c e k : Nat} (hb : b < 2 ^ k) (he : e < 2 ^ k) :
   rw [Nat.testBit_xor, Nat.testBit_two_pow_mul_add _ hb, Nat.testBit_two_pow_mul_add _ he,
     Nat.testBit_two_pow_mul_add _ (Nat.xor_lt_two_pow hb he), Nat.testBit_xor, Nat.testBit_xor]
   split <;> rfl
+
+/-- AND acts on a word's high and low parts separately. -/
+theorem and_parts {a b c e k : Nat} (hb : b < 2 ^ k) (he : e < 2 ^ k) :
+    (2 ^ k * a + b) &&& (2 ^ k * c + e) = 2 ^ k * (a &&& c) + (b &&& e) := by
+  apply Nat.eq_of_testBit_eq
+  intro j
+  rw [Nat.testBit_and, Nat.testBit_two_pow_mul_add _ hb, Nat.testBit_two_pow_mul_add _ he,
+    Nat.testBit_two_pow_mul_add _ (Nat.and_lt_two_pow b he), Nat.testBit_and, Nat.testBit_and]
+  split <;> rfl
+
+/-- OR acts on a word's high and low parts separately. -/
+theorem or_parts {a b c e k : Nat} (hb : b < 2 ^ k) (he : e < 2 ^ k) :
+    (2 ^ k * a + b) ||| (2 ^ k * c + e) = 2 ^ k * (a ||| c) + (b ||| e) := by
+  apply Nat.eq_of_testBit_eq
+  intro j
+  rw [Nat.testBit_or, Nat.testBit_two_pow_mul_add _ hb, Nat.testBit_two_pow_mul_add _ he,
+    Nat.testBit_two_pow_mul_add _ (Nat.or_lt_two_pow hb he), Nat.testBit_or, Nat.testBit_or]
+  split <;> rfl
+
+/-- OR with the low mask `2^k − 1` fills a number below `2^k`. -/
+theorem or_ones_low {x k : Nat} (hx : x < 2 ^ k) : x ||| (2 ^ k - 1) = 2 ^ k - 1 := by
+  apply Nat.eq_of_testBit_eq
+  intro i
+  rw [Nat.testBit_or, Nat.testBit_two_pow_sub_one]
+  by_cases hi : i < k
+  · simp [hi]
+  · have : k ≤ i := by omega
+    simp only [hi, decide_false, Bool.or_false]
+    exact Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le hx (Nat.pow_le_pow_right (by decide) this))
 
 /-- `w1 xor (w1 xor w2) = w2`. -/
 theorem xor_xor_cancel (a b : Nat) : a ^^^ (a ^^^ b) = b := by

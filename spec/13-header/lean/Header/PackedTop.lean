@@ -16,14 +16,9 @@ open A
 abbrev M : Nat := 4611686018427387903
 /-- `NOT M` on 64 bits, `2^64 − 2^62`. -/
 abbrev NM : Nat := 13835058055282163712
-/-- `2^63`, the sign bit. -/
-abbrev SB : Nat := 9223372036854775808
 
 def topEnc (m : Nat) (d : Fin 4) : Nat := d.val * Q + m
 def topDec (w : Nat) : Num := ⟨w % Q, Fin.ofNat 4 (w / Q)⟩
-
-theorem fin4_ofNat_val (d : Fin 4) : Fin.ofNat 4 d.val = d := by
-  apply Fin.ext; simp [Fin.ofNat]
 
 def Top : Layout where
   enc := topEnc

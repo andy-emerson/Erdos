@@ -17,9 +17,6 @@ abbrev N3 : Nat := 18446744073709551612
 def botEnc (m : Nat) (d : Fin 4) : Nat := 4 * m + d.val
 def botDec (w : Nat) : Num := ⟨w / 4, Fin.ofNat 4 (w % 4)⟩
 
-theorem fin4_ofNat_val' (d : Fin 4) : Fin.ofNat 4 d.val = d := by
-  apply Fin.ext; simp [Fin.ofNat]
-
 def Bottom : Layout where
   enc := botEnc
   dec := botDec
@@ -27,7 +24,7 @@ def Bottom : Layout where
     simp only [botEnc, botDec]
     have h1 : (4 * m + d.val) / 4 = m := by have := d.isLt; omega
     have h2 : (4 * m + d.val) % 4 = d.val := by have := d.isLt; omega
-    rw [h1, h2, fin4_ofNat_val']
+    rw [h1, h2, fin4_ofNat_val]
   enc_lt m d h := by simp only [botEnc]; have := d.isLt; qomega
 
 /-! ## The formulas -/

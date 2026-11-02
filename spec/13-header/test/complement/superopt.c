@@ -22,7 +22,12 @@
             neg, negz (one input, every word), full (complex add: same axis, or different axes with one
             operand zero; result must be the right value; any zero allowed).
 
-   usage: superopt N target L        (searches lengths 1..L and stops after the first length with hits)
+   usage: superopt N target L [maxprint] [flagmode]
+          searches lengths 1..L and stops after the first length with hits.
+          Each hit is tagged: OF@vK = instruction K is an add/sub whose machine signed-overflow flag
+          (x86 OF, ARM64 V) equals the true overflow of the (N-1)-bit (sign, count) value on every lane;
+          signtest-ok = the branch-free test ((w1^r)&(w2^r))<0 (add) / ((w1^w2)&(w1^r))<0 (sub) is exact.
+          flagmode=1 keeps only hits with some OF@vK.
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +41,8 @@ typedef uint8_t u8;
 static int N, NL, NIN;
 static u8 MSK, G, S, K, C;
 static u8 val[MAXV][MAXC];
-static u8 tgt[MAXC], alt[MAXC];
+static u8 tgt[MAXC], alt[MAXC], ovf[MAXC];
+static int flagmode;   /* 1: some add/sub in the program must set the machine's signed-overflow flag exactly on (N-1)-bit overflow */
 static u8 consts[8];
 static const char *cname[8] = {"1", "~1", "G", "~G", "S", "~S", "K", "C"};
 
@@ -89,6 +95,7 @@ static void compute(const Ins *I, u8 *out) {
 }
 
 static int L;
+static int sub_target;
 static Ins prog[8];
 static int uses[MAXV];          /* use counts of each value index */
 static long long nodes, hits;
@@ -140,8 +147,35 @@ static void try_final(Ins I, int pos) {
     prog[pos] = I;
     for (int lane = 0; lane < NL; lane++)
         if (!okfinal(lane, apply(&I, lane, val))) return;
+    /* which add/sub instructions leave the machine's OF equal to the true overflow on every lane? */
+    char tag[64] = ""; int any = 0;
+    for (int i = 0; i <= pos; i++) {
+        int op = prog[i].op;
+        if (!(op == B_ADD || op == B_SUB || op == C_ADD || op == C_SUB || op == C_RSUB)) continue;
+        int ok = 1;
+        for (int lane = 0; lane < NL && ok; lane++) {
+            u8 x = (i == pos) ? 0 : 0, y, r;
+            x = val[prog[i].a][lane];
+            y = (op == B_ADD || op == B_SUB) ? val[prog[i].b][lane] : consts[prog[i].b];
+            if (op == C_RSUB) { u8 t = x; x = y; y = t; }
+            int isadd = (op == B_ADD || op == C_ADD);
+            r = isadd ? (u8)(x + y) & MSK : (u8)(x - y) & MSK;
+            int of = isadd ? (((x ^ r) & (y ^ r) & S) != 0) : (((x ^ y) & (x ^ r) & S) != 0);
+            if (of != ovf[lane]) ok = 0;
+        }
+        if (ok) { any = 1; sprintf(tag + strlen(tag), " OF@v%d", i + 1); }
+    }
+    /* branch-free sign test on the result: ((w1^r)&(w2^r)) (add) or ((w1^w2)&(w1^r)) (sub) */
+    int bt = (NIN == 2);
+    for (int lane = 0; lane < NL && bt; lane++) {
+        u8 r = apply(&prog[pos], lane, val), x = val[0][lane], y = val[1][lane];
+        int of = sub_target ? (((x ^ y) & (x ^ r) & S) != 0) : (((x ^ r) & (y ^ r) & S) != 0);
+        if (of != ovf[lane]) bt = 0;
+    }
+    if (bt) strcat(tag, " signtest-ok");
+    if (flagmode && !any) return;
     hits++;
-    if (hits <= maxprint) print_prog(pos + 1);
+    if (hits <= maxprint) { printf("%s\n", tag[0] ? tag : " (no valid flag)"); print_prog(pos + 1); }
 }
 
 static int live_count(int nv) {   /* computed values (not inputs) with zero uses */
@@ -212,6 +246,7 @@ int main(int argc, char **argv) {
     if (argc < 4) { fprintf(stderr, "usage: superopt N target L [maxprint]\n"); return 1; }
     N = atoi(argv[1]); const char *t = argv[2]; int Lmax = atoi(argv[3]);
     if (argc > 4) maxprint = atoi(argv[4]);
+    if (argc > 5) flagmode = atoi(argv[5]);
     MSK = (1 << N) - 1; S = 1 << (N - 1); G = 1 << (N - 2); K = S | G; C = G - 1;
     u8 cs[8] = {1, (u8)(~1 & MSK), G, (u8)(~G & MSK), S, (u8)(~S & MSK), K, C};
     memcpy(consts, cs, 8);
@@ -227,7 +262,7 @@ int main(int argc, char **argv) {
         }
     } else {
         NIN = 2;
-        int sub = !strncmp(t, "sub", 3);
+        int sub = !strncmp(t, "sub", 3); sub_target = sub;
         for (int w1 = 0; w1 <= MSK; w1++) for (int w2 = 0; w2 <= MSK; w2++) {
             int same = axis(w1) == axis(w2);
             int z1 = (w1 & ~G & MSK) == 0, z2 = (w2 & ~G & MSK) == 0;
@@ -237,6 +272,7 @@ int main(int argc, char **argv) {
             else if (z1) { v = value(w2); ax = axis(w2); }
             else { v = value(w1); ax = axis(w1); }
             val[0][NL] = w1; val[1][NL] = w2; tgt[NL] = enc(v, ax);
+            ovf[NL] = same && (v >= (1 << (N - 2)) || v < -(1 << (N - 2)));
             u8 r = tgt[NL];
             alt[NL] = (relaxed && (r & ~G & MSK) == 0) ? (r ^ G) : r;
             NL++;
@@ -248,6 +284,7 @@ int main(int argc, char **argv) {
         int j = rand() % (i + 1);
         for (int q = 0; q < NIN; q++) { u8 x = val[q][i]; val[q][i] = val[q][j]; val[q][j] = x; }
         u8 x = tgt[i]; tgt[i] = tgt[j]; tgt[j] = x; x = alt[i]; alt[i] = alt[j]; alt[j] = x;
+        x = ovf[i]; ovf[i] = ovf[j]; ovf[j] = x;
     }
     printf("N=%d target=%s lanes=%d\n", N, t, NL);
     for (L = 1; L <= Lmax; L++) {

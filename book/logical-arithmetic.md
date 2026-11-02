@@ -280,14 +280,6 @@ a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } 
 &= 6
 \end{aligned}$$
 
-### Conditional choice with OR
-
-Keeping one word and deleting the other, then combining, is a second way to choose:
-
-$$(a \text{ AND NOT } m) \text{ OR } (c \text{ AND } m) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
-
-Instructions: 4, or 3 with `andn` or `bic`
-
 ### Conditional swap
 
 With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
@@ -349,7 +341,6 @@ OR counts each bit set in either word once, and AND counts again the bits set in
 - **Comparing** (XOR): 0 exactly when two words are equal. 1.
 - **Conditional add** (AND): adds $y$ or nothing. 2.
 - **Conditional choice** (combinations): $a$ or $c$. 3.
-- **Conditional choice with OR** (combinations): $a$ or $c$, kept and combined. 4, or 3 with `andn` or `bic`.
 - **Conditional deletion** (AND): $x$ or 0. 1.
 - **Conditional keeping** (NOT): $x$ or 0, the opposite way. 2, or 1 with `andn` or `bic`.
 - **Conditional negation** (XOR): $x$ or $-x$. 2.

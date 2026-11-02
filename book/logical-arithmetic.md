@@ -300,25 +300,9 @@ Instructions: 3 each, 4 for both; the compare that gives $k$ is one more
 
 ## Arithmetic operations
 
-### Addition
-
-$$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
-
-OR counts each bit set in either word once, and AND counts again the bits set in both.
-
-Instructions: 3
-
-### Subtraction from logic
-
-Subtracting is adding the negation:
-
-$$a - b = a + (\text{NOT } b) + 1$$
-
-Instructions: 3, or 1 with the machine's subtraction, which works this way
-
 ### Conditional subtraction
 
-With a mask in place of NOT, one line adds or subtracts:
+Subtracting is adding the negation, $a - b = a + (\text{NOT } b) + 1$. With a mask in place of NOT, one line adds or subtracts:
 
 $$a + (b \text{ XOR } m) + k = \begin{cases} a + b & m = 0000,\ k = 0 \\ a - b & m = 1111,\ k = 1 \end{cases}$$
 
@@ -327,7 +311,6 @@ Instructions: 3
 ## Glossary
 
 - **Absolute value** (XOR): $x$ or $-x$, by the sign's mask. 2 instructions.
-- **Addition** (arithmetic): $a + b$ as AND plus OR. 3.
 - **Combining flags** (OR): 1 if either flag is 1. 1.
 - **Comparing** (XOR): 0 exactly when two words are equal. 1.
 - **Conditional add** (AND): adds $y$ or nothing. 2.
@@ -342,5 +325,4 @@ Instructions: 3
 - **Negation** (NOT): $-x$. 2.
 - **Opposite mask** (NOT): the mask of the other flag. 1.
 - **Setting chosen bits** (OR): sets the bits of a constant. 1.
-- **Subtraction from logic** (arithmetic): $a - b$ as adding the negation. 3.
 - **Toggling chosen bits** (XOR): toggles the bits of a constant. 1.

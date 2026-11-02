@@ -574,3 +574,26 @@ made, and every result on a zero is stated through it.
 
 `#print axioms`: every theorem uses `propext`, `Classical.choice`, `Quot.sound` (or fewer). `Header.Complement`
 builds in about 17 s with no warnings.
+
+## The complement layout, round 3 counts (`Header/ProgCpl.lean`)
+
+Counts and branches only; the programs are not proved correct here (that is round 2 for this layout). Results:
+[`../results-cpl.md`](../results-cpl.md), "Round 3: counts".
+
+- `Header/ProgCpl.lean` (new): `PCpl.add`, `PCpl.sub`, `PCpl.neg`, `PCpl.mul`, `PCpl.div`, the five formulas of
+  `src/designcpl.nim` (and `Complement.lean`'s `cadd`, `csub`, `cneg`, `cmul`, `cdiv`) step for step. One list:
+  registers 1, 2, 3 hold the addresses of `x`, `y`, `z`; registers 4 and 5 hold the constants `G = 2^62` and
+  `not G` (loop invariants, not immediates on x86-64 or RV64). The add's flag `e` is left in register 21.
+- `Header/Registry.lean` (changed): the five programs, design "cpl", one path each.
+- `Header/Counts.lean` (changed): rows "cpl" in `table`; `callerReg` (registers 1–9 are the caller's and are never
+  taken over by a result in the x86-64 rule; no earlier row changes, which `table_eq` checks); `cpl_no_branch`.
+- `Header.lean` (changed): imports `Header.ProgCpl`.
+
+| Theorem | Statement |
+| --- | --- |
+| `Reg.table_eq` | Now includes the rows "cpl": add 20 steps, sub 24, neg 6, mul 21, div 22; x86-64 28/34/8/24/26, ARM64 22/26/6/21/22, RV64IM = steps; 2 loads (neg 1), 1 store, no branch, no jump. |
+| `Reg.cpl_no_branch` | The five programs have no conditional branch and no jump. |
+| `Reg.all_forward`, `Reg.all_loads_first` | Now cover the five programs too. |
+
+`#print axioms`: `table_eq`, `cpl_no_branch`, `all_forward`, `all_loads_first` use `propext` only. No sorry, admit,
+native_decide or bv_decide.

@@ -4,6 +4,7 @@ import Header.ProgB
 import Header.ProgC
 import Header.ProgMul
 import Header.ProgLg
+import Header.ProgCpl
 /-!
 # Round 2: every program and every path, in one list
 
@@ -79,7 +80,9 @@ def registry : List (String × String × Prog × List (String × List Nat)) :=
    ("C", "sub", PC.sub, cPaths.map fun (n, p) => (n, PC.subTrace p)),
    ("C", "neg", PC.neg, [("one", List.range 5)]),
    ("C", "mul", PC.mul, [("one", List.range 14)]),
-   ("C", "div", PC.div, [("one", List.range 14)])]
+   ("C", "div", PC.div, [("one", List.range 14)])] ++
+  ([("add", PCpl.add), ("sub", PCpl.sub), ("neg", PCpl.neg), ("mul", PCpl.mul), ("div", PCpl.div)].map
+    fun (n, p) => ("cpl", n, p, [("one", List.range p.length)]))
 
 end Reg
 end Header

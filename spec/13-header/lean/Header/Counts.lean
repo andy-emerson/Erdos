@@ -21,7 +21,8 @@ table in `../results-r2.md`, with these rules, which are what a compiler's regis
   (`cmp; b.cond`), which are two; but a compare-and-branch or `sltu` right after a `sub` of the same two registers is
   one, since the `sub` becomes `subs` and sets the flags.
 * x86-64: an instruction `rd ← rs1 op rs2` is one instruction when `rd` is `rs1`, or `rs1` is not read again on the
-  path (the allocator gives the result `rs1`'s register), or, for a commutative op, the same holds for `rs2`;
+  path (the allocator gives the result `rs1`'s register) and is not one of the caller's registers 1–9 (addresses
+  and constants, live across the loop), or, for a commutative op, the same holds for `rs2`;
   otherwise a `mov` comes first (two). An add, or a shift left by 1 to 3, is one (`lea`). `sltu` is
   `cmp; setb; movzx` (three; two right after a `sub` of the same registers). A compare-and-branch is `cmp`/`test` and
   `jcc` (two, one fused uop); `jcc` alone (one) right after a `sub` of the same registers, or, for `beqz`/`bnez r`,
@@ -66,8 +67,12 @@ def liveAfter (r : Reg) : List Instr → Bool
   | [] => false
   | i :: rest => if i.reads.contains r then true else if i.writes = some r then false else liveAfter r rest
 
+/-- Registers 1 to 9 are the caller's: the list addresses, and (the complement layout) the constants `G` and `not G`.
+They are loop invariants, live after the operation, so a result never takes one over. No program writes one. -/
+def callerReg (r : Reg) : Bool := 1 ≤ r && r ≤ 9
+
 /-- One instruction, or a `mov` and the instruction. -/
-def twoOp (d a : Reg) (rest : List Instr) : Nat := if d = a ∨ !liveAfter a rest then 1 else 2
+def twoOp (d a : Reg) (rest : List Instr) : Nat := if d = a ∨ (!liveAfter a rest && !callerReg a) then 1 else 2
 def twoOpC (d a b : Reg) (rest : List Instr) : Nat := min (twoOp d a rest) (twoOp d b rest)
 
 /-- Do the flags of `prev` already decide the branch or `sltu` on `a, b`? -/
@@ -260,7 +265,12 @@ def table : List (String × String × String × Isa.Counts × Nat × Nat × Nat 
   ("C", "sub", "cross, expression", ⟨14, 3, 0, 0, 2, 0⟩, 16, 14, 14, [(4, false), (7, false), (12, false)]),
   ("C", "neg", "one", ⟨5, 0, 0, 0, 1, 1⟩, 6, 5, 5, []),
   ("C", "mul", "one", ⟨14, 0, 0, 0, 2, 1⟩, 17, 14, 14, []),
-  ("C", "div", "one", ⟨14, 0, 0, 0, 2, 1⟩, 16, 13, 14, [])
+  ("C", "div", "one", ⟨14, 0, 0, 0, 2, 1⟩, 16, 13, 14, []),
+  ("cpl", "add", "one", ⟨20, 0, 0, 0, 2, 1⟩, 28, 22, 20, []),
+  ("cpl", "sub", "one", ⟨24, 0, 0, 0, 2, 1⟩, 34, 26, 24, []),
+  ("cpl", "neg", "one", ⟨6, 0, 0, 0, 1, 1⟩, 8, 6, 6, []),
+  ("cpl", "mul", "one", ⟨21, 0, 0, 0, 2, 1⟩, 24, 21, 21, []),
+  ("cpl", "div", "one", ⟨22, 0, 0, 0, 2, 1⟩, 26, 22, 22, [])
 ]
 
 set_option maxRecDepth 200000 in
@@ -287,6 +297,11 @@ theorem mulRow_no_branch : ([PA.mulRow false, PA.mulRow true].all
 
 /-- **The header form's add and subtract have no conditional branch** (and no jump): integer and complex programs. -/
 theorem lgRow_no_branch : ([PA.lgRow false false, PA.lgRow false true, PA.lgRow true false, PA.lgRow true true].all
+    fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
+
+/-- **The complement layout's five programs have no conditional branch** (and no jump): add, subtract, negate,
+multiply, divide. -/
+theorem cpl_no_branch : ([PCpl.add, PCpl.sub, PCpl.neg, PCpl.mul, PCpl.div].all
     fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
 
 /-- C's negate, multiply and divide, and every program of Control and B but complex division, collapse and B's

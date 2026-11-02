@@ -124,6 +124,7 @@ For comparison, the add loop is 30 instructions in `cpl`, 38 in `alg` and 49 in 
   - `test/run.py`: `cpl` and the `control-cpl` reference.
 - Not touched in phase A: `lean/`, the other designs, `src/README.md`. The README's build list was not updated; that is left to the coordinator.
 - Phase B: new `lean/Header/Complement.lean`; `lean/Header.lean` (import) and `lean/README.md` (section) changed.
+- Round 3 (counts): new `lean/Header/ProgCpl.lean`. Changed: `lean/Header/Registry.lean`, `lean/Header/Counts.lean`, `lean/Header.lean`, `lean/README.md` and this file.
 
 ## Lean, round 1 (`lean/Header/Complement.lean`)
 
@@ -163,8 +164,104 @@ They are compared with round 1's `A.add`, `A.sub`, `A.neg`, `A.mul` and `A.div` 
 
 **Build.** `lake build` passes with no errors and no warnings. `Header.Complement` takes about 17 s. It is imported in `lean/Header.lean` and listed in `lean/README.md`. `#print axioms`: `propext`, `Classical.choice`, `Quot.sound` (or fewer) for every theorem.
 
+## Round 3: counts (`lean/Header/ProgCpl.lean`, `Counts.lean`)
+
+Counts and branches only, under spec v0.2 §8's round 3. The programs are **not** proved correct here (that is round 2 for this layout), and nothing was timed.
+
+**Programs.** The five formulas of `src/designcpl.nim`, step for step, in the instruction set of [results-r2.md](results-r2.md) §1 (`PCpl.add`, `sub`, `neg`, `mul`, `div`). One list of words, as Control, B and C: registers 1, 2, 3 hold the addresses of `x`, `y`, `z`.
+- **Constants in registers.** `G = 2^62` is in register 4 and `NOT G` in register 5. Neither is an immediate on x86-64 (imm32) or RV64 (imm12); ARM64 encodes both. They are loop invariants, set once, as gcc does (`movabs` before the loop in `cpl.s`), so the caller passes them like the addresses, and the counts do not include them. `−1` is an immediate everywhere (`xori r, r, −1`: x86-64 `not`, ARM64 `mvn`, RV64 `not`).
+- **No `andn`.** RV64IM, baseline x86-64 and the instruction set have none, so `t AND NOT Z1` (add) and `w2 AND NOT w1` (divide) are `xori −1` and `and`: one step more than the research counts in each. This is also what gcc emits.
+- **The flag.** The add leaves `e` in register 21, computed fresh, as A's branch-free rows do. The build ORs it into a sticky `err`: one `or` more, outside the count.
+
+```text
+add  (sub: the 4 negate steps on w2 first, into r11)
+ 0: ld r10, 0(r1)          ; w1
+ 1: ld r11, 0(r2)          ; w2
+    [sub] and r22, r11, r4 ; z = w2 and G
+    [sub] sub r11, r22, r11
+    [sub] and r11, r11, r5
+    [sub] or  r11, r11, r22 ; -w2
+ .. xor  r12, r10, r11     ; t
+ .. and  r13, r10, r5      ; z1 = w1 and NG
+ .. or   r14, r11, r4
+ .. add  r14, r13, r14     ; b = z1 + (w2 or G)
+ .. sltiu r15, r13, 1
+ .. neg  r15, r15          ; Z1 = 0 - (z1 = 0)
+ .. and  r16, r12, r15
+ .. xor  r16, r10, r16     ; src
+ .. xor  r17, r14, r16
+ .. and  r17, r17, r4
+ .. xor  r17, r14, r17     ; r = b xor ((b xor src) and G)
+ .. and  r18, r11, r5      ; z2
+ .. xori r19, r15, -1      ; not Z1
+ .. and  r19, r12, r19
+ .. srli r19, r19, 62
+ .. sltu r20, zero, r18    ; z2 != 0
+ .. and  r21, r19, r20     ; e
+ .. sd   r17, 0(r3)
+
+neg: ld r10; and r12, r10, r4; sub r13, r12, r10; and r13, r13, r5; or r13, r13, r12; sd r13
+
+mul: ld r10; ld r11
+     srli r12, r10, 1; xor r12, r12, r10; and r12, r12, r4; xor r12, r12, r10   ; x1
+     srli r13, r11, 1; xor r13, r13, r11; and r13, r13, r4; xor r13, r13, r11   ; x2
+     and r14, r10, r11; slli r14, r14, 1; srai r14, r14, 63                     ; m
+     xor r15, r12, r14; sub r15, r15, r14; mul r15, r15, r13                    ; p
+     xor r16, r15, r10; xor r16, r16, r11; and r16, r16, r4; xor r16, r15, r16  ; fix
+     sd r16
+
+div: as mul, with m = xori r14, r10, -1; and r14, r11, r14; slli r14, r14, 1; srai r14, r14, 63
+     and q = div r15, r12, r13; xor r15, r15, r14; sub r15, r15, r14; then the fix
+```
+
+**Counts** (`Reg.table_eq`, rows "cpl"; one path each, so the path is every input):
+
+| Design | Operation | Path | Steps | Branches (taken) | Jumps | Loads | Stores | x86-64 | ARM64 | RV64 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cpl | add | one | 20 | 0 (0) | 0 | 2 | 1 | 28 | 22 | 20 |
+| cpl | sub | one | 24 | 0 (0) | 0 | 2 | 1 | 34 | 26 | 24 |
+| cpl | neg | one | 6 | 0 (0) | 0 | 1 | 1 | 8 | 6 | 6 |
+| cpl | mul | one | 21 | 0 (0) | 0 | 2 | 1 | 24 | 21 | 21 |
+| cpl | div | one | 22 | 0 (0) | 0 | 2 | 1 | 26 | 22 | 22 |
+
+- **No branch.** `Reg.cpl_no_branch` proves the five programs have no conditional branch and no jump. `all_forward` and `all_loads_first` now cover them too.
+- **Steps without the loads and the store (RV64IM):** add 17, sub 21, neg 4, mul 18, div 19. Against the research: add 16 and div 18 count `andn` as one step; neg 4 and mul 18 are equal.
+- **ARM64:** each step is one instruction except `sltiu` (`cmp; cset`) and `sltu` (`cmp; cset`) in the add, so add and sub are 2 more. The research's ARM64 hand counts use `bfi`, `bfxil`, `bic` and `csel`, which are not in the instruction set, so they are not counted here.
+- **x86-64,** by §1's rules: `sltiu` and `sltu` are 3 each (`test; sete; movzx`, `test; setne; movzx`), the divide is `cqo; idiv`, and a `mov` comes before an operation whose first source is still needed.
+
+**One change to the x86-64 rule.** In `costAt`, a result could take over the register of a source not read again on the path. For `G` that is wrong: the negate's `z = w AND G` would otherwise be counted as overwriting `G`, which the loop still needs. `Counts.lean` now has `callerReg`: registers 1–9 (addresses and constants) are the caller's, and are never taken over. No program writes one. This changes only the cpl negate (x86-64 7 → 8). `table_eq` proves every earlier row unchanged.
+
+**Against the compiled loops** (`build/asm/cpl.s`; the operation is the loop minus its 2 loads, 1 store and 3 loop instructions, or 1 load for neg):
+
+| Operation | Model x86-64, operation | gcc | Model without copies | gcc without copies | Copies, model / gcc |
+| --- | --- | --- | --- | --- | --- |
+| neg | 6 | 6 | 4 | 4 | 2 / 2 |
+| add | 25 | 24 | 21 | 21 (20 + `err`) | 4 / 3 |
+| sub | 31 | 30 | 25 | 25 (24 + `err`) | 6 / 5 |
+| mul | 21 | 23 | 18 | 18 | 3 / 5 |
+| div | 23 | 25 | 20 | 20 | 3 / 5 |
+
+- **neg:** equal. Both copy `w` (needed by `sub`) and `z` (needed by `or`).
+- **add, model 1 more.**
+  - **Fold, gcc −1.** gcc folds `z2 = w2 AND NG` into the zero test (`test w2, NG; setne; movzbl`). The model counts `and` and then the 3-instruction `sltu`.
+  - **Sticky flag, gcc +1.** gcc pays 1 for the sticky `or` of `err`.
+  - **Order, gcc −1.** gcc forms `NOT Z1` before `src` as `lea −1(seqz)`, from the 0/1 value, so `Z1` is dead at `t AND Z1`. The program keeps the source's order (`src`, then `NOT Z1` by `xori`), so `Z1` is still live there, and the model counts one more copy. `lea −1` and `xori −1` are one instruction each.
+  - The other non-copy instructions map one to one: `xor` t, `and` z1, `or`+`add` the bridge, `test; sete; movzbl` + `neg` for Z1, `and; xor` src, `xor; and; xor` the fix, `and; shr; and` for e.
+- **sub:** the same three differences, after the negate's 4 non-copy instructions and 2 copies, which match.
+- **mul, gcc 2 more copies.** The non-copy instructions match one to one: two sign extensions of 4, `and; add; sar` for `m` (gcc's `add r, r` is the model's `slli 1`, one instruction), `xor; sub; imul`, and the 4-step fix. gcc's extra two `mov`s are its register choices: `x1 − m` moved into `rax`, and the fix starting from a copy of `w2`. In the model the fix takes `w1`'s register, since `w1` is not needed after it.
+- **div, gcc 2 more copies.** The non-copy instructions match: the sign extensions, `not; and; add; sar` for `m`, `cqto; idiv`, `xor; sub`, the fix. The model's divide is 2 instructions, with `rax` assumed free (as in results-r2.md §7, item 9). gcc moves the quotient out of `rax` and starts the fix from a copy of `w2`.
+- **No conditional branch, `cmov`, `adc` or `sbb`** appears in any of the five loops (asmcheck PASS, above). This agrees with `cpl_no_branch`.
+
+**Against the other rows** (RV64 steps; x86-64 model in parentheses). These are one-path, branch-free numbers:
+- cpl add is 20 (28). The branch-free complex rows of A are 35 (47) for A-bf and 23 (31) for A-lg. C adds in 8 to 12 (9 to 13) steps but branches.
+- cpl neg is 6 (8). C's is 5 (6), A's is 5 (5).
+- cpl mul is 21 (24), against C's 14 (17) and A's 9 (9).
+- cpl div is 22 (26), against C's 14 (16) and A's 9 (10).
+
+**Build.** `lake build` passes; `Header.Counts` takes about 10 s. There are no new warnings. No `sorry`, `admit`, `native_decide` or `bv_decide`. `#print axioms` gives `propext` only for `table_eq`, `cpl_no_branch`, `all_forward` and `all_loads_first`.
+
 ## Open points
 
 - The counts are for baseline x86-64. With `-mbmi`, `andn` would remove 1 from add, sub and div, but the harness's flags are spec 12's and were not changed.
-- The research's ARM64 and RV64 counts were not assembled here.
+- The research's ARM64 and RV64 counts were not assembled here. Round 3 above counts the programs on all three families by results-r2.md §1's rules. Nothing was assembled for ARM64 or RV64.
 - Overflow (out-of-range results) is not tested in the harness. The rows and the check stay in range. The research's own check covers the wrap.

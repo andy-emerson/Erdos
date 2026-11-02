@@ -4,3 +4,4 @@ L=2: 0 hits, 86 nodes
 L=3: 0 hits, 7611 nodes
 L=4: 0 hits, 771264 nodes
 L=5: 0 hits, 95585971 nodes
+L=6: 0 hits, 14175041053 nodes

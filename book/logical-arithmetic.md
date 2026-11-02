@@ -10,9 +10,13 @@ $$m = 0 - k = \begin{cases} 0000 & k = 0 \\ 1111 & k = 1 \end{cases}$$
 
 since $0 - 1$ on the clock is 15, which is 1111. Every bit of the mask equals $k$, so the two always go together: the flag says yes or no, and the mask carries that answer to every bit of a word.
 
+Instructions: 1
+
 A mask can also come straight from the top bit of a word, with no flag. The arithmetic shift right, **sar**, moves every bit right and fills the empty places at the top with copies of the top bit. Shifting by 3 on 4 bits pushes out every bit except the top one and fills the word with it:
 
 $$x \text{ sar } 3 = \begin{cases} 0000 & \text{top bit of } x = 0 \\ 1111 & \text{top bit of } x = 1 \end{cases}$$
+
+Instructions: 1
 
 For example, $1010 \text{ sar } 3 = 1111$ and $0110 \text{ sar } 3 = 0000$. The top bit can be any tag kept there, such as a sign.
 
@@ -22,11 +26,15 @@ XOR compares two words bit by bit: each bit of the result is 1 where the words d
 
 $$a \text{ XOR } b = \begin{cases} 0000 & a = b \\ \text{not } 0000 & a \ne b \end{cases}$$
 
+Instructions: 1
+
 ### Toggling chosen bits
 
 XOR with a constant $c$ toggles the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
 
 $$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ toggled} & \text{bit of } c = 1 \end{cases}$$
+
+Instructions: 1
 
 Toggling the same bits twice restores them: $(x \text{ XOR } c) \text{ XOR } c = x$.
 
@@ -35,6 +43,8 @@ Toggling the same bits twice restores them: $(x \text{ XOR } c) \text{ XOR } c =
 Against a mask, the comparison becomes a flip. Compared with 0000, a word differs exactly where it has a 1, so it comes back unchanged. Compared with 1111, it differs exactly where it has a 0, so every bit flips. So XOR with a mask leaves a word alone or flips every bit of it:
 
 $$x \text{ XOR } m = \begin{cases} x & m = 0000 \\ 15 - x & m = 1111 \end{cases}$$
+
+Instructions: 1
 
 For example, with $x = 0110$ (6):
 
@@ -47,6 +57,8 @@ Flipping every bit of 6 gives 9, which is $15 - 6$.
 A flip is one short of a negation: $-x$ on the clock is $16 - x$, not $15 - x$. Adding the flag supplies the missing 1:
 
 $$(x \text{ XOR } m) + k = \begin{cases} x & m = 0000,\ k = 0 \\ 16 - x & m = 1111,\ k = 1 \end{cases}$$
+
+Instructions: 2
 
 For example, take $x = 0110$ (6). With $k = 1$, the mask is $m = 1111$, and the word is negated:
 
@@ -78,17 +90,23 @@ Subtracting $m$ then does the work of adding the flag, since $-1111 = +1$ on the
 
 $$(x \text{ XOR } m) - m = \begin{cases} x & m = 0000 \\ -x & m = 1111 \end{cases}$$
 
+Instructions: 2
+
 ## AND
 
 AND keeps bits: each bit of the result is 1 only where both words have a 1. So AND with a word $c$ keeps the bits of $x$ where $c$ has a 1 and clears the rest. Bit by bit:
 
 $$\text{bit of } (x \text{ AND } c) = \begin{cases} 0 & \text{bit of } c = 0 \\ \text{bit of } x & \text{bit of } c = 1 \end{cases}$$
 
+Instructions: 1
+
 ### Congruence
 
 The low $j$ bits of $x$ are its remainder mod $2^j$:
 
 $$x \text{ AND } (2^j - 1) \equiv x \pmod{2^j}$$
+
+Instructions: 1, or 3 when $j$ varies
 
 The bits above them are multiples of $2^j$, and the AND clears them.
 
@@ -108,6 +126,8 @@ Against a mask, keeping some bits becomes keeping all or none. 1111 has a 1 in e
 
 $$x \text{ AND } m = \begin{cases} 0 & m = 0000 \\ x & m = 1111 \end{cases}$$
 
+Instructions: 1
+
 For example, with $x = 0110$ (6):
 
 $$0110 \text{ AND } m = \begin{cases} 0000 & m = 0000 \\ 0110 & m = 1111 \end{cases}$$
@@ -117,6 +137,8 @@ $$0110 \text{ AND } m = \begin{cases} 0000 & m = 0000 \\ 0110 & m = 1111 \end{ca
 AND with the mask is the whole formula, one instruction:
 
 $$x \text{ AND } m = \begin{cases} 0 & m = 0000,\ k = 0 \\ x & m = 1111,\ k = 1 \end{cases}$$
+
+Instructions: 1
 
 For example, take $x = 0110$ (6). With $k = 0$, the mask is $m = 0000$, and the word is deleted:
 
@@ -137,6 +159,8 @@ x \text{ AND } m &= 0110 \text{ AND } 1111 \\
 ### Conditional add
 
 $$x + (y \text{ AND } m) = \begin{cases} x & m = 0000,\ k = 0 \\ x + y & m = 1111,\ k = 1 \end{cases}$$
+
+Instructions: 2
 
 For example, take $x = 0110$ (6) and $y = 0011$ (3). With $k = 1$, the mask is $m = 1111$, and $y$ is added:
 
@@ -162,15 +186,21 @@ OR sets bits: each bit of the result is 1 where either word has a 1. So OR with 
 
 $$\text{bit of } (x \text{ OR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ 1 & \text{bit of } c = 1 \end{cases}$$
 
+Instructions: 1
+
 ### Setting chosen bits
 
 OR with a constant sets those bits, as above. When the bits are known to be 0 beforehand, it is also an add: $x \text{ OR } c = x + c$.
+
+Instructions: 1
 
 ### Combining flags
 
 On flags, OR means "either":
 
 $$k_1 \text{ OR } k_2 = \begin{cases} 0 & k_1 = 0,\ k_2 = 0 \\ 1 & \text{otherwise} \end{cases}$$
+
+Instructions: 1
 
 A flag OR-ed with each new flag stays 1 once any of them is 1.
 
@@ -180,11 +210,15 @@ Against a mask, setting some bits becomes setting all or none. So OR with a mask
 
 $$x \text{ OR } m = \begin{cases} x & m = 0000,\ k = 0 \\ 1111 & m = 1111,\ k = 1 \end{cases}$$
 
+Instructions: 1
+
 ## NOT
 
 NOT toggles every bit of a word, the same as XOR with 1111:
 
 $$\text{NOT } x = 15 - x$$
+
+Instructions: 1
 
 ### The opposite mask
 
@@ -192,13 +226,15 @@ NOT turns a mask into the mask of the opposite flag:
 
 $$\text{NOT } m = \begin{cases} 1111 & m = 0000,\ k = 0 \\ 0000 & m = 1111,\ k = 1 \end{cases}$$
 
+Instructions: 1
+
 ### Conditional keeping
 
 AND with the opposite mask keeps $x$ when $k = 0$ and deletes it when $k = 1$:
 
 $$x \text{ AND NOT } m = \begin{cases} x & m = 0000,\ k = 0 \\ 0 & m = 1111,\ k = 1 \end{cases}$$
 
-x86-64 (`andn`) and ARM64 (`bic`) do this in one instruction.
+Instructions: 2, or 1 with x86-64's `andn` or ARM64's `bic`
 
 ## Combinations
 
@@ -207,6 +243,8 @@ x86-64 (`andn`) and ARM64 (`bic`) do this in one instruction.
 AND and XOR together choose between two words, $a$ and $c$:
 
 $$a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
+
+Instructions: 3
 
 $a \text{ XOR } c$ marks the bits where the two words differ. AND with the mask keeps those marks or deletes them, and XOR applies whatever is left to $a$: flipping exactly the bits where $a$ and $c$ differ turns $a$ into $c$, and flipping nothing leaves $a$.
 
@@ -236,11 +274,15 @@ Keeping one word and deleting the other, then combining, is a second way to choo
 
 $$(a \text{ AND NOT } m) \text{ OR } (c \text{ AND } m) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
 
+Instructions: 4, or 3 with `andn` or `bic`
+
 ### Conditional swap
 
 With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
 
 $$(a \text{ XOR } d,\ b \text{ XOR } d) = \begin{cases} (a, b) & m = 0000,\ k = 0 \\ (b, a) & m = 1111,\ k = 1 \end{cases}$$
+
+Instructions: 4
 
 ### Minimum and maximum
 
@@ -250,16 +292,22 @@ $$y \text{ XOR } \big((x \text{ XOR } y) \text{ AND } m\big) = \begin{cases} y &
 
 $$x \text{ XOR } \big((x \text{ XOR } y) \text{ AND } m\big) = \begin{cases} x & m = 0000,\ x \ge y \\ y & m = 1111,\ x < y \end{cases} \qquad \text{(the maximum)}$$
 
+Instructions: 3 each, 4 for both; the compare that gives $k$ is one more
+
 ## Arithmetic operations
 
 ### Addition from XOR and AND
 
 $$a + b = (a \text{ XOR } b) + 2\,(a \text{ AND } b)$$
 
+Instructions: 4
+
 XOR adds each bit without carrying. AND marks the bits that carry, and each carry moves one place left, which doubles it.
 
 ### Addition from AND and OR
 
 $$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
+
+Instructions: 3
 
 OR counts each bit set in either word once, and AND counts again the bits set in both.

@@ -20,7 +20,9 @@ $$0110 \text{ XOR } m = \begin{cases} 0110 & m = 0000 \\ 1001 & m = 1111 \end{ca
 
 Flipping every bit of 6 gives 9, which is $15 - 6$.
 
-**Conditional negation.** A flip is one short of a negation: $-x$ on the clock is $16 - x$, not $15 - x$. Adding the flag supplies the missing 1:
+### Conditional negation
+
+A flip is one short of a negation: $-x$ on the clock is $16 - x$, not $15 - x$. Adding the flag supplies the missing 1:
 
 $$(x \text{ XOR } m) + k = \begin{cases} x & m = 0000,\ k = 0 \\ 16 - x & m = 1111,\ k = 1 \end{cases}$$
 
@@ -44,6 +46,28 @@ $$\begin{aligned}
 &= 6
 \end{aligned}$$
 
+### Absolute value
+
+For a signed word $x$, the mask can come from the sign itself, with no flag. Shifting $x$ right by 3 while copying its top bit (`sar`) spreads the sign bit across the word:
+
+$$m = x \text{ sar } 3 = \begin{cases} 0000 & x \ge 0 \\ 1111 & x < 0 \end{cases}$$
+
+Subtracting $m$ then does the work of adding the flag, since $-1111 = +1$ on the clock:
+
+$$(x \text{ XOR } m) - m = \begin{cases} x & m = 0000 \\ -x & m = 1111 \end{cases}$$
+
+### Flipping chosen bits
+
+XOR with a constant $c$ flips the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
+
+$$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ flipped} & \text{bit of } c = 1 \end{cases}$$
+
+### Comparing
+
+XOR of two words is 0 exactly when they are equal, and otherwise marks the bits where they differ:
+
+$$a \text{ XOR } b = \begin{cases} 0000 & a = b \\ \text{not } 0000 & a \ne b \end{cases}$$
+
 ## AND
 
 AND with a mask keeps a word or deletes it:
@@ -54,7 +78,9 @@ For example, with $x = 0110$ (6):
 
 $$0110 \text{ AND } m = \begin{cases} 0000 & m = 0000 \\ 0110 & m = 1111 \end{cases}$$
 
-**Conditional deletion.** AND with the mask is the whole formula, one instruction:
+### Conditional deletion
+
+AND with the mask is the whole formula, one instruction:
 
 $$x \text{ AND } m = \begin{cases} 0 & m = 0000,\ k = 0 \\ x & m = 1111,\ k = 1 \end{cases}$$
 
@@ -74,7 +100,27 @@ x \text{ AND } m &= 0110 \text{ AND } 1111 \\
 &= 6
 \end{aligned}$$
 
-**Conditional choice.** AND and XOR together choose between two words, $a$ and $c$:
+### Conditional add
+
+$$x + (y \text{ AND } m) = \begin{cases} x & m = 0000,\ k = 0 \\ x + y & m = 1111,\ k = 1 \end{cases}$$
+
+### Keeping chosen bits
+
+AND with a constant $c$ keeps the bits of $x$ where $c$ has a 1 and clears the rest. Bit by bit:
+
+$$\text{bit of } (x \text{ AND } c) = \begin{cases} 0 & \text{bit of } c = 0 \\ \text{bit of } x & \text{bit of } c = 1 \end{cases}$$
+
+### Remainder by a power of two
+
+Keeping the low $j$ bits is the remainder by $2^j$:
+
+$$x \text{ AND } (2^j - 1) = x \bmod 2^j$$
+
+## XOR and AND
+
+### Conditional choice
+
+AND and XOR together choose between two words, $a$ and $c$:
 
 $$a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
 
@@ -99,6 +145,20 @@ a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } 
 &= 0110 \\
 &= 6
 \end{aligned}$$
+
+### Conditional swap
+
+With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
+
+$$(a \text{ XOR } d,\ b \text{ XOR } d) = \begin{cases} (a, b) & m = 0000,\ k = 0 \\ (b, a) & m = 1111,\ k = 1 \end{cases}$$
+
+### Minimum and maximum
+
+With the flag $k = (x < y)$ and its mask $m$, conditional choice picks the smaller or the larger word:
+
+$$y \text{ XOR } \big((x \text{ XOR } y) \text{ AND } m\big) = \begin{cases} y & m = 0000,\ x \ge y \\ x & m = 1111,\ x < y \end{cases} \qquad \text{(the minimum)}$$
+
+$$x \text{ XOR } \big((x \text{ XOR } y) \text{ AND } m\big) = \begin{cases} x & m = 0000,\ x \ge y \\ y & m = 1111,\ x < y \end{cases} \qquad \text{(the maximum)}$$
 
 ## Arithmetic operations
 

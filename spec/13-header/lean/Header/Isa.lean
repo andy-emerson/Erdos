@@ -415,6 +415,18 @@ theorem select_ones' {s x : Nat} (hs : s < W) (hx : x < W) :
     s ^^^ ((x ^^^ s) &&& 18446744073709551615) = x := by
   rw [Nat.xor_comm x s]; exact select_ones hs hx
 
+theorem mod_W_128 : (128 : Nat) % W = 128 := by decide
+theorem mod_W_0 : (0 : Nat) % W = 0 := by decide
+theorem clockAdd_lt' {a b : Nat} (ha : a < W) (hb : b < W) : clockAdd W a b < W := by rw [← wadd_clock ha hb]; exact wadd_lt _ _
+theorem wadd_0_0 : wadd 0 0 = 0 := by decide
+theorem wadd_0_128 : wadd 0 128 = 128 := by decide
+theorem wadd_64_0 : wadd 64 0 = 64 := by decide
+theorem wadd_64_128 : wadd 64 128 = 192 := by decide
+theorem wadd_128_0 : wadd 128 0 = 128 := by decide
+theorem wadd_128_128 : wadd 128 128 = 256 := by decide
+theorem wadd_192_0 : wadd 192 0 = 192 := by decide
+theorem wadd_192_128 : wadd 192 128 = 320 := by decide
+
 theorem clockAdd_zero : clockAdd W 0 0 = 0 := by decide
 
 /-! ## Running a program symbolically

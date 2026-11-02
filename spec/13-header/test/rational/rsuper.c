@@ -11,6 +11,7 @@
    Inputs:
      mode 0 (pre and post corrections):  n1 d1 n2 d2                       (multiplies are searched, 1 each)
      mode 2: as mode 1 plus k, the operation's mask (0 for add, all ones for mul): for op "am".
+     mode 3: as mode 2 with k = -1 for add, +1 for mul.
      mode 1 (post corrections only):     n1 d1 n2 d2 P Q   with the raw products given free:
                                          add P = n1*d2 + n2*d1, Q = d1*d2;  mul P = n1*n2, Q = d1*d2;
                                          sub P = n1*d2 - n2*d1.
@@ -261,7 +262,7 @@ static void add_lanes(int op) {   /* op 0 add, 1 sub, 2 mul */
                 if (op == 2) { val[4][NL] = (n1 * n2) & MSK; }
                 else { val[4][NL] = (op == 0 ? n1 * w2 + n2 * w1 : n1 * w2 - n2 * w1) & MSK; }
                 val[5][NL] = (w1 * w2) & MSK;
-                val[6][NL] = op == 2 ? MSK : 0;   /* mode 2: the operation's mask k (0 add, all ones mul) */
+                val[6][NL] = MODE == 3 ? (op == 2 ? 1 : MSK) : (op == 2 ? MSK : 0);   /* mode 2: k = 0 add, all ones mul; mode 3: k = -1 add, +1 mul */
                 tn[NL] = t & MSK; td[NL] = dw(D1 * D2, ta);
                 tdalt[NL] = t == 0 ? dw(D1 * D2, 1 - ta) : td[NL];
                 NL++;
@@ -281,7 +282,7 @@ int main(int argc, char **argv) {
     if (argc > 8) small = (atoi(argv[8]) & 2) != 0;
     MSK = (1 << N) - 1; T = 1 << (N - 1);
     consts[0] = 1; consts[1] = T; consts[2] = ~T & MSK; consts[3] = MSK;
-    NIN = MODE == 2 ? 7 : MODE ? 6 : 4;
+    NIN = MODE >= 2 ? 7 : MODE ? 6 : 4;
     NL = 0;
     if (!strcmp(op, "add")) add_lanes(0);
     else if (!strcmp(op, "sub")) add_lanes(1);

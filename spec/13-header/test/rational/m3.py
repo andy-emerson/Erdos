@@ -69,19 +69,31 @@ SHARED_K = [
 ]
 
 
-def check_shared(prog, layout, ns=(3, 4, 5, 6, 64)):
+# the same with the operation given as k = -1 (add) / +1 (multiply): 6
+#   num = P * s;  den = Q * (s AND k),   s = ((d1 AND d2) sar (n-1)) OR 1
+SHARED_K2 = [
+    ('m', 'and', 'd1', 'd2'),
+    ('m', 'sar', 'm', 'top'),
+    ('s', 'or', 'm', 'ONE'),
+    ('num', 'mul', 'P', 's'),
+    ('t', 'and', 's', 'k'),
+    ('den', 'mul', 'Q', 't'),
+]
+
+
+def check_shared(prog, layout, ns=(3, 4, 5, 6, 64), kadd=0, kmul=-1, name='shared fix with op mask k'):
     res = []; ok = True
     for n in ns:
         w = W(n); tot = 0; bad = 0
         for op, raw, k in (('add', RAW_ADD, U0), ('mul', RAW_MUL, None)):
             cnt, env, en, ed, alt, zero = data(op, n, layout)
-            env = dict(env); env['k'] = np.full(cnt, 0 if op == 'add' else int(w.F), dtype=np.uint64)
+            env = dict(env); env['k'] = np.full(cnt, (kadd if op == 'add' else kmul) & int(w.F), dtype=np.uint64)
             r = run(raw + prog, env, w)
             b = (r['num'] != en) | ((r['den'] != ed) & ((r['den'] != alt) | ~zero))
             bad += int(b.sum()); tot += cnt
         ok &= bad == 0
         res.append(f"n={n}: {tot} cases, {bad} fail")
-    print(f"{'OK  ' if ok else 'FAIL'} {'shared fix with op mask k':34s} {len(prog):2d} instr | " + "; ".join(res))
+    print(f"{'OK  ' if ok else 'FAIL'} {name:34s} {len(prog):2d} instr | " + "; ".join(res))
 
 
 U0 = 0
@@ -93,3 +105,4 @@ if __name__ == '__main__':
     report('add neg, post fix (search)', ADD_NEG_POST, 'add', layout='neg')
     report('mul neg, post fix (search)', MUL_NEG_POST, 'mul', layout='neg', out=('num', 'Q'))
     check_shared(SHARED_K, 'neg')
+    check_shared(SHARED_K2, 'neg', kadd=-1, kmul=1, name='shared fix, k = -1 add / +1 mul')

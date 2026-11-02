@@ -413,3 +413,17 @@ The author's change after round 2's finding 2: A's header rules with no mask. `h
 | `hb_neg`, `hb_mul`, `hb_div` | Negate (`h xor 0x80`), multiply (`h1 + h2`) and divide (`h1 − h2` in a 64-bit register), stored as a byte, give `hb` of round 1's direction. |
 | `addByte_eq`, `subByte_eq`, `negByte_eq`, `mulByte_eq`, `divByte_eq` | A's operations on (header byte, magnitude) with no `and D` agree with round 1's `A.add`, `A.sub`, `A.neg`, `A.mul`, `A.div` under the encoding `enc`. |
 | `result_canonical` | Every result header is again a canonical byte. |
+
+## A's multiplication row, round 1 (`Header/MulRow.lean`)
+
+`aAddMul` / `aSubMul` of `../src/designa.nim`: A's add with the notes' exponent rule as code, no branch, and no
+`and D` on headers. `addMul h1 m1 h2 m2` is the row on bytes and 64-bit words, returning (header byte, magnitude,
+err); `subMul` is the row with `h2 xor 0x80`.
+
+| Theorem | Statement |
+| --- | --- |
+| `addMul_eq` | For every `x`, `y` with magnitudes below `2^64` (headers `hb d`): when `A.add (2^64) x y` gives `r`, the row gives `(hb r.d, r.m)` with `err = 0`; when it gives an expression, `err = 1`. |
+| `subMul_eq` | The same for `subMul` against `A.sub`. |
+| `sgn_0`, `sgn_1`, `mul_ones` | `1 − 2k` on the clock is 1 or `2^64 − 1`, and multiplying by `2^64 − 1` is negation mod `2^64`. |
+
+`#print axioms`: `addMul_eq` and `subMul_eq` use `propext`, `Classical.choice`, `Quot.sound`; the helpers fewer or none.

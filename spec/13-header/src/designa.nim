@@ -87,6 +87,31 @@ proc aAddBF*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var ui
   rh = uint8(hd) + (uint8(b) shl 7)
   rw = (r xor mk) + b
 
+# ------------------------------------------------------------------------------------------------ add, multiplication row
+proc aAddMul*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
+  ## the notes' exponent rule as code, no branch (the author's request, Nov 1, 2026). Signs are applied by multiplying
+  ## by 1 - 2k, which is 1 or -1 on the clock, and the cross-axis choice of direction by multiplying by a 0/1 flag:
+  ##   ax = 1 for different axes, o = 1 for opposite directions on one axis;
+  ##   r = m1 + m2 * (1 - 2o): m1 + m2, or m1 - m2;
+  ##   b = (m1 < m2) and o, the borrow; magnitude r * (1 - 2b);
+  ##   direction h1 + k * (h2 - h1) with k = ax and (m1 = 0), then + (b shl 7);
+  ##   two nonzero operands on different axes set err (sticky, as in the branch-free row).
+  let t = Word(h1 xor h2)
+  let ax = (t shr 6) and 1
+  let o = (t shr 7) and (ax xor 1)
+  let z1 = Word(m1 == 0)
+  let nz2 = Word(m2 != 0)
+  err = err or (ax and (z1 xor 1) and nz2)
+  let r = m1 + m2 * opaque(1'u64 - 2'u64 * o)   # opaque: gcc keeps the multiply (no cmov, no select)
+  let b = Word(m1 < m2) and o
+  rw = r * opaque(1'u64 - 2'u64 * b)
+  let k = opaque(ax and z1)
+  let hd = Word(h1) + k * (Word(h2) - Word(h1))
+  rh = uint8(hd and 0xFF) + (uint8(b) shl 7)
+
+proc aSubMul*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
+  aAddMul(h1, m1, h2 xor 0x80'u8, m2, err, rh, rw)
+
 proc aSubBF*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
   aAddBF(h1, m1, h2 xor 0x80'u8, m2, err, rh, rw)
 

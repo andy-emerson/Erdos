@@ -32,13 +32,13 @@ from gen import Opnd, M64, exact, value_of_parts, to_dm  # noqa: E402
 HERE = gen.HERE
 BIN = HERE / "build" / "bin"
 WORK = HERE / "build" / "check"
-BUILDS = ("control", "a", "abf", "anm", "b")
+BUILDS = ("control", "a", "abf", "anm", "amul", "b")
 D = 0xC0
 E63 = [0, 1, 2, 3, 0xFFFFFFFF, 1 << 32, (1 << 32) + 1, (1 << 62) - 1, 1 << 62, (1 << 62) + 1, (1 << 63) - 2,
        (1 << 63) - 1]
 E64 = E63 + [1 << 63, (1 << 63) + 1, M64 - (1 << 32), M64 - 1, M64]
 LIM = {"ctl": 1 << 63, "wide": 1 << 64, "bun": 1 << 64}
-SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "b"), "bun": ("b",)}
+SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "amul", "b"), "bun": ("b",)}
 
 
 # ------------------------------------------------------------------------------------------------ §3 and §4 as stated
@@ -255,7 +255,7 @@ def parse(b, kind, line):
     t = line.split()
     if b == "control":
         return (int(t[0]), 0) if kind == "int" else (int(t[0]), int(t[1])), None
-    if b in ("a", "abf", "anm"):
+    if b in ("a", "abf", "anm", "amul"):
         h, m = int(t[0], 16), int(t[1], 16)
         return gen.value_of(h >> 6, m) if not h & 0x3F else (None, None), h
     p = [int(x, 16) for x in t]
@@ -283,7 +283,7 @@ def check_set(kind, op, s, pairs, fails):
             want = exact(kind, op, x, y)
             got, raw = parse(b, kind, line)
             bad = got != want
-            if b in ("a", "abf", "anm") and not bad:
+            if b in ("a", "abf", "anm", "amul") and not bad:
                 bad = raw != a_header(op, x, y)
             if b == "b" and not bad:
                 bad = raw != b_parts(kind, op, x, y)
@@ -325,7 +325,7 @@ def main():
                            for _ in range(lead)]
                     path = WORK / f"err-{op}-{d1}{d2}-{lead}.bin"
                     gen.write_job(path, "cx", op, pre + [(Opnd.collapsed("cx", d1, 7), Opnd.collapsed("cx", d2, 1))])
-                    for b in ("a", "abf", "anm"):
+                    for b in ("a", "abf", "anm", "amul"):
                         nerr += 1
                         p = run(b, "dump", path, WORK / "err.txt")
                         if p.returncode != 3:
@@ -346,7 +346,7 @@ def main():
             if got != want:
                 fails.append(f"{b} {name}: checksum {got}, want {want}")
     print(f"timing rows: {len(rows)} rows, {nsum} checksums against the exact values")
-    want = {"control": (8, 16), "a": (9, 9), "abf": (9, 9), "anm": (9, 9), "b": (16, 32)}
+    want = {"control": (8, 16), "a": (9, 9), "abf": (9, 9), "anm": (9, 9), "amul": (9, 9), "b": (16, 32)}
     for b in BUILDS:
         t = run(b, "bytes").stdout.split()
         if (int(t[3]), int(t[5])) != want[b]:

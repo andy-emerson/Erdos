@@ -16,7 +16,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 ASM = HERE / "build" / "asm"
-BUILDS = ("control", "a", "abf", "anm", "b")
+BUILDS = ("control", "a", "abf", "anm", "amul", "b")
 INS = re.compile(r"^\s*([0-9a-f]+):\s+(\S+)\s*(.*)$")
 FUN = re.compile(r"^([0-9a-f]+) <(\S+)>:$")
 
@@ -143,7 +143,7 @@ def main():
                 print(f"{b:8} {name:18} no element loop found")
                 ok = False
                 continue
-            bad = inv["cmov"] or inv["vec"] or (b == "abf" and inv["branches"])
+            bad = inv["cmov"] or inv["vec"] or (b in ("abf", "amul") and inv["branches"])
             ok &= not bad
             print(f"{b:8} {name:18} {inv['n']:3} instructions; operation branches {len(inv['branches'])}"
                   + (f" ({'; '.join(inv['branches'])})" if inv["branches"] else "")

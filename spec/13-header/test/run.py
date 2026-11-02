@@ -31,7 +31,7 @@ import gen  # noqa: E402
 
 HERE = gen.HERE
 BIN = HERE / "build" / "bin"
-BUILDS = ("control", "a", "abf", "b")
+BUILDS = ("control", "a", "abf", "anm", "b")
 CORE = "1"
 REPS, MIN_NS, BAND = 15, 50_000_000, 0.05
 IDLE_CPU, IDLE_LOAD, IDLE_RETRY_S, IDLE_GIVEUP_S = 0.10, 1.5, 10, 600
@@ -137,7 +137,7 @@ def main():
         order = builds + (builds[0] + "-2",)
         if a.ir:
             for b in builds:
-                f = f"loop_{'int' if b in ('a', 'abf') else kind}_{op}"
+                f = f"loop_{'int' if b in ('a', 'abf', 'anm') else kind}_{op}"
                 irs[f"{b}|{name}"] = ir(b, path, f, out)
         idle = wait_idle(a.toy)
         t = {row: time_cell(row, path, min_ns, reps) for row in order}

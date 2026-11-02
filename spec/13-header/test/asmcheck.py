@@ -16,7 +16,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 ASM = HERE / "build" / "asm"
-BUILDS = ("control", "a", "abf", "b")
+BUILDS = ("control", "a", "abf", "anm", "b")
 INS = re.compile(r"^\s*([0-9a-f]+):\s+(\S+)\s*(.*)$")
 FUN = re.compile(r"^([0-9a-f]+) <(\S+)>:$")
 

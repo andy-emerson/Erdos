@@ -41,6 +41,29 @@ proc aAdd*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word
 proc aSub*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word) {.inline.} =
   aAdd(h1, m1, h2 xor 0x80'u8, m2, rh, rw)
 
+# ------------------------------------------------------------------------------------------------ add, narrow mask row
+proc aAddNM*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word) {.inline.} =
+  ## the tree, with its direction and axis branches, but no borrow branch: on opposite directions the borrow b
+  ## negates the difference by the mask, (d xor (0 - b)) + b, and turns the direction by h1 + (b shl 7).
+  let t = h1 xor h2
+  if t == 0:
+    rh = h1
+    rw = m1 + m2
+  elif t == 0x80:
+    let d = m1 - m2
+    let b = Word(m1 < m2)                 # the borrow, as a value
+    rh = h1 + (uint8(b) shl 7)
+    rw = (d xor (0'u64 - b)) + b
+  else:
+    var h = h1
+    if m1 == 0: h = h2
+    elif m2 != 0: specError()
+    rh = h
+    rw = m1 + m2
+
+proc aSubNM*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word) {.inline.} =
+  aAddNM(h1, m1, h2 xor 0x80'u8, m2, rh, rw)
+
 # ------------------------------------------------------------------------------------------------ add, branch-free row
 proc aAddBF*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
   ## the tree's cases as masks, every step run for every input:

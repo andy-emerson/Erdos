@@ -503,3 +503,49 @@ N = 1024 pairs per row, 15 reps per cell; median time per operation. Bytes per v
 | cx-div-rand | a | 2.002 | 0.05 | faster |
 | cx-div-rand | abf | 1.996 | 0.05 | faster |
 | cx-div-rand | b | 1.491 | 0.05 | faster |
+
+## Addendum: the narrow mask row (Nov 1, 2026, 23:16–23:21)
+
+Added at the author's request: A's tree with its direction and axis branches, but no borrow branch; on opposite directions the difference is negated by the mask `(d xor (0 − b)) + b` and the direction turned by `h1 + (b shl 7)` (`aAddNM`, build `anm`). The check passes (491,229 results, 96 error cases, 288 checksums); its loop has no `jb`, the borrow is a `setb`. Add and subtract rows only, rerun for every build, after an idle check. ns per operation:
+
+| row | Control | A | A narrow mask | A branch-free |
+| --- | --- | --- | --- | --- |
+| int-add-pos-ge | 0.23 | 0.52 | 0.52 | 2.04 |
+| int-add-pos-most | 0.24 | 0.52 | 0.52 | 2.02 |
+| int-add-pos-half | 0.24 | 0.52 | 0.52 | 2.02 |
+| int-add-most-ge | 0.23 | 0.57 | 0.59 | 2.04 |
+| int-add-most-most | 0.24 | 0.58 | 0.57 | 2.03 |
+| int-add-most-half | 0.23 | 0.59 | 0.58 | 2.02 |
+| int-add-rand-ge | 0.24 | 0.79 | 0.75 | 2.04 |
+| int-add-rand-most | 0.23 | 0.80 | 0.76 | 2.03 |
+| int-add-rand-half | 0.23 | 0.89 | 0.73 | 2.03 |
+| int-sub-pos-ge | 0.23 | 0.71 | 1.12 | 2.14 |
+| int-sub-pos-most | 0.23 | 0.79 | 1.13 | 2.17 |
+| int-sub-pos-half | 0.23 | 0.95 | 1.12 | 2.13 |
+| int-sub-most-ge | 0.24 | 0.75 | 1.04 | 2.13 |
+| int-sub-most-most | 0.23 | 0.70 | 1.06 | 2.14 |
+| int-sub-most-half | 0.23 | 0.96 | 1.08 | 2.14 |
+| int-sub-rand-ge | 0.23 | 0.76 | 0.81 | 2.11 |
+| int-sub-rand-most | 0.23 | 0.79 | 0.78 | 2.13 |
+| int-sub-rand-half | 0.23 | 0.95 | 0.78 | 2.13 |
+| cx-add-pos-ge | 0.44 | 1.07 | 0.78 | 2.03 |
+| cx-add-pos-most | 0.43 | 1.13 | 0.79 | 2.02 |
+| cx-add-pos-half | 0.45 | 1.09 | 0.94 | 2.03 |
+| cx-add-most-ge | 0.45 | 1.09 | 0.79 | 2.04 |
+| cx-add-most-most | 0.43 | 1.10 | 0.82 | 2.03 |
+| cx-add-most-half | 0.44 | 1.08 | 0.95 | 2.05 |
+| cx-add-rand-ge | 0.43 | 1.06 | 0.90 | 2.04 |
+| cx-add-rand-most | 0.45 | 1.09 | 0.92 | 2.03 |
+| cx-add-rand-half | 0.44 | 1.12 | 1.00 | 2.03 |
+| cx-sub-pos-ge | 0.44 | 1.07 | 0.99 | 2.15 |
+| cx-sub-pos-most | 0.44 | 1.13 | 0.97 | 2.13 |
+| cx-sub-pos-half | 0.44 | 1.25 | 1.03 | 2.13 |
+| cx-sub-most-ge | 0.44 | 1.10 | 0.94 | 2.14 |
+| cx-sub-most-most | 0.45 | 1.13 | 0.96 | 2.15 |
+| cx-sub-most-half | 0.43 | 1.25 | 1.02 | 2.14 |
+| cx-sub-rand-ge | 0.43 | 1.07 | 0.89 | 2.14 |
+| cx-sub-rand-most | 0.44 | 1.14 | 0.90 | 2.15 |
+| cx-sub-rand-half | 0.44 | 1.19 | 1.05 | 2.20 |
+
+6. The narrow mask row is faster than A's tree on every complex row (0.78–1.05 ns against 1.06–1.25) and on integer rows with random signs and a random borrow (add 0.73 against 0.89, subtract 0.78 against 0.95). It is slower when every operation takes the opposite path (integer subtract of positive operands: 1.04–1.13 ns against 0.70–0.96), even with the borrow a coin toss.
+7. That last case suggests the branch predictor learns part of a "random" row: each row is the same 1024 operations replayed many times, so A's coin-toss borrow costs less than a true misprediction rate would. Rows with more operations, or fresh operands per pass, would test this.

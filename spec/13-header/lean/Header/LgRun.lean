@@ -92,9 +92,8 @@ macro_rules
     have g1 : wsxb h1 < W := sx_lt h1
     have g2 : wsxb h2 < W := sx_lt h2
     have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by unfold W; omega)
-    first
-      | rw [lgOut_eq, ite_cond_eq_false _ _ (by decide), lg_core _ _ _ _ g1 g2]
-      | rw [lgOut_eq, ite_cond_eq_true _ _ (by decide), lg_core _ _ _ _ g1 g2']
+    simp only [lgOut_eq, Bool.false_eq_true, ite_false, ite_true]
+    first | rw [lg_core _ _ _ _ g1 g2'] | rw [lg_core _ _ _ _ g1 g2]
     cases hs1 : stepN (lgRow $cx $sb) $k1 (start (regs6 xh xm yh ym zh zm) mem) with
     | none => simp [stepN, start, exec, St.set, St.get, lgRow, preL, lgFlag, regs6] at hs1
     | some S1 =>
@@ -138,7 +137,10 @@ theorem lgGen_cx_sub : LgGen true true := by lg_tac true true 9 5 10
 formula's header byte and magnitude; the complex program leaves the formula's expression flag in register 21. -/
 theorem lgRow_gen (cx sub : Bool) : LgGen cx sub := by
   cases cx <;> cases sub
-  exacts [lgGen_int_add, lgGen_int_sub, lgGen_cx_add, lgGen_cx_sub]
+  · exact lgGen_int_add
+  · exact lgGen_int_sub
+  · exact lgGen_cx_add
+  · exact lgGen_cx_sub
 
 /-! ## In terms of round 1's `A.add` -/
 

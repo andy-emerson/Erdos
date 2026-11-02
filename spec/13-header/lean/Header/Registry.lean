@@ -3,6 +3,7 @@ import Header.ProgA
 import Header.ProgB
 import Header.ProgC
 import Header.ProgMul
+import Header.ProgLg
 /-!
 # Round 2: every program and every path, in one list
 
@@ -53,6 +54,8 @@ def registry : List (String × String × Prog × List (String × List Nat)) :=
   (subs.map fun (sn, s) => ("A-bf", "int " ++ sn, PA.bfInt s, [("one", List.range (PA.bfInt s).length)])) ++
   (subs.map fun (sn, s) => ("A-bf", "cx " ++ sn, PA.bfCx s, [("one", List.range (PA.bfCx s).length)])) ++
   (subs.map fun (sn, s) => ("A-mul", sn, PA.mulRow s, [("one", List.range (PA.mulRow s).length)])) ++
+  (subs.map fun (sn, s) => ("A-lg", "int " ++ sn, PA.lgRow false s, [("one", List.range (PA.lgRow false s).length)])) ++
+  (subs.map fun (sn, s) => ("A-lg", "cx " ++ sn, PA.lgRow true s, [("one", List.range (PA.lgRow true s).length)])) ++
   [("B", "int add", PB.add, [("one", List.range 8)]),
    ("B", "int sub", PB.sub, [("one", List.range 8)]),
    ("B", "int neg", PB.neg, [("one", List.range 4)]),

@@ -124,7 +124,7 @@ macro_rules
     · simp [run, ← p3, lgRow, preL, lgFlag]
     · rw [← t3]; rfl
     · rw [← o3]
-    · first | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← c21])))
+    · first | (intro hc; exact hc.elim) | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← c21])))
 
 set_option maxHeartbeats 1000000
 

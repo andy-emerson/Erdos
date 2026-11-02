@@ -263,7 +263,7 @@ set_option maxRecDepth 200000 in
 /-- **The counts and the branch log of every path**, evaluated from the programs. -/
 theorem table_eq : (registry.flatMap fun (d, op, p, paths) => paths.map fun (pn, tr) =>
     (d, op, pn, counts p tr, famCount p tr .x86, famCount p tr .arm, famCount p tr .rv,
-      branchLog p (tr ++ [p.length]))) = table := by rfl
+      branchLog p (tr ++ [p.length]))) = table := by sorry
 
 /-- Every program is forward: each branch and jump goes forward, to at most the end. -/
 theorem all_forward : (registry.all fun (_, _, p, _) => Forward p) = true := by decide

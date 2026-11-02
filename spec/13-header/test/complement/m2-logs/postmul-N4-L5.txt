@@ -1,0 +1,6 @@
+N=4 target=postmul lanes=156 ext=-
+  [chunk 0 done: 0 hits, 16709405 nodes so far]
+  [chunk 1 done: 0 hits, 33588086 nodes so far]
+  [chunk 2 done: 0 hits, 49987454 nodes so far]
+  [chunk 3 done: 0 hits, 66064247 nodes so far]
+  [chunk 4 done: 0 hits, 81122306 nodes so far]

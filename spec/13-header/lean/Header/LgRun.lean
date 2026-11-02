@@ -82,10 +82,10 @@ def LgGen (cx sub : Bool) : Prop :=
       (cx = true → s.r 21 = (lgOut sub h1 m1 h2 m2).2.2)
 
 /-- Run the first `k` instructions (all of them) with `stepN`, read off the end state, and finish with `run_split`. -/
-syntax "lg_tac" num : tactic
+syntax "lg_tac" term:max term:max num : tactic
 set_option hygiene false in
 macro_rules
-  | `(tactic| lg_tac $k) => `(tactic| (
+  | `(tactic| lg_tac $cx $sb $k) => `(tactic| (
     intro h1 h2 m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
     have g1 : wsxb h1 < W := sx_lt h1
     have g2 : wsxb h2 < W := sx_lt h2
@@ -93,23 +93,23 @@ macro_rules
     first
       | rw [lgOut_eq, if_neg Bool.false_ne_true, lg_core _ _ _ _ g1 g2]
       | rw [lgOut_eq, if_pos rfl, lg_core _ _ _ _ g1 g2']
-    cases hst : stepN (lgRow _ _) $k (start (regs6 xh xm yh ym zh zm) mem) with
+    cases hst : stepN (lgRow $cx $sb) $k (start (regs6 xh xm yh ym zh zm) mem) with
     | none => simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6] at hst
     | some S =>
       have f := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 21)) hst
       simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6, e1, e2, e3, e4] at f
       obtain ⟨fpc, ftr, fsto, f21⟩ := f
-      rw [exe, show (lgRow _ _).length + 1 = 1 + $k from rfl, run_split _ $k 1 _ _ hst]
+      rw [exe, show (lgRow $cx $sb).length + 1 = 1 + $k from rfl, run_split _ $k 1 _ _ hst]
       refine ⟨S, ?_, ?_, ?_, ?_⟩
       · simp [run, ← fpc, lgRow, preL, lgFlag]
       · rw [← ftr]; rfl
       · rw [← fsto]
       · first | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← f21])))
 
-theorem lgGen_int_add : LgGen false false := by lg_tac 18
-theorem lgGen_int_sub : LgGen false true := by lg_tac 19
-theorem lgGen_cx_add : LgGen true false := by lg_tac 23
-theorem lgGen_cx_sub : LgGen true true := by lg_tac 24
+theorem lgGen_int_add : LgGen false false := by lg_tac false false 18
+theorem lgGen_int_sub : LgGen false true := by lg_tac false true 19
+theorem lgGen_cx_add : LgGen true false := by lg_tac true false 23
+theorem lgGen_cx_sub : LgGen true true := by lg_tac true true 24
 
 /-- **The header form's program, every input.** It runs every instruction once and ends normally; it stores the
 formula's header byte and magnitude; the complex program leaves the formula's expression flag in register 21. -/

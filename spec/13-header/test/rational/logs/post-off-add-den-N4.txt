@@ -1,0 +1,5 @@
+N=4 layout=off op=add target=den mode=1 mul=1 lanes=2596
+L=1: 0 hits, 0 nodes
+  v1=d1 and T; v2=Q or v1;  [den = last]
+  v1=d2 and T; v2=Q or v1;  [den = last]
+L=2: 2 hits, 285 nodes

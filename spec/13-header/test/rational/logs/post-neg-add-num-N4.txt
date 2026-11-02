@@ -1,0 +1,10 @@
+N=4 layout=neg op=add target=num mode=1 mul=1 lanes=2596
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 285 nodes
+  v1=sar N-1 d1; v2=P + v1; v3=v1 xor v2;  [num = last]
+  v1=sar N-1 d1; v2=P xor v1; v3=v2 - v1;  [num = last]
+  v1=sar N-1 d1; v2=v1 or 1; v3=P * v2;  [num = last]
+  v1=sar N-1 d2; v2=P + v1; v3=v1 xor v2;  [num = last]
+  v1=sar N-1 d2; v2=P xor v1; v3=v2 - v1;  [num = last]
+  v1=sar N-1 d2; v2=v1 or 1; v3=P * v2;  [num = last]
+L=3: 6 hits, 60944 nodes

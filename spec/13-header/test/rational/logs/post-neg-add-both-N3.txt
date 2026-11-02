@@ -1,0 +1,7 @@
+N=3 layout=neg op=add target=both mode=1 mul=1 lanes=312
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 285 nodes
+L=3: 0 hits, 60944 nodes
+  v1=sar N-1 d1; v2=v1 or 1; v3=P * v2; v4=Q * v2;  [den = last, num = v3]
+  v1=sar N-1 d2; v2=v1 or 1; v3=P * v2; v4=Q * v2;  [den = last, num = v3]
+L=4: 2 hits, 13144015 nodes

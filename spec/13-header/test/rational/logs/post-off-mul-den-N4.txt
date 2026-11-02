@@ -1,0 +1,21 @@
+N=4 layout=off op=mul target=den mode=1 mul=1 lanes=6464
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 285 nodes
+L=3: 0 hits, 60980 nodes
+  v1=d1 xor d2; v2=Q xor v1; v3=v2 and T; v4=Q + v3;  [den = last]
+  v1=d1 xor d2; v2=Q xor v1; v3=v2 and T; v4=Q - v3;  [den = last]
+  v1=d1 xor d2; v2=Q xor v1; v3=v2 and T; v4=Q xor v3;  [den = last]
+  v1=d1 xor d2; v2=Q xor v1; v3=v2 and ~T; v4=v1 xor v3;  [den = last]
+  v1=d1 xor Q; v2=d2 xor v1; v3=v2 and T; v4=Q + v3;  [den = last]
+  v1=d1 xor Q; v2=d2 xor v1; v3=v2 and T; v4=Q - v3;  [den = last]
+  v1=d1 xor Q; v2=d2 xor v1; v3=v2 and T; v4=Q xor v3;  [den = last]
+  v1=d2 xor Q; v2=d1 xor v1; v3=v2 and T; v4=Q + v3;  [den = last]
+  v1=d2 xor Q; v2=d1 xor v1; v3=v2 and T; v4=Q - v3;  [den = last]
+  v1=d2 xor Q; v2=d1 xor v1; v3=v2 and T; v4=Q xor v3;  [den = last]
+  v1=Q - d1; v2=d2 xor v1; v3=v2 and T; v4=Q + v3;  [den = last]
+  v1=Q - d1; v2=d2 xor v1; v3=v2 and T; v4=Q - v3;  [den = last]
+  v1=Q - d1; v2=d2 xor v1; v3=v2 and T; v4=Q xor v3;  [den = last]
+  v1=Q - d2; v2=d1 xor v1; v3=v2 and T; v4=Q + v3;  [den = last]
+  v1=Q - d2; v2=d1 xor v1; v3=v2 and T; v4=Q - v3;  [den = last]
+  v1=Q - d2; v2=d1 xor v1; v3=v2 and T; v4=Q xor v3;  [den = last]
+L=4: 16 hits, 13275577 nodes

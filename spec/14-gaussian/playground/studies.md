@@ -248,3 +248,50 @@ Structure, per RULES' "one structure each": in V1 the sticky word is local to an
 On a product of two fresh values, Gauss trades one multiply for three more adds and subtracts when wrapping (two more instructions in all) and four more mod n (three more in all), and the chain gets one step longer (the add before the multiply). When one operand is fixed across many products (a constant, or a matrix entry reused), its sums c, d − c, c + d (or c, (d + n) − c, c + d) are computed once. The trade is then one multiply for one add, at equal instruction counts. Both chains contain exactly one multiply, so the chain comparison does not depend on how dear a multiply is. The three-multiply form gains only where a multiply costs more than an add in throughput, and these proxies cannot show that.
 
 **Intermediate widening.** a + b, c + d and d − c need one more bit than a half: K + 1 bits signed, so 33 bits at K = 32. With extracted halves in 64-bit registers this costs nothing, and the products c(a + b) etc. stay below 2^(2K−1) for halves in the symmetric range. In vector lanes it matters. A 32 × 32 → 64 widening multiply (x86-64 `pmuldq`, ARM64 `smull`, RISC-V `vwmul`) takes 32-bit inputs, so a 33-bit a + b does not fit. The choices are a 64-bit lane multiply, which ARM64's base vector unit lacks as far as I know (unverified), or giving up the exact value. Wrapping alone does not need the extra bit, since a + b mod 2^K gives the right low K bits. But then the exact 2K-bit value that study 2's range test needs is lost. Mod n has no such problem: n < 2^(K−1) leaves a spare bit, so a + b < 2n < 2^K fits an unsigned K-bit lane, and the unsigned widening multiply (`pmuludq`, `umull`, `vwmulu`) applies.
+
+## Study 9: (1+i)-ary binary gcd (gcd1i.py)
+
+**The algorithm** is a variant in the spirit of Weilert (2000). It was written from the facts below and not checked against his paper, which was not read.
+
+π = 1 + i has norm 2, and π² = 2i.
+- π divides x + yi exactly when x ≡ y (mod 2), and (x + yi)/π = ((x + y) + (y − x)i)/2: an add, a subtract and two shifts.
+- The π-valuation of z ≠ 0 is v = 2e, plus 1 when x shr e and y shr e are both odd, where e = ctz(x OR y).
+- Up to a unit, z/π^v is (x sar e, y sar e), followed by one division by π when both parts are odd. That is "strip".
+- Every element prime to π has exactly one primary associate, ≡ 1 mod π³: x odd, y even, x − y ≡ 1 (mod 4). It is reached by a conditional multiply by −i, then a conditional negation. That is "primary".
+- For primary a and b, a − b ≡ 0 (mod π³). So with N(a) ≥ N(b), N(strip(a − b)) ≤ (|a| + |b|)²/8 ≤ N(a)/2.
+
+Steps: k = min(v(a), v(b)); strip and make primary both a and b; order them so N(a) ≥ N(b). Each step sets a ← primary(strip(a − b)) and swaps if N(a) < N(b), stopping when b = 0. The gcd is a·π^k up to a unit, where π^k = 2^⌊k/2⌋ × a unit, × (1 + i) when k is odd. It is then normalised as in study 6. Once b = 0 the step leaves (a, b) unchanged (a − 0 = a, which is already stripped and primary, and no swap). So the branch-free version just runs the step a fixed number of times, with no extra masks.
+
+Values are two extracted halves in 2K-bit registers, since a − b can leave a half's range. The run asserts that every value stays below 2^K in size.
+
+**Cases.** Exhaustive over all pairs of in-range values: K = 3 (2,401), K = 4 (50,625), K = 5 (923,521). K = 32: 100,008 random pairs, with the same mix as study 6 (random, a small divisor, or a built-in common factor of 2^4 to 2^15), plus edge pairs including (0, 0), (HI + HI·i, 0) and (2^30 + 2^30·i, 2^29). Each result was compared with study 6's Euclid (its rational-arithmetic reference, which study 6's word code matched exactly). **Failures: none.**
+
+**Steps.**
+
+| K | (1+i)-ary max | (1+i)-ary mean | Euclid max | Euclid mean |
+|---|---|---|---|---|
+| 3 | 4 | 2.11 | 3 | 1.88 |
+| 4 | 6 | 3.17 | 4 | 2.58 |
+| 5 | 8 | 4.20 | 6 | 3.24 |
+| 32 (random) | 44 | 23.58 | 28 | 14.05 |
+
+The proven bound: each step at least halves N(a)·N(b), which starts below 2^(4K−2) after stripping. So there are at most 4K − 2 steps, 126 at K = 32, against Euclid's 63. The observed worst is far below either bound.
+
+**Instruction counts** (scalar, on extracted halves):
+
+| part | (1+i)-ary | Euclid (study 6) |
+|---|---|---|
+| step (a − b 2, strip 16, primary 17, norm 3 with 2 MUL, compare and mask 2, conditional swap of a, b and N(a), N(b) 12) | 52, + 2 loop test = 54 | 49, + 1 loop test = 50 |
+| multiplies / divides per step | 2 / 0 | 12 / 2 |
+| once per gcd: valuations 2 × 7, min 3, strip and primary 2 × 33, norms 6, order 14 | about 103 | 0 |
+| once per gcd at the end: π^k (shift 3, conditional (1 + i) 10), normalise 22 | about 35 | 22 |
+| zero inputs | prologue case (once per gcd; masks not counted) | none (b = 0 ends the loop) |
+
+| per gcd, K = 32 | (1+i)-ary | Euclid |
+|---|---|---|
+| with a loop branch, at the observed mean | 138 + 54 × 23.58 ≈ 1,410 instructions, ≈ 53 multiplies, 0 divides | 22 + 50 × 14.05 ≈ 725 instructions, ≈ 169 multiplies, ≈ 28 divides |
+| branch-free, at the proven bound | 138 + 52 × 126 ≈ 6,690 | about 3,600 (63 × 57) |
+
+By instruction count the (1+i)-ary gcd costs about twice Euclid's: 1.7 times the steps, at about the same instructions per step. It removes every divide and most multiplies (2 per step for the norm comparison, against 12 multiplies and 2 divides). The proxies weigh a divide like an add, and on all three families a 64-bit divide takes far longer than an add, so these proxies cannot settle which is faster. Its branch-free form is simpler (the step is its own fixed point once b = 0), but its proven bound is twice Euclid's.
+
+**Portability.** ctz is x86-64 `tzcnt` (BMI1), ARM64 `rbit` + `clz` (2 instructions, counted here as 1), and RISC-V `ctz` (the Zbb extension, part of the RVA22 profile; base RV64I lacks it). Without ctz, strip would take one masked division by π per factor.

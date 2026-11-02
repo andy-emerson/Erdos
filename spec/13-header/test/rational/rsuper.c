@@ -124,6 +124,7 @@ static void compute(const Ins *I, u8 *out) {
 }
 
 static int L;
+static int final_need;   /* TGT both: 0 = final must be num, 1 = final must be den, 2 = either */
 static Ins prog[12];
 static int uses[MAXV];
 static int isnum[MAXV], isden[MAXV];
@@ -160,38 +161,34 @@ static int is_dup(const u8 *v, int nv) {
 static u8 fin[MAXC];
 static void try_final(Ins I, int pos) {
     int nv = NIN + pos;
-    /* quick lane test before full compute */
+    /* unused computed values not consumed by the final (checked first: cheap) */
+    int unused[MAXV], nu = 0;
+    for (int j = NIN; j < nv; j++) if (!uses[j] && !depends(&I, j)) unused[nu++] = j;
+    if (nu > (TGT == 2)) return;
     int fnum = (TGT != 1), fden = (TGT != 0);
+    if (TGT == 2) {
+        if (nu == 1) { fnum = isden[unused[0]]; fden = isnum[unused[0]]; }
+        else if (final_need == 0) fden = 0; else if (final_need == 1) fnum = 0;
+        if (!fnum && !fden) return;
+    }
     for (int lane = 0; lane < NL && (fnum || fden); lane++) {
         u8 r = apply(&I, lane);
         if (fnum && r != tn[lane]) fnum = 0;
         if (fden && r != td[lane] && r != tdalt[lane]) fden = 0;
     }
     if (!fnum && !fden) return;
-    /* unused computed values not consumed by the final */
-    int unused[MAXV], nu = 0;
-    for (int j = NIN; j < nv; j++) if (!uses[j] && !depends(&I, j)) unused[nu++] = j;
     prog[pos] = I;
     char outs[64];
-    if (TGT == 0 || TGT == 1) {
-        if (nu) return;
+    if (TGT != 2) {
         hits++; if (hits <= maxprint) print_prog(pos + 1, TGT ? "den = last" : "num = last");
         return;
     }
-    /* both: the last is one output, the other is an earlier value (unused ones must be it) */
-    for (int which = 0; which < 2; which++) {
-        if (which == 0 && !fnum) continue;
-        if (which == 1 && !fden) continue;
-        int found = -1;
-        if (nu > 1) continue;
-        if (nu == 1) { int j = unused[0]; if (which == 0 ? isden[j] : isnum[j]) found = j; else continue; }
-        else for (int j = 0; j < nv; j++) if (which == 0 ? isden[j] : isnum[j]) { found = j; break; }
-        if (found < 0) continue;
-        char o[16]; pv(found, o);
-        sprintf(outs, which == 0 ? "num = last, den = %s" : "den = last, num = %s", o);
-        hits++; if (hits <= maxprint) print_prog(pos + 1, outs);
-        return;
-    }
+    int which = fnum ? 0 : 1, found = -1;
+    if (nu == 1) found = unused[0];
+    else for (int j = 0; j < nv; j++) if (which == 0 ? isden[j] : isnum[j]) { found = j; break; }
+    char o[16]; pv(found, o);
+    sprintf(outs, which == 0 ? "num = last, den = %s" : "den = last, num = %s", o);
+    hits++; if (hits <= maxprint) print_prog(pos + 1, outs);
 }
 
 static int live_count(int nv) { int c = 0; for (int j = NIN; j < nv; j++) if (!uses[j]) c++; return c; }
@@ -214,6 +211,12 @@ static void emit(Ins I, int pos) {
 }
 static void gen(int pos) {
     int nv = NIN + pos; Ins I;
+    if (pos == L - 1 && TGT == 2) {
+        int hn = 0, hd = 0;
+        for (int j = 0; j < nv; j++) { hn |= isnum[j]; hd |= isden[j]; }
+        if (!hn && !hd) return;                  /* the other output must already exist */
+        final_need = (hn && hd) ? 2 : hd ? 0 : 1;
+    }
     for (int a = 0; a < nv; a++) {
         for (int op = U_NOT; op <= U_SART; op++) { I.op = op; I.a = a; I.b = 0; emit(I, pos); }
         for (int op = C_AND; op <= C_RSUB; op++) for (int c = 0; c < 4; c++) {

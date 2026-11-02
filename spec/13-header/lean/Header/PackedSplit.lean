@@ -267,7 +267,6 @@ theorem spAddWith_dec (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
 /-- **Split add**, for either compare: with no overflow (`m1 + m2 < 2^62`), the flag is 0 and the word decodes to
 round 1's sum (its magnitude, and its direction unless the sum is zero) whenever round 1 gives a number, and the flag
 is 1 when round 1 reports an expression. -/
-set_option maxRecDepth 20000 in
 theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
     (hL : Lf (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
       if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0) :
@@ -284,8 +283,8 @@ theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases hl : m1 < m2 <;> by_cases he : m1 = m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
   all_goals try (exfalso; omega)
-  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb, fv0, fv1,
-    fv2, fv3, Fin.ext_iff]
+  all_goals set_option maxRecDepth 20000 in simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb,
+    Fin.ext_iff]
   all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;> qomega
 
 end

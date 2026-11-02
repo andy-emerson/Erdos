@@ -1164,3 +1164,48 @@ Added at the author's request: A's tree with its direction and axis branches, bu
 
 6. The narrow mask row is faster than A's tree on every complex row (0.78–1.05 ns against 1.06–1.25) and on integer rows with random signs and a random borrow (add 0.73 against 0.89, subtract 0.78 against 0.95). It is slower when every operation takes the opposite path (integer subtract of positive operands: 1.04–1.13 ns against 0.70–0.96), even with the borrow a coin toss.
 7. That last case suggests the branch predictor learns part of a "random" row: each row is the same 1024 operations replayed many times, so A's coin-toss borrow costs less than a true misprediction rate would. Rows with more operations, or fresh operands per pass, would test this.
+
+## Addendum: the multiplication row (Nov 2, 2026, 00:37–00:48)
+
+Added at the author's request: A's add with the notes' exponent rule as code. A sign is applied by multiplying by 1 − 2k (1 or −1 on the clock), and the cross-axis choice of direction by multiplying by a 0/1 flag: `r = m1 + m2·(1 − 2o)`, magnitude `r·(1 − 2b)`, direction `h1 + k·(h2 − h1) + (b shl 7)` (`aAddMul`, build `amul`). No branch, no cmov; the factors pass through `opaque` because gcc otherwise turned one multiply into a cmov. 52 instructions per add in the loop, against the branch-free row's 45. The check passes (587,131 results, 128 error cases, 342 checksums). Every row rerun for every build, 32,768 operations per row, after an idle check. Add and subtract, ns per operation:
+
+| row | Control | A | narrow mask | branch-free (masks) | multiplication |
+| --- | --- | --- | --- | --- | --- |
+| int-add-pos-ge | 0.36 | 0.65 | 0.66 | 2.06 | 2.72 |
+| int-add-pos-most | 0.35 | 0.65 | 0.69 | 2.04 | 2.72 |
+| int-add-pos-half | 0.35 | 0.65 | 0.65 | 2.05 | 2.58 |
+| int-add-most-ge | 0.35 | 1.00 | 0.97 | 2.05 | 2.64 |
+| int-add-most-most | 0.35 | 1.00 | 1.00 | 2.05 | 2.78 |
+| int-add-most-half | 0.35 | 0.99 | 0.98 | 2.04 | 2.76 |
+| int-add-rand-ge | 0.36 | 3.51 | 3.40 | 2.04 | 2.80 |
+| int-add-rand-most | 0.35 | 3.32 | 3.44 | 2.07 | 2.78 |
+| int-add-rand-half | 0.35 | 4.17 | 3.40 | 2.04 | 2.48 |
+| int-sub-pos-ge | 0.35 | 0.72 | 1.12 | 2.15 | 2.34 |
+| int-sub-pos-most | 0.35 | 1.09 | 1.12 | 2.13 | 2.34 |
+| int-sub-pos-half | 0.36 | 3.85 | 1.15 | 2.13 | 2.35 |
+| int-sub-most-ge | 0.35 | 1.41 | 1.52 | 2.12 | 2.50 |
+| int-sub-most-most | 0.35 | 1.00 | 1.50 | 2.16 | 2.33 |
+| int-sub-most-half | 0.35 | 3.52 | 1.49 | 2.16 | 2.37 |
+| int-sub-rand-ge | 0.35 | 3.74 | 3.50 | 2.12 | 2.35 |
+| int-sub-rand-most | 0.35 | 3.39 | 3.45 | 2.14 | 2.35 |
+| int-sub-rand-half | 0.36 | 4.46 | 3.47 | 2.15 | 2.44 |
+| cx-add-pos-ge | 0.75 | 3.66 | 3.45 | 2.03 | 2.78 |
+| cx-add-pos-most | 0.75 | 3.71 | 3.62 | 2.04 | 2.57 |
+| cx-add-pos-half | 0.77 | 4.22 | 4.69 | 2.02 | 2.73 |
+| cx-add-most-ge | 0.73 | 3.54 | 3.23 | 2.03 | 2.35 |
+| cx-add-most-most | 0.75 | 3.60 | 3.46 | 2.03 | 2.66 |
+| cx-add-most-half | 0.71 | 4.63 | 4.58 | 2.06 | 2.77 |
+| cx-add-rand-ge | 0.73 | 3.44 | 3.45 | 2.06 | 2.42 |
+| cx-add-rand-most | 0.73 | 3.82 | 3.63 | 2.07 | 2.74 |
+| cx-add-rand-half | 0.73 | 5.42 | 4.44 | 2.02 | 2.77 |
+| cx-sub-pos-ge | 0.73 | 3.94 | 4.14 | 2.14 | 2.32 |
+| cx-sub-pos-most | 0.72 | 4.11 | 3.91 | 2.14 | 2.34 |
+| cx-sub-pos-half | 0.75 | 6.19 | 4.71 | 2.14 | 2.34 |
+| cx-sub-most-ge | 0.72 | 4.04 | 3.60 | 2.12 | 2.38 |
+| cx-sub-most-most | 0.73 | 4.19 | 3.63 | 2.14 | 2.31 |
+| cx-sub-most-half | 0.74 | 5.95 | 4.66 | 2.12 | 2.40 |
+| cx-sub-rand-ge | 0.72 | 3.84 | 3.19 | 2.13 | 2.34 |
+| cx-sub-rand-most | 0.73 | 4.05 | 3.82 | 2.18 | 2.35 |
+| cx-sub-rand-half | 0.73 | 5.28 | 4.77 | 2.12 | 2.32 |
+
+8. The multiplication row is flat, as the mask row is: 2.3–2.8 ns whatever the signs, axes or borrow. It is slower than the mask row (2.0–2.2 ns) everywhere: more instructions as compiled (52 against 45), and three multiplies per add. Negate, multiply and divide are A's shared routines, unchanged.

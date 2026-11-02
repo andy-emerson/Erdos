@@ -66,11 +66,13 @@ Subtracting $m$ then does the work of adding the flag, since $-1111 = +1$ on the
 
 $$(x \text{ XOR } m) - m = \begin{cases} x & m = 0000 \\ -x & m = 1111 \end{cases}$$
 
-### Flipping chosen bits
+### Toggling chosen bits
 
-XOR with a constant $c$ flips the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
+XOR with a constant $c$ toggles the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
 
-$$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ flipped} & \text{bit of } c = 1 \end{cases}$$
+$$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ toggled} & \text{bit of } c = 1 \end{cases}$$
+
+Toggling the same bits twice restores them: $(x \text{ XOR } c) \text{ XOR } c = x$.
 
 ## AND
 
@@ -148,7 +150,49 @@ $$\begin{aligned}
 &= 1
 \end{aligned}$$
 
-## XOR and AND
+## OR
+
+OR sets bits: each bit of the result is 1 where either word has a 1. So OR with a word $c$ sets the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
+
+$$\text{bit of } (x \text{ OR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ 1 & \text{bit of } c = 1 \end{cases}$$
+
+Against a mask, setting some bits becomes setting all or none. So OR with a mask keeps a word or fills it:
+
+$$x \text{ OR } m = \begin{cases} x & m = 0000,\ k = 0 \\ 1111 & m = 1111,\ k = 1 \end{cases}$$
+
+### Setting chosen bits
+
+OR with a constant sets those bits, as above. When the bits are known to be 0 beforehand, it is also an add: $x \text{ OR } c = x + c$.
+
+### Combining flags
+
+On flags, OR means "either":
+
+$$k_1 \text{ OR } k_2 = \begin{cases} 0 & k_1 = 0,\ k_2 = 0 \\ 1 & \text{otherwise} \end{cases}$$
+
+A flag OR-ed with each new flag stays 1 once any of them is 1.
+
+## NOT
+
+NOT toggles every bit of a word, the same as XOR with 1111:
+
+$$\text{NOT } x = 15 - x$$
+
+### The opposite mask
+
+NOT turns a mask into the mask of the opposite flag:
+
+$$\text{NOT } m = \begin{cases} 1111 & m = 0000,\ k = 0 \\ 0000 & m = 1111,\ k = 1 \end{cases}$$
+
+### Conditional keeping
+
+AND with the opposite mask keeps $x$ when $k = 0$ and deletes it when $k = 1$:
+
+$$x \text{ AND NOT } m = \begin{cases} x & m = 0000,\ k = 0 \\ 0 & m = 1111,\ k = 1 \end{cases}$$
+
+x86-64 (`andn`) and ARM64 (`bic`) do this in one instruction.
+
+## Combinations
 
 ### Conditional choice
 
@@ -183,6 +227,12 @@ a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } 
 With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
 
 $$(a \text{ XOR } d,\ b \text{ XOR } d) = \begin{cases} (a, b) & m = 0000,\ k = 0 \\ (b, a) & m = 1111,\ k = 1 \end{cases}$$
+
+### Conditional choice with OR
+
+Keeping one word and deleting the other, then combining, is a second way to choose:
+
+$$(a \text{ AND NOT } m) \text{ OR } (c \text{ AND } m) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
 
 ### Minimum and maximum
 

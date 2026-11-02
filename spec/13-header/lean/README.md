@@ -454,3 +454,61 @@ register with `xor −128`. All arithmetic mod `2^64` (`largerAdd`, `largerSub`)
 | `sx_flip` | `xor −128` on a sign-extended header is the sign-extended `h xor 0x80`. |
 
 `#print axioms`: the main theorems use `propext`, `Classical.choice`, `Quot.sound` (or fewer).
+
+## The packed design, round 1 (`Header/Packed.lean`, `Header/PackedTop.lean`, `Header/PackedTopMul.lean`, `Header/PackedBottom.lean`, `Header/PackedSplit.lean`)
+
+One 64-bit word holds a magnitude `m < 2^62` and a direction `d = 2s + a`; its value is round 1's `A.val ⟨m, d⟩`.
+Words are natural numbers mod `2^64`. Each layout is a `Layout` (encode, decode, the proof that decode inverts encode
+on magnitudes below `2^62`, and the proof that an encoded word is below `2^64`). The reference operations decode, run
+round 1's operation and encode. Each word formula is one definition, copied from `../prior-art.md` and
+`../test/prior-art/check.py` (top, bottom) or `../test/prior-art/split.py` (split); a changed formula means editing that
+definition and rerunning the proof. Where `split.py` has two variants of a part, each variant is its own definition,
+and the proof goes through a shared body (`spAddWith`, `spMulWith`, `spDivWith`) that takes the part as a parameter
+and needs one fact about it.
+
+Exceptions, as in `LargerRow`: zero may have any direction (spec v0.2 §3), so an add or subtract is checked on the
+magnitude and, unless the result is zero, the direction. The no-overflow hypothesis is `m1 + m2 < 2^62` for add and
+subtract and `m1 · m2 < 2^62` for multiply.
+
+Shared (`Packed.lean`):
+
+| Theorem | Statement |
+| --- | --- |
+| `refAdd_correct`, `refSub_correct` | With no overflow and not across axes with two nonzero magnitudes, the reference add (subtract) gives a word whose value is the sum (difference). |
+| `refAdd_none_iff` | The reference add reports an expression exactly when round 1 does: different axes, both nonzero. |
+| `refNeg_correct`, `refMul_correct` | The reference negate's value is the negation; the reference multiply's value is the product, when `m1 · m2 < 2^62`. |
+| `refDiv_correct` | When `m2 > 0` divides `m1`, the reference quotient times the divisor is the dividend. |
+| `and_high`, `xor_low`, `or_low`, `xor_parts`, `and_parts`, `or_parts`, `or_ones_low`, `xor_xor_cancel`, `and_ones64`, `xor_ones64` | Bit lemmas: masks, disjoint OR, and AND/OR/XOR acting on a word's high and low parts separately. |
+
+Top, `w = d · 2^62 + m` (`Top`):
+
+| Theorem | Statement |
+| --- | --- |
+| `topAdd_eq`, `topSub_eq` | With `m1 + m2 < 2^62`: when `A.add` (`A.sub`) gives `r`, the flag is 0 and the word decodes to `r.m` and, unless `r.m = 0`, to `r.d`; when it gives an expression, the flag is 1. Built from per-`d1` lemmas `topAdd_eq_0` … `_3`. |
+| `topNeg_eq` | `w xor 2^63` is the word of `A.neg` exactly. |
+| `topMul_eq` | With `m1 · m2 < 2^62`, the add-the-headers multiply is the word of `A.mul` exactly. |
+| `topMulLea_eq` | The `lea` form `(w1 + w2 − 1) and not M`: the product's magnitude, and its direction unless the product is zero. |
+| `topDiv_eq` | Exact division (`m2 > 0` divides `m1`): the quotient's magnitude, and its direction unless `m1 = 0`. |
+
+Bottom, `w = 4m + d` (`Bottom`):
+
+| Theorem | Statement |
+| --- | --- |
+| `botAdd_eq`, `botSub_eq` | As `topAdd_eq`, `topSub_eq`. |
+| `botNeg_eq` | `w xor 2` is the word of `A.neg` exactly. |
+| `botMul_eq` | With `m1 · m2 < 2^62`, the word of `A.mul` exactly. |
+| `botDiv_eq` | Exact division: the word of `A.div` exactly. |
+
+Split, `w = s · 2^63 + 2m + a` (`Split`):
+
+| Theorem | Statement |
+| --- | --- |
+| `spAdd_eq`, `spAdd1_eq` | As `topAdd_eq`, for the compare `L = 0 − ((w1 shl 1) <u (w2 shl 1))` and for `L = 0 − ((w1 xor (t and S)) <u w2)`. Both reduce to `spAddWith_eq`, which needs only that `L` is all ones exactly when `2m1 + a1 < 2m2 + a2` (`spL0_eq`, `spL1_eq`). |
+| `spSub_eq`, `spSub1_eq` | The same for subtract (`w2 xor S`). |
+| `spNeg_eq` | `w xor S` is the word of `A.neg` exactly. |
+| `spMul_eq`, `spMul1_eq` | With `m1 · m2 < 2^62`, both multiplies (`D` by the carry through `w1 or F`, and by the two-field rule) give the word of `A.mul` exactly (`spMulWith_eq` with `spMulD0_eq`, `spMulD1_eq`). |
+| `spDiv_eq` | Division with `q = (x1 /u x2) shl 1` and `D` by the borrow gives the word of `A.div` exactly (no divisibility needed: `2m1 / 2m2 = m1 / m2`). |
+| `spDiv1_eq` | With `q = x1 /u (x2 shr 1)` and `D` by the two-field rule: the word of `A.div` exactly when `m2` divides `m1`. |
+| `T3_xor`, `T3_and`, `T3_or`, `shl63`, `T3_dec` | A split word as three fields `T3 s m a`; AND, OR and XOR act on the fields separately. |
+
+`#print axioms`: the main theorems use `propext`, `Classical.choice`, `Quot.sound` (or fewer).

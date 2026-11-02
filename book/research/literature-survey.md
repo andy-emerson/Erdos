@@ -336,8 +336,351 @@ representation, overflow analysis and timings.
    ℤ[i], ℚ(i) and number fields, and nothing proves the exact layer correct the way the
    floating-point books do."
 
+**Scope note (integer-only: ℤ[i] and ℤ[i]/n, no rationals).** The conclusion still
+holds, and the gap is cleaner. Still directly relevant: Hacker's Delight (word-level
+two's complement, overflow, division by constants, base −1+i for Gaussian integers);
+Knuth vol. 2 §4.1 and §4.3 (complex bases, multiprecision); Arndt (bit wizardry,
+modular arithmetic, NTTs); the cryptographic-implementation books (Montgomery and Barrett
+reduction, the core of ℤ[i]/n arithmetic); Crandall & Pomerance ch. 9; Brent &
+Zimmermann ch. 1–2; Cohen GTM 138 ch. 1 (Cornacchia) and ch. 5 (imaginary quadratic
+fields); Bressoud & Wagon ch. 9 (Gaussian primes, moat); the residue-number-system
+literature, especially the quadratic RNS (§2.15), which is ℤ[i]/n arithmetic in machine
+lanes; and the formal Gaussian-integer developments (Mathlib, Isabelle AFP, Mathematics in
+Lean). Now background only: Knuth §4.5, Kornerup & Matula ch. 9 and Gregory &
+Krishnamurthy ch. II (finite-precision and Hensel-code rationals), and the parts of Cohen
+GTM 193 about general relative extensions. Under the integer-only scope the target book is
+"Hacker's Delight and Cohen ch. 1 and 5 for ℤ[i], with proofs and timings", and no book
+of that kind was found.
+
 ---
 
 ## Milestone 2: libraries and languages
 
-(pending)
+Weighting follows the updated scope: arithmetic in ℤ[i] and ℤ[i]/n first, including SIMD
+and GPU; number fields second; rationals as background.
+
+### 4. Short answer
+
+**Nothing found combines (1) an exact Gaussian-integer or ℤ[i]/n element type,
+(2) whole-array (columnar, SIMD or GPU) execution, and (3) a terse array-language
+surface, let alone (4) machine-checked proofs.** Each pair exists separately:
+
+| Have | Example | Missing |
+|---|---|---|
+| Exact ℤ[i] + fast C | FLINT `fmpzi` | Per-element, bignum-backed; no vector or batch functions; not a language |
+| Exact ℤ[i] + array language | April APL (complex rationals from Common Lisp), J essay with integer pairs | Boxed per-element numbers; no SIMD; not fast |
+| Gaussian GCD/floor in an array language | Dyalog APL, J, NARS2000 (McDonnell complex floor) | Built on complex **doubles**, so exact only while parts fit in 53 bits |
+| Modular arithmetic at SIMD/GPU speed | Mathemagix SIMD, FLINT `nmod_vec` (AVX2), NTL, CGBN, cuPQC, JAX on TPU, HE NTT libraries | Only ℤ/p, no ℤ[i]/n type; libraries, not languages |
+| Complex integer instructions in hardware | Arm SVE2 `CMLA` (8/16/32/64-bit complex integer lanes), AMD AI Engine `cint32`, Intel patent for packed 16-bit complex words | No library or language exposing them as Gaussian integers mod n |
+| ℤ[i]/p as transform ring | Fast Galois transform over GF(q²), q = 2⁶¹−1; QRNS | Used inside convolution and DSP, never exposed as a data type |
+| Verified exact algebra with machine words | Lean 4 *hex* (`UInt64`, Barrett/Montgomery, number fields) | No Gaussian-integer library listed; not array-style |
+| Array languages with good performance | q/kdb+, k9, BQN, Uiua, Futhark, JAX, Halide | No complex integer types at all (complex is float, or missing) |
+
+### 5. Libraries
+
+#### 5.1 FLINT: `fmpzi` (Gaussian integers)
+
+- `fmpzi_t` is a pair of `fmpz` (FLINT multiprecision integers, small values inline).
+  Provides Euclidean division with nearest rounding (N(r) ≤ N(y)/2), an approximate
+  floating-point-quotient divrem, exact division, removal of factors of 1+i, canonical
+  associates, proven and probable primality. **Factorisation is not implemented**
+  ([FLINT docs](https://flintlib.org/doc/fmpzi/index.html)).
+- Four GCD algorithms: Euclidean, improved Euclidean (approximate quotients finished in
+  double precision), Weilert's (1+i)-ary binary GCD, and a lattice/shortest-vector
+  method; `fmpzi_gcd` chooses one, and the binary GCD hands over to Euclid above 500 bits
+  ([FLINT docs](https://flintlib.org/doc/fmpzi/index.html)).
+- Polynomial multiplication over ℤ[i] (FFT-small, Kronecker substitution,
+  Schönhage–Strassen); matrices and polynomials through the generic-ring context
+  `gr_ctx_init_fmpzi` ([FLINT docs](https://flintlib.org/doc/fmpzi/index.html)).
+- **No vector/batch functions for `fmpzi`, and no ℤ[i]/n type**
+  ([FLINT docs](https://flintlib.org/doc/fmpzi/index.html)). The ℤ[i]/n type is not
+  listed; ℤ[i]/p for p ≡ 3 mod 4 can be had as GF(p²) via FLINT's finite-field modules
+  **[unverified: not checked whether FLINT's `fq` modules special-case this]**.
+- Julia's Nemo exposes it: "The Gaussian integer type in Nemo is provided by a pair of
+  FLINT integers", via `GaussianIntegers()` and `GaussianRationals()`
+  ([Nemo docs](https://nemocas.github.io/Nemo.jl/stable/integer)).
+- **Relevance:** the strongest existing exact ℤ[i] implementation, and the natural
+  per-element baseline for timings. Its design (pointer-or-small-value `fmpz`) is the
+  opposite of a fixed-width packed column.
+
+#### 5.2 FLINT: `nf_elem` (number fields, formerly Antic)
+
+- Antic ("Algebraic Number Theory In C", Hart) is archived; "Antic has been merged into
+  FLINT" ([GitHub](https://github.com/flintlib/antic)).
+- `nf_elem` is a union with special layouts: linear fields (num, den) and **quadratic
+  fields as `fmpz num[3]` plus `den`**, the third slot being an "extra coeff for delayed
+  reduction"; general fields are `fmpq_poly_t` ([nf_elem.h](https://docs.rs/crate/flint3-sys/3.5.1/source/flint/src/nf_elem.h)).
+  So ℚ(i) is a quadratic special case, but always with a denominator and multiprecision
+  coefficients.
+- No vector operations; conversion to and from matrix rows and the multiplication matrix
+  in the power basis ([FLINT docs](https://flintlib.org/doc/nf_elem.html)).
+
+#### 5.3 FLINT: word-size modular vectors
+
+- `nmod_vec` dot products are vectorised for AVX2 only (4×64-bit lanes via a `vec4n`
+  abstraction, delayed reduction); no NEON path in that file
+  ([source](https://docs.rs/crate/flint-sys/latest/source/flint-3.5.0/src/nmod_vec/dot.c)).
+- **Relevance:** the existing SIMD modular kernels are for ℤ/p; a ℤ[i]/p kernel would
+  be two of these plus a cross term, and nobody ships it as such.
+
+#### 5.4 Calcium (now part of FLINT)
+
+- Exact real and complex numbers as elements of fields ℚ(a₁,…,aₙ), with `qqbar_t` for
+  canonical algebraic numbers; built on Arb, Antic and FLINT. Per-element `ca_t` with
+  `ca_poly_t` and `ca_mat_t` for polynomials and matrices
+  ([Johansson, arXiv:2011.01728](https://arxiv.org/pdf/2011.01728)).
+- **Relevance:** exact complex arithmetic at the opposite end from machine words
+  (symbolic field towers). Shows "exact complex" in practice means heavy objects.
+
+#### 5.5 PARI/GP
+
+- Number-field elements may be `t_INT`, `t_FRAC`, `t_POL`, `t_POLMOD`, a `t_COL` on the
+  integral basis, or a factored form (famat) "to avoid coefficient explosion"
+  ([PARI docs](https://pari.math.u-bordeaux.fr/dochtml/html-stable/General_number_fields.html)).
+- Gaussian integers are ordinary `t_COMPLEX` with `t_INT` parts **[unverified: not
+  checked on a fetched page]**. Vectors are arrays of pointers to generic objects
+  **[unverified]**, so there is no packed columnar arithmetic.
+
+#### 5.6 NTL (Shoup)
+
+- Multimodular `ZZ_p` matrix multiplication (10×–40× faster than naive), small-prime FFTs
+  for `ZZ_pX`, AVX in the `zz_p` matrix kernels, thread boosting
+  ([Shoup 2016, PDF](https://www.libntl.org/boost.pdf)).
+- No Gaussian-integer type was found **[unverified: absence not checked against the
+  full NTL documentation]**.
+
+#### 5.7 Mathemagix modular SIMD (van der Hoeven, Lecerf, Quintin)
+
+- Branch-free Barrett, Montgomery and floating-point/FMA modular arithmetic for 8- to
+  128-bit integer types, on SSE 4.x, AVX, AVX2 and FMA; speedups close to the theoretical
+  lane counts, sometimes an order of magnitude over existing software
+  ([paper, HTML](https://www.texmacs.org/joris/simd/simd.html);
+  [HAL](https://hal.archives-ouvertes.fr/hal-01022383)). Published in ACM TOMS
+  ([DOI 10.1145/2876503](https://unpaywall.org/10.1145%2F2876503)).
+- Complex or Gaussian integers are not discussed
+  ([paper](https://www.texmacs.org/joris/simd/simd.html)).
+- **Relevance:** the best reference for the word-level modular kernels a ℤ[i]/n column
+  type would need; ℤ[i]/n is two such lanes per element.
+
+#### 5.8 Gaussian integers mod p as a transform ring (GF(q²), QRNS)
+
+These are the closest prior art to "Gaussian integers mod n at machine speed", but they
+use ℤ[i]/p internally and never expose it as a data type.
+
+- **Complex integer transforms over GF(q²), q a Mersenne prime:** Liu, Reed & Truong,
+  "Fast algorithms for complex integer transforms", IEEE TASSP 1977
+  ([record](https://www.bohrium.com/paper-details/fast-algorithms-for-complex-integer-transforms/812354561061683202-13724)).
+  Crandall's "fast Galois transform" over GF(q²) with q = 2⁶¹−1: for q ≡ 3 mod 4,
+  Gaussian integers mod q form GF(q²), q²−1 is divisible by 2⁶², so large power-of-two
+  transforms exist ([Mersenne list, Daly 1998](https://mail-archive.com/mersenne@base.com/msg01012.html)).
+- **Quadratic residue number system (QRNS):** for p ≡ 1 (mod 4), ℤ[i]/p ≅ 𝔽_p × 𝔽_p via
+  a + bi ↦ (a + jb, a − jb), where j² ≡ −1, so a complex product costs two independent
+  modular products with no cross term **[standard CRT fact; not quoted from a fetched
+  source]**. QRNS was developed for complex DSP hardware: Jenkins & Lee 1980/81 (complex
+  residue arithmetic without complex NTTs,
+  [PSU](https://pure.psu.edu/en/publications/complex-residue-number-arithmetic-for-digital-signal-processing/));
+  Krishnan, Jullien & Miller, ICASSP 1985
+  ([record](https://www.sciencegate.app/document/10.1109/icassp.1985.1168328)); Jenkins &
+  Krogmeier, ISCAS 1986, complex recursive filters, noting QRNS "limit[s] interaction
+  between the real and imaginary channels"
+  ([PSU](https://pure.psu.edu/en/publications/complex-digital-filtering-in-quadratic-modular-number-systems/)).
+- Homomorphic-encryption work uses ℤ_t[x]/(1+x²) ≅ ℤ_{t²} for t ≡ 3 mod 4 to pack
+  complex values ([Pedrouzo-Ulloa et al., arXiv:1607.05229](https://arxiv.org/pdf/1607.05229)).
+- Gaussian-integer public-key variants (e.g. Elkamchouchi, Elshenawy & Shaban, NRSC 2003,
+  [record](https://bvbvf1.bib-bvb.de/vufind/PrimoRecord/cdi_ieee_primary_1217350)) use
+  ℤ[i]/n arithmetic, but no fast implementation library was found.
+- **Relevance:** QRNS gives the erdos project a known, citable split: for p ≡ 1 mod 4 a
+  ℤ[i]/p column is two independent ℤ/p columns (array-friendly, no cross terms); for
+  p ≡ 3 mod 4 it is GF(p²) with the 3- or 4-multiplication complex product. No software
+  library implementing either as a vector type was found.
+
+#### 5.9 SIMD hardware with complex integer lanes
+
+- **Arm SVE2 `CMLA`:** complex integer multiply-add with rotation on 8-, 16-, 32- or
+  64-bit elements, real part in the even lane and imaginary in the odd lane; two `CMLA`s
+  with rotations 90° apart give a full complex multiply-add; requires FEAT_SVE2 or
+  FEAT_SME ([instruction reference](https://www.scs.stanford.edu/~zyedidia/arm64/cmla_z_zzz.html);
+  [.NET intrinsic](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.intrinsics.arm.sve2.multiplyaddrotatecomplex?view=net-11.0)).
+  With 32-bit elements this is exactly "a Gaussian integer as two int32 lanes in one
+  64-bit slot", in hardware.
+- **AMD AI Engine:** vector types such as `v4cint32` with complex multiply,
+  multiply-accumulate and multiply-subtract into 80-bit complex accumulators
+  (`v4cacc80`) ([AMD intrinsics guide](https://download.amd.com/docnav/aiengine/xilinx2024_2/aiengine_intrinsics/intrinsics/group__vect__mult__cmp__32x32c__nn.html)).
+- **x86:** AVX512-FP16 has complex multiply for FP16 pairs only
+  ([VFCMADDCPH](https://www.felixcloutier.com/x86/vfcmaddcph:vfmaddcph)). An Intel
+  patent application describes dual complex multiply-add on packed signed 16-bit complex
+  words (VPCDPWQRE/VPCDPWQIMM) ([USPTO](https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11163563));
+  shipping status not verified **[unverified]**. No x86 complex-integer instruction was
+  confirmed, so ℤ[i] on x86 is done with ordinary integer lanes (e.g. `vpmuldq`/
+  `vpmullq` and shuffles) **[unverified: no source found describing a ℤ[i] kernel]**.
+- No software library was found that uses these instructions for exact Gaussian-integer
+  or ℤ[i]/n arithmetic; their documented use is DSP/ML.
+
+#### 5.10 GPU number-theory and modular arithmetic
+
+- **CGBN** (NVlabs): fixed-size unsigned multiprecision (32 bits to 32K bits) with
+  cooperative thread groups: add, sub, mul, Montgomery, powm, division, sqrt, gcd,
+  modular inverse; 4×–77× over 20-core GMP on V100; last release noted 2018
+  ([GitHub](https://github.com/NVlabs/CGBN)).
+- **cuPQC-BigInt** (NVIDIA): device-side fixed-width unsigned big integers (32-bit
+  limbs, up to 4096 bits), `mul_mod`, Montgomery and Barrett; **unsigned only**; batching
+  is by instance index inside user kernels
+  ([NVIDIA docs](https://docs.nvidia.com/cuda/cupqc/libraries/cupqc_bigint/cupqc_bigint_feature.html)).
+- **Midsize integers on GPU, CUDA and Futhark:** Oancea & Watt (arXiv 2405.14642) beat
+  CGBN for 2¹⁴–2¹⁸ bits; FFT multiplication over word-size prime fields; their Futhark
+  version is competitive with CGBN on most tests but scales poorly, which the authors
+  put down to a missing sequentialisation pass
+  ([ar5iv](https://ar5iv.labs.arxiv.org/html/2405.14642)). **This is the closest data
+  point for "array language vs hand-written GPU code" on exact integer arithmetic.**
+- **HE NTT kernels:** GPU NTT over ℤ_p with Barrett variants and fused kernels
+  (Kim et al., [arXiv:2012.01968](https://arxiv.org/pdf/2012.01968.pdf); Shivdikar et
+  al., [arXiv:2209.01290](https://ar5iv.arxiv.org/html/2209.01290)). Both are ℤ_p only;
+  neither uses Gaussian integers.
+- **TPU via JAX:** CROSS (Tong et al., [arXiv:2501.07047](https://arxiv.org/html/2501.07047v1))
+  splits 28-bit residues into 8-bit chunks so modular products and NTTs run on matrix
+  units; Barrett reduction built from mul/shift/sub. Jaxite (JAX FHE backend for TPU/GPU,
+  [PyPI](https://pypi.org/project/jaxite)) is boolean-gate based.
+- No GPU library with a Gaussian-integer or ℤ[i]/n type was found. Gaussian-prime
+  computations such as the Gaussian moat (width 6 separates the origin from infinity,
+  Tsuchimura 2005) are cited without hardware details
+  ([Wikipedia](https://en.wikipedia.org/wiki/Gaussian_moat)) **[unverified: whether any
+  moat computation used SIMD/GPU]**.
+
+#### 5.11 Lean 4: *hex*
+
+- *hex* is published as `leanprover/hex`, "Verified computational algebra in Lean 4",
+  Apache 2.0, about 35 component libraries, each computational library Mathlib-free with
+  an optional `*Theory` library holding the Mathlib-facing proofs
+  ([Reservoir](https://reservoir.lean-lang.org/@leanprover/hex);
+  [GitHub](https://github.com/leanprover/hex)). Development is in `kim-em/hex-dev`, and
+  the manual and blog are on Kim Morrison's site
+  ([Reservoir payload](https://reservoir.lean-lang.org/@leanprover/hex/_payload.json)).
+- Components relevant here: **HexArith "Exact word arithmetic"** (no theory library),
+  HexModArith (modular arithmetic, with theory), HexModular (CRT and rational
+  reconstruction), HexPrimality and HexECPP (certified primality), **HexNumberField
+  "Algebraic numbers"** and HexNumberFieldTower, HexRoots (complex root isolation),
+  HexGFq/HexGF2 (finite fields), HexLLL, HexBerlekampZassenhaus
+  ([Reservoir payload](https://reservoir.lean-lang.org/@leanprover/hex/_payload.json)).
+- The spec: dense `Array`-backed polynomials with `UInt64` coefficients, Barrett/
+  Montgomery reduction, GMP FFI for big integers, correspondences such as
+  `ZMod64 p ≃+* ZMod p` and `GFq p n ≃+* GaloisField p n`
+  ([SPEC.md](https://raw.githubusercontent.com/kim-em/hex-dev/main/SPEC/SPEC.md)).
+  The development rules forbid axioms, `native_decide` and `sorry`, and benchmarks are
+  compared against recorded external-system observations
+  ([DEV.md](https://raw.githubusercontent.com/kim-em/hex-dev/main/DEV.md)).
+- A HexNumberField announcement post exists ("Exact algebraic numbers and number fields
+  in Lean", Sept 2026), but the blog and manual were not reachable from this session
+  **[unverified: contents of HexArith and HexNumberField; whether ℤ[i] or ℤ[i]/n is
+  specialised]**.
+- No Gaussian-integer library appears in the component list
+  ([Reservoir payload](https://reservoir.lean-lang.org/@leanprover/hex/_payload.json)).
+- **Relevance: the closest active project to the erdos Lean work.** Same idea (verified
+  exact arithmetic on machine words in Lean 4, timed), different target (polynomials,
+  finite fields, factorisation) and different style (library, scalar loops, not array
+  language). erdos should cite it, compare HexArith/HexModArith against its own word
+  layer, and position ℤ[i] and ℤ[i]/n columns as what hex does not cover.
+- Other formal neighbours (from Milestone 1): Mathlib `GaussianInt`; Isabelle AFP
+  Gaussian Integers with a slow executable factoriser; Why3-verified GMP `mpn`; Lean
+  port of s2n-bignum's framework.
+
+#### 5.12 Smaller items
+
+- GaussianIntegers.jl (Ulrich Thiel): teaching package on AbstractAlgebra.jl, with HNF
+  and SNF over ℤ[i]; last updated about 2022 ([JuliaPackages](https://juliapackages.com/p/gaussianintegers)).
+- Python `galois`: NumPy `ndarray` subclass for GF(pᵐ) with numba-JIT ufuncs, lookup
+  tables up to order 2²⁰ ([PyPI](https://pypi.org/project/galois/0.0.16)). It is the
+  closest "array of finite-field elements" library; GF(p²) for p ≡ 3 mod 4 is ℤ[i]/p, but
+  as a polynomial-basis field, not a Gaussian-integer type.
+- Mathematica: `GaussianIntegers -> True` option for `FactorInteger`, `PrimeQ`,
+  `Factor` ([Wolfram](https://reference.wolfram.com/language/ref/GaussianIntegers.html)).
+  Mathematics without array speed, as in the original gap statement.
+
+### 6. Array languages and array compilers
+
+| Language | Integer types | Complex type | Exact ℤ[i]? | Source |
+|---|---|---|---|---|
+| q/kdb+ | short, int, long (16/32/64-bit) | none | no | [KX](https://code.kx.com/q/learn/tour/datatypes) |
+| k9 (Shakti) | 1/2/4-byte unsigned, 8-byte signed | not mentioned | no | [k9 manual](https://estradajke.github.io/k9-simples/k9/Noun.html) |
+| J | machine int, int2, int4, extended, rational | IEEE doubles only | GCD via complex floor on doubles; exact only as user-built integer pairs | [J wiki](https://code.jsoftware.com/wiki/Vocabulary/NumericPrecisions); [Hui essay](https://code.jsoftware.com/wiki/Essays/Gaussian_Integers) |
+| Dyalog APL | machine ints | binary-float components | GCD/floor on complex floats | [APL Wiki: Number](https://aplwiki.com/wiki/Number); [GCD](https://aplwiki.com/wiki/GCD) |
+| NARS2000 | ints, rationals, multiprecision | complex, quaternion, octonion | component types not confirmed | [APL Wiki](https://aplwiki.com/wiki/Number); [sudleyplace](https://www.sudleyplace.com/APL/projects.html) |
+| April (APL → Common Lisp) | Lisp integers, rationals | complex with rational parts, e.g. `3r4J9r5` | **yes, boxed** | [GitHub](https://github.com/phantomics/april) |
+| BQN | doubles (internal ints hidden) | not mentioned | no | [BQN docs](https://mlochbaum.github.io/BQN/doc/types.html) |
+| Uiua | — | `Complex { re: f64, im: f64 }` | no | [docs.rs](https://docs.rs/uiua/0.18.0-dev.4/uiua/struct.Complex.html) |
+| Julia | all widths, BigInt, Rational | `Complex{T}` incl. integer `T` | `Complex{Int}` exists, but `/` returns floats; ℤ[i] proper via Nemo | [Julia manual](https://docs.julialang.org/en/v1.0/manual/complex-and-rational-numbers/); [Nemo](https://nemocas.github.io/Nemo.jl/stable/integer) |
+| Futhark | i8–i64, u8–u64 | none built in | no | [reference](https://hackage-content.haskell.org/package/futhark-0.25.32/src/docs/language-reference.rst) |
+| JAX | int8–int64, uint8–uint64 | complex64/128 only | no | [type promotion](https://kolonist26-jax-kr.readthedocs.io/en/latest/_sources/type_promotion.rst) |
+| Halide | int, uint (any width), float, bfloat | none | no | [Halide](https://halide-lang.org/docs/api/generated/halide_type_code_t.html) |
+
+Notes:
+
+- **McDonnell's complex floor (APL75)** is the array-language tradition's Gaussian-integer
+  arithmetic: it makes residue, GCD and LCM well defined on complex arguments, so
+  `2J2∨3J1` is `1J1`; implemented in Dyalog, J and NARS2000
+  ([Complex floor](https://aplwiki.com/wiki/Complex_Floor); [GCD](https://aplwiki.com/wiki/GCD)).
+  Since Dyalog and J store complex parts as binary doubles
+  ([APL Wiki: Number](https://aplwiki.com/wiki/Number);
+  [J wiki](https://code.jsoftware.com/wiki/Vocabulary/NumericPrecisions)), this is exact
+  only while the parts are integers below 2⁵³ (an inference, not a documented
+  guarantee **[unverified]**). **This is the nearest thing to "q-style Gaussian
+  integers" that exists**, and it has the semantics but not exactness guarantees or
+  integer-lane speed.
+- Roger Hui's J essay on Gaussian integers avoids the complex type entirely and uses
+  `real imaginary` integer pairs (extended precision), with plus, times, rounded divide,
+  residue and Euclid's GCD as array verbs
+  ([J wiki](https://code.jsoftware.com/wiki/Essays/Gaussian_Integers)). This is the
+  closest existing *design sketch* of the target: Gaussian integers as a trailing axis of
+  length 2.
+- **April** inherits Common Lisp's exact complex rationals
+  ([GitHub](https://github.com/phantomics/april); CL complex rationals:
+  [X3J13 issue](https://www.lispworks.com/documentation/HyperSpec/Issues/iss071_w.htm)),
+  so it is the only array language found with an exact Gaussian-integer number type,
+  but its elements are boxed Lisp numbers and it makes no performance claims.
+- q/kdb+ and k have no complex type at all; BQN, Uiua, JAX and Futhark have only
+  floating complex or none; Halide and Futhark have exactly the fixed-width integer lanes
+  a packed ℤ[i] column would be built from, but no complex integer type.
+
+### 7. Projects combining array style with exact complex or number-field arithmetic
+
+Searched for: array language + Gaussian integers; q/k + exact complex; APL + Gaussian
+integers; SIMD/GPU Gaussian-integer libraries. Found only:
+
+1. Dyalog/J/NARS2000 complex floor and GCD (floats; see §6).
+2. Hui's J essay (integer pairs, not a type; see §6).
+3. April's exact complex rationals (boxed; see §6).
+4. QRNS and GF(q²) transforms (hardware/DSP, used internally; see §5.8).
+5. Python `galois` (NumPy arrays over finite fields, not ℤ[i]; see §5.12).
+
+None is a fixed-width packed ℤ[i] or ℤ[i]/n column type with whole-array kernels.
+
+### 8. Conclusion (libraries and languages)
+
+1. **The described library/language does not appear to exist.** No library or language
+   was found that offers Gaussian integers or ℤ[i]/n as a fixed-width, packed, columnar
+   type with SIMD or GPU kernels, and none pairs that with a q-style surface or with
+   proofs.
+2. **Closest, by axis:**
+   - *Exact ℤ[i] mathematics, fast per element:* FLINT `fmpzi` (with Nemo). The baseline
+     to time against.
+   - *Array-language semantics for ℤ[i]:* McDonnell's complex floor and GCD in Dyalog/J
+     (floating), Hui's J integer-pair essay, April's exact complex rationals (boxed).
+   - *Machine-word modular kernels:* Mathemagix modular SIMD; FLINT `nmod_vec`; NTL;
+     on GPU, CGBN, cuPQC-BigInt, HE NTT kernels, CROSS on TPU. All ℤ/p only.
+   - *ℤ[i]/p in machine lanes:* QRNS (p ≡ 1 mod 4, two independent residue channels)
+     and Crandall's GF(q²) transform (q = 2⁶¹−1). Prior art for the representation, but
+     never exposed as a data type.
+   - *Hardware:* Arm SVE2 `CMLA` (complex integer lanes up to 64 bits) and AMD AI Engine
+     `cint32` are native "Gaussian integer as two int32 lanes" instructions with no
+     exact-arithmetic software on top.
+   - *Verified, machine words, Lean 4:* *hex* (HexArith, HexModArith, HexNumberField). The
+     nearest project in method; it does not cover ℤ[i] or arrays.
+3. **Gap statement a library or language could use:** "CAS and FLINT give exact ℤ[i] one
+   boxed element at a time; SIMD/GPU libraries give ℤ/p at full lane width; APL and J
+   give Gaussian GCD in array style but on doubles; q gives the style with no complex type
+   at all. A packed ℤ[i] or ℤ[i]/n column, with two machine-integer lanes per element,
+   overflow and reduction proved in Lean, and q-style whole-array verbs, sits in the
+   middle of these and was not found."
+4. **Leads not followed up** (worth a later pass): the hex blog post on HexNumberField and
+   the HexArith source (blocked here); NARS2000's hypercomplex component types; whether
+   FLINT's `fq_nmod`/`fq_zech` special-case GF(p²) for p ≡ 3 mod 4; any Gaussian-moat or
+   Gaussian-prime sieve on GPU; Kap's numeric tower.

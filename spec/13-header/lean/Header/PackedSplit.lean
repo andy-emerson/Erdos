@@ -283,8 +283,8 @@ theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases hl : m1 < m2 <;> by_cases he : m1 = m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
   all_goals try (exfalso; omega)
-  all_goals set_option maxRecDepth 20000 in simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb,
-    Fin.ext_iff]
+  all_goals simp only [fv0, fv1, fv2, fv3, Nat.reduceMod, Nat.reduceDiv, Nat.reduceXor, Nat.add_zero, ↓reduceIte]
+  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb, Fin.ext_iff]
   all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;> qomega
 
 end

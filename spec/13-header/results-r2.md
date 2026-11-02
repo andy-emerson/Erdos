@@ -398,6 +398,65 @@ Round 2 (`lean/Header/ProgMul.lean`, `MR_*.lean`, `MulRun.lean`): the program `m
 
 Against `build/asm/amul.s` (gcc's `loop_int_add`, 52 instructions including the loop's 3): 49 for the operation against my x86-64 column's 45. The differences: gcc reloads three list pointers from the stack each pass (register pressure, 3 loads my count does not have); it keeps the error flag sticky (`or` into a register, 1 more); it forms `1 − 2k` as `lea; mov 1; sub` and the zero tests with `test; setne`/`sete` (`setcc` is the `sltu` step; no flag is used by arithmetic); it drops the `and 0xFF` before the byte store, which only the low byte matters for; and it uses three `imul` as the program does. No conditional branch, no `cmov`, no `adc` or `sbb`.
 
+## 11. The header form's add and subtract (added Nov 2)
+
+The "Header form" add of `prior-art.md` (round 1: `lean/Header/LargerRow.lean`): headers loaded sign-extended, `t = h1 xor h2`, `s = t sar 63`, `r = m1 + (m2 xor s) − s`, `L = 0 − (m1 <u m2)`, `b = s and L`, magnitude `(r xor b) − b`, direction `h1 xor (t and L)` stored as a byte, and for complex numbers the expression flag `(t shr 6) and (m1 ≠ 0) and (m2 ≠ 0)`. Subtraction flips `h2` with `xor −128` on the sign-extended register.
+
+**Instruction set.** `Isa.lean` gains `lb` (37 instructions): an 8-bit load, sign-extended (`wsxb`: the byte, plus `2^64 − 256` when bit 7 is set; x86-64 `movsx`, ARM64 `ldrsb`, RV64 `lb`, one instruction on each family). It counts as a load; `Counts.lean`'s `reads`/`writes` know it. Existing programs do not use it and every existing proof builds unchanged.
+
+**Programs** (`lean/Header/ProgLg.lean`, `PA.lgRow cx sub`; registers as in `ProgA.lean`; `[cx]` lines only in the complex program, which leaves the flag in register 21, computed fresh):
+
+```text
+0: lb r10, 0(r1)            ; h1, sign-extended
+1: lb r11, 0(r3)            ; h2
+2: ld r12, 0(r2)            ; m1
+3: ld r13, 0(r4)            ; m2
+   (sub) xori r11, r11, -128
+.. xor r14, r10, r11        ; t
+.. srai r15, r14, 63        ; s
+.. sltu r17, r12, r13
+.. neg r17, r17             ; L
+[cx] srli r20, r14, 6
+[cx] sltu r22, zero, r12    ; m1 != 0
+[cx] sltu r23, zero, r13    ; m2 != 0
+[cx] and r21, r20, r22
+[cx] and r21, r21, r23      ; flag
+.. xor r16, r13, r15
+.. add r16, r12, r16
+.. sub r16, r16, r15        ; r = m1 + (m2 xor s) - s
+.. and r18, r15, r17        ; b
+.. xor r16, r16, r18
+.. sub r16, r16, r18        ; magnitude
+.. and r19, r14, r17
+.. xor r19, r10, r19        ; header
+.. sb r19, 0(r5)
+.. sd r16, 0(r6)
+```
+
+12 compute steps for integers, 17 for complex numbers, as `prior-art.md` counts them; with the 4 loads and 2 stores, 18 / 19 (subtract) and 23 / 24 steps.
+
+**Theorems** (`lean/Header/LgRun.lean`):
+
+- `lgRow_gen`: for every input (any header bytes, magnitudes any naturals read from memory), each of the four programs runs every instruction once and ends normally, stores the header byte and magnitude of round 1's formula (`A.largerAdd`, or `A.largerSub`, on the header bytes as stored), and the complex program leaves the formula's flag in register 21. The program has no branch, so one symbolic run covers every input; no case split on directions or magnitudes is needed. `lg_core` rewrites the formula into the machine's steps (`wsra x 63` is `sar63`, `wneg (wsltu a b)` is `ltMask`, `wsltu 0 m` is `m ≠ 0`). The run is cut in three parts (loads and `t, s, L`; the flag; the rest) with `run_split`: run in one piece, the kernel took 139 s on the 18-step integer add and did not finish the others in 4 minutes; cut, each program takes a few seconds.
+- `lgCx_run` (complex, add and subtract, all 16 direction pairs): register 21 ends 1 exactly when round 1's `A.add W x (yEff sub y)` gives an expression; otherwise 0, and the stores are `A.add`'s header byte and magnitude, except for two zeros on different axes, where the stored header is `x`'s (round 1 gives `y`'s; both are zero; `LargerRow.larger_add_eq`).
+- `lgInt_run` (integer directions): the stores are `A.add`'s (subtract: `A.sub`'s), with no exception.
+- `Reg.lgRow_no_branch`: the four programs have no conditional branch and no jump.
+
+**Counts** (`Reg.table_eq`, rows "A-lg"):
+
+| Design | Operation | Path | Steps | Branches (taken) | Jumps | Loads | Stores | x86-64 | ARM64 | RV64 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A-lg | int add | one | 18 | 0 (0) | 0 | 4 | 2 | 21 | 19 | 18 |
+| A-lg | int sub | one | 19 | 0 (0) | 0 | 4 | 2 | 22 | 20 | 19 |
+| A-lg | cx add | one | 23 | 0 (0) | 0 | 4 | 2 | 31 | 26 | 23 |
+| A-lg | cx sub | one | 24 | 0 (0) | 0 | 4 | 2 | 32 | 27 | 24 |
+
+Against the other branch-free rows (RV64 steps, x86-64 in parentheses): integers 18 against A-bf's 23 (21 against 27); complex 23 against A-bf's 35 and A-mul's 35 (31 against 47 and 45). The x86-64 column uses §1's rules: `sltu` is `cmp; setb; movzx` (3), and `srai` and the flag's `srli` read `t` while it is still needed (`mov` first). It does not use the `cmp; sbb` idiom for `L` that `prior-art.md` mentions (§1 has no flag-consuming step).
+
+**Build and disassembly.** `src/designa.nim` gains `aAddLg` / `aSubLg` (headers read through `cast[int8]`, the formula, the flag sticky as in `abf`), build `alg` in `bench.nim`, `build.sh`, `test/check.py`, `test/run.py` and `test/asmcheck.py` (gated as a branch-free row). gcc first turned `b = s and L` into `test; cmovne` (asmcheck failed), then, with `L = 0 − opaque(m1 < m2)` written as a mask, into `cmp; sbb` (a borrow from the carry flag); with `opaque` on the 0/1 compare value instead, it emits `cmp; setb; neg`, no conditional move, no `sbb`/`adc`, no conditional branch (asmcheck PASS). `test/check.py` PASS (683,033 results, 160 error cases, 396 checksums). The both-zeros exception does trip the header check: on two zeros on different axes `alg` stores `x`'s header (for example `00` for `0 + 0·i`, where §3 gives `40`), so for `alg` only, check.py accepts any header with bits 0–5 clear on a zero sum or difference; every other result's header is checked exactly. With the strict check, those cases are the only failures.
+
+`build/asm/alg.s`, `loop_int_add` (the build runs one loop for integers and complex numbers, so it is the complex form): 38 instructions, 35 without the loop's `add; cmp; jne`, against my x86-64 column's 31. The differences: two list pointers reloaded from the stack (`mov -0x20(%rsp)`, `mov -0x28(%rsp)`; register pressure, as in `amul`); the sticky `or` of the flag (1); gcc loads both headers with `movzbl`, XORs the bytes, and sign-extends `t` once (`movsbq`), one more instruction than two sign-extending loads, and works on the header in 32-bit registers; two `mov` copies (`m2` before `xor s`, `s` before `and L`) where my order has those registers dead; the flag in 8 instructions (`test; setne` and `xor; test; setne` for the zero tests, `shr` with `t` no longer needed, two `and`) against my 10. `loop_int_sub`: also 38, with the `xor $-128` and one stack reload fewer; 35 against my 32. Both match the program's operations step for step otherwise: one `sar $63`, `cmp; setb; neg` for `L`, `xor; sub; add`, `and`, `xor; sub`, `and; xor` for the header.
+
 ## Appendix: the programs
 
 Each program as its steps, index first (registers as `rN`, `zero` for register 0; branch targets are indices; the end is one past the last index).

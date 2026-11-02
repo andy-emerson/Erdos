@@ -12,6 +12,8 @@ operands on different axes have a zero (two nonzero ones are the error cases bel
 What is checked, per result:
 - the value equals the exact value (all builds);
 - A (both rows): header bits 0-5 are 0, and the header is the one §3's rules give (so a zero's direction too);
+  the header form (alg) gives x's direction for two zeros on different axes (LargerRow.lean), so for alg any header
+  with bits 0-5 clear is accepted on a zero sum or difference;
 - B: the parts are exactly §4's: add, sub, neg and mul part by part; collapse with one part of each axis 0; division
   with the quotient in slot (d1 - d2) mod 4 of the collapsed operands' directions and the other slots 0.
 Also: errors (A and A's branch-free row exit 3 on a sum or difference across axes of two nonzero numbers, alone or

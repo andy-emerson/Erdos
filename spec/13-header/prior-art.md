@@ -301,6 +301,138 @@ Counts are under the notes' convention (RV64 steps, constants hoisted), compute 
 - Split matches top on add (sign by `sar`), gets the axis as cheaply as bottom, and its overflow test is the familiar signed one. But it pays 3 more on multiply and divide, because the carry or borrow from $a$ to $s$ must cross the magnitude.
 - The header form keeps the full 64-bit magnitude and 2-step multiply and divide, at the price of a second list.
 
+## Round 2 research: header add, split multiply
+
+Nov 2, 2026, at the author's request.
+
+**Checks:** [`test/prior-art/header_gray.py`](test/prior-art/header_gray.py) (exhaustive on 8-bit registers with full-register magnitudes, 1,048,576 pairs with add and subtract each, plus 300,000 random 64-bit cases) and [`test/prior-art/split_int.py`](test/prior-art/split_int.py) (exhaustive on 8- and 10-bit words, plus 300,000 random 64-bit cases). No failures.
+
+**Lower bounds:** the scripts in [`test/prior-art/search/`](test/prior-art/search/) enumerate straight-line programs over a fixed operation set and check them on value vectors. Their scope:
+- operations: XOR, AND, OR, add, subtract, `andn`, and shifts by a few amounts; rotates for the split searches; `sltu`/`snez` for the flag search;
+- constants: a few each;
+- inputs: all 16 direction pairs, with random 64-bit magnitudes.
+
+A "none" result means none **in that set**; it is not a proof over every instruction.
+
+### Header add: the Gray-and-spread header (10 steps)
+
+**The encoding.** The header byte is $G(d) = \texttt{0xFF} \cdot s \text{ XOR } \texttt{0x40} \cdot a$, with $d = 2s + a$:
+
+| $d$ | 0 | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| $G(d)$ | `0x00` | `0x40` | `0xFF` | `0xBF` |
+
+- Bit 7 is the sign, bit 6 is $s \text{ XOR } a$, and bits 0–5 copy the sign. So bits 7–6 hold the Gray code of $d$, not $d$ itself. This is a change to spec v0.2 §3, which stores $d$ in binary.
+- The property that matters: $G(d+2) = \text{NOT } G(d)$.
+- Load headers sign-extended (`lb`, `ldrsb`, `movsx`): $e = \text{lb}(G(d))$. Then $t = e_1 \text{ XOR } e_2$ is exactly 0 (same direction) or all ones (opposite) whenever the axes agree.
+- The magnitude stays a full 64-bit word.
+
+**The add:**
+
+$$
+\begin{aligned}
+t &= e_1 \text{ XOR } e_2 && 1 \\
+r &= m_1 + (m_2 \text{ XOR } t) - t && 3 \\
+L &= 0 - (m_1 <_u m_2) && 2 \\
+b &= t \text{ AND } L && 1 \\
+r &= (r + b) \text{ XOR } b && 2 \\
+h &= e_1 \text{ XOR } b && 1 \quad \text{(store the low byte)} \\
+\end{aligned}
+$$
+
+That is **10 steps for integers and complex numbers alike**. For complex numbers add the expression flag $f = \big((t \text{ shr } 6) \text{ XOR } t\big) \text{ AND } (m_1 \ne 0) \text{ AND } (m_2 \ne 0)$, 6 steps, for **16**.
+
+**Why it works:**
+- **Same axis.** $t$ is the mask "signs differ". The first step gives $m_1 \pm m_2$, and $(r + b) \text{ XOR } b$ negates it exactly when it wrapped ($-r = \text{NOT}(r - 1)$, Warren §2-2).
+- **Different axes.** One magnitude is 0, or the result is an expression. If $m_2 = 0$: $r = m_1$, $L = 0$, $b = 0$. If $m_1 = 0 < m_2$: $L = -1$ and $b = t$, which is not a mask here, but the two steps are inverses for every $t$: $x \mapsto (x \text{ XOR } t) - t$ and $y \mapsto (y + t) \text{ XOR } t$. So $r = m_2$, and $h = e_1 \text{ XOR } t = e_2$.
+- **One $b$ does two jobs.** It unwraps the magnitude and selects the direction of the larger operand (fact 1). There is no $s = t \text{ sar } 63$ and no separate $t \text{ AND } L$.
+- **The unwrap order matters.** $(r \text{ XOR } b) - b$, the round 1 order, fails on different axes; a mutation run shows 2,016 failures.
+
+**Lower bounds (searches):**
+- Given $m_1, m_2, t, L, b$, no program of 4 or fewer steps computes the magnitude (`hdr_core_search.py`), so the 5-step core is the shortest in the set.
+- The flag has no program of 3 or fewer steps from the add's values (`hdr_flag_search.py`). Depth 4 was not completed.
+- Selects shorten $b$: RISC-V Zicond `sltu; czero.eqz b,t,lt` or ARM64 `cmp; csel b,t,xzr,lo` make it 2 steps instead of 3, so the add is **9**.
+
+**The other operations in the Gray header:**
+
+| Operation | Formula | Steps (binary header) |
+| --- | --- | --- |
+| Subtract | $e_2 \to \text{NOT } e_2$, then add: 11. With Zbb `xnor` or ARM64 `eon`, $t = e_1 \text{ XNOR } e_2$, so subtract is the add's count: 10 (RV64 + Zbb), 9 (ARM64 *(hand)*) | 13 |
+| Negate | $\text{NOT } e$, store the byte: 1 | 1 |
+| Multiply, integers ($a = 0$) | header $t = e_1 \text{ XOR } e_2$: total 2 (checked by hand, 4 cases) | 2 |
+| Multiply, complex | header $t \text{ XOR } \text{mask}(a_1 \text{ AND } a_2)$, with $u = e + \texttt{0x40}$ (bit 7 of $u$ is $a$) and mask $= \big((u_1 \text{ AND } u_2) \text{ shl } 56\big) \text{ sar } 63$: header 7, total **8** | 2 |
+| Exact division, integers | header $t$: total 2 | 2 |
+| Exact division, complex | header $t \text{ XOR } \big(((u_2 \text{ AND NOT } u_1) \text{ shl } 56) \text{ sar } 63\big)$: 8 (7 with `andn`/`bic`), total **9** | 2 |
+
+- In the multiply rule, multiplying two imaginary directions turns the product by 2 ($i \cdot i = -1$), which in $G$ is NOT. No 4-step program exists for either header (`gray_mul4.py`), and no encoding with $G(0) = 0$ and $G(d+2) = \text{NOT } G(d)$ has one of 3 or fewer (`enc_search2.py`, all 256 choices of $G(1)$). Programs of 5 or 6 steps were not searched.
+
+**Machine notes:**
+- **ARM64** *(hand)*: `eor t; eor y,m2,t; add; sub; cmp; csel b,t,xzr,lo; add; eor; eor h` = 9.
+- **x86-64** *(hand)*: `cmp; sbb L,L; and L,t` for $b$, plus two-operand `mov`s, about 12.
+
+**Verdict:**
+- **Integers:** Gray beats the binary header everywhere: add 12 → 10, subtract 13 → 11, and negate, multiply and divide stay the same.
+- **Complex numbers:** add improves only 17 → 16, while multiply goes 2 → 8 and divide 2 → 9.
+- **The cause:** to give an exact mask, every header bit must be $s$ or $s \text{ XOR } a$. The axis therefore never sits alone in a bit, so the flag and the multiply must recombine two bits.
+
+**Ideas that did not help:**
+- **Binary $d$ with sign copies in bits 0–5.** It leaves a hole at bit 6, so $t$ is not a mask. Filling the hole costs 2 and needs a separate direction AND: 13.
+- **A zero flag or the magnitude's top bit in the header.** No step uses them: the compare is on full words, and zeros are handled by the inverse-pair argument.
+- **Both headers in one load.** The operands sit at unrelated list positions; this only works when they are adjacent entries.
+- **Storing for the next operation.** Already satisfied: the stored $h$ is again a valid $G$.
+
+### Split multiply (9 is the floor of its method)
+
+**Searches** (split layout, 64-bit, all 16 direction pairs):
+- The product's direction word $D$ (bits 63 and 0, zero elsewhere), from $w_1, w_2, x_1, x_2$: no program of 3 or fewer steps (`split_dsearch.py`). The current $D$ takes 4.
+- The whole result from $w_1, w_2, x_1, x_2, p$: no completion of 4 or fewer steps after $p$ (`split_rsearch.py`). The current completion takes 5.
+- From cheaper products with junk, no completion of 4 or fewer steps (`split_psearch.py`), so no 7-step multiply:
+  - $P = x_1 \cdot (w_2 \text{ shr } 1) = 2m_1m_2$, with junk in bit 63;
+  - $P = (w_1 \text{ shl } 1) \cdot (w_2 \text{ AND } F)$.
+- Division: the same two bounds hold (no $D$ in 3 or fewer, no completion in 4 or fewer).
+
+**Why the split pays.**
+- Every 2-bit encoding of the four directions has a nonlinear term: the product's sign is $s_1 \oplus s_2 \oplus (a_1 \wedge a_2)$, because the directions under multiplication form $\mathbb{Z}_4$, not $\mathbb{Z}_2 \times \mathbb{Z}_2$.
+- With the axis in bit 0 and the sign in bit 63, that term has to be moved 63 places and the middle cleared. Moving it costs at least 2: $(w_1 \text{ AND } w_2) \text{ shl } 63$, or $w_1 \cdot (w_2 \text{ shl } 63) = a_1a_2 \cdot 2^{63}$ (the multiplier's version, also 2 steps).
+- Changing the encoding (say, bit 63 holding $s \text{ XOR } a$) leaves the term in place.
+
+**Options:**
+
+| Option | Multiply | Exact division | What it costs |
+| --- | --- | --- | --- |
+| Keep split (RV64) | 9 | 9 | none |
+| Keep split, ARM64 *(hand)* | 8 (`orr r,D,p,lsr #1` folds the shift) | 8 | none |
+| Split, integers only ($a = 0$) | **6**: $r = \big((w_1 \cdot (w_2 \text{ AND } F)) \text{ shr } 1\big) \text{ OR } \big((w_1 \text{ XOR } w_2) \text{ AND } S\big)$ | **6**: $r = \big((w_1 \text{ shl } 1) /_u (w_2 \text{ AND } F)\big) \text{ OR } \big((w_1 \text{ XOR } w_2) \text{ AND } S\big)$ | integers only (checked; `split_int.py` also confirms the multiply form fails for $i \cdot i$) |
+| Axis next to the sign (bit 62) | 7 (x86-64 `lea`: 6) | 6 | this is the top layout: the axis test becomes 2 (`shr 62`, AND 1) instead of 1 |
+| Bottom layout | 6 (ARM64 `madd`: 5) | 6 | sign mask 2 (ARM64 `sbfx`: 1) |
+
+- In the integer-only multiply, $w_1$'s sign term $2^{63} \cdot 2m_2$ vanishes mod $2^{64}$, so $w_1$ needs no stripping. In the integer-only divide, $w_1 \text{ shl } 1 = 4m_1$, and $4m_1 / 2m_2 = 2q$.
+
+**Ideas that did not help:**
+- `mulhu`: no shift of the operands puts a clean $2m_1m_2$ in the high half within 64-bit operands.
+- The multiplication row ($\pm 1$ factors): the sign here is an XOR, so there is nothing to multiply.
+- The low bit of $w_1 w_2$: it is $a_1 a_2$, but in the wrong place, and it comes with junk.
+
+### Comparison after round 2
+
+Compute steps, RV64; complex unless marked:
+
+| | Header, binary | Header, Gray | Packed top | Packed bottom | Packed split |
+| --- | --- | --- | --- | --- | --- |
+| Add, integers | 12 | **10** | 13 | 13 | 13 |
+| Add, complex (fresh flag) | 17 | 16 | 16 | 16 | 16 |
+| Add, integers + memory | 18 | 16 | 16 | 16 | 16 |
+| Add, complex + memory | 23 | 22 | 19 | 19 | 19 |
+| Subtract | add + 1 | add + 1 (+0 with `xnor`/`eon`) | add + 1 | add + 1 | add + 1 |
+| Negate | 1 | 1 | 1 | 1 | 1 |
+| Multiply, integers | 2 | 2 | 7 | 6 | 6 |
+| Multiply, complex | 2 | 8 | 7 | 6 | 9 |
+| Exact division, integers | 2 | 2 | 6 | 6 | 6 |
+| Exact division, complex | 2 | 9 (8 with `andn`) | 6 | 6 | 9 |
+
+- The integer multiply and divide rows of top and bottom are their general forms; integer-only variants were searched only for split.
+- Memory: headers 4 loads + 2 stores per binary operation; packed 2 + 1.
+
 ## Ideas from floating point (integer only)
 
 - **Effective subtraction** = sign XOR sign (XOR the operation). This is $s$ above. As the FP adder does, it ignores everything but the sign bits.

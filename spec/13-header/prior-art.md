@@ -3,11 +3,14 @@
 Nov 2, 2026. Research for the author: the best known integer algorithms for add, subtract, negate, multiply and exact division, in two forms of a number $m \cdot i^d$:
 
 - **Header form:** $d$ in bits 6–7 of a header byte, $m$ a full 64-bit word (two parallel lists). This is Design A.
-- **Packed form:** $d$ and a 62-bit $m$ in one 64-bit word, either at the top, $w = d \cdot 2^{62} + m$, or at the bottom, $w = 4m + d$.
+- **Packed form:** $d$ and a 62-bit $m$ in one 64-bit word, in one of three layouts:
+  - top: $w = d \cdot 2^{62} + m$;
+  - bottom: $w = 4m + d$;
+  - split (added Nov 2 at the author's request): $w = s \cdot 2^{63} + 2m + a$, with $d = 2s + a$.
 
 **Counting.** The notes' convention (`book/logical-arithmetic.md`): one instruction per operator, including `sltu` (a compare written as a value) and every mask made inside the routine (`0 − k` or `sar`, 1 each). Loads and stores are not counted. Under this convention the count is the RV64IM step count of round 2. The x86-64 and ARM64 notes are hand counts and were not assembled; they are marked *(hand)*.
 
-**Checks.** Every formula below was checked exhaustively in Python (script in the Appendix):
+**Checks.** Every formula below was checked exhaustively in Python. The scripts are in [`test/prior-art/`](test/prior-art/): `check.py`, `extra.py` and `rand64.py` for the header, top and bottom forms, and `split.py` for the split layout and the fast paths. The core forms are also in the Appendix. Coverage:
 - header form on 8-bit registers (8-bit magnitudes, the full register as in the real design, the header a byte), all 4×256 × 4×256 operand pairs, add and subtract;
 - packed form on 6-, 8- and 10-bit words (4-, 6- and 8-bit magnitudes), every pair and every operation;
 - 300,000 random 64-bit cases (skewed toward 0, the maximum and near-equal magnitudes).
@@ -153,6 +156,151 @@ The same XOR: 1 for both placements.
   - **Relies on any direction for zero.**
 - **Against Design C's division:** 11 compute.
 
+## Packed, split layout
+
+### The layout
+
+$w = s \cdot 2^{63} + 2m + a$:
+- sign $s$ in bit 63;
+- axis $a$ in bit 0;
+- magnitude $0 \le m < 2^{62}$ in bits 1–62.
+
+The direction is $d = 2s + a$ and the value is $m \cdot i^d$. The constants below are 64-bit:
+
+| Constant | Value | Bits |
+| --- | --- | --- |
+| $S$ | $2^{63}$ = `0x8000_0000_0000_0000` | the sign |
+| $F$ | $2^{63} - 2$ = `0x7FFF_FFFF_FFFF_FFFE` | the magnitude field, bits 1–62; $w \text{ AND } F = 2m$ |
+| $K$ | $2^{63} + 1$ = `0x8000_0000_0000_0001` | sign and axis |
+
+- On ARM64 all three are bitmask immediates.
+- On x86-64 and RISC-V each is a constant in a register, loaded once outside the loop and not counted. RISC-V builds $S$ as `li 1; slli 63`; Zbs `binvi`/`bclri` reach bit 63 directly.
+
+**Checks:** [`test/prior-art/split.py`](test/prior-art/split.py), exhaustive on 8- and 10-bit words (6- and 8-bit magnitudes; 65,536 and 1,048,576 operand pairs, add and subtract each), plus 300,000 random 64-bit cases. No failures. A mutation run (multiply and divide without the axis carry or borrow; add without the select) fails as it should.
+
+### What the layout gives
+
+| Property | Cost | Notes |
+| --- | --- | --- |
+| Sign mask | $w \text{ sar } 63$, 1 | as top |
+| Axis bit | $w \text{ AND } 1$, 1 | as bottom |
+| Negate | $w \text{ XOR } S$, 1 | x86-64 `btc w, 63`, 1; ARM64 `eor` with an immediate, 1; RISC-V `xor` with the constant register, or Zbs `binvi w, w, 63` |
+| Zero test | $(w \text{ shl } 1) <_u 4$, 2 | |
+| Direction arithmetic mod 4 | not free | the carry from $a$ (bit 0) must reach $s$ (bit 63) across the magnitude; this is what costs in multiply and divide |
+| Magnitude overflow | into the sign bit | see below |
+
+Axis on top with sign at the bottom (the author's reverse) would make `sar` give the axis mask, which the add does not use.
+
+### Add (13; complex 16)
+
+$$
+\begin{aligned}
+t &= w_1 \text{ XOR } w_2 && 1 \\
+s &= t \text{ sar } 63 && 1 \quad \text{(signs differ)} \\
+L &= 0 - \big((w_1 \text{ shl } 1) <_u (w_2 \text{ shl } 1)\big) && 4 \\
+W &= w_1 \text{ XOR } (t \text{ AND } L) && 2 \quad \text{(the word with the larger magnitude)} \\
+v &= (W \text{ XOR } t) \text{ AND } F && 2 \quad (= 2 \cdot \text{the smaller magnitude}) \\
+r &= W + (v \text{ XOR } s) - s && 3 \\
+e &= t \text{ AND } 1 \text{ AND } (v \ne 0) && 3 \quad \text{(expression flag, complex only)}
+\end{aligned}
+$$
+
+- **The compare.** `shl 1` drops the sign. $(w \text{ shl } 1) = 4m + 2a$, so $L$ is all ones when $m_1 < m_2$, and also on the tie $m_1 = m_2$, $a_1 < a_2$. That tie happens only on different axes, where it is either an expression (flagged) or two zeros (any direction). Both outcomes are correct; checked.
+- **Alternative compare, also 4 (checked):** $L = 0 - \big((w_1 \text{ XOR } (t \text{ AND } S)) <_u w_2\big)$. It gives $w_1$ the sign of $w_2$, then compares.
+- **Why no correction is needed.** $W \pm v$ adds or subtracts an even number, so bit 0 (the axis) is kept. It never borrows, since $W$'s magnitude is the larger. It carries into bit 63 only on overflow.
+- **x86-64** *(hand)*: $L$ is `lea x,[w1+w1]; lea y,[w2+w2]; cmp x,y; sbb L,L`, which is 4 with no `mov`. $s$ is `sarx` (BMI2, 63 in a register) or `mov; sar`.
+- **ARM64** *(hand)*: `eor t; lsl x,w1,#1; cmp x,w2,lsl #1; csetm L,lo; and; eor W; eor; and v,#F; eor y,v,t,asr #63; add; sub r,r,t,asr #63` = 11; with `csel` for $W$ and the other word, 9. This is the same as top.
+
+### Subtract (14; complex 17)
+Add with $w_2 \text{ XOR } S$.
+
+### Negate (1)
+$w \text{ XOR } S$.
+
+### Multiply (9)
+
+$$
+\begin{aligned}
+x_1 &= w_1 \text{ AND } F, \quad x_2 = w_2 \text{ AND } F && 2 \quad (2m_1,\ 2m_2) \\
+p &= (x_1 \cdot x_2) \text{ shr } 1 && 2 \quad (2 m_1 m_2;\ 4 m_1 m_2 < 2^{64} \text{ by no overflow}) \\
+D &= \big((w_1 \text{ OR } F) + (w_2 \text{ XOR } x_2)\big) \text{ AND } K && 4 \\
+r &= p \text{ OR } D && 1
+\end{aligned}
+$$
+
+- **How $D$ works.** $w_1 \text{ OR } F$ fills bits 1–62 with ones and $w_2 \text{ XOR } x_2 = w_2 \text{ AND } K$ empties them. So $a_1 + a_2 = 2$ carries through the ones into bit 63: $D$ is $d_1 + d_2 \bmod 4$ in bits 63 and 0.
+- **Alternative, 10 (checked):** $D = \big(t \text{ XOR } ((w_1 \text{ AND } w_2) \text{ shl } 63)\big) \text{ AND } K$, from $a = a_1 \text{ XOR } a_2$ and $s = s_1 \text{ XOR } s_2 \text{ XOR } (a_1 \text{ AND } a_2)$ (the two-field rule of the notes).
+- **ARM64** *(hand)*: `orr r, D, p0, lsr #1` folds the shift: 8.
+- **Against the other layouts:** top 7, bottom 6. **Split is the worst layout for multiply.**
+
+### Exact division (9)
+
+$$
+\begin{aligned}
+x_1 &= w_1 \text{ AND } F, \quad x_2 = w_2 \text{ AND } F && 2 \\
+q &= (x_1 /_u x_2) \text{ shl } 1 && 2 \quad (2m_1 / 2m_2 = m_1/m_2, \text{ doubled}) \\
+D &= \big((w_1 \text{ XOR } x_1) - (w_2 \text{ XOR } x_2)\big) \text{ AND } K && 4 \\
+r &= q \text{ OR } D && 1
+\end{aligned}
+$$
+
+- **How $D$ works.** Bits 1–62 of both operands are 0, so $a_1 < a_2$ borrows through them into bit 63: $D$ is $d_1 - d_2 \bmod 4$. No division by zero: $x_2 = 2m_2 \ne 0$. The divide is unsigned, so there is no trap.
+- **Alternatives (checked):**
+  - $q = x_1 /_u (x_2 \text{ shr } 1)$, which is $2m_1/m_2 = 2q$, same count.
+  - $D = \big(t \text{ XOR } ((w_2 \text{ AND NOT } w_1) \text{ shl } 63)\big) \text{ AND } K$: 10, or 9 with x86 `andn` or ARM64 `bic`.
+- **x86-64 and ARM64** *(hand)*: `shl 1; or` is one `lea r,[D+q*2]` (x86-64) or `orr r,D,q,lsl #1` (ARM64), since the fields are disjoint: 8. x86-64 adds `xor edx,edx` for `div`.
+- **Against the other layouts:** top and bottom 6.
+
+### Overflow
+- **What happens.** A same-sign add whose magnitudes sum past $2^{62} - 1$ carries out of bit 62 into bit 63. That flips the sign and leaves a plausible wrong number: the same axis, the opposite sign, and the magnitude mod $2^{62}$.
+- **Detection: $o = (r \text{ XOR } W) \text{ sar } 63$**, 2. It is all ones exactly on overflow, the same test as signed overflow. Checked: no false alarms, and every overflowing input is caught.
+- Opposite signs cannot overflow.
+- In multiply, $x_1 x_2 \ge 2^{64}$ is lost silently, as in every layout.
+
+### Branching: a same-direction fast path (all three packed layouts; checked)
+- **Test:** the direction bits of $t = w_1 \text{ XOR } w_2$ are 0:
+  - top: $t \text{ shr } 62$;
+  - bottom: $t \text{ AND } 3$;
+  - split: $t \text{ AND } K$.
+- **Then:** $r = w_1 + (w_2 \text{ AND field})$, where the field is $2^{62} - 1$ (top), NOT 3 (bottom) or $F$ (split).
+- **Cost:** 4 and one branch on the common path; otherwise run the 13-step body. This is worth it only when directions are predictable (round 3's lesson).
+- **Overflow on this path (checked):**
+  - top: $(r \text{ XOR } w_1) \text{ shr } 62 \ne 0$;
+  - bottom: $r <_u w_1$;
+  - split: $(r \text{ XOR } w_1) \text{ sar } 63$.
+
+## Comparison: header form and the three packed layouts
+
+Counts are under the notes' convention (RV64 steps, constants hoisted), compute only. Memory operations are listed separately.
+
+| | Header (A) | Packed top | Packed bottom | Packed split |
+| --- | --- | --- | --- | --- |
+| Bytes per value | 9 | 8 | 8 | 8 |
+| Largest magnitude | $2^{64} - 1$ | $2^{62} - 1$ | $2^{62} - 1$ | $2^{62} - 1$ |
+| Loads + stores per binary operation | 4 + 2 | 2 + 1 | 2 + 1 | 2 + 1 |
+| Add, integers | 12 (13 with `lbu`) | 13 | 13 | 13 |
+| Add, complex (with fresh flag $e$) | 17 (18) | 16 | 16 | 16 |
+| Add, integers, with memory | 18 | 16 | 16 | 16 |
+| Add, complex, with memory | 23 | 19 | 19 | 19 |
+| Subtract | add + 1 | add + 1 | add + 1 | add + 1 |
+| Negate | 1 (`xori 0x80`; plus copying $m$) | 1 (constant $2^{63}$) | 1 (`xori 2`) | 1 (constant $2^{63}$; x86 `btc`) |
+| Multiply | 2 | 7 (x86-64 `lea`: 6) | 6 (ARM64 `madd`: 5) | 9 (ARM64: 8) |
+| Exact division | 2 | 6 | 6 | 9 (x86-64/ARM64: 8) |
+| Sign mask | 1 (sign-extended load) | 1 | 2 (ARM64 `sbfx`: 1) | 1 |
+| Axis bit | $(t \text{ shr } 6)$, AND 1 | $(t \text{ shr } 62)$, AND 1 | AND 1 | AND 1 |
+| Magnitude compare, as a mask | 2 | 4 | 3 | 4 (ARM64 3) |
+| Zero test | $m = 0$, 1 | 2 | 1 ($w <_u 4$) | 2 |
+| Direction mod 4 | byte add, free | free off the top | AND 3 | carry or borrow across the field |
+| Magnitude overflow goes | out of the word (lost) | into the axis bit | out of the word (lost) | into the sign bit |
+| Overflow test, same-sign add | $r <_u m_1$, 1 (*not checked*) | $(r \text{ XOR } W) \text{ shr } 62 \ne 0$, 2 | $r <_u W$, 1 | $(r \text{ XOR } W) \text{ sar } 63$, 2 |
+| Same-direction fast path | 2 and one branch (the tree) | 4 and one branch | 4 and one branch | 4 and one branch |
+
+**In short:**
+- All three packed layouts tie on add and subtract (13), and all beat the header form once memory is counted.
+- Bottom is cheapest for multiply, divide and the zero test, and its overflow leaves the direction intact.
+- Split matches top on add (sign by `sar`), gets the axis as cheaply as bottom, and its overflow test is the familiar signed one. But it pays 3 more on multiply and divide, because the carry or borrow from $a$ to $s$ must cross the magnitude.
+- The header form keeps the full 64-bit magnitude and 2-step multiply and divide, at the price of a second list.
+
 ## Ideas from floating point (integer only)
 
 - **Effective subtraction** = sign XOR sign (XOR the operation). This is $s$ above. As the FP adder does, it ignores everything but the sign bits.
@@ -175,6 +323,9 @@ The operation set is RV64I plus `sltu`. A second run should add carry and select
 7. **Expression flag:** $(t \text{ shr } 62) \text{ AND } (v \ne 0)$. Currently 3.
 8. **Packed top multiply direction:** 3 (or 2 with `lea`).
 9. **The whole packed add** at 13: a stochastic search (STOKE) is more likely to find a shorter whole than an exhaustive one.
+10. **Split, direction of a product:** $d_1 + d_2$ into bits 63 and 0 from $w_1, w_2$ (and $x_2$). Currently 4: `or, xor, add, and`.
+11. **Split, direction of a quotient:** $d_1 - d_2$. Currently 4 given $x_1$ and $x_2$.
+12. **Split, larger mask:** $L$. Currently 4; ARM64 does it in 3 with a shifted `cmp`.
 
 ## Open questions
 
@@ -184,11 +335,13 @@ The operation set is RV64I plus `sltu`. A second run should add carry and select
 - Selects (`csel`, `cmov`, Zicond) give the shortest code (8 on ARM64), but round 3's rule excludes them (RV64I lacks them). Should there be a select row?
 - The packed form's top and bottom placements tie at 13 for add. Bottom wins multiply on ARM64 and has a cheap negate immediate and a cheap zero test. Top's magnitude overflow corrupts $d$, which matters once overflow (the second problem) is in scope.
 - The division-by-inverse row pays only for a reused divisor. Is that a case the spec wants?
+- **Split layout:** is a 3-step loss on multiply and divide worth the signed-style overflow test and the cheap sign and axis? It depends on the operation mix.
+- **Split layout, the add's compare:** `shl 1` ties on equal magnitudes across axes. This is harmless (expression or zero), but the Lean round 1 check should state it as such, not assume a strict $m_1 < m_2$.
 - None of this is timed. The x86-64 and ARM64 counts are by hand, not from an assembler.
 
 ## Appendix: the checker
 
-The checks ran at register widths 6, 8 and 10 (packed) and 8 (header), plus a random 64-bit run. The core forms, as checked:
+The checks ran at register widths 6, 8 and 10 (packed) and 8 (header), plus a random 64-bit run. The full scripts are in `test/prior-art/`; the split layout's formulas are in `split.py` (class `Word`), with step counts in comments. The core forms of the other layouts, as checked:
 
 ```python
 # R-bit registers, F = 2**R - 1, sar = arithmetic shift right, sx8 = sign-extend a byte

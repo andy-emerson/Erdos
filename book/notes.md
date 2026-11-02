@@ -1,6 +1,6 @@
 # Notes: signed and complex numbers in a machine word
 
-*Third edition, first draft (Nov 2, 2026): the second edition ([`notes-second-edition.md`](notes-second-edition.md)) with the header design renamed the header design and the packed design the packed design. Placeholders mark what is still to be written.*
+*Third edition, first draft (Nov 2, 2026): the second edition ([`notes-second-edition.md`](notes-second-edition.md)) with four designs: the signed integer (the machine's), the complex integer (formerly Design C), the header design (formerly Design A) and the complex integer (new). Placeholders mark what is still to be written.*
 
 Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. If you have a 6-digit odometer set to measure kilometers, each kilometer traveled turns the rightmost digit by one, rolling over the next digit every ten kilometers, and so on. The first kilometer traveled takes it from 000000 to 000001. Once you have traveled 999,999 kilometers, there are no more digits to roll over, so one more kilometer turns it back to 000000. Digital clocks work the same way, with the minutes rolling over from 59 to 00. (Hours on a digital clock work this way too, but convention has them run from 1 to 12 instead of 0 to 11.)
 
@@ -40,7 +40,7 @@ How it does this comes from running the odometer backward. One kilometer back fr
 
 Notice that every word interpreted as a negative in this way has the top bit equal 1. Therefore, every word whose top bit is 1 is read as negative, and every word whose top bit is 0 is read as zero or positive. Equivalently, the top bit counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**.
 
-Nothing about the counter changes, only the reading. $3 - 5$ still lands on 1110, and 1110 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays in range. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for the packed design below.
+Nothing about the counter changes, only the reading. $3 - 5$ still lands on 1110, and 1110 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays in range. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for the complex integer below.
 
 *(Placeholder: the operations, each the machine's own: add, subtract, negate, multiply, divide. Then the cost: a bit spent on the sign, and the lopsided range, with $-2^{n-1}$ having no negation and $-2^{n-1} / -1$ overflowing, a trap on x86-64.)*
 
@@ -85,9 +85,9 @@ So $(5, 0)$ is 5, $(5, 2)$ is $-5$ and $(5, 1)$ is $5i$. On each axis, 1 and $i$
 
 **Zero** is any pair with magnitude 0. Zero is both real and imaginary, since it lies on both axes, and it is neither positive nor negative, since it lies in no direction. So its direction is irrelevant: $(0, d)$ is zero for every $d$. A zero keeps whatever direction the operation that produced it left, and no step sets it. Every number other than zero has exactly one pair.
 
-### The axis in the word: the packed design
+### The axis in the word: the complex integer
 
-The packed design keeps the two bits of a direction apart. In the table of directions above, the low bit of $d$ is the **axis**: 0 for 1 and $-1$, 1 for $i$ and $-i$. The high bit is the **sign**: $d = 2s + a$. The packed design stores the axis as a bit of its own and leaves the sign inside the value, where the machine already handles it.
+The complex integer keeps the two bits of a direction apart. In the table of directions above, the low bit of $d$ is the **axis**: 0 for 1 and $-1$, 1 for $i$ and $-i$. The high bit is the **sign**: $d = 2s + a$. The complex integer stores the axis as a bit of its own and leaves the sign inside the value, where the machine already handles it.
 
 #### A number
 
@@ -159,9 +159,9 @@ $$(v_1, a_1) / (v_2, a_2) = \big((-1)^{(1 - a_1) a_2}\, v_1 / v_2,\ a_1 \text{ X
 
 when $v_2$ is not 0 and divides $v_1$. On words, both axis bits are cleared and the words divided, $2v_1 / 2v_2 = v_1 / v_2$, and the quotient is doubled back by a shift. Dividing the cleared first word by the shifted second, $2v_1 / v_2$, would save the shift, but it can divide $-2^{n-1}$ by $-1$, which overflows inside the division even when the result, as for $(-2^{n-2}) / (-i)$, is in range. With both words cleared the divisor is even, never $-1$.
 
-#### What the packed design gives up
+#### What the complex integer gives up
 
-Values run from $-2^{n-2}$ to $2^{n-2} - 1$: one bit goes to the axis, and one to the sign, so overflow comes sooner than in the header design, whose magnitudes use all $n$ bits. The packed design solves the first problem the machine's way, by reading the clock signed, not by splitting the sign from the magnitude.
+Values run from $-2^{n-2}$ to $2^{n-2} - 1$: one bit goes to the axis, and one to the sign, so overflow comes sooner than in the header design, whose magnitudes use all $n$ bits. The complex integer solves the first problem the machine's way, by reading the clock signed, not by splitting the sign from the magnitude.
 
 ### The direction in a header: the header design
 
@@ -271,16 +271,20 @@ Exact division divides the magnitudes and subtracts the directions, when $m_2$ i
 
 $$(m_1, d_1) / (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 
+### The direction packed in the word: the packed design
+
+*(Placeholder: a magnitude and its 2-bit direction in one word, from the prior-art research (spec 13, prior-art.md). Not yet built or proved.)*
+
 ## The trade-off
 
-| | Signed integers | Packed | Header |
-| --- | --- | --- | --- |
-| A number | one word, the sign inside | one word: an axis bit and a signed value | one magnitude word and a direction in a header |
-| Addition | one addition | an axis check; on the same axis, one addition | a direction check; for opposite directions, a subtraction and its borrow |
-| Multiplication | one product | one product, axes XORed, negated when both are imaginary | one product, directions added |
-| Sums across axes | no axes | not held | not held |
-| Largest value | $2^{n-1} - 1$ | $2^{n-2} - 1$ | $2^n - 1$ |
-| A value with no negation | $-2^{n-1}$ | $-2^{n-2}$ | none |
+| | Signed integers | Complex integer | Header | Packed |
+| --- | --- | --- | --- | --- |
+| A number | one word, the sign inside | one word: an axis bit and a signed value | one magnitude word and a direction in a header | one word: a magnitude and a 2-bit direction |
+| Addition | one addition | an axis check; on the same axis, one addition | a direction check; for opposite directions, a subtraction and its borrow | to come |
+| Multiplication | one product | one product, axes XORed, negated when both are imaginary | one product, directions added | to come |
+| Sums across axes | no axes | not held | not held | not held |
+| Largest value | $2^{n-1} - 1$ | $2^{n-2} - 1$ | $2^n - 1$ | $2^{n-2} - 1$ |
+| A value with no negation | $-2^{n-1}$ | $-2^{n-2}$ | none | none |
 
 *(Placeholder: round 2's proved counts per operation, by chip.)*
 
@@ -289,7 +293,7 @@ $$(m_1, d_1) / (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 Points raised (Nov 1, 2026) and set aside for now.
 
 - **The machine's answer to overflow.** The carry and overflow flags, which report when a result passes the end of the range.
-- **The lopsided range.** Two's complement has one more negative value than positive, so $-2^{n-1}$ in Control and $-2^{n-2}$ in the packed design have no negation, and dividing either by $-1$ overflows. The header design has no such value, since its magnitudes are symmetric about zero.
+- **The lopsided range.** Two's complement has one more negative value than positive, so $-2^{n-1}$ in Control and $-2^{n-2}$ in the complex integer have no negation, and dividing either by $-1$ overflows. The header design has no such value, since its magnitudes are symmetric about zero.
 
 Expressions in the header design:
 

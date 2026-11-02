@@ -257,6 +257,7 @@ int main(int argc, char **argv) {
         NIN = 1;
         for (int w = 0; w <= MSK; w++) {
             val[0][NL] = w; tgt[NL] = enc(-value(w), axis(w));
+            ovf[NL] = (-value(w) >= (1 << (N - 2)));
             alt[NL] = (relaxed && (tgt[NL] & ~G & MSK) == 0) ? (tgt[NL] ^ G) : tgt[NL];
             NL++;
         }

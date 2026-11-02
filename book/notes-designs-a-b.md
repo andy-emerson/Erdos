@@ -272,7 +272,7 @@ Negation negates the value and keeps the axis:
 
 $$-(v, a) = (-v, a), \qquad w \mapsto 2a - w,$$
 
-since $2(-v) + a = 2a - (2v + a)$. Negating zero gives a zero on the same axis.
+since $2(-v) + a = 2a - (2v + a)$. Negating zero gives a zero on the same axis. The one value that cannot be negated is $-2^{n-2}$, since $2^{n-2}$ is out of range: that is overflow.
 
 ### Subtraction
 

@@ -42,6 +42,11 @@ def H : Nat := 9223372036854775808
 
 abbrev Reg := Nat
 
+/-- The two forms of a borrow path (A's opposite-direction add, B's collapse): the notes' (subtract, branch on the
+borrow, negate on a borrow) and per-arm (compare, branch, one subtraction in each arm, no negation). -/
+inductive Form | notes | perArm
+deriving DecidableEq, Repr
+
 /-! ## Word arithmetic -/
 
 def wadd (a b : Nat) : Nat := (a + b) % W
@@ -351,6 +356,38 @@ theorem wneg_wsub {a b : Nat} (ha : a < W) (hb : b < W) (h : a < b) : wneg (wsub
 
 theorem wsub_of_le {a b : Nat} (ha : a < W) (hb : b ≤ a) : wsub a b = a - b := by
   unfold wsub; unfold W at *; omega
+
+theorem wneg_zero : wneg 0 = 0 := by decide
+theorem wneg_one : wneg 1 = 18446744073709551615 := by decide
+
+theorem wsub_zero {a : Nat} (h : a < W) : wsub a 0 = a := by unfold wsub; unfold W at *; omega
+
+/-- Negation by the mask: `(x xor ones) − ones = 0 − x`. -/
+theorem condneg_ones {x : Nat} (h : x < W) :
+    wsub (x ^^^ 18446744073709551615) 18446744073709551615 = wneg x := by
+  rw [xor_ones h]; unfold wneg wsub; unfold W at *; omega
+
+/-- Selection by the mask: `s xor ((s xor x) and ones) = x`. -/
+theorem select_ones {s x : Nat} (hs : s < W) (hx : x < W) :
+    s ^^^ ((s ^^^ x) &&& 18446744073709551615) = x := by
+  rw [and_ones (xor_lt hs hx), ← Nat.xor_assoc, Nat.xor_self, Nat.zero_xor]
+
+theorem wadd_lt (a b : Nat) : wadd a b < W := by unfold wadd W; omega
+theorem wneg_lt (a : Nat) : wneg a < W := wsub_lt' 0 a
+
+/-! ## Small constants (direction arithmetic in B's division) -/
+
+theorem mod_W_small {n : Nat} (h : n < 256) : n % W = n := Nat.mod_eq_of_lt (by unfold W; omega)
+
+theorem wsub_and3 {a b : Nat} (ha : a < 4) (hb : b < 4) : wsub a b &&& 3 = (a + 4 - b) % 4 := by
+  have : (3 : Nat) = 2 ^ 2 - 1 := rfl
+  rw [this, Nat.and_two_pow_sub_one_eq_mod]; unfold wsub W; omega
+
+theorem wsub_and1 {a b : Nat} (ha : a < 2) (hb : b < 2) : wsub a b &&& 1 = (a + 2 - b) % 2 := by
+  have : (1 : Nat) = 2 ^ 1 - 1 := rfl
+  rw [this, Nat.and_two_pow_sub_one_eq_mod]; unfold wsub W; omega
+
+theorem wadd_addr {n z : Nat} (hn : n ≤ 24) (hz : z + 24 < W) : wadd n z = z + n := by unfold wadd; unfold W at *; omega
 
 /-! ## Running a program symbolically
 

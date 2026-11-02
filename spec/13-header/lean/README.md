@@ -192,6 +192,81 @@ A number is `Num = Fin 4 → Nat`, slots along 1, i, −1, −i. Its value is `v
 | `canonical_unique` | The collapsed form is unique. |
 | **`collapseClock_eq`** | Spec §4's per-axis collapse by the borrow equals it when all slots are `< W`. |
 
+### Design C, on 64-bit words (`Header/DesignC.lean`, namespace `Header.C`)
+
+Spec v0.2 §4a and §5. A number is `Num = (v : Int, a : Bool)`, with value `val = v · i^a` (`GI.smul v (unit a)`, the same Gaussian integers and units as A). `InRange v` is `-2^62 ≤ v < 2^62`.
+
+**The machine.** A word is `BitVec 64`, Lean core's 64-bit register: `+`, `-`, `*` and negation wrap mod `2^64`; `&&&`, `|||`, `^^^`, `~~~` are AND, OR, XOR, NOT; `<<<` is shift left; `sshiftRight` is `sar`; `sdiv` is the signed divide, truncating (it wraps on `-2^63 / -1`); `<` is the unsigned compare. `enc (v, a) = ofInt (2v + a)`; `dec w = ((w sar 1) read signed, w and 1 = 1)`; `wval w = val (dec w)`. `add`, `sub`, `neg`, `mul` and `div` are §4a's rules, transcribed instruction by instruction; `none` is the error (an expression).
+
+**Method.** Every word is `ofInt (2v + a)` of its decoding (`word_eq`), and `w and 1`, `w and not 1` and `w sar 1` are `ofInt a`, `ofInt 2v` and `ofInt v` (`lo_eq`, `clr_eq`, `sar_eq`). Each rule's word is then `ofInt (2v' + a')` of the true result, mod `2^64` (`add_of_same`, `neg_eq`, `mul_eq`, `div_eq`, with no hypothesis), and `dec_ofInt` reads it back exactly when `v'` is in range. So only the result needs to be in range; an intermediate may wrap.
+
+**Item C1, encoding and zero.**
+
+| Theorem | Statement |
+| --- | --- |
+| **`dec_enc`** | For `v` in range and either axis, `dec (enc (v, a)) = (v, a)`. |
+| **`enc_dec`** | Every word is the encoding of its decoding. |
+| `dec_range`, `enc_inj`, `dec_inj` | Every word decodes into range; so words and in-range pairs correspond one to one. |
+| `toInt_split` | Every word, read signed, is `2v + a` of its decoding. |
+| **`wval_eq_zero_iff`** | A word's value is zero exactly when the word is 0 or 1. |
+| `lt_two_iff` | The unsigned `w < 2` holds exactly when `v = 0`. |
+| `val_eq_iff` | Two pairs have equal value exactly when `v1 = v2` and (`a1 = a2` or `v1 = 0`): every nonzero number has one word, and zero two. |
+
+**Item C2, add and subtract.**
+
+| Theorem | Statement |
+| --- | --- |
+| `axis_check` | `t = (w1 xor w2) and 1` is 0 exactly when the axes are equal. |
+| **`add_same`**, **`sub_same`** | Same axis, `v1 ± v2` in range: the word decodes to `(v1 ± v2, a1)`. |
+| `add_cross_zero_right`, `add_cross_zero_left`, `sub_cross_zero_right`, `sub_cross_zero_left` | Across axes with a zero, the result is `w1`, `w2`, `w1` or `neg w2`. |
+| **`add_value`**, **`sub_value`** | When the axes agree or a value is zero, and the true result is in range, the word's value is the true sum (difference). |
+| **`add_eq_none_iff`**, **`sub_eq_none_iff`** | The error holds exactly when the axes differ and both values are nonzero. |
+| **`cross_no_num`**, `add_none_no_num`, `sub_none_no_num` | Then no pair `(v, a)`, in range or not, has the sum's (difference's) value. |
+| `add_overflow_example` | `(2^62 − 1) + 1` on the real axis gives `-2^62`: the hypothesis is needed. |
+
+**Item C3, negation.**
+
+| Theorem | Statement |
+| --- | --- |
+| `neg_eq` | The rule's word is `2(−v) + a` mod `2^64`, always. |
+| **`dec_neg`**, **`neg_value`** | For `v > −2^62`: `(−v, a)`, the true negation on the same axis (a zero stays on its axis). |
+| **`neg_edge`**, `neg_edge_example` | For `v = −2^62` (whose negation `2^62` is out of range) the rule returns the word unchanged. |
+
+**Item C4, multiplication.** `mulNum (v1, a1) (v2, a2) = ((−1)^(a1·a2) v1·v2, a1 xor a2)`.
+
+| Theorem | Statement |
+| --- | --- |
+| **`val_mulNum`** | Its value is the product, on all four axis pairs: `i · i = −1`. |
+| `mul_eq` | The rule's word is `2v + a` of `mulNum`, mod `2^64`, always. |
+| **`dec_mul`**, **`mul_value`** | With the true product in range, the word decodes to `mulNum` and its value is the product. |
+| `mul_wrap_example` | `(2^31 i)(2^31 i) = −2^62`: the intermediate `v1 · 2v2 = 2^63` wraps, and the result is still right. |
+
+**Item C5, exact division.** `divNum (v1, a1) (v2, a2) = ((−1)^((1 − a1)·a2) v1/v2, a1 xor a2)`.
+
+| Theorem | Statement |
+| --- | --- |
+| **`val_divNum_mul`**, `div_unique` | When `v2 ≠ 0` divides `v1`, `divNum` times the divisor is the dividend, and is the only such value. |
+| `sdiv_exact`, `div_eq` | The signed divide of `2v1` by `v2` is `2(v1/v2)` exactly; the rule's word is `2v + a` of `divNum`, mod `2^64`. |
+| **`dec_div`**, **`div_value`** | With `v2 ≠ 0`, `v2 ∣ v1` and the true quotient in range, the word decodes to `divNum`. |
+| `div_overflow_example` | `−2^62 / −1` (out of range) wraps to `−2^62`. |
+| `div_edge_example`, `div_edge_in_range`, `div_edge_intermediate`, `div_trap_iff` | `(−2^62)/(−i) = −2^62 i` is in range, but its intermediate is `−2^63 / −1`; among in-range quotients this is the only such case. See finding C-a. |
+
+**Item C6, agreement with A.** `toA (v, a) = (|v|, d)` with `d = 2s + a`, `s = 1` for `v < 0`; `ofA (m, d) = (±m, d mod 2)`, minus for `d = 2, 3`.
+
+| Theorem | Statement |
+| --- | --- |
+| `toA_d`, `toA_dec_d` | `d = 2s + a`; on a word, `s` is bit 63 and `a` bit 0. |
+| **`val_toA`**, **`val_ofA`** | Both maps keep the value. |
+| `ofA_toA`, `toA_ofA` | They are inverse (`toA ∘ ofA` on A's nonzero pairs: A has four zeros, C two). |
+| **`same_numbers_C_to_A`**, **`same_numbers_A_to_C`** | Every C word is an A number with `m ≤ 2^62`; every A number with `m < 2^62` is a C word. C holds A's numbers on the axes over a quarter of A's range, plus `−2^62` and `−2^62 i`. |
+
+**Design C findings.** No rule in §4a or the notes is false under the no-overflow hypothesis.
+
+- **C-a. One in-range division traps on x86-64.** `(−2^62) / (−i) = −2^62 i` is in range, and the rule computes it right in the model (`dec_div`, `div_edge_example`). But its intermediate is `(w1 and not 1) / (w2 sar 1) = −2^63 / −1`, and x86-64's `idiv` raises a divide error on that. ARM64 `sdiv` and RISC-V `div` return `−2^63`, and the negation then gives the right word. `div_trap_iff` proves it is the only in-range case (`v1 = −2^62` real, `v2 = −1` imaginary). Spec §1's "no result overflows" does not exclude it.
+- **C-b. Negation's edge case.** `−(−2^62)` is out of range, and the rule returns the operand unchanged (`neg_edge`), like the machine's own `−(−2^63)`. It also reaches subtraction across axes with `v1 = 0`, `v2 = −2^62`. This is overflow, which the spec puts out of scope, but the notes' "negation negates the value" holds only for `v > −2^62`.
+- **C-c. Zero has two words**, 0 and 1. The notes' table says C has "exactly one" form of a number; that holds for nonzero numbers, the same caveat as A's four zeros.
+- **C-d. Only the result must be in range.** Multiply and divide may wrap in their intermediates (`mul_wrap_example`) and still give the right word, since the result is fixed mod `2^64`.
+
 ### Word-level routines (`Header/Words.lean`, namespace `Header.Words`)
 
 **The model.** A magnitude is a list of words, low word first, for **any word size `n > 0` and any length**. `Words n l` says every word is `< 2^n`. The value is `val n [w0, w1, …] = w0 + 2^n·w1 + …`.
@@ -274,6 +349,7 @@ Five observations do not contradict the documents:
 - `Header/Clock.lean`: the clock model and the borrow lemma.
 - `Header/DesignA.lean`: items 1–7.
 - `Header/DesignB.lean`: item 8.
+- `Header/DesignC.lean`: Design C on 64-bit words, items C1–C6.
 - `Header/FourSlot.lean`: item 9.
 - `Header/Words.lean`: part two, the word-level routines.
 - `.gitignore`: excludes the build directory `.lake/`.

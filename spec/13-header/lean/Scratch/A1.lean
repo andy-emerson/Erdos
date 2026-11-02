@@ -10,6 +10,9 @@ theorem intAdd_run (f : Form) (sub : Bool) (d1 d2 : Fin 4) (m1 m2 : Nat)
     ∃ r, A.add W ⟨m1, d1⟩ y = some r ∧
       ∃ s, exe (intAdd f sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
         s.trace = intTrace f sub (path d1 y.d m1 m2) ∧ s.stores = [(zh, hdr r.d), (zm, r.m)] := by
-  cases f <;> cases sub <;> rcases hd1 with rfl|rfl <;> rcases hd2 with rfl|rfl <;> by_cases h : m2 ≤ m1 <;>
-    run_prog [intAdd, pre, kk, intTrace, preT, path, regs6, hdr, e1, e2, e3, e4, A.add, A.neg, A.dirCheck,
-      borrow_lemma hm1 hm2, absDiff, borrow, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2, wneg_wsub hm1 hm2, h]
+  cases f <;> cases sub <;> rcases hd1 with rfl|rfl <;> rcases hd2 with rfl|rfl
+  all_goals by_cases h : m1 < m2
+  all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
+  all_goals simp only [A.add, A.neg, A.dirCheck]
+  all_goals run_prog [intAdd, pre, kk, intTrace, preT, path, regs6, hdr, e1, e2, e3, e4,
+      borrow_lemma hm1 hm2, absDiff, borrow, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2, wneg_wsub hm1 hm2, h, h']

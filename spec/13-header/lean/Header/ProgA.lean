@@ -27,10 +27,6 @@ namespace Header
 namespace PA
 open Isa
 
-/-- The two forms of the opposite-direction path. -/
-inductive Form | notes | perArm
-deriving DecidableEq, Repr
-
 /-- Registers 1–6: addresses of `x`'s header and word, `y`'s, and `z`'s. -/
 def regs6 (xh xm yh ym zh zm : Nat) : Reg → Nat := fun i =>
   if i = 1 then xh else if i = 2 then xm else if i = 3 then yh else if i = 4 then ym

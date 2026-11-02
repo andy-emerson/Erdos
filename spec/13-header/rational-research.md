@@ -60,7 +60,7 @@ $$
 
 | | Raw | Fix | Total | Plain rational | x86-64 *(hand)* | ARM64 *(hand)* |
 | --- | --- | --- | --- | --- | --- | --- |
-| add | 4 | 4 + 3 | **11** | 4 | 11 + 4 `mov` (11 + 3 with `rcr`) | **8** |
+| add | 4 | 4 + 3 | **11** | 4 | 11 + 5 `mov` (11 + 4 with `rcr`) | **8** |
 | multiply | 2 | 4 + 4 | **10** | 2 | 10 + 4 `mov` (9 + 4 with `cmov`) | **7** |
 
 **ARM64 add** *(hand)*, 8:
@@ -74,7 +74,7 @@ $$
 - `ands` puts $a_1 a_2$ in the N flag, so `cneg` is the conditional negate (2 in place of 4).
 
 **x86-64** *(hand)*:
-- `imul r,r/m` is destructive, so each product and each fix temporary costs a `mov`.
+- `imul r,r/m` is destructive, so each product and each fix temporary costs a `mov` when the inputs must be kept (fewer when they may be overwritten).
 - The top-bit copy can be `shl den,1; bt d1,63; rcr den,1` (3, no `mov`). `rcr` is multi-uop; this is *from memory*.
 - The conditional negate can be `mov t,num; neg t; test d1,d2; cmovs num,t` (3 + `mov`): `test` sets SF to $a_1 a_2$.
 - $\lnot T$ is not an imm32, so $T$ sits in a register (or use `btr`/`bts`/`bt` on bit 63).

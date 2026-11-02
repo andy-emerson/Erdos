@@ -8,6 +8,12 @@ $$m = 0 - k = \begin{cases} 0000 & k = 0 \\ 1111 & k = 1 \end{cases}$$
 
 since $0 - 1$ on the clock is 15, which is 1111. Every bit of the mask equals $k$, so the two always go together: the flag says yes or no, and the mask carries that answer to every bit of a word.
 
+A mask can also come straight from the top bit of a word, with no flag. The arithmetic shift right, **sar**, moves every bit right and fills the empty places at the top with copies of the top bit. Shifting by 3 on 4 bits pushes out every bit except the top one and fills the word with it:
+
+$$x \text{ sar } 3 = \begin{cases} 0000 & \text{top bit of } x = 0 \\ 1111 & \text{top bit of } x = 1 \end{cases}$$
+
+For example, $1010 \text{ sar } 3 = 1111$ and $0110 \text{ sar } 3 = 0000$. The top bit can be any tag kept there, such as a sign.
+
 ## XOR
 
 XOR with a mask leaves a word alone or flips every bit of it:
@@ -48,7 +54,7 @@ $$\begin{aligned}
 
 ### Absolute value
 
-For a signed word $x$, the mask can come from the sign itself, with no flag. Shifting $x$ right by 3 while copying its top bit (`sar`) spreads the sign bit across the word:
+For a signed word $x$, the top bit is the sign, so sar makes the mask from it:
 
 $$m = x \text{ sar } 3 = \begin{cases} 0000 & x \ge 0 \\ 1111 & x < 0 \end{cases}$$
 

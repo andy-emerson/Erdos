@@ -436,3 +436,21 @@ err); `subMul` is the row with `h2 xor 0x80`.
 | `Reg.mulRow_no_branch` | The row has no conditional branch and no jump. |
 | `Reg.table_eq` | Now includes the row's two lines (35/36 steps; x86-64 45/46, ARM64 37/38, RV64IM 35/36). |
 | `PA.hdr_0` … `PA.hdr_3` | The header bytes as literals (used to keep the kernel's checks small). |
+
+## The header form's add from the prior-art research, round 1 (`Header/LargerRow.lean`)
+
+`../prior-art.md`, "Header form": headers loaded sign-extended (`sx`), `t = h1 xor h2`, `s = t sar 63`,
+`r = m1 + (m2 xor s) − s`, `L = 0 − (m1 <u m2)`, `b = s and L`, magnitude `(r xor b) − b`, direction
+`h1 xor (t and L)` stored as a byte, flag `(t shr 6) and (m1 ≠ 0) and (m2 ≠ 0)`; subtract flips the second header
+register with `xor −128`. All arithmetic mod `2^64` (`largerAdd`, `largerSub`).
+
+| Theorem | Statement |
+| --- | --- |
+| `larger_add_eq` | For magnitudes below `2^64` and all 16 direction pairs: when `A.add (2^64) x y` gives `r`, the formula gives `r.m`, flag 0, and header `hb r.d`, except for two zeros on different axes, where it gives `hb x.d` (round 1 gives `hb y.d`; both are zero); when `A.add` gives an expression, the flag is 1. |
+| `larger_sub_eq` | The same for `largerSub` against `A.sub`. |
+| `obs_larger` | Observation 1, on round 1's `A.add`: with no overflow, the result's direction is that of the operand with the larger magnitude (the first on a tie), or the result is zero. |
+| `obs_signs` | Observation 2: with no overflow, the result's magnitude is `m1 + m2` when the sign bits (`d / 2`) agree and `\|m1 − m2\|` when they differ, whatever the axes. |
+| `add_eq_absDiff_of_zero` | With a zero operand, `m1 + m2 = \|m1 − m2\|`. |
+| `sx_flip` | `xor −128` on a sign-extended header is the sign-extended `h xor 0x80`. |
+
+`#print axioms`: the main theorems use `propext`, `Classical.choice`, `Quot.sound` (or fewer).

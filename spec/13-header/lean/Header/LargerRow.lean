@@ -57,6 +57,10 @@ theorem xor_ones_W {x : Nat} (h : x < 18446744073709551616) :
     x ^^^ 18446744073709551615 = 18446744073709551615 - x :=
   Isa.xor_ones (x := x) h
 
+theorem xor_ones_mod (x : Nat) :
+    x % 18446744073709551616 ^^^ 18446744073709551615 = 18446744073709551615 - x % 18446744073709551616 :=
+  Isa.xor_ones (Nat.mod_lt _ (by decide))
+
 theorem clockAdd_lit {a b : Nat} (ha : a < 18446744073709551616) (hb' : b < 18446744073709551616) :
     clockAdd 18446744073709551616 a b = (a + b) % 18446744073709551616 := by
   unfold clockAdd; split <;> omega
@@ -91,9 +95,9 @@ theorem larger_add_eq (x y : Num) (h1 : x.m < 2 ^ 64) (h2 : y.m < 2 ^ 64) :
   all_goals try (exfalso; omega)
   all_goals simp [add, largerAdd, largerAddX, sx, hb_0, hb_1, hb_2, hb_3, dirCheck, diffAxes, Wd,
     clockAdd_lit, h1', h2', absDiffClock, clockSub, clockNeg, borrow, sar63, ltMask, hl, z1, z2, xor_ones_W h2',
-    xor_ones_W (mod_lt_W _)]
+    xor_ones_mod]
   all_goals (repeat' split) <;>
-    (try simp only [Fin.reduceAdd, Fin.isValue, hb_0, hb_1, hb_2, hb_3, Nat.reduceAnd, Nat.reduceXor, Nat.reduceMod, Nat.reduceSub] at *) <;> omega
+    (try simp only [Fin.reduceAdd, Fin.isValue, hb_0, hb_1, hb_2, hb_3, Nat.reduceAnd, Nat.reduceXor, Nat.reduceMod, Nat.reduceSub, xor_ones_mod, true_and, and_true] at *) <;> omega
 
 /-- **Subtraction**: the formula with `h2` flipped is A's subtract, with the same exception. -/
 theorem larger_sub_eq (x y : Num) (h1 : x.m < 2 ^ 64) (h2 : y.m < 2 ^ 64) :

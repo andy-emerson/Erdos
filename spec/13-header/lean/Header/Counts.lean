@@ -200,6 +200,10 @@ def table : List (String × String × String × Isa.Counts × Nat × Nat × Nat 
   ("A-bf", "cx sub", "one", ⟨36, 0, 0, 0, 4, 2⟩, 48, 38, 36, []),
   ("A-mul", "add", "one", ⟨35, 0, 0, 0, 4, 2⟩, 45, 37, 35, []),
   ("A-mul", "sub", "one", ⟨36, 0, 0, 0, 4, 2⟩, 46, 38, 36, []),
+  ("A-lg", "int add", "one", ⟨18, 0, 0, 0, 4, 2⟩, 21, 19, 18, []),
+  ("A-lg", "int sub", "one", ⟨19, 0, 0, 0, 4, 2⟩, 22, 20, 19, []),
+  ("A-lg", "cx add", "one", ⟨23, 0, 0, 0, 4, 2⟩, 31, 26, 23, []),
+  ("A-lg", "cx sub", "one", ⟨24, 0, 0, 0, 4, 2⟩, 32, 27, 24, []),
   ("B", "int add", "one", ⟨8, 0, 0, 0, 4, 2⟩, 8, 8, 8, []),
   ("B", "int sub", "one", ⟨8, 0, 0, 0, 4, 2⟩, 8, 8, 8, []),
   ("B", "int neg", "one", ⟨4, 0, 0, 0, 2, 2⟩, 4, 4, 4, []),
@@ -263,7 +267,7 @@ set_option maxRecDepth 200000 in
 /-- **The counts and the branch log of every path**, evaluated from the programs. -/
 theorem table_eq : (registry.flatMap fun (d, op, p, paths) => paths.map fun (pn, tr) =>
     (d, op, pn, counts p tr, famCount p tr .x86, famCount p tr .arm, famCount p tr .rv,
-      branchLog p (tr ++ [p.length]))) = table := by sorry
+      branchLog p (tr ++ [p.length]))) = table := by rfl
 
 /-- Every program is forward: each branch and jump goes forward, to at most the end. -/
 theorem all_forward : (registry.all fun (_, _, p, _) => Forward p) = true := by decide
@@ -279,6 +283,10 @@ theorem bf_no_branch : ([PA.bfInt false, PA.bfInt true, PA.bfCx false, PA.bfCx t
 
 /-- **The multiplication row has no conditional branch** (and no jump). -/
 theorem mulRow_no_branch : ([PA.mulRow false, PA.mulRow true].all
+    fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
+
+/-- **The header form's add and subtract have no conditional branch** (and no jump): integer and complex programs. -/
+theorem lgRow_no_branch : ([PA.lgRow false false, PA.lgRow false true, PA.lgRow true false, PA.lgRow true true].all
     fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
 
 /-- C's negate, multiply and divide, and every program of Control and B but complex division, collapse and B's

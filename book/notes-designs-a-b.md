@@ -106,7 +106,7 @@ Addition is more involved here than on paper, because of the problem these notes
 
 **Same direction.** The magnitudes add, and the direction stays. With $d_1 = d_2 = d$,
 
-$$(m_1, d_1) + (m_2, d_2) = (m_1, d) + (m_2, d) = (m_1 + m_2,\ d),$$
+$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d) + (m_2, d) \\ &= (m_1 + m_2,\ d), \end{aligned}$$
 
 since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
 
@@ -118,7 +118,7 @@ With no borrow, the first number is at least as large, and the sum is $m_1 - m_2
 
 **Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition becomes one in the same direction. With $m_2 = 0$,
 
-$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d_1) + (0, d_2) \\ &= (m_1, d_1) + (0, d_1) \\ &= (m_1 + 0,\ d_1) = (m_1, d_1), \end{aligned}$$
+$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d_1) + (0, d_2) \\ &= (m_1, d_1) + (0, d_1) \\ &= (m_1 + 0,\ d_1) \\ &= (m_1, d_1), \end{aligned}$$
 
 and similarly when $m_1 = 0$. For example, $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. If neither magnitude is zero, a sum such as $3 + 4i$ is not a magnitude times a single direction, and Design A holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
 
@@ -314,9 +314,13 @@ Values run from $-2^{n-2}$ to $2^{n-2} - 1$: one bit goes to the axis, and one t
 | Sums across axes | not held | held directly | not held |
 | Largest value | $2^n - 1$ | $2^n - 1$ per part | $2^{n-2} - 1$ |
 
-## To return to: expressions in Design A
+## To return to
 
-Points raised (Nov 1, 2026) and set aside until the addition discussion is settled:
+Points raised (Nov 1, 2026) and set aside for now.
+
+- **The lopsided range.** Two's complement has one more negative value than positive, so $-2^{n-1}$ in Control and $-2^{n-2}$ in Design C have no negation, and dividing either by $-1$ overflows. Design A has no such value, since its magnitudes are symmetric about zero.
+
+Expressions in Design A:
 
 - **Two 1-bit fields or one 2-bit field.** A direction $d$ can be read as two bits, $d = 2s + a$: an axis bit $a$ (0 real, 1 imaginary) and a sign bit $s$ (0 positive, 1 negative). Multiplying directions is then $a = a_1 \text{ XOR } a_2$ and $s = s_1 \text{ XOR } s_2 \text{ XOR } (a_1 \text{ AND } a_2)$, the rule of the 2002 Clifford coprocessor in the survey. This is separate from storing an expression's terms in fixed slots by axis (slot 0 real, slot 1 imaginary), which the author accepted.
 - **A mandatory plain form.** Whether an expression whose real or imaginary term becomes zero must become a plain (non-expression) number, so that each value has one form. The author doubts it fits a design with headers; equality would otherwise have to treat both forms as the same.

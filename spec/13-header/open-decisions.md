@@ -11,3 +11,4 @@ Kept for the author (Nov 2, 2026). None blocks the notes.
 ## Ideas to return to
 
 - **Idea 6, the leak as a parity detector** (Nov 2, 2026). In complex rationals with the axis in the denominator's top bit, raw products put parity information into the top bit. Reducing a fraction needs to know when both parts are even; the leak may supply that for free. Waits until reduction is in scope.
+- **Ideas 4 + 6, the direction counter on the odd part** (shelved Nov 2, 2026). Correct for every denominator by strip-and-rebuild (test/playground/order4_rebuild.py), but about 20–25 instructions per add or multiply, against about 10–12 for the signed-numerator, complement-axis design. The cost is structural: every result needs its common factors of 2 removed and its counter moved.

@@ -8,13 +8,15 @@ The number of positions a counter passes through before it returns to 0 is its *
 
 The machine counts in base 2, binary, and each binary digit is a bit, so a counter of $n$ bits has modulus $N = 2^n$. A byte is 8 bits, with modulus $2^8 = 256$: it holds every whole number from 0 to 255. On a 64-bit machine a word is 8 bytes, 64 bits, with modulus
 
-$$2^{64} = 18{,}446{,}744{,}073{,}709{,}551{,}616,$$
+$$2^{64} = 18446744073709551616,$$
 
-so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the clock has $2^4 = 16$ hours. On the number line, 15 hours plus 3 hours is 18 hours, but the clock shows 2, and so we say that 18 is *congruent* to 2 mod 16.
+so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the clock has $2^4 = 16$ hours.
+
+On the number line, 15 hours plus 3 hours is 18 hours. However, on a 16-hour clock 3 hours past 15 displays 2, and so we say that 18 is *congruent* to 2 mod 16.
 
 $$15 + 3 = 18 \equiv 2 \pmod{16}$$
 
-Similarly, if the 16-hour clock reads 4 and we ask what time it was 6 hours ago, that is subtraction, and it rolls back the other way.
+Similarly, if the 16-hour clock reads 4 and we ask what time it was 6 hours ago, it rolls back the other way.
 
 $$4 - 6 = -2 \equiv 14 \pmod{16}$$
 

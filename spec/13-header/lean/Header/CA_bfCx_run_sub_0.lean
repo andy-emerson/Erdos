@@ -33,6 +33,17 @@ theorem bfCx_run_sub_0 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
   have hsub1 : m1 - m2 < W := by omega
   have hsub2 : m2 - m1 < W := by omega
   have hs2 : clockAdd W m1 m2 < W := by rw [← wadd_clock hm1 hm2]; exact wadd_lt _ _
+  have k0 : (128 : Nat) % W = 128 := by decide
+  have c00 : clockAdd W 0 0 = 0 := by decide
+  have k1 : (0 : Nat) % W = 0 := by decide
+  have w0_0 : wadd 0 0 = 0 := by decide
+  have w0_128 : wadd 0 128 = 128 := by decide
+  have w64_0 : wadd 64 0 = 64 := by decide
+  have w64_128 : wadd 64 128 = 192 := by decide
+  have w128_0 : wadd 128 0 = 128 := by decide
+  have w128_128 : wadd 128 128 = 256 := by decide
+  have w192_0 : wadd 192 0 = 192 := by decide
+  have w192_128 : wadd 192 128 = 320 := by decide
   obtain rfl := hk
   rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases h : m1 < m2
@@ -45,7 +56,7 @@ theorem bfCx_run_sub_0 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
   all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
   all_goals run_prog [bfCx, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
-      select_ones hs hd', select_ones', wadd_lit, mod_W_small, wsub_zero, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
+      select_ones hs hd', select_ones' hs2 hsub1, select_ones' hs2 hsub2, select_ones' hs2 hm1, select_ones' hs2 hm2, wsub_zero hsub1, wsub_zero hsub2, wsub_zero hm1, wsub_zero hm2, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
       wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
 
 end PA

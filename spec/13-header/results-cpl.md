@@ -123,8 +123,64 @@ For comparison, the add loop is 30 instructions in `cpl`, 38 in `alg` and 49 in 
   - `test/asmcheck.py`: `cpl` added to `NOBRANCH`;
   - `test/run.py`: `cpl` and the `control-cpl` reference.
 - Not touched in phase A: `lean/`, the other designs, `src/README.md`. The README's build list was not updated; that is left to the coordinator.
+- cpl2 (round 2 M1): `src/designcpl.nim` (`cMul2`, `cDiv2`), `src/bench.nim`, `src/build.sh`, `test/check.py`, `test/asmcheck.py`, `test/run.py`.
 - Phase B: new `lean/Header/Complement.lean`; `lean/Header.lean` (import) and `lean/README.md` (section) changed.
 - Round 3 (counts): new `lean/Header/ProgCpl.lean`. Changed: `lean/Header/Registry.lean`, `lean/Header/Counts.lean`, `lean/Header.lean`, `lean/README.md` and this file.
+
+## cpl2: the round 2 (M1) multiply and divide
+
+The author asked for the research's cheaper generic (RV64-style) forms ("Round 2: optimization", M1, in `complement-research.md`; checker `test/complement/m1.py`, read but not edited). They are built as a second variant: `cMul2` and `cDiv2` in `src/designcpl.nim`, in a new build `cpl2`. `cpl2` is `cpl` with only multiply and divide replaced. `cpl` is unchanged.
+
+- **Multiply, 17 (the "generic, scaled" form):**
+  - L = w shl 1 and D = w + (L sar 1) = 2v, 3 each;
+  - x2 = D2 sar 1;
+  - m = (L1 AND L2) sar 63, all ones when both are imaginary;
+  - P = ((D1 XOR m) − m)·x2 = ±2p, and p = P sar 1;
+  - then the fix.
+
+  On overflow it gives the 63-bit wrap on axis a1 XOR a2, as add does. Round 1's multiply does not.
+- **Divide, 15 (16 without `andn`):**
+  - q = D1 ÷ D2 = trunc(v1/v2). D2 is even, so the machine's divide never meets −2^63 / −1;
+  - m = (L2 AND NOT L1) sar 63;
+  - (q XOR m) − m, then the fix.
+
+**Wiring:**
+- `bench.nim` adds `-d:bld=cpl2`.
+- `build.sh` builds it.
+- `asmcheck.py` adds it as a no-branch row.
+- `check.py` runs `cpl2`:
+  - in the `cpl` set;
+  - in the error cases (exit 3);
+  - on the capped cpl timing rows;
+  - on the +2^62 refusal (exit 2);
+  - for bytes per value (8, 8).
+- `run.py` times `cpl2` on the capped rows and pairs it with `control-cpl`, like `cpl`.
+
+**Checks:**
+- `build.sh` ends `asmcheck: PASS`. `cpl2`'s multiply and divide loops have no branch, no `cmov`, no `setcc` and no vector instruction. No `opaque` was needed.
+- `check.py` passes: 820,748 results, 224 error cases and 558 checksums.
+- Two broken copies of `cpl2` were caught, then reverted:
+  - multiply without the final `sar 1`: 1,728 failures;
+  - divide with the mask's operands swapped: 581 failures.
+- The check's division cases are exact only, as before, and its products stay in range. So the multiply's wrap and the truncating divide are not tested here. They are in the research's `m1.py`, and in Lean in milestone B.
+
+**Compiled counts** (gcc 13.3.0, baseline x86-64 without BMI; each loop includes the loop's own 6 instructions):
+
+| | Loop | Operation | `mov` copies | Operation without copies | Research |
+| --- | --- | --- | --- | --- | --- |
+| cpl mul (round 1) | 29 | 23 | 5 | 18 | 18 |
+| **cpl2 mul (M1)** | **24** | 18 | 1 | **17** | 17 |
+| cpl div (round 1) | 31 | 25 | 5 | 20 | 18 (+1 `not`, +1 `cqto`) |
+| **cpl2 div (M1)** | **24** | 18 | 1 | **17** | 15 (+1 `not`, +1 `cqto`) |
+
+- **Multiply: exactly the research's 17.**
+  - gcc writes each `shl 1` as `lea (w,w)`, so it keeps w and costs no copy.
+  - The fix computes `w1 XOR w2` first, then XORs in p: the same 4 instructions in another order.
+  - Against `cpl` the loop is 5 shorter: one operation and four copies. Round 1's sign extension, `w XOR ((w XOR (w shr 1)) AND G)`, needs w twice after a destructive operation; the `lea` form does not.
+- **Divide: 17 = the research's 15, plus `not` (no `andn` without BMI1; the research's 16), plus `cqto`** (x86 `idiv` needs rdx:rax).
+  - Against `cpl` the loop is 7 shorter: three operations and four copies.
+- **The add, sub and neg loops of `cpl2` are byte-for-byte the same operations as `cpl`'s:** 30, 36 and 11.
+- On the research's basis (operation + 3 for loads and the store), `cpl2` is 20 for multiply and 18 for divide (17 + 3), against the research's 20 and 18 (with `andn`, 15 + 3) or 19 (without).
 
 ## Lean, round 1 (`lean/Header/Complement.lean`)
 

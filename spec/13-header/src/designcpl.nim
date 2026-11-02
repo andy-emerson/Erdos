@@ -11,6 +11,11 @@
 #   negate         z = w AND G; d = z - w; r = (d AND NOT G) OR z: 4;
 #   multiply       18: sign-extend both (4 + 4), m for i*i = -1 (3), (x1 xor m) - m (2), the product (1), the fix (1 + 3);
 #   exact divide   18: the same with m from (w2 AND NOT w1) (a2 = 1, a1 = 0: v / (iu) = -i v/u) applied to the quotient.
+# The build cpl2 uses the research's round 2 (M1) generic forms for multiply and divide instead (cMul2, cDiv2):
+#   multiply       17, scaled: D = w + ((w shl 1) sar 1) = 2v (3 each), x2 = D2 sar 1, m = (L1 AND L2) sar 63 with
+#                  L = w shl 1, P = ((D1 xor m) - m) * x2 = +-2p, p = P sar 1, the fix; wraps like a 63-bit integer;
+#   divide         15 (16 without andn): q = D1 / D2 (= v1 / v2; D2 is even, so no trap), m = (L2 AND NOT L1) sar 63,
+#                  (q xor m) - m, the fix.
 # No branches and no selects. opaque (pseudo.nim) keeps gcc from turning the zero test's mask into a cmov or a branch.
 
 import pseudo
@@ -70,6 +75,31 @@ proc cDiv*(w1, w2: Word; r: var Word) {.inline.} =
   let x2 = sext(w2)                                   # 4
   let m = sar((w2 and not w1) shl 1, 63)              # 3  all ones when a2 = 1 and a1 = 0
   let q = cast[Word](cast[int64](x1) div cast[int64](x2))   # 1
+  let qm = (q xor m) - m                              # 2
+  r = qm xor ((qm xor w1 xor w2) and G)               # 4
+
+# ------------------------------------------------------------------------------------------------ multiply, divide: M1 (cpl2)
+proc cMul2*(w1, w2: Word; r: var Word) {.inline.} =
+  ## the research's generic scaled multiply (round 2, M1): 17. On overflow the 63-bit wrap on axis a1 xor a2.
+  let L1 = w1 shl 1                                   # 1
+  let D1 = w1 + sar(L1, 1)                            # 2  2 v1
+  let L2 = w2 shl 1                                   # 1
+  let D2 = w2 + sar(L2, 1)                            # 2  2 v2
+  let x2 = sar(D2, 1)                                 # 1  v2, sign-extended
+  let m = sar(L1 and L2, 63)                          # 2  all ones when both are imaginary
+  let P = ((D1 xor m) - m) * x2                       # 3  +-2p
+  let p = sar(P, 1)                                   # 1  p, bit 62 copied into the sign
+  r = p xor ((p xor w1 xor w2) and G)                 # 4
+
+proc cDiv2*(w1, w2: Word; r: var Word) {.inline.} =
+  ## the research's generic divide (round 2, M1): 15 (16 without andn). (2 v1) / (2 v2) = v1 / v2, truncating; the
+  ## divisor is even, so the machine's divide never meets -2^63 / -1
+  let L1 = w1 shl 1                                   # 1
+  let D1 = w1 + sar(L1, 1)                            # 2
+  let L2 = w2 shl 1                                   # 1
+  let D2 = w2 + sar(L2, 1)                            # 2
+  let m = sar(L2 and not L1, 63)                      # 2  (3 without andn) all ones when a2 = 1 and a1 = 0
+  let q = cast[Word](cast[int64](D1) div cast[int64](D2))   # 1
   let qm = (q xor m) - m                              # 2
   r = qm xor ((qm xor w1 xor w2) and G)               # 4
 

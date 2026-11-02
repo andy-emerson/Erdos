@@ -6,7 +6,8 @@ Case sets, for integers and for complex numbers on the axes, for every operation
   row and B;
 - "bun": B with uncollapsed operands (both parts nonzero), no part overflowing: B only;
 - "cpl": every operand and every result part in -2^62 .. 2^62 - 1, the complement layout's range on each axis: the
-  complement layout and Control (whose answers are the same values).
+  complement layout (cpl, and cpl2 with the round 2 multiply and divide) and Control (whose answers are the same
+  values).
 Each set has edge cases (zeros in every direction, equal magnitudes, magnitudes near 2^32, 2^63 and 2^64, every
 direction pair) and random ones (bit lengths uniform 0..64 or 0..63, zero included). For add and sub, complex
 operands on different axes have a zero (two nonzero ones are the error cases below).
@@ -47,7 +48,7 @@ E64 = E63 + [1 << 63, (1 << 63) + 1, M64 - (1 << 32), M64 - 1, M64]
 E62 = [0, 1, 2, 3, 0xFFFFFFFF, 1 << 32, (1 << 32) + 1, (1 << 61) - 1, 1 << 61, (1 << 61) + 1, (1 << 62) - 2,
        (1 << 62) - 1, 1 << 62]                      # 2^62 only as -2^62 (fits drops +2^62)
 LIM = {"ctl": 1 << 63, "wide": 1 << 64, "bun": 1 << 64}
-SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "amul", "alg", "b"), "bun": ("b",), "cpl": ("control", "cpl")}
+SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "amul", "alg", "b"), "bun": ("b",), "cpl": ("control", "cpl", "cpl2")}
 
 
 # ------------------------------------------------------------------------------------------------ §3 and §4 as stated
@@ -274,7 +275,7 @@ def parse(b, kind, line):
     if b in ("a", "abf", "anm", "amul", "alg"):
         h, m = int(t[0], 16), int(t[1], 16)
         return gen.value_of(h >> 6, m) if not h & 0x3F else (None, None), h
-    if b == "cpl":
+    if b in ("cpl", "cpl2"):
         w = int(t[0], 16)
         v = (w & ((1 << 62) - 1)) - (w >> 63 << 62)
         return ((0, v) if (w >> 62) & 1 else (v, 0)), w
@@ -350,7 +351,7 @@ def main():
                            for _ in range(lead)]
                     path = WORK / f"err-{op}-{d1}{d2}-{lead}.bin"
                     gen.write_job(path, "cx", op, pre + [(Opnd.collapsed("cx", d1, 7), Opnd.collapsed("cx", d2, 1))])
-                    for b in ("a", "abf", "anm", "amul", "alg", "cpl"):
+                    for b in ("a", "abf", "anm", "amul", "alg", "cpl", "cpl2"):
                         nerr += 1
                         p = run(b, "dump", path, WORK / "err.txt")
                         if p.returncode != 3:
@@ -370,10 +371,10 @@ def main():
             got = p.stdout.split()[1] if p.returncode == 0 else f"exit {p.returncode}"
             if got != want:
                 fails.append(f"{b} {name}: checksum {got}, want {want}")
-    # the cpl rows (gen.py's capped copy): cpl, and Control on the same operands
+    # the cpl rows (gen.py's capped copy): cpl, cpl2, and Control on the same operands
     crows = gen.generate(HERE / "build" / "work", cap=1)
     for name, (path, kind, op, want) in crows.items():
-        for b in ("cpl", "control"):
+        for b in ("cpl", "cpl2", "control"):
             p = run(b, "sum", path)
             nsum += 1
             got = p.stdout.split()[1] if p.returncode == 0 else f"exit {p.returncode}"
@@ -382,12 +383,13 @@ def main():
     # cpl refuses an operand outside its range (+2^62, as the shared rows can hold): exit 2
     path = WORK / "cpl-range.bin"
     gen.write_job(path, "int", "add", [(Opnd.collapsed("int", 0, 1 << 62), Opnd.collapsed("int", 0, 1))])
-    p = run("cpl", "sum", path)
-    if p.returncode != 2:
-        fails.append(f"cpl with an operand of +2^62: exit {p.returncode}, want 2")
+    for b in ("cpl", "cpl2"):
+        p = run(b, "sum", path)
+        if p.returncode != 2:
+            fails.append(f"{b} with an operand of +2^62: exit {p.returncode}, want 2")
     print(f"timing rows: {len(rows)} rows and {len(crows)} cpl rows, {nsum} checksums against the exact values")
     want = {"control": (8, 16), "a": (9, 9), "abf": (9, 9), "anm": (9, 9), "amul": (9, 9), "alg": (9, 9), "b": (16, 32),
-            "cpl": (8, 8)}
+            "cpl": (8, 8), "cpl2": (8, 8)}
     for b in want:
         t = run(b, "bytes").stdout.split()
         if (int(t[3]), int(t[5])) != want[b]:

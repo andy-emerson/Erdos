@@ -7,6 +7,7 @@
 #   -d:bld=anm       Design A's narrow mask row (borrow by mask, other branches kept)
 #   -d:bld=b         Design B: a list of records of two words (four for complex)
 #   -d:bld=cpl       the complement layout: one list of words (sign start, axis, count), no branch
+#   -d:bld=cpl2      the same with the research's round 2 (M1) multiply (17, wraps) and divide (15)
 # Not a build: it reads a job file (one row: a kind, an operation and its operand pairs), converts the operands to the
 # build's stored form outside the clock, and runs the operation over them. Every result is stored; after the clock the
 # results are checksummed over their values, (re < 0, |re|, im < 0, |im|), so every build computing the same values
@@ -24,7 +25,7 @@ const bld {.strdefine.} = "a"
 when bld == "control": import control
 elif bld in ["a", "abf", "anm", "amul", "alg"]: import designa
 elif bld == "b": import designb
-elif bld == "cpl": import designcpl
+elif bld in ["cpl", "cpl2"]: import designcpl
 else: {.error: "unknown build".}
 import pseudo
 
@@ -170,7 +171,7 @@ elif bld in ["a", "abf", "anm", "amul", "alg"]:
   const bytesInt = sizeof(uint8) + sizeof(Word)
   const bytesCx = sizeof(uint8) + sizeof(Word)
 
-elif bld == "cpl":
+elif bld in ["cpl", "cpl2"]:
   var gWA, gWB, gWR: ptr UncheckedArray[Word]
   template loopW(name: untyped; call: untyped) =
     ## one list of words per operand and for the results; err as in abf (sticky, tested after the pass)
@@ -188,8 +189,12 @@ elif bld == "cpl":
   loopW(loop_int_add, cAdd(a[j], b[j], err, res[j]))
   loopW(loop_int_sub, cSub(a[j], b[j], err, res[j]))
   loopW(loop_int_neg, cNeg(a[j], res[j]))
-  loopW(loop_int_mul, cMul(a[j], b[j], res[j]))
-  loopW(loop_int_div, cDiv(a[j], b[j], res[j]))
+  when bld == "cpl":
+    loopW(loop_int_mul, cMul(a[j], b[j], res[j]))
+    loopW(loop_int_div, cDiv(a[j], b[j], res[j]))
+  else:
+    loopW(loop_int_mul, cMul2(a[j], b[j], res[j]))
+    loopW(loop_int_div, cDiv2(a[j], b[j], res[j]))
   # one code for integers and complex numbers on the axes, as in A: the complex rows run the same loops
   const loops = [[loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil],
                  [loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil]]
@@ -198,7 +203,7 @@ elif bld == "cpl":
     ## m i^d as a word; the operand must be on its axis's range -2^62 .. 2^62 - 1 (gen.py's cpl rows)
     let lim = if d < 2: (1'u64 shl 62) - 1 else: 1'u64 shl 62
     if m > lim:
-      stderr.writeLine "cpl: operand out of range (-2^62 .. 2^62 - 1): direction " & $d & " magnitude " & $m
+      stderr.writeLine bld & ": operand out of range (-2^62 .. 2^62 - 1): direction " & $d & " magnitude " & $m
       quit 2
     cEncode(d and 1, (if d < 2: cast[int64](m) else: 0'i64 - cast[int64](m)))
   proc load(kind, d1: int; m1: uint64; p1: array[4, uint64]; d2: int; m2: uint64; p2: array[4, uint64]) =

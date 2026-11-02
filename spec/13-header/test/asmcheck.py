@@ -16,8 +16,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 ASM = HERE / "build" / "asm"
-BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b", "cpl")
-NOBRANCH = ("abf", "amul", "alg", "cpl")   # the branch-free rows: no conditional branch of the operation's own
+BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b", "cpl", "cpl2")
+NOBRANCH = ("abf", "amul", "alg", "cpl", "cpl2")   # the branch-free rows: no conditional branch of the operation's own
 INS = re.compile(r"^\s*([0-9a-f]+):\s+(\S+)\s*(.*)$")
 FUN = re.compile(r"^([0-9a-f]+) <(\S+)>:$")
 

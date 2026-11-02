@@ -4,13 +4,13 @@ magnitude-order mix; 1024 pairs each), one block:
 - wait until the machine is idle (CPU at most 10% over 1 s, 1-minute load at most 1.5), retrying;
 - each build pinned to core 1 with taskset: calibrate r so that one rep (r passes over the 1024 pairs) takes
   50-100 ms, then 15 reps; the median time per operation and the spread (max - min) / median;
-- builds: Control, A, A's rows, B, the complement layout (cpl), and the first of them again (Control; B for collapse, B's only), whose
+- builds: Control, A, A's rows, B, the complement layout (cpl, cpl2), and the first of them again (Control; B for collapse, B's only), whose
   difference from the first is the noise: a difference counts only beyond max(5%, noise);
-- cpl holds -2^62 .. 2^62 - 1 per axis, so it runs gen.py's capped copy of the row (build/work/cpl/, same name), with
+- cpl (and cpl2, the same with the round 2 multiply and divide) holds -2^62 .. 2^62 - 1 per axis, so it runs gen.py's capped copy of the row (build/work/cpl/, same name), with
   Control on that copy beside it ("control-cpl"), its reference in the pairings;
 - every result is stored and checksummed after the clock (in the binary); a block's checksums must agree with each
   other and with gen.py's exact values;
-- beside: bytes per value (Control 8, 16 complex; A 9; B 16, 32 complex; cpl 8) and, with --ir, callgrind's Ir per operation
+- beside: bytes per value (Control 8, 16 complex; A 9; B 16, 32 complex; cpl, cpl2 8) and, with --ir, callgrind's Ir per operation
   in the row's loop function.
 The correctness check (check.py) runs first as a gate. Results: build/results/report.md and results.json (build/toy/
 for --toy).
@@ -33,8 +33,8 @@ import gen  # noqa: E402
 
 HERE = gen.HERE
 BIN = HERE / "build" / "bin"
-BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b", "cpl")
-CAPPED = ("cpl", "control-cpl")          # the cells run on gen.py's capped copy of the row
+BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b", "cpl", "cpl2")
+CAPPED = ("cpl", "cpl2", "control-cpl")          # the cells run on gen.py's capped copy of the row
 CORE = "1"
 REPS, MIN_NS, BAND = 15, 50_000_000, 0.05
 IDLE_CPU, IDLE_LOAD, IDLE_RETRY_S, IDLE_GIVEUP_S = 0.10, 1.5, 10, 600
@@ -144,7 +144,7 @@ def main():
         wants = {row: crows[name][3] if row in CAPPED else want for row in order}
         if a.ir:
             for b in builds:
-                f = f"loop_{'int' if b in ('a', 'abf', 'anm', 'amul', 'alg', 'cpl') else kind}_{op}"
+                f = f"loop_{'int' if b in ('a', 'abf', 'anm', 'amul', 'alg', 'cpl', 'cpl2') else kind}_{op}"
                 irs[f"{b}|{name}"] = ir(b, job[b], f, out)
         idle = wait_idle(a.toy)
         t = {row: time_cell(row, job[row], min_ns, reps) for row in order}
@@ -160,13 +160,13 @@ def main():
         tm = timing[name]
         if tm["op"] != "collapse":
             pairs += [dict(row_name=name, ref=ref, row=b, **compare(tm["rows"], ref, b, tm["noise"] or 0))
-                      for b in BUILDS[1:] for ref in ["control-cpl" if b == "cpl" else "control"]]
+                      for b in BUILDS[1:] for ref in ["control-cpl" if b in ("cpl", "cpl2") else "control"]]
     res = {"toy": a.toy, "n": gen.N, "reps": reps, "min_ns": min_ns, "timing": timing, "ir": irs, "pairings": pairs}
     (out / "results.json").write_text(json.dumps(res, indent=1))
     L = [f"# 13-header v0.2 §7 timed trials{' (TOY: not a measurement)' if a.toy else ''}", "",
          f"N = {gen.N} pairs per row, {reps} reps per cell; median time per operation. Bytes per value: Control 8 "
-         "(16 complex), A 9, B 16 (32 complex), cpl 8. cpl and control-cpl run the capped copy of each row (gen.py), and "
-         "cpl is paired with control-cpl.", "",
+         "(16 complex), A 9, B 16 (32 complex), cpl and cpl2 8. cpl, cpl2 and control-cpl run the capped copy of each row (gen.py), "
+         "and cpl and cpl2 are paired with control-cpl.", "",
          "| row | build | ns/op | spread | Ir/op | bytes/value | sums |", "| --- | --- | --- | --- | --- | --- | --- |"]
     for name in names:
         tm = timing[name]

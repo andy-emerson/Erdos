@@ -140,5 +140,88 @@ theorem lgRow_gen (cx sub : Bool) : LgGen cx sub := by
   cases cx <;> cases sub
   exacts [lgGen_int_add, lgGen_int_sub, lgGen_cx_add, lgGen_cx_sub]
 
+/-! ## In terms of round 1's `A.add` -/
+
+theorem hdr_mod (d : Fin 4) : hdr d % 256 = A.hb d := by revert d; decide
+
+/-- When round 1 gives a number, the formula gives its header (with `LargerRow`'s exception) and magnitude, and flag 0. -/
+theorem lgOut_some (sub : Bool) (d1 d2 : Fin 4) (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (r : A.Num)
+    (h : A.add W ⟨m1, d1⟩ (yEff sub m2 d2) = some r) :
+    lgOut sub (hdr d1) m1 (hdr d2) m2 = (if A.diffAxes d1 d2 ∧ m1 = 0 ∧ m2 = 0 then hdr d1 else hdr r.d, r.m, 0) := by
+  have hm1' : m1 < 2 ^ 64 := by rw [← W_eq]; exact hm1
+  have hm2' : m2 < 2 ^ 64 := by rw [← W_eq]; exact hm2
+  cases sub
+  · have L := A.larger_add_eq ⟨m1, d1⟩ ⟨m2, d2⟩ hm1' hm2'
+    simp only [yEff, Bool.false_eq_true, ite_false] at h
+    rw [← W_eq, h] at L
+    simp only [lgOut, Bool.false_eq_true, ite_false, hdr_mod]
+    exact L
+  · have L := A.larger_sub_eq ⟨m1, d1⟩ ⟨m2, d2⟩ hm1' hm2'
+    simp only [yEff, ite_true] at h
+    simp only [A.sub] at L
+    rw [← W_eq, h] at L
+    simp only [lgOut, ite_true, hdr_mod]
+    exact L
+
+/-- When round 1 gives an expression, the formula's flag is 1. -/
+theorem lgOut_none (sub : Bool) (d1 d2 : Fin 4) (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W)
+    (h : A.add W ⟨m1, d1⟩ (yEff sub m2 d2) = none) :
+    (lgOut sub (hdr d1) m1 (hdr d2) m2).2.2 = 1 := by
+  have hm1' : m1 < 2 ^ 64 := by rw [← W_eq]; exact hm1
+  have hm2' : m2 < 2 ^ 64 := by rw [← W_eq]; exact hm2
+  cases sub
+  · have L := A.larger_add_eq ⟨m1, d1⟩ ⟨m2, d2⟩ hm1' hm2'
+    simp only [yEff, Bool.false_eq_true, ite_false] at h
+    rw [← W_eq, h] at L
+    simp only [lgOut, Bool.false_eq_true, ite_false, hdr_mod]
+    exact L
+  · have L := A.larger_sub_eq ⟨m1, d1⟩ ⟨m2, d2⟩ hm1' hm2'
+    simp only [yEff, ite_true] at h
+    simp only [A.sub] at L
+    rw [← W_eq, h] at L
+    simp only [lgOut, ite_true, hdr_mod]
+    exact L
+
+/-- **The header form, complex numbers (add and subtract).** One path, every instruction once. Register 21 ends as
+the expression flag: 1 exactly when round 1 gives "an expression"; otherwise 0, and the stores are round 1's `A.add`
+(subtract: `A.add W x (A.neg y)`, which is `A.sub`), except that for two zeros on different axes the stored header is
+`x`'s (`LargerRow.larger_add_eq`; both are zero). -/
+theorem lgCx_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm : Nat) (mem : Nat → Nat)
+    (e3 : mem xm = m1) (e4 : mem ym = m2) (sub : Bool) (d1 d2 : Fin 4) (e1 : mem xh = hdr d1) (e2 : mem yh = hdr d2) :
+    match A.add W ⟨m1, d1⟩ (yEff sub m2 d2) with
+    | some r => ∃ s, exe (lgRow true sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
+        s.trace = List.range (lgRow true sub).length ∧ s.r 21 = 0 ∧
+        s.stores = [(zh, if A.diffAxes d1 d2 ∧ m1 = 0 ∧ m2 = 0 then hdr d1 else hdr r.d), (zm, r.m)]
+    | none => ∃ s, exe (lgRow true sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
+        s.trace = List.range (lgRow true sub).length ∧ s.r 21 = 1 := by
+  obtain ⟨s, hx, ht, hst, h21⟩ := lgRow_gen true sub (hdr d1) (hdr d2) m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
+  split
+  · next r h =>
+    rw [lgOut_some sub d1 d2 m1 m2 hm1 hm2 r h] at hst h21
+    exact ⟨s, hx, ht, h21 rfl, hst⟩
+  · next h =>
+    exact ⟨s, hx, ht, (h21 rfl).trans (lgOut_none sub d1 d2 m1 m2 hm1 hm2 h)⟩
+
+/-- **The header form, integers (add and subtract).** For integer directions, one path, every instruction once; the
+stores are round 1's `A.add` (subtract: `A.sub`), with no exception (integers have one axis). -/
+theorem lgInt_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm : Nat) (mem : Nat → Nat)
+    (e3 : mem xm = m1) (e4 : mem ym = m2) (sub : Bool) (d1 d2 : Fin 4) (hd1 : d1 = 0 ∨ d1 = 2) (hd2 : d2 = 0 ∨ d2 = 2)
+    (e1 : mem xh = hdr d1) (e2 : mem yh = hdr d2) :
+    ∃ r, A.add W ⟨m1, d1⟩ (yEff sub m2 d2) = some r ∧
+      ∃ s, exe (lgRow false sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
+        s.trace = List.range (lgRow false sub).length ∧ s.stores = [(zh, hdr r.d), (zm, r.m)] := by
+  obtain ⟨s, hx, ht, hst, -⟩ := lgRow_gen false sub (hdr d1) (hdr d2) m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
+  have hnd : ¬ A.diffAxes d1 d2 := by
+    rcases hd1 with rfl|rfl <;> rcases hd2 with rfl|rfl <;> decide
+  cases h : A.add W ⟨m1, d1⟩ (yEff sub m2 d2) with
+  | none =>
+    exfalso
+    rcases hd1 with rfl|rfl <;> rcases hd2 with rfl|rfl <;> cases sub <;>
+      simp [A.add, A.dirCheck, yEff, A.neg] at h
+  | some r =>
+    refine ⟨r, rfl, s, hx, ht, ?_⟩
+    rw [hst, lgOut_some sub d1 d2 m1 m2 hm1 hm2 r h]
+    simp [hnd]
+
 end PA
 end Header

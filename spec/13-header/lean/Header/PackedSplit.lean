@@ -280,12 +280,15 @@ theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   simp only at hf
   rw [hd, hf]
   clear hd hf hL
+  have hc : clockAdd Q m1 m2 = m1 + m2 := ite_eq_left_iff.mpr (fun h => absurd hs h)
   rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases hl : m1 < m2 <;> by_cases he : m1 = m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
   all_goals try (exfalso; omega)
   all_goals simp only [fv0, fv1, fv2, fv3, Nat.reduceMod, Nat.reduceDiv, Nat.reduceXor, Nat.add_zero, ↓reduceIte]
-  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb, Fin.ext_iff]
-  all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;> qomega
+  all_goals simp only [add, hc]
+  all_goals simp [dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb]
+  all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;>
+    first | qomega | (simp_all; done) | (simp_all; qomega)
 
 end
 

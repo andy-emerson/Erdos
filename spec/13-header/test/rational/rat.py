@@ -50,6 +50,7 @@ def run(prog, env, w):
     env['T'] = w.T
     env['NT'] = w.m(~w.T)
     env['ONE'] = U(1)
+    env['M1'] = w.F
     def g(o):
         return env[o]
     def k(o):

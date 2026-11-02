@@ -10,6 +10,7 @@
 
    Inputs:
      mode 0 (pre and post corrections):  n1 d1 n2 d2                       (multiplies are searched, 1 each)
+     mode 2: as mode 1 plus k, the operation's mask (0 for add, all ones for mul): for op "am".
      mode 1 (post corrections only):     n1 d1 n2 d2 P Q   with the raw products given free:
                                          add P = n1*d2 + n2*d1, Q = d1*d2;  mul P = n1*n2, Q = d1*d2;
                                          sub P = n1*d2 - n2*d1.
@@ -29,7 +30,8 @@
      - adjacent independent instructions are kept in one canonical order;
      - commutative operands are ordered.
 
-   usage: rsuper N layout(off|neg) op(add|sub|mul|am) target(num|den|both) mode(0|1) Lmax [maxprint] [nomul]
+   usage: rsuper N layout(off|neg) op(add|sub|mul|am) target(num|den|both) mode(0|1) Lmax [maxprint] [flags]
+          flags: 1 = no mul, 2 = reduced op set (unary not/neg/shl N-1/sar N-1; const and T, and ~T, or 1, xor T)
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,8 +48,9 @@ static u8 val[MAXV][MAXC];
 static u8 tn[MAXC], td[MAXC], tdalt[MAXC];
 static u8 consts[4];
 static const char *cname[4] = {"1", "T", "~T", "-1"};
-static const char *inname[6] = {"n1", "d1", "n2", "d2", "P", "Q"};
+static const char *inname[7] = {"n1", "d1", "n2", "d2", "P", "Q", "k"};
 static int allow_mul = 1;
+static int small = 0;   /* reduced set: unary not, neg, shl N-1, sar N-1; const and T, and ~T, or 1, xor T */
 
 enum { U_NOT, U_NEG, U_SHL1, U_SHLT, U_SHRT, U_SART,
        B_ADD, B_SUB, B_MUL, B_AND, B_OR, B_XOR, B_ANDN,
@@ -218,9 +221,12 @@ static void gen(int pos) {
         final_need = (hn && hd) ? 2 : hd ? 0 : 1;
     }
     for (int a = 0; a < nv; a++) {
-        for (int op = U_NOT; op <= U_SART; op++) { I.op = op; I.a = a; I.b = 0; emit(I, pos); }
+        for (int op = U_NOT; op <= U_SART; op++) {
+            if (small && (op == U_SHL1 || op == U_SHRT)) continue;
+            I.op = op; I.a = a; I.b = 0; emit(I, pos); }
         for (int op = C_AND; op <= C_RSUB; op++) for (int c = 0; c < 4; c++) {
             if (op == C_ADD && c == 1) continue;              /* add T = xor T */
+            if (small && !((op == C_AND && (c == 1 || c == 2)) || (op == C_OR && c == 0) || (op == C_XOR && c == 1))) continue;
             I.op = op; I.a = a; I.b = c; emit(I, pos); }
         for (int b = 0; b < nv; b++) {
             if (b == a) continue;
@@ -255,6 +261,7 @@ static void add_lanes(int op) {   /* op 0 add, 1 sub, 2 mul */
                 if (op == 2) { val[4][NL] = (n1 * n2) & MSK; }
                 else { val[4][NL] = (op == 0 ? n1 * w2 + n2 * w1 : n1 * w2 - n2 * w1) & MSK; }
                 val[5][NL] = (w1 * w2) & MSK;
+                val[6][NL] = op == 2 ? MSK : 0;   /* mode 2: the operation's mask k (0 add, all ones mul) */
                 tn[NL] = t & MSK; td[NL] = dw(D1 * D2, ta);
                 tdalt[NL] = t == 0 ? dw(D1 * D2, 1 - ta) : td[NL];
                 NL++;
@@ -270,10 +277,11 @@ int main(int argc, char **argv) {
     TGT = !strcmp(argv[4], "num") ? 0 : !strcmp(argv[4], "den") ? 1 : 2;
     MODE = atoi(argv[5]); int Lmax = atoi(argv[6]);
     if (argc > 7) maxprint = atoi(argv[7]);
-    if (argc > 8) allow_mul = !atoi(argv[8]);
+    if (argc > 8) allow_mul = !(atoi(argv[8]) & 1);
+    if (argc > 8) small = (atoi(argv[8]) & 2) != 0;
     MSK = (1 << N) - 1; T = 1 << (N - 1);
     consts[0] = 1; consts[1] = T; consts[2] = ~T & MSK; consts[3] = MSK;
-    NIN = MODE ? 6 : 4;
+    NIN = MODE == 2 ? 7 : MODE ? 6 : 4;
     NL = 0;
     if (!strcmp(op, "add")) add_lanes(0);
     else if (!strcmp(op, "sub")) add_lanes(1);
@@ -284,12 +292,12 @@ int main(int argc, char **argv) {
     srand(12345);
     for (int i = NL - 1; i > 0; i--) {
         int j = rand() % (i + 1);
-        for (int q = 0; q < 6; q++) { u8 x = val[q][i]; val[q][i] = val[q][j]; val[q][j] = x; }
+        for (int q = 0; q < 7; q++) { u8 x = val[q][i]; val[q][i] = val[q][j]; val[q][j] = x; }
         u8 x = tn[i]; tn[i] = tn[j]; tn[j] = x; x = td[i]; td[i] = td[j]; td[j] = x;
         x = tdalt[i]; tdalt[i] = tdalt[j]; tdalt[j] = x;
     }
     for (int j = 0; j < NIN; j++) { isnum[j] = match_num(val[j]); isden[j] = match_den(val[j]); }
-    printf("N=%d layout=%s op=%s target=%s mode=%d mul=%d lanes=%d\n", N, argv[2], op, argv[4], MODE, allow_mul, NL);
+    printf("N=%d layout=%s op=%s target=%s mode=%d mul=%d small=%d lanes=%d\n", N, argv[2], op, argv[4], MODE, allow_mul, small, NL);
     for (int j = 0; j < NIN; j++) if (isnum[j] || isden[j]) printf("  input %s already is %s\n", inname[j] ? inname[j] : "?", isnum[j] ? "num" : "den");
     if (TGT == 2) {   /* both already present among inputs? */
         int a = 0, b = 0; for (int j = 0; j < NIN; j++) { a |= isnum[j]; b |= isden[j]; }

@@ -1,0 +1,6 @@
+N=3 layout=neg op=mul target=both mode=0 mul=1 small=1 lanes=780
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 86 nodes
+L=3: 0 hits, 7611 nodes
+L=4: 0 hits, 771264 nodes
+L=5: 0 hits, 95587156 nodes

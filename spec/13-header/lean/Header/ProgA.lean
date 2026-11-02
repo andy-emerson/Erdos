@@ -39,6 +39,9 @@ def hdr (d : Fin 4) : Nat := 64 * d.val
 def pre (sub : Bool) : Prog :=
   [.lbu 10 1 0, .lbu 11 3 0, .ld 12 2 0, .ld 13 4 0] ++ (if sub then [.xori 11 11 0x80] else [])
 
+/-- The `y` an add sees: `y` itself, or for subtraction its negation. -/
+def yEff (sub : Bool) (m2 : Nat) (d2 : Fin 4) : A.Num := if sub then A.neg ⟨m2, d2⟩ else ⟨m2, d2⟩
+
 def kk (sub : Bool) : Nat := if sub then 1 else 0
 
 /-! ## Add and subtract, integers -/

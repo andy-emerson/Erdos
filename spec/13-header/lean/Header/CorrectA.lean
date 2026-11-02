@@ -1,4 +1,10 @@
 import Header.ProgA
+import Header.CA_cxAdd_run_notes_add
+import Header.CA_cxAdd_run_notes_sub
+import Header.CA_cxAdd_run_perArm_add
+import Header.CA_cxAdd_run_perArm_sub
+import Header.CA_bfCx_run_add
+import Header.CA_bfCx_run_sub
 /-!
 # Round 2: Design A's programs are correct, and every input takes one listed path
 
@@ -17,8 +23,6 @@ namespace Header
 namespace PA
 open Isa
 
-/-- The `y` an add sees: `y` itself, or for subtraction its negation. -/
-def yEff (sub : Bool) (m2 : Nat) (d2 : Fin 4) : A.Num := if sub then A.neg ⟨m2, d2⟩ else ⟨m2, d2⟩
 
 
 /-- **Integer add and subtract, both forms.** For integer directions (`d ∈ {0, 2}`) the program stores round 1's
@@ -47,18 +51,12 @@ theorem cxAdd_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm
         s.trace = cxTrace f sub (path d1 (yEff sub m2 d2).d m1 m2) ∧ s.stores = [(zh, hdr r.d), (zm, r.m)]
     | none => ∃ s, exe (cxAdd f sub) (regs6 xh xm yh ym zh zm) mem = .error s ∧
         s.trace = cxTrace f sub .expr ∧ s.stores = [] := by
-  cases f <;> cases sub <;> rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
-  all_goals by_cases h : m1 < m2
-  all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
-  all_goals first | (have h'' : m1 ≤ m2 := by omega) | (have h'' : True := trivial)
-  all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
-  all_goals try (exfalso; omega)
-  all_goals try subst z1
-  all_goals try subst z2
-  all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
-  all_goals run_prog [cxAdd, pre, kk, cxTrace, preT, path, regs6, hdr, e1, e2, e3, e4,
-      borrow_lemma hm1 hm2, absDiff, borrow, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, *]
+  cases f <;> cases sub
+  all_goals first
+    | exact cxAdd_run_notes_add m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
+    | exact cxAdd_run_notes_sub m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
+    | exact cxAdd_run_perArm_add m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
+    | exact cxAdd_run_perArm_sub m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
 
 
 
@@ -117,22 +115,10 @@ theorem bfCx_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm 
         s.trace = List.range (bfCx sub).length ∧ s.r 21 = 0 ∧ s.stores = [(zh, hdr r.d), (zm, r.m)]
     | none => ∃ s, exe (bfCx sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
         s.trace = List.range (bfCx sub).length ∧ s.r 21 = 1 := by
-  have hs := wadd_lt m1 m2
-  have hd := wsub_lt' m1 m2
-  have hd' := wneg_lt (wsub m1 m2)
-  cases sub <;> rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
-  all_goals by_cases h : m1 < m2
-  all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
-  all_goals first | (have h'' : m1 ≤ m2 := by omega) | (have h'' : True := trivial)
-  all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
-  all_goals try (exfalso; omega)
-  all_goals try subst z1
-  all_goals try subst z2
-  all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
-  all_goals run_prog [bfCx, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
-      borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
-      select_ones hs hd', wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
+  cases sub
+  all_goals first
+    | exact bfCx_run_add m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
+    | exact bfCx_run_sub m1 m2 hm1 hm2 xh xm yh ym zh zm mem e3 e4 d1 d2 e1 e2
 
 
 end PA

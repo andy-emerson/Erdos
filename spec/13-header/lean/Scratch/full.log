@@ -1,4 +1,4 @@
-⚠ [13/20] Replayed Header.ProgC
+⚠ [12/26] Replayed Header.ProgC
 warning: Header/ProgC.lean:53:26: This simp argument is unused:
   BitVec.toNat_not
 
@@ -6,7 +6,5 @@ Hint: Omit it from the simp argument list.
   [apply] simp [BitVec.toNat_and]
 
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
-✔ [14/20] Built Header.CorrectC (4.7s)
-✖ [16/20] Building Header.CorrectB (233s)
-trace: .> LEAN_PATH=/home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean /root/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean /home/claude/erdos/spec/13-header/lean/Header/CorrectB.lean -o /home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean/Header/CorrectB.olean -i /home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean/Header/CorrectB.ilean -c /home/claude/erdos/spec/13-header/lean/.lake/build/ir/Header/CorrectB.c --setup /home/claude/erdos/spec/13-header/lean/.lake/build/ir/Header/CorrectB.setup.json --json
-error: Lean exited with code 137
+✔ [13/26] Built Header.ProgA (1.7s)
+✔ [15/26] Built Header.Registry (959ms)

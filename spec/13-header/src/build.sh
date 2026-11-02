@@ -23,19 +23,7 @@ for b in control a abf b; do
     "$NIM" c $NIMFLAGS "$NIMC" -d:bld=$b "--nimcache:$B/nimcache/$b" "-o:$B/bin/$b" "$HERE/bench.nim"
     objdump -d --no-show-raw-insn "$B/bin/$b" | awk '/^[0-9a-f]+ <.*>:$/ {p = ($2 ~ /^<loop_/)} p' > "$B/asm/$b.s"
 done
-# rule 6: no conditional moves (and no vector code) in the timed loops; and the branch-free row's add and subtract
-# loops have no conditional branch but the loop's own (one jump back per element, one per pass)
-fail=0
-for b in control a abf b; do
-    c=$(grep -c '\scmov' "$B/asm/$b.s" || true)
-    v=$(grep -cE '\s(v?p[a-z]+|[a-z]+p[sd])\s+%xmm' "$B/asm/$b.s" || true)
-    echo "$b: $c conditional moves, $v vector instructions in the loops"
-    [ "$c" = 0 ] && [ "$v" = 0 ] || fail=1
-done
-for f in loop_int_add loop_int_sub; do
-    n=$(awk -v f="<$f>:" '$2 == f {p = 1; next} /^[0-9a-f]+ <.*>:$/ {p = 0} p && /\tj[a-z]+ /' "$B/asm/abf.s" | grep -vc '\sjmp\s' || true)
-    echo "abf $f: $n conditional branches (the two loops' own: 2)"
-    [ "$n" = 2 ] || fail=1
-done
-[ $fail = 0 ] || { echo "rule 6 check FAILED"; exit 1; }
+# rule 6: no conditional moves and no vector code in the timed loops, and no branch of the operation's own in the
+# branch-free row's element loops (../test/asmcheck.py; -v lists each element loop)
+python3 "$HERE/../test/asmcheck.py"
 echo built

@@ -21,12 +21,7 @@ when bld == "control": import control
 elif bld in ["a", "abf"]: import designa
 elif bld == "b": import designb
 else: {.error: "unknown build".}
-when bld in ["a", "abf"]:
-  type Word = designa.Word
-elif bld == "b":
-  type Word = designb.Word
-else:
-  type Word = uint64
+import pseudo
 
 const capNs = 10_000_000_000'i64
 const opNames = ["add", "sub", "neg", "mul", "div", "collapse"]
@@ -38,31 +33,31 @@ var gN: int
 var gErr: Word        # abf: the sticky error word, ORed in after each pass
 
 # ------------------------------------------------------------------------------------------------ stored forms and loops
-template loopV(name: untyped; T: typedesc; A, B, R: untyped; expr: untyped) =
-  ## a value build (Control, B): one list of values per operand and for the results
+template loopV(name: untyped; T: typedesc; A, B, R: untyped; call: untyped) =
+  ## a value build (Control, B): one list of values per operand and for the results; the operation writes res[j]
   proc name(r: int) {.exportc, noinline.} =
     let a {.inject.} = A
     let b {.inject.} = B
-    let res = R
+    let res {.inject.} = R
     let n = gN
     for it in 0 ..< r:
       for j {.inject.} in 0 ..< n:
-        res[j] = expr
+        call
       barrier()
 
 when bld == "control":
   var gIA, gIB, gIR: ptr UncheckedArray[CI]
   var gCA, gCB, gCR: ptr UncheckedArray[CC]
-  loopV(loop_int_add, CI, gIA, gIB, gIR, ciAdd(a[j], b[j]))
-  loopV(loop_int_sub, CI, gIA, gIB, gIR, ciSub(a[j], b[j]))
-  loopV(loop_int_neg, CI, gIA, gIB, gIR, ciNeg(a[j]))
-  loopV(loop_int_mul, CI, gIA, gIB, gIR, ciMul(a[j], b[j]))
-  loopV(loop_int_div, CI, gIA, gIB, gIR, ciDiv(a[j], b[j]))
-  loopV(loop_cx_add, CC, gCA, gCB, gCR, ccAdd(a[j], b[j]))
-  loopV(loop_cx_sub, CC, gCA, gCB, gCR, ccSub(a[j], b[j]))
-  loopV(loop_cx_neg, CC, gCA, gCB, gCR, ccNeg(a[j]))
-  loopV(loop_cx_mul, CC, gCA, gCB, gCR, ccMul(a[j], b[j]))
-  loopV(loop_cx_div, CC, gCA, gCB, gCR, ccDiv(a[j], b[j]))
+  loopV(loop_int_add, CI, gIA, gIB, gIR, ciAdd(a[j], b[j], res[j]))
+  loopV(loop_int_sub, CI, gIA, gIB, gIR, ciSub(a[j], b[j], res[j]))
+  loopV(loop_int_neg, CI, gIA, gIB, gIR, ciNeg(a[j], res[j]))
+  loopV(loop_int_mul, CI, gIA, gIB, gIR, ciMul(a[j], b[j], res[j]))
+  loopV(loop_int_div, CI, gIA, gIB, gIR, ciDiv(a[j], b[j], res[j]))
+  loopV(loop_cx_add, CC, gCA, gCB, gCR, ccAdd(a[j], b[j], res[j]))
+  loopV(loop_cx_sub, CC, gCA, gCB, gCR, ccSub(a[j], b[j], res[j]))
+  loopV(loop_cx_neg, CC, gCA, gCB, gCR, ccNeg(a[j], res[j]))
+  loopV(loop_cx_mul, CC, gCA, gCB, gCR, ccMul(a[j], b[j], res[j]))
+  loopV(loop_cx_div, CC, gCA, gCB, gCR, ccDiv(a[j], b[j], res[j]))
   const loops = [[loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil],
                  [loop_cx_add, loop_cx_sub, loop_cx_neg, loop_cx_mul, loop_cx_div, nil]]
   var sI: array[3, seq[CI]]
@@ -114,26 +109,24 @@ elif bld in ["a", "abf"]:
       let aw {.inject.} = gAW
       let bh {.inject.} = gBH
       let bw {.inject.} = gBW
-      let rh = gRH
-      let rw = gRW
+      let rh {.inject.} = gRH
+      let rw {.inject.} = gRW
       let n = gN
       var err {.inject.} = 0'u64
       for it in 0 ..< r:
         for j {.inject.} in 0 ..< n:
-          let (h, w) = call
-          rh[j] = h
-          rw[j] = w
+          call
         barrier()
       gErr = gErr or err
   when bld == "a":
-    loopA(loop_int_add, false, aAdd(ah[j], aw[j], bh[j], bw[j]))
-    loopA(loop_int_sub, false, aSub(ah[j], aw[j], bh[j], bw[j]))
+    loopA(loop_int_add, false, aAdd(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))
+    loopA(loop_int_sub, false, aSub(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))
   else:
-    loopA(loop_int_add, false, aAddBF(ah[j], aw[j], bh[j], bw[j], err))
-    loopA(loop_int_sub, false, aSubBF(ah[j], aw[j], bh[j], bw[j], err))
-  loopA(loop_int_neg, true, aNeg(ah[j], aw[j]))
-  loopA(loop_int_mul, false, aMul(ah[j], aw[j], bh[j], bw[j]))
-  loopA(loop_int_div, false, aDiv(ah[j], aw[j], bh[j], bw[j]))
+    loopA(loop_int_add, false, aAddBF(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
+    loopA(loop_int_sub, false, aSubBF(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
+  loopA(loop_int_neg, true, aNeg(ah[j], aw[j], rh[j], rw[j]))
+  loopA(loop_int_mul, false, aMul(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))
+  loopA(loop_int_div, false, aDiv(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))
   # A's code is the same for integers and complex numbers on the axes: the complex rows run the same loops
   const loops = [[loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil],
                  [loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil]]
@@ -166,18 +159,18 @@ elif bld in ["a", "abf"]:
 else:
   var gIA, gIB, gIR: ptr UncheckedArray[BI]
   var gCA, gCB, gCR: ptr UncheckedArray[BC]
-  loopV(loop_int_add, BI, gIA, gIB, gIR, biAdd(a[j], b[j]))
-  loopV(loop_int_sub, BI, gIA, gIB, gIR, biSub(a[j], b[j]))
-  loopV(loop_int_neg, BI, gIA, gIB, gIR, biNeg(a[j]))
-  loopV(loop_int_mul, BI, gIA, gIB, gIR, biMul(a[j], b[j]))
-  loopV(loop_int_div, BI, gIA, gIB, gIR, biDiv(a[j], b[j]))
-  loopV(loop_int_collapse, BI, gIA, gIB, gIR, biCollapse(a[j]))
-  loopV(loop_cx_add, BC, gCA, gCB, gCR, bcAdd(a[j], b[j]))
-  loopV(loop_cx_sub, BC, gCA, gCB, gCR, bcSub(a[j], b[j]))
-  loopV(loop_cx_neg, BC, gCA, gCB, gCR, bcNeg(a[j]))
-  loopV(loop_cx_mul, BC, gCA, gCB, gCR, bcMul(a[j], b[j]))
-  loopV(loop_cx_div, BC, gCA, gCB, gCR, bcDiv(a[j], b[j]))
-  loopV(loop_cx_collapse, BC, gCA, gCB, gCR, bcCollapse(a[j]))
+  loopV(loop_int_add, BI, gIA, gIB, gIR, biAdd(a[j], b[j], res[j]))
+  loopV(loop_int_sub, BI, gIA, gIB, gIR, biSub(a[j], b[j], res[j]))
+  loopV(loop_int_neg, BI, gIA, gIB, gIR, biNeg(a[j], res[j]))
+  loopV(loop_int_mul, BI, gIA, gIB, gIR, biMul(a[j], b[j], res[j]))
+  loopV(loop_int_div, BI, gIA, gIB, gIR, biDiv(a[j], b[j], res[j]))
+  loopV(loop_int_collapse, BI, gIA, gIB, gIR, biCollapse(a[j], res[j]))
+  loopV(loop_cx_add, BC, gCA, gCB, gCR, bcAdd(a[j], b[j], res[j]))
+  loopV(loop_cx_sub, BC, gCA, gCB, gCR, bcSub(a[j], b[j], res[j]))
+  loopV(loop_cx_neg, BC, gCA, gCB, gCR, bcNeg(a[j], res[j]))
+  loopV(loop_cx_mul, BC, gCA, gCB, gCR, bcMul(a[j], b[j], res[j]))
+  loopV(loop_cx_div, BC, gCA, gCB, gCR, bcDiv(a[j], b[j], res[j]))
+  loopV(loop_cx_collapse, BC, gCA, gCB, gCR, bcCollapse(a[j], res[j]))
   const loops = [[loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, loop_int_collapse],
                  [loop_cx_add, loop_cx_sub, loop_cx_neg, loop_cx_mul, loop_cx_div, loop_cx_collapse]]
   var sI: array[3, seq[BI]]

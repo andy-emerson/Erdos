@@ -5,10 +5,10 @@ type Word* = uint64
 proc specError*() {.noinline, noreturn.} =
   ## an error of the spec (A: a sum across axes of two nonzero numbers, an expression): exit 3. C's own output and exit,
   ## so the call raises nothing and the operations around it keep no exception check
-  proc fputs(s: cstring; f: pointer): cint {.importc, header: "<stdio.h>".}
+  proc write(fd: cint; s: cstring; n: csize_t): int {.importc, header: "<unistd.h>".}
   proc exit(c: cint) {.importc, header: "<stdlib.h>", noreturn.}
-  var stderr {.importc, header: "<stdio.h>".}: pointer
-  discard fputs("error: sum across axes of two nonzero numbers (an expression)\n", stderr)
+  const msg = "error: sum across axes of two nonzero numbers (an expression)\n"
+  discard write(2, msg, csize_t(msg.len))
   exit(3)
 
 template opaque*(x: Word): Word =

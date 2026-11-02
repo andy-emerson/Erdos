@@ -5,8 +5,8 @@ one operation per pass through it) and lists, inside it:
 - the operation's conditional branches (not the loop's own test), each with its condition;
 - calls (the error path), conditional moves (cmov), vector-register instructions (xmm/ymm/zmm), and setcc (a compare
   written as a value).
-Rule 6 gate: no conditional move and no vector instruction in any loop, and in the branch-free row (abf) no conditional
-branch of the operation's own. Exit 1 if the gate fails.
+Rule 6 gate: no conditional move and no vector instruction in any loop, and in the branch-free rows (abf, amul, alg) no
+conditional branch of the operation's own. Exit 1 if the gate fails.
 
   python3 test/asmcheck.py [-v]     -v prints each element loop's instructions
 """
@@ -16,7 +16,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 ASM = HERE / "build" / "asm"
-BUILDS = ("control", "a", "abf", "anm", "amul", "b")
+BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b")
 INS = re.compile(r"^\s*([0-9a-f]+):\s+(\S+)\s*(.*)$")
 FUN = re.compile(r"^([0-9a-f]+) <(\S+)>:$")
 
@@ -143,7 +143,7 @@ def main():
                 print(f"{b:8} {name:18} no element loop found")
                 ok = False
                 continue
-            bad = inv["cmov"] or inv["vec"] or (b in ("abf", "amul") and inv["branches"])
+            bad = inv["cmov"] or inv["vec"] or (b in ("abf", "amul", "alg") and inv["branches"])
             ok &= not bad
             print(f"{b:8} {name:18} {inv['n']:3} instructions; operation branches {len(inv['branches'])}"
                   + (f" ({'; '.join(inv['branches'])})" if inv["branches"] else "")

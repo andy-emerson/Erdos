@@ -3,6 +3,7 @@
 #   -d:bld=a         Design A: a header list (uint8) and a word list
 #   -d:bld=abf       Design A's branch-free row
 #   -d:bld=amul      Design A's multiplication row (signs by multiplying by 1 - 2b, no branch)
+#   -d:bld=alg       Design A's header form (headers loaded sign-extended, the larger operand's direction, no branch)
 #   -d:bld=anm       Design A's narrow mask row (borrow by mask, other branches kept)
 #   -d:bld=b         Design B: a list of records of two words (four for complex)
 # Not a build: it reads a job file (one row: a kind, an operation and its operand pairs), converts the operands to the
@@ -20,7 +21,7 @@ import std/[strutils, os]
 
 const bld {.strdefine.} = "a"
 when bld == "control": import control
-elif bld in ["a", "abf", "anm", "amul"]: import designa
+elif bld in ["a", "abf", "anm", "amul", "alg"]: import designa
 elif bld == "b": import designb
 else: {.error: "unknown build".}
 import pseudo
@@ -101,7 +102,7 @@ when bld == "control":
   const bytesInt = sizeof(CI)
   const bytesCx = sizeof(CC)
 
-elif bld in ["a", "abf", "anm", "amul"]:
+elif bld in ["a", "abf", "anm", "amul", "alg"]:
   var gAH, gBH, gRH: ptr UncheckedArray[uint8]
   var gAW, gBW, gRW: ptr UncheckedArray[Word]
   template loopA(name: untyped; one: static bool; call: untyped) =
@@ -126,6 +127,9 @@ elif bld in ["a", "abf", "anm", "amul"]:
   elif bld == "amul":
     loopA(loop_int_add, false, aAddMul(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
     loopA(loop_int_sub, false, aSubMul(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
+  elif bld == "alg":
+    loopA(loop_int_add, false, aAddLg(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
+    loopA(loop_int_sub, false, aSubLg(ah[j], aw[j], bh[j], bw[j], err, rh[j], rw[j]))
   elif bld == "anm":
     loopA(loop_int_add, false, aAddNM(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))
     loopA(loop_int_sub, false, aSubNM(ah[j], aw[j], bh[j], bw[j], rh[j], rw[j]))

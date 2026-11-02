@@ -112,6 +112,33 @@ proc aAddMul*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var u
 proc aSubMul*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
   aAddMul(h1, m1, h2 xor 0x80'u8, m2, err, rh, rw)
 
+# ------------------------------------------------------------------------------------------------ add, header form (larger)
+proc aAddLgX(g1: Word; m1: Word; g2: Word; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
+  ## the header form's add (prior-art.md, "Header form"; lean/Header/LargerRow.lean, ProgLg.lean), no branch. g1, g2
+  ## are the headers loaded sign-extended (bit 7 fills bits 8-63):
+  ##   t = g1 xor g2, s = t sar 63 (all ones when the sign bits differ);
+  ##   r = m1 + (m2 xor s) - s: m1 + m2, or m1 - m2; L = 0 - (m1 < m2); b = s and L, the borrow;
+  ##   magnitude (r xor b) - b; direction g1 xor (t and L) (the larger operand's), stored as a byte;
+  ##   err = (t shr 6) and (m1 != 0) and (m2 != 0), two nonzero operands on different axes (sticky, as in abf).
+  ## Two zeros on different axes keep x's direction, where the tree gives y's (both are zero; LargerRow.lean).
+  let t = g1 xor g2
+  let s = cast[Word](ashr(cast[int64](t), 63))
+  let r = m1 + (m2 xor s) - s
+  let L = 0'u64 - opaque(Word(m1 < m2))   # opaque: gcc keeps the compare as a value (no cmov, no sbb)
+  let b = s and L
+  rw = (r xor b) - b
+  rh = uint8((g1 xor (t and L)) and 0xFF)
+  err = err or ((t shr 6) and Word(m1 != 0) and Word(m2 != 0))
+
+template sx8(h: uint8): Word = cast[Word](int64(cast[int8](h)))   # sign-extending byte load (movsx, ldrsb, lb)
+
+proc aAddLg*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
+  aAddLgX(sx8(h1), m1, sx8(h2), m2, err, rh, rw)
+
+proc aSubLg*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
+  ## h2 flipped by xor -128 on the sign-extended register (bits 8-63 stay equal to bit 7)
+  aAddLgX(sx8(h1), m1, sx8(h2) xor 0xFFFF_FFFF_FFFF_FF80'u64, m2, err, rh, rw)
+
 proc aSubBF*(h1: uint8; m1: Word; h2: uint8; m2: Word; err: var Word; rh: var uint8; rw: var Word) {.inline.} =
   aAddBF(h1, m1, h2 xor 0x80'u8, m2, err, rh, rw)
 

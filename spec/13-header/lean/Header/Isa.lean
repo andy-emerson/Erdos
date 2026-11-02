@@ -415,6 +415,8 @@ theorem select_ones' {s x : Nat} (hs : s < W) (hx : x < W) :
     s ^^^ ((x ^^^ s) &&& 18446744073709551615) = x := by
   rw [Nat.xor_comm x s]; exact select_ones hs hx
 
+theorem clockAdd_zero : clockAdd W 0 0 = 0 := by decide
+
 /-! ## Running a program symbolically
 
 `run_prog [facts]` unfolds the interpreter step by step with `simp`, using the given program, register file and

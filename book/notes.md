@@ -10,7 +10,7 @@ The machine counts in base 2, binary, and each binary digit is a bit, so a count
 
 $$2^{64} = 18446744073709551616,$$
 
-so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the modular clock has $2^4 = 16$ hours.
+so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the base-2 odometer counts from 0000 to 1111, and the modulus $2^4=16$ clock counts from 0 to 15.
 
 On the number line, 15 hours plus 3 hours is 18 hours. However, on a 16-hour clock 3 hours past 15 displays 2, and so we say that 18 is *congruent* to 2 mod 16.
 
@@ -29,7 +29,11 @@ The machine has an answer to both problems. We will start with the first.
 
 ## The machine's answer: signed integers
 
-The machine has a second way to read a word, beside reading it as a magnitude. Read **signed**, the upper half of the clock stands for the negative numbers: on a 16-hour clock, the hours 8 to 15 are read as $-8$ to $-1$. In binary, the top bit then counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**. Nothing about the clock changes, only the reading: $3 - 5$ still lands on 14, and 14 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays between $-2^{n-1}$ and $2^{n-1} - 1$. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for C below.
+Rather than counting up from 0, as we do when we measure a magnitude such as distance on an odometer, the machine can put zero in the middle of its range. A signed word of $n$ bits counts from $-2^{n-1}$ to $2^{n-1} - 1$: with 4 bits, from $-8$ to $7$; with 64 bits, from $-9{,}223{,}372{,}036{,}854{,}775{,}808$ to $9{,}223{,}372{,}036{,}854{,}775{,}807$. There are still $2^n$ values, shifted down by half.
+
+How it does this comes from running the odometer backward. One kilometer back from 000000 shows 999999, and two back shows 999998. The 4-bit odometer does the same: one below 0000 is 1111, and two below is 1110. The machine takes that reading at its word: 1111 is $-1$, 1110 is $-2$, and so on down to 1000, which is $-8$. Every word whose top bit is 1 is read as negative. Equivalently, the top bit counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**.
+
+Nothing about the counter changes, only the reading. $3 - 5$ still lands on 1110, and 1110 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays in range. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for C below.
 
 *(Placeholder: the operations, each the machine's own: add, subtract, negate, multiply, divide. Then the cost: a bit spent on the sign, and the lopsided range, with $-2^{n-1}$ having no negation and $-2^{n-1} / -1$ overflowing, a trap on x86-64.)*
 

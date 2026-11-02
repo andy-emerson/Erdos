@@ -57,7 +57,7 @@ theorem bfCx_run_add_2 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
       select_ones hs hd', select_ones' hs2 hsub1, select_ones' hs2 hsub2, select_ones' hs2 hm1, select_ones' hs2 hm2, wsub_zero hsub1, wsub_zero hsub2, wsub_zero hm1, wsub_zero hm2, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
       wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
-  all_goals decide
+  all_goals (simp only [clockAdd_zero]; decide)
 
 end PA
 end Header

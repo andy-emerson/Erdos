@@ -4,6 +4,10 @@ The four logical operators, AND, OR, XOR and NOT, work on words bit by bit. Each
 
 The examples use the 4-bit clock, where every number is a 4-bit word from 0000 to 1111 and arithmetic is mod 16.
 
+Shifts move bits. **shl** moves them left by $j$ places and fills with zeros, **shr** moves them right and fills with zeros, and **sar** moves them right and fills with copies of the top bit:
+
+$$x \text{ shl } j = 2^j x \bmod 16 \qquad x \text{ shr } j = \lfloor x / 2^j \rfloor \qquad x \text{ sar } j = \lfloor x / 2^j \rfloor \text{ for } x \text{ read as signed}$$
+
 A **flag** $k$ is 0 or 1. Its **mask** is
 
 $$m = 0 - k = \begin{cases} 0000 & k = 0 \\ 1111 & k = 1 \end{cases}$$
@@ -12,7 +16,7 @@ since $0 - 1$ on the clock is 15, which is 1111. Every bit of the mask equals $k
 
 Instructions: 1
 
-A mask can also come straight from the top bit of a word, with no flag. The arithmetic shift right, **sar**, moves every bit right and fills the empty places at the top with copies of the top bit. Shifting by 3 on 4 bits pushes out every bit except the top one and fills the word with it:
+A mask can also come straight from the top bit of a word, with no flag. Shifting by 3 with sar pushes out every bit except the top one and fills the word with it:
 
 $$x \text{ sar } 3 = \begin{cases} 0000 & \text{top bit of } x = 0 \\ 1111 & \text{top bit of } x = 1 \end{cases}$$
 
@@ -220,6 +224,14 @@ $$\text{NOT } x = 15 - x$$
 
 Instructions: 1
 
+### Negation
+
+Toggling every bit is one short of negation, so adding 1 completes it:
+
+$$-x = (\text{NOT } x) + 1$$
+
+Instructions: 2
+
 ### The opposite mask
 
 NOT turns a mask into the mask of the opposite flag:
@@ -307,6 +319,22 @@ XOR adds each bit without carrying. AND marks the bits that carry, and each carr
 ### Addition from AND and OR
 
 $$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
+
+Instructions: 3
+
+### Subtraction from logic
+
+Subtracting is adding the negation:
+
+$$a - b = a + (\text{NOT } b) + 1$$
+
+Instructions: 3, or 1 with the machine's subtraction, which works this way
+
+### Conditional subtraction
+
+With a mask in place of NOT, one line adds or subtracts:
+
+$$a + (b \text{ XOR } m) + k = \begin{cases} a + b & m = 0000,\ k = 0 \\ a - b & m = 1111,\ k = 1 \end{cases}$$
 
 Instructions: 3
 

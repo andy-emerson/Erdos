@@ -207,10 +207,11 @@ theorem xor2 : ∀ d : Fin 4, d.val ^^^ 2 = (d + 2).val := by decide
 theorem enc_flip (m : Nat) (d : Fin 4) (h : m < Q) : topEnc m d ^^^ SB = topEnc m (d + 2) := by
   rw [enc_comm, enc_comm, show SB = 2 ^ 62 * 2 + 0 from rfl, xor_parts (by qomega) (by decide), Nat.xor_zero, xor2]
 
-/-- **Top negate** is the reference negate: the word of `A.neg`. -/
-theorem topNeg_eq (m : Nat) (d : Fin 4) (h : m < Q) :
-    topNeg (topEnc m d) = topEnc (neg ⟨m, d⟩).m (neg ⟨m, d⟩).d := by
-  simp only [topNeg, neg]; exact enc_flip m d h
+/-- **Top negate** is the reference negate: round 1's `A.neg ⟨m, d⟩ = ⟨m, d + 2⟩` (by definition), encoded. -/
+theorem topNeg_eq (m : Nat) (d : Fin 4) (h : m < Q) : topNeg (topEnc m d) = topEnc m (d + 2) := by
+  rw [topNeg, enc_flip m d h]
+
+theorem neg_def (m : Nat) (d : Fin 4) : neg ⟨m, d⟩ = ⟨m, d + 2⟩ := rfl
 
 /-- **Top subtract**: the add with the second word's sign flipped, against round 1's `A.sub`. -/
 theorem topSub_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q) :

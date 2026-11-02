@@ -8,8 +8,8 @@ open A
 /-! ## Multiply and divide -/
 
 theorem enc_xor_low (m : Nat) (d : Fin 4) (h : m < Q) : topEnc m d ^^^ m = Q * d.val := by
-  rw [enc_comm, show m = 2 ^ 62 * 0 + m by omega, xor_parts (by qomega) (by qomega), Nat.xor_zero, Nat.xor_self]
-  simp only [Nat.add_zero, Nat.zero_add]; rfl
+  have e : topEnc m d ^^^ m = (2 ^ 62 * d.val + m) ^^^ (2 ^ 62 * 0 + m) := by simp [enc_comm]
+  rw [e, xor_parts (by qomega) (by qomega), Nat.xor_zero, Nat.xor_self, Nat.add_zero]; rfl
 
 /-- **Top multiply** gives the word of round 1's `A.mul` exactly, when the product fits. -/
 theorem topMul_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hp : m1 * m2 < Q) :
@@ -18,7 +18,7 @@ theorem topMul_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hp 
   have e1 : (m1 * m2) % W64 = m1 * m2 := Nat.mod_eq_of_lt (by qomega)
   have e2 : (Q * d1.val + Q * d2.val) % W64 = 2 ^ 62 * (d1 + d2).val := by
     rw [Fin.val_add]; have := d1.isLt; have := d2.isLt; qomega
-  rw [e1, e2, Nat.or_comm, or_low (by qomega), enc_comm]; omega
+  rw [e1, e2, Nat.or_comm, or_low (by qomega), enc_comm]
 
 /-- Two nonzero factors sum to at most their product plus one. -/
 theorem add_le_mul_succ {a b : Nat} (ha : 1 ≤ a) (hb : 1 ≤ b) : a + b ≤ a * b + 1 := by

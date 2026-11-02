@@ -89,8 +89,10 @@ macro_rules
     intro h1 h2 m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
     have g1 : wsxb h1 < W := sx_lt h1
     have g2 : wsxb h2 < W := sx_lt h2
-    have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by decide)
-    simp only [lgOut_eq, ite_true, ite_false, Bool.false_eq_true, lg_core _ _ _ _ g1 g2, lg_core _ _ _ _ g1 g2']
+    have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by unfold W; omega)
+    first
+      | rw [lgOut_eq, if_neg Bool.false_ne_true, lg_core _ _ _ _ g1 g2]
+      | rw [lgOut_eq, if_pos rfl, lg_core _ _ _ _ g1 g2']
     cases hst : stepN (lgRow _ _) $k (start (regs6 xh xm yh ym zh zm) mem) with
     | none => simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6] at hst
     | some S =>
@@ -102,7 +104,7 @@ macro_rules
       · simp [run, ← fpc, lgRow, preL, lgFlag]
       · rw [← ftr]; rfl
       · rw [← fsto]
-      · first | (intro hc; exact hc.elim) | rw [← f21] | (intro _; rw [← f21])))
+      · first | (intro hc; exact absurd hc Bool.false_ne_true) | (intro _; rw [← f21])))
 
 theorem lgGen_int_add : LgGen false false := by lg_tac 18
 theorem lgGen_int_sub : LgGen false true := by lg_tac 19

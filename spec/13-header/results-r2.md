@@ -131,6 +131,8 @@ The paths of B's complex division are the nine whose operands lie on axes (at mo
 | A-bf | int sub | one | 24 | 0 (0) | 0 | 4 | 2 | 28 | 23 | 24 |  |
 | A-bf | cx add | one | 35 | 0 (0) | 0 | 4 | 2 | 47 | 37 | 35 |  |
 | A-bf | cx sub | one | 36 | 0 (0) | 0 | 4 | 2 | 48 | 38 | 36 |  |
+| A-mul | add | one | 35 | 0 (0) | 0 | 4 | 2 | 45 | 37 | 35 |  |
+| A-mul | sub | one | 36 | 0 (0) | 0 | 4 | 2 | 46 | 38 | 36 |  |
 | B | int add | one | 8 | 0 (0) | 0 | 4 | 2 | 8 | 8 | 8 |  |
 | B | int sub | one | 8 | 0 (0) | 0 | 4 | 2 | 8 | 8 | 8 |  |
 | B | int neg | one | 4 | 0 (0) | 0 | 2 | 2 | 4 | 4 | 4 |  |
@@ -385,6 +387,16 @@ The builds in `build/bin/` (from `src/build.sh`, gcc -O2 with if-conversion off)
 ## 9. Checks
 
 `lake build` builds every module with no errors. No file in the build contains `sorry`, `admit` or `native_decide`. `#print axioms` was run on all 313 round 2 theorems: 278 depend on `propext`, `Quot.sound` and `Classical.choice` or a subset of them, and 35 on no axiom.
+
+## 10. A's multiplication row (added Nov 2)
+
+The author's request: `aAddMul` / `aSubMul` of `src/designa.nim`, A's add with the notes' exponent rule as code and no branch. Signs are applied by multiplying by `1 − 2k` (1 or −1 on the 64-bit clock) and the cross-axis choice of direction by multiplying by a 0/1 flag; headers carry no `and D`.
+
+Round 1 (`lean/Header/MulRow.lean`): `addMul_eq` proves that the formula, on bytes and 64-bit words, gives round 1's `A.add` (header `hb d`, word `m`) with `err = 0` whenever `A.add` gives a number, and `err = 1` exactly when it gives an expression; `subMul_eq` does the same for subtraction against `A.sub`.
+
+Round 2 (`lean/Header/ProgMul.lean`, `MR_*.lean`, `MulRun.lean`): the program `mulRow` is 35 steps for add and 36 for subtract (the extra `xori h2, 0x80`), one path, 4 loads and 2 stores; `1 − 2k` is `slli; neg; addi 1`, and the error flag is left in register 21, computed fresh. `mulRow_run` proves, for every input, that it runs every instruction once, leaves register 21 at 1 exactly when `A.add` (or `A.sub`) gives an expression, and otherwise 0 with round 1's result stored; it is assembled from 160 case lemmas, each cut in two at instruction 20 (`run_split`). `mulRow_no_branch` proves there is no conditional branch or jump; its rows are in the §4 table (`table_eq`): 35/36 steps, x86-64 45/46, ARM64 37/38, RV64IM 35/36. `#print axioms` on the 167 new theorems: `propext` and `Quot.sound`, or `propext` alone.
+
+Against `build/asm/amul.s` (gcc's `loop_int_add`, 52 instructions including the loop's 3): 49 for the operation against my x86-64 column's 45. The differences: gcc reloads three list pointers from the stack each pass (register pressure, 3 loads my count does not have); it keeps the error flag sticky (`or` into a register, 1 more); it forms `1 − 2k` as `lea; mov 1; sub` and the zero tests with `test; setne`/`sete` (`setcc` is the `sltu` step; no flag is used by arithmetic); it drops the `and 0xFF` before the byte store, which only the low byte matters for; and it uses three `imul` as the program does. No conditional branch, no `cmov`, no `adc` or `sbb`.
 
 ## Appendix: the programs
 

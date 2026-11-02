@@ -198,6 +198,8 @@ def table : List (String × String × String × Isa.Counts × Nat × Nat × Nat 
   ("A-bf", "int sub", "one", ⟨24, 0, 0, 0, 4, 2⟩, 28, 23, 24, []),
   ("A-bf", "cx add", "one", ⟨35, 0, 0, 0, 4, 2⟩, 47, 37, 35, []),
   ("A-bf", "cx sub", "one", ⟨36, 0, 0, 0, 4, 2⟩, 48, 38, 36, []),
+  ("A-mul", "add", "one", ⟨35, 0, 0, 0, 4, 2⟩, 45, 37, 35, []),
+  ("A-mul", "sub", "one", ⟨36, 0, 0, 0, 4, 2⟩, 46, 38, 36, []),
   ("B", "int add", "one", ⟨8, 0, 0, 0, 4, 2⟩, 8, 8, 8, []),
   ("B", "int sub", "one", ⟨8, 0, 0, 0, 4, 2⟩, 8, 8, 8, []),
   ("B", "int neg", "one", ⟨4, 0, 0, 0, 2, 2⟩, 4, 4, 4, []),
@@ -273,6 +275,10 @@ theorem all_loads_first : (registry.all fun (_, _, p, paths) => paths.all fun (_
 /-- **The branch-free row has no conditional branch** (and no jump): every instruction of its four programs, and of
 A's negate, multiply and divide, which it shares. -/
 theorem bf_no_branch : ([PA.bfInt false, PA.bfInt true, PA.bfCx false, PA.bfCx true, PA.neg, PA.mul, PA.div].all
+    fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
+
+/-- **The multiplication row has no conditional branch** (and no jump). -/
+theorem mulRow_no_branch : ([PA.mulRow false, PA.mulRow true].all
     fun p => p.all fun i => !i.isBranch && !i.isJump) = true := by decide
 
 /-- C's negate, multiply and divide, and every program of Control and B but complex division, collapse and B's

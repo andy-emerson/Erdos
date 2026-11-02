@@ -42,3 +42,13 @@ import Header.BF_sub_2
 import Header.BF_sub_3
 import Header.BfCx
 import Header.MulRow
+import Header.MulRun
+import Header.ProgMul
+import Header.MR_add_0
+import Header.MR_add_1
+import Header.MR_add_2
+import Header.MR_add_3
+import Header.MR_sub_0
+import Header.MR_sub_1
+import Header.MR_sub_2
+import Header.MR_sub_3

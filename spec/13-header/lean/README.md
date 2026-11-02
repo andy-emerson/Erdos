@@ -427,3 +427,12 @@ err); `subMul` is the row with `h2 xor 0x80`.
 | `sgn_0`, `sgn_1`, `mul_ones` | `1 − 2k` on the clock is 1 or `2^64 − 1`, and multiplying by `2^64 − 1` is negation mod `2^64`. |
 
 `#print axioms`: `addMul_eq` and `subMul_eq` use `propext`, `Classical.choice`, `Quot.sound`; the helpers fewer or none.
+
+## A's multiplication row, round 2 (`Header/ProgMul.lean`, `Header/MR_*.lean`, `Header/MulRun.lean`)
+
+| Theorem | Statement |
+| --- | --- |
+| `PA.mulRow_run` | For every input, `mulRow sub` runs every instruction once; register 21 is 1 exactly when round 1's `A.add W x (yEff sub y)` gives an expression, else 0 and the stores are its header byte and magnitude. Assembled from 160 case lemmas `mulRow_{add,sub}_d1_d2_cK`, each split at instruction 20 by `Isa.run_split`. |
+| `Reg.mulRow_no_branch` | The row has no conditional branch and no jump. |
+| `Reg.table_eq` | Now includes the row's two lines (35/36 steps; x86-64 45/46, ARM64 37/38, RV64IM 35/36). |
+| `PA.hdr_0` … `PA.hdr_3` | The header bytes as literals (used to keep the kernel's checks small). |

@@ -407,6 +407,14 @@ theorem wsub_3_1 : wsub 3 1 = 2 := by decide
 theorem wsub_3_2 : wsub 3 2 = 1 := by decide
 theorem wsub_3_3 : wsub 3 3 = 0 := by decide
 
+/-- `wadd` of two small constants. -/
+theorem wadd_lit {a b : Nat} (h : a + b < 512) : wadd a b = a + b := by unfold wadd W; omega
+
+/-- Selection by the mask, the other operand order: `s xor ((x xor s) and ones) = x`. -/
+theorem select_ones' {s x : Nat} (hs : s < W) (hx : x < W) :
+    s ^^^ ((x ^^^ s) &&& 18446744073709551615) = x := by
+  rw [Nat.xor_comm x s]; exact select_ones hs hx
+
 /-! ## Running a program symbolically
 
 `run_prog [facts]` unfolds the interpreter step by step with `simp`, using the given program, register file and

@@ -96,6 +96,9 @@ theorem bfInt_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm
   have hs := wadd_lt m1 m2
   have hd := wsub_lt' m1 m2
   have hd' := wneg_lt (wsub m1 m2)
+  have hsub1 : m1 - m2 < W := by omega
+  have hsub2 : m2 - m1 < W := by omega
+  have hs2 : clockAdd W m1 m2 < W := by rw [← wadd_clock hm1 hm2]; exact wadd_lt _ _
   cases sub <;> rcases hd1 with rfl|rfl <;> rcases hd2 with rfl|rfl
   all_goals by_cases h : m1 < m2
   all_goals first | (have h' : ¬ m2 ≤ m1 := by omega) | (have h' : m2 ≤ m1 := by omega)
@@ -103,7 +106,7 @@ theorem bfInt_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm
   all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
   all_goals run_prog [bfInt, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
-      select_ones hs hd', wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
+      select_ones hs hd', select_ones', wadd_lit, mod_W_small, wsub_zero, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
       wneg_wsub hm1 hm2, h, h', h'']
 
 /-- **Branch-free complex add and subtract.** One path. Register 21 ends as the error flag: 1 exactly when round 1

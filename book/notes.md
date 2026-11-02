@@ -2,14 +2,28 @@
 
 *Second edition, first draft (Nov 1, 2026): the first edition ([`notes-designs-a-b.md`](notes-designs-a-b.md)) reordered, without Design B. Order: the problem; the machine's answer; magnitude and direction on the line; the plane, with the direction in the word (C) and in a header (A); the trade-off. Placeholders mark what is still to be written.*
 
-Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. It counts up from $0000$ to $1111$; one more rolls it over to $0000$, and rolling back below $0000$ shows $1111$. Read as numbers, $n$ binary digits show the $2^n$ values from 0 to $2^n - 1$, and the rollover is arithmetic mod $2^n$. That is the same situation in a more useful form, and from here on these notes picture it as a clock with $2^n$ hours. On a 16-hour clock ($n = 4$), $15 + 1 = 16 \equiv 0$ and $3 - 5 = -2 \equiv 14 \pmod{16}$.
+Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. If you have a 6-digit odometer set to measure kilometers, each kilometer traveled turns the rightmost digit by one, rolling over the next digit every ten kilometers, and so on. The first kilometer traveled takes it from 000000 to 000001. Once you have traveled 999,999 kilometers, there are no more digits to roll over, so one more kilometer turns it back to 000000. Digital clocks work the same way, with the minutes rolling over from 59 to 00. (Hours on a digital clock work this way too, but convention has them run from 1 to 12 instead of 0 to 11.)
 
-Modular arithmetic is circular: like the face of an analog clock, it comes back around to where it began. The arithmetic we want is linear: the number line runs forever in both directions. Turning modular arithmetic into linear arithmetic meets two problems, one at each end of the machine's range.
+The number of positions a counter passes through before it returns to 0 is its **modulus**, $N$. Minutes have modulus 60, and hours modulus 12. The odometer counts in base 10, ten positions per digit, but as a whole it rolls over at $N = 10^6 = 1{,}000{,}000$: the modulus is the base raised to the number of digits. Modular arithmetic works the same for every modulus, which is why an analog clock can draw it as a literal circle, cut into $N$ segments.
 
-- **Below zero.** The number line has negative numbers, and modular arithmetic has none: $3 - 5$ lands on 14, not on $-2$.
-- **Above $2^n - 1$.** The number line has no largest number, and modular arithmetic does: $15 + 1$ lands on 0, not on 16. This is **overflow**.
+The machine counts in base 2, binary, and each binary digit is a bit, so a counter of $n$ bits has modulus $N = 2^n$. A byte is 8 bits, with modulus $2^8 = 256$: it holds every whole number from 0 to 255. On a 64-bit machine a word is 8 bytes, 64 bits, with modulus
 
-The machine already has an answer to the first problem, and it is the place to start.
+$$2^{64} = 18{,}446{,}744{,}073{,}709{,}551{,}616,$$
+
+so a word counts from 0 to 18,446,744,073,709,551,615. For demonstration, 4 bits are enough: the binary odometer counts from 0000 to 1111, and the clock has $2^4 = 16$ hours. On the number line, 15 hours plus 3 hours is 18 hours, but the clock shows 2, and so we say that 18 is *congruent* to 2 mod 16.
+
+$$15 + 3 = 18 \equiv 2 \pmod{16}$$
+
+Similarly, if the 16-hour clock reads 4 and we ask what time it was 6 hours ago, that is subtraction, and it rolls back the other way.
+
+$$4 - 6 = -2 \equiv 14 \pmod{16}$$
+
+So machine arithmetic is modular arithmetic, and modular arithmetic is circular, like the face of an analog clock. The arithmetic we usually want is linear: the number line runs forever in both directions. Translating the line onto the clock is straightforward, as above. Translating the clock back to the line meets two problems, one at each end of the machine's range.
+
+- **Below zero.** The number line has negative numbers, and the clock carries no sign: $3 - 5$ lands on 14, and nothing on the clock says whether 14 means 14 or $-2$.
+- **Above $2^n - 1$.** The number line has no largest number, and the clock does: $15 + 1$ lands on 0, not on 16. This is called **overflow**.
+
+The machine has an answer to both problems. We will start with the first.
 
 ## The machine's answer: signed integers
 
@@ -261,6 +275,7 @@ $$(m_1, d_1) / (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 
 Points raised (Nov 1, 2026) and set aside for now.
 
+- **The machine's answer to overflow.** The carry and overflow flags, which report when a result passes the end of the range.
 - **The lopsided range.** Two's complement has one more negative value than positive, so $-2^{n-1}$ in Control and $-2^{n-2}$ in Design C have no negation, and dividing either by $-1$ overflows. Design A has no such value, since its magnitudes are symmetric about zero.
 
 Expressions in Design A:

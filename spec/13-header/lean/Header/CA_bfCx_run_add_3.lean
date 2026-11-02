@@ -30,6 +30,9 @@ theorem bfCx_run_add_3 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
   have hs := wadd_lt m1 m2
   have hd := wsub_lt' m1 m2
   have hd' := wneg_lt (wsub m1 m2)
+  have hsub1 : m1 - m2 < W := by omega
+  have hsub2 : m2 - m1 < W := by omega
+  have hs2 : clockAdd W m1 m2 < W := by rw [← wadd_clock hm1 hm2]; exact wadd_lt _ _
   obtain rfl := hk
   rcases fin4_cases d2 with rfl|rfl|rfl|rfl
   all_goals by_cases h : m1 < m2
@@ -42,7 +45,7 @@ theorem bfCx_run_add_3 (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym 
   all_goals simp only [yEff, A.add, A.neg, A.dirCheck]
   all_goals run_prog [bfCx, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
-      select_ones hs hd', wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
+      select_ones hs hd', select_ones', wadd_lit, mod_W_small, wsub_zero, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
       wneg_wsub hm1 hm2, Nat.lt_one_iff, *]
 
 end PA

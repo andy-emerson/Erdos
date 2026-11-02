@@ -42,7 +42,7 @@ def reads : Instr → List Reg
   | add _ a b | sub _ a b | and _ a b | or _ a b | xor _ a b | sll _ a b | srl _ a b | sra _ a b
   | sltu _ a b | mul _ a b | mulhu _ a b | divu _ a b | div _ a b => [a, b]
   | neg _ a | addi _ a _ | andi _ a _ | ori _ a _ | xori _ a _ | slli _ a _ | srli _ a _ | srai _ a _
-  | sltiu _ a _ | mv _ a | ld _ a _ | lbu _ a _ => [a]
+  | sltiu _ a _ | mv _ a | ld _ a _ | lbu _ a _ | lb _ a _ => [a]
   | sd a b _ | sb a b _ | beq a b _ | bne a b _ | bltu a b _ | bgeu a b _ => [a, b]
   | beqz a _ | bnez a _ => [a]
   | _ => []
@@ -51,7 +51,7 @@ def reads : Instr → List Reg
 def writes : Instr → Option Reg
   | add d .. | sub d .. | and d .. | or d .. | xor d .. | sll d .. | srl d .. | sra d .. | sltu d .. | mul d ..
   | mulhu d .. | divu d .. | div d .. | neg d .. | addi d .. | andi d .. | ori d .. | xori d .. | slli d ..
-  | srli d .. | srai d .. | sltiu d .. | mv d .. | ld d .. | lbu d .. | li d .. => some d
+  | srli d .. | srai d .. | sltiu d .. | mv d .. | ld d .. | lbu d .. | lb d .. | li d .. => some d
   | _ => none
 
 /-- An ALU instruction that sets x86 flags from its result. -/

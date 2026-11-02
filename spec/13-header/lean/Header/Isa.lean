@@ -15,8 +15,9 @@ conditional move or select, and a 128-by-64-bit divide.
 * A register holds a word, a natural number below `W = 2^64`. Register 0 always reads 0 (RISC-V `x0`, ARM64
   `xzr`); writes to it are discarded. There are as many registers as a program names.
 * Memory is a map from addresses to cells. A word load or store moves one 64-bit cell; a byte load or store moves one
-  8-bit cell (`lbu` reads the cell mod 256, `sb` writes the value mod 256). The model does not split a word into its
-  eight bytes, so it says nothing about a word and a byte at overlapping addresses; no program here has one.
+  8-bit cell (`lbu` reads the cell mod 256, `lb` reads it sign-extended, `sb` writes the value mod 256). The model
+  does not split a word into its eight bytes, so it says nothing about a word and a byte at overlapping addresses; no
+  program here has one.
 * An address is a register plus a constant offset.
 * A branch target is an instruction index. Every branch and jump in every program here goes forward, so a program
   runs at most once through each instruction.
@@ -70,6 +71,10 @@ def wdiv (a b : Nat) : Nat := ofInt (Int.tdiv (toInt a) (toInt b))
 gives 0 (ARM64). No program divides by zero. -/
 def wdivu (a b : Nat) : Nat := a / b
 
+/-- A byte cell read sign-extended into a word (`lb`): the byte `v mod 256`, plus `2^64 − 256` when its bit 7 is
+set. -/
+def wsxb (v : Nat) : Nat := if v % 256 < 128 then v % 256 else v % 256 + (W - 256)
+
 /-- Arithmetic shift right by `k` (`sar`, `asr`, `sra`). -/
 def wsra (a k : Nat) : Nat := ofInt (toInt a / (2 ^ k : Int))
 
@@ -117,6 +122,8 @@ inductive Instr where
   | ld (rd rb : Reg) (off : Nat)
   /-- 8-bit load, zero-extended -/
   | lbu (rd rb : Reg) (off : Nat)
+  /-- 8-bit load, sign-extended (`lb`, ARM64 `ldrsb`, x86-64 `movsx`): bit 7 fills bits 8–63 -/
+  | lb (rd rb : Reg) (off : Nat)
   /-- 64-bit store `mem[rb + off] ← rs` -/
   | sd (rs rb : Reg) (off : Nat)
   /-- 8-bit store of the low byte -/
@@ -146,7 +153,7 @@ def isJump : Instr → Bool
   | _ => false
 
 def isLoad : Instr → Bool
-  | ld .. | lbu .. => true
+  | ld .. | lbu .. | lb .. => true
   | _ => false
 
 def isStore : Instr → Bool
@@ -213,6 +220,7 @@ def exec (s : St) : Instr → St
   | .div d a b => s.set d (wdiv (s.get a) (s.get b))
   | .ld d b o => s.set d (s.mem (s.get b + o))
   | .lbu d b o => s.set d (s.mem (s.get b + o) % 256)
+  | .lb d b o => s.set d (wsxb (s.mem (s.get b + o)))
   | .sd a b o => s.store (s.get b + o) (s.get a)
   | .sb a b o => s.store (s.get b + o) (s.get a % 256)
   | .beq a b t => s.goto (s.get a = s.get b) t

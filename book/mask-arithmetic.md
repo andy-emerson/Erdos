@@ -54,7 +54,25 @@ For example, with $x = 0110$ (6):
 
 $$0110 \text{ AND } m = \begin{cases} 0000 & m = 0000 \\ 0110 & m = 1111 \end{cases}$$
 
-**Conditional deletion.** AND with the mask is the whole formula: one instruction keeps $x$ when $k = 1$ and turns it into 0 when $k = 0$.
+**Conditional deletion.** AND with the mask is the whole formula, one instruction:
+
+$$x \text{ AND } m = \begin{cases} 0 & m = 0000,\ k = 0 \\ x & m = 1111,\ k = 1 \end{cases}$$
+
+For example, take $x = 0110$ (6). With $k = 0$, the mask is $m = 0000$, and the word is deleted:
+
+$$\begin{aligned}
+x \text{ AND } m &= 0110 \text{ AND } 0000 \\
+&= 0000 \\
+&= 0
+\end{aligned}$$
+
+With $k = 1$, the mask is $m = 1111$, and the word is kept:
+
+$$\begin{aligned}
+x \text{ AND } m &= 0110 \text{ AND } 1111 \\
+&= 0110 \\
+&= 6
+\end{aligned}$$
 
 ## Arithmetic operations
 

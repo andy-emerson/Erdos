@@ -10,6 +10,7 @@ exactly (axis kept); overflow tests must be exact (no false alarms, nothing miss
 are checked by computing the machine's signed-overflow flag of the named add/sub instruction.
 
   python3 -I check.py          # n = 4, 6, 8 exhaustive, then 200,000 random n = 64 cases
+  python3 -I generalize.py add-L5-hits.txt   # every length-5 add the superoptimizer found, on n = 6, 8, 64
 """
 import random
 import sys
@@ -60,6 +61,9 @@ class L:
         s = (w1 + w2) & self.F
         e = (s ^ w1) & self.G                     # bit G = axis XOR carry out of the count
         return s ^ e ^ ((e << 1) & self.F)
+    def add_carry_neg(self, w1, w2):              # 5: add, xor, and, neg, xor  (-(delta G) = delta K)
+        s = (w1 + w2) & self.F
+        return s ^ ((0 - ((s ^ w1) & self.G)) & self.F)
     def add_carry3_flag(self, w1, w2): return self.of_add(w1, w2)   # expected WRONG
     def add_orand(self, w1, w2):                  # 6: or, and, add | xor, and, xor  (also the cross-axis bridge)
         b = ((w1 | self.G) + (w2 & ~self.G & self.F)) & self.F
@@ -155,7 +159,7 @@ def check(n, pairs, words):
             s, d = v1 + v2, v1 - v2
             ws, wd = Lw.enc(s, a1), Lw.enc(d, a1)
             os_, od = int(not Lw.inrange(s)), int(not Lw.inrange(d))
-            for f in ('add_bridge', 'add_bridge_b', 'add_readd', 'add_precarry', 'add_carry3', 'add_orand', 'add_pdep'):
+            for f in ('add_bridge', 'add_bridge_b', 'add_readd', 'add_precarry', 'add_carry3', 'add_carry_neg', 'add_orand', 'add_pdep'):
                 r = getattr(Lw, f)(w1, w2)
                 if r != ws: bad(f, w1, w2)
                 if Lw.ovf_add(w1, w2, r) != os_: bad('ovf_add/' + f, w1, w2)

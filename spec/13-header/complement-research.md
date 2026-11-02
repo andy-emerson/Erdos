@@ -27,7 +27,9 @@ $s = w_1 + w_2$ on the same axis puts $a + a + \gamma$ in the axis column, where
 
 Both are wrong exactly when $\delta = a \text{ XOR } \gamma = 1$. Then $s$ is off in bits $n-1$ and $n-2$ together: $r = s \text{ XOR } (\delta \cdot K)$.
 
-**One add can never be enough.** For the carry into bit $n-1$ to equal $\gamma$, the two addends' axis bits must differ (one 0, one 1). Then that column's output is $\text{NOT } \gamma$, which is not $a$. So every correct sequence is one add with a bridge (or none), plus a step that writes $a$ back into bit $n-2$. This is the carry-skip of a hardware adder, over one bit.
+**One add can never be enough.** For the carry into bit $n-1$ to equal $\gamma$, the two addends' axis bits must differ (one 0, one 1). Then that column's output is $\text{NOT } \gamma$, which is not $a$. So a single add with fixed inputs cannot be right on all inputs. A correct sequence needs one of two things:
+- a step after the add that writes $a$ back into bit $n-2$: the bridge, a carry-skip over one bit;
+- or a step before it that learns $\gamma$, so that the final add's axis column can be set up per input: the re-add.
 
 **Rotations cannot help.** Cyclically the bits run $c_0, \ldots, c_{n-3}, G, S$ and back to $c_0$. A rotation keeps that cyclic order. So $G$ always either sits inside the carry chain from $c_{n-3}$ to $S$, or the chain is cut by the word's end. **SWAR partitioned add** (Warren §2-18, `(x AND NOT H) + (y AND NOT H) XOR ((x XOR y) AND H)`) stops carries at $H$. Here the carry must *skip* $G$, not stop there, so it does not apply.
 
@@ -35,19 +37,27 @@ Both are wrong exactly when $\delta = a \text{ XOR } \gamma = 1$. Then $s$ is of
 
 ### Formulas
 
-| Name | Formula | Count | OF/V of the add instruction | Exact overflow test on $r$ |
+| Name | Formula | Count | Machine OF/V valid as-is? | Exact overflow test on $r$ |
 | --- | --- | --- | --- | --- |
-| **bridge** | $b = (w_1 \text{ XOR } G) + w_2$; $\ r = b \text{ XOR } \big((b \text{ XOR } w_2) \text{ AND } G\big)$ | **5** | **valid as-is** | yes |
-| bridge, merge form | $b$ as above; $\ r = w_1 \text{ XOR } \big((w_1 \text{ XOR } b) \text{ AND NOT } G\big)$ | 5 | valid | yes |
-| carry pair | $s = w_1 + w_2$; $\ e = (s \text{ XOR } w_1) \text{ AND } G$; $\ r = s \text{ XOR } e \text{ XOR } (e \text{ shl } 1)$ | 6 (5 with x86 `lea e3,[e+2e]`; ARM64 `eor r,r,e,lsl #1`) | **wrong** (carry into the top is $a$) | yes |
-| or/and bridge | $b = (w_1 \text{ OR } G) + (w_2 \text{ AND NOT } G)$; $\ r = b \text{ XOR } ((b \text{ XOR } w_1) \text{ AND } G)$ | 6 | valid | yes |
+| **bridge** | $b = (w_1 \text{ XOR } G) + w_2$; $\ r = b \text{ XOR } \big((b \text{ XOR } w_2) \text{ AND } G\big)$ | **5** | **yes**, on the `add` (2nd instruction) | yes |
+| bridge, merge form | $b$ as above; $\ r = w_1 \text{ XOR } \big((w_1 \text{ XOR } b) \text{ AND NOT } G\big)$ | 5 | yes, 2nd | yes |
+| **re-add** (found by the search) | $\delta G = \big(w_1 \text{ XOR } (w_1 + w_2)\big) \text{ AND } G$; $\ r = w_2 + (w_1 \text{ XOR } \delta G)$ | **5** | **yes**, on the **last** `add` | yes |
+| pre-carry (found by the search) | $\delta G = \big(w_2 + (w_1 \text{ AND } C)\big) \text{ AND } G$; $\ r = w_2 + (w_1 \text{ XOR } \delta G)$ | 5 | yes, last | yes |
+| carry pair, neg form (found by the search) | $s = w_1 + w_2$; $\ r = s \text{ XOR } \big(0 - ((s \text{ XOR } w_1) \text{ AND } G)\big)$ | 5 | **no** (carry into the top is $a$) | yes |
+| carry pair, shift form | $s$ as above, $e = (s \text{ XOR } w_1) \text{ AND } G$; $\ r = s \text{ XOR } e \text{ XOR } (e \text{ shl } 1)$ | 6 (x86 `lea` 3e: 5) | no | yes |
+| or/and bridge | $b = (w_1 \text{ OR } G) + (w_2 \text{ AND NOT } G)$; $\ r = b \text{ XOR } ((b \text{ XOR } w_1) \text{ AND } G)$ | 6 | yes, 3rd | yes |
 
 - In the bridge, $w_1 \text{ XOR } G$ makes the axis column $(1-a) + a = 1$, so the count's carry $\gamma$ passes to bit $n-1$ and bit $n-2$ comes out as $\text{NOT } \gamma$. The fix copies $a$ back. In the bridge $b \text{ XOR } w_2$, $w_1$ may stand in for $w_2$.
 - The bridge's add computes exactly the sign column of an $(n-1)$-bit add: sign bits $s_1$ and $s_2$, carry-in $\gamma$. So:
   - its **x86 OF / ARM64 V is the signed overflow of $v_1 + v_2$**, on either axis;
   - its **CF/C is the $(n-1)$-bit carry out**.
 - The fix never touches bit $n-1$. So the sign test may use $b$ or $r$.
-- **Overflow behaviour** (all four formulas): $r$ is the sum wrapped like an $(n-1)$-bit signed integer, on the operands' axis. For example, $3 + 1 = -4$ on 4 bits. The axis is never corrupted. This matches int64's wrap, with $n-1$ bits.
+- **Re-add and pre-carry: one plain add, done twice.**
+  - The first add finds $\delta = a \text{ XOR } \gamma$ (bit $n-2$ of $w_1 + w_2$ is $\gamma$, of $w_2 + c_1$ is $a \text{ XOR } \gamma$).
+  - Flipping $w_1$'s axis bit when $\delta = 1$ makes the second, ordinary add correct. When $\delta = 0$ the axis column is $a + a + a$, which gives $a$ and carries $\gamma = a$. When $\delta = 1$ it is $(1-a) + a + \gamma$, which gives $\text{NOT } \gamma = a$ and carries $\gamma$.
+  - So the result comes straight out of an `add`, and **that add's OF/V/CF are the true $(n-1)$-bit flags**. `add; jo` are adjacent. (Intel does not macro-fuse `add` with `jo`; `jc`/`jl` do fuse, *from memory*.)
+- **Carry pair, neg form.** $-(\delta G) = \delta K \pmod{2^n}$, so one `neg` flips both bits.
+- **Overflow behaviour** (every formula in the table): $r$ is the sum wrapped like an $(n-1)$-bit signed integer, on the operands' axis. For example, $3 + 1 = -4$ on 4 bits. The axis is never corrupted. This matches int64's wrap, with $n-1$ bits.
 
 **Branch-free overflow test**, exact on both axes:
 - $o = \big((w_1 \text{ XOR } r) \text{ AND } (w_2 \text{ XOR } r)\big) \text{ sar } (n-1)$: 4 as a mask, 3 to a sign for `bltz`/`slt`.
@@ -57,15 +67,23 @@ Both are wrong exactly when $\delta = a \text{ XOR } \gamma = 1$. Then $s$ is of
 
 | Candidate | Add | + overflow | Total |
 | --- | --- | --- | --- |
-| bridge, x86-64 *(hand)*: `mov x,w1; xor x,G`(or `btc x,62`)`; add x,w2; jo …; mov t,x; xor t,w2; and t,G; xor x,t` | 5 (+2 `mov`) | 0 (`jo`), or 1 (`seto`) | **5** |
-| bridge, ARM64 *(hand)*: `eor x,w1,#G; adds r,x,w2; lsr t,w1,#62; bfi r,t,#62,#1` | **4** | 0 (`b.vs`), or 1 (`cset`) | **4** |
-| bridge, RV64 (no flags) | 5 | 3 (`xor; xor; and; bltz`), 4 as a mask | 8–9 |
-| or/and bridge | 6 | flag 0 / test 3 | 6 / 9 |
-| carry pair | 5–6 | flag invalid; test 3–4 | 8–10 |
+| **re-add, x86-64** *(hand)*: `lea t,[w1+w2]; xor t,w1; and t,G; xor t,w1; add t,w2; jo …` | **5, no `mov`** | 0 (`jo`) / 1 (`seto`) | **5** |
+| bridge, x86-64 *(hand)*: `mov x,w1; xor x,G` (or `btc x,62`)`; add x,w2; jo …; mov t,x; xor t,w2; and t,G; xor x,t` | 5 (+2 `mov`) | 0 / 1 | 5 (+2 `mov`) |
+| **bridge, ARM64** *(hand)*: `eor x,w1,#G; adds r,x,w2; lsr t,w1,#62; bfi r,t,#62,#1` | **4** | 0 (`b.vs`) / 1 (`cset`) | **4** |
+| re-add, ARM64 *(hand)*: `add; eor; and; eor; adds` | 5 | 0 / 1 | 5 |
+| bridge or re-add, RV64 (no flags) | 5 | 3 (`xor; xor; and; bltz`), 4 as a mask | 8–9 |
+| carry pair (either form) | 5 | flag invalid; test 3–4 | 8–9 |
+| or/and bridge | 6 | 0 / 3 | 6 / 9 |
 
 ARM64 `bfi` copies $a$ in: `lsr` brings bit 62 of $w_1$ to bit 0 and `bfi` inserts it at bit 62. `bfi` cannot copy a bit to the same position from another register without the shift.
 
-**Answer to the author's focus.** Among sequences of length ≤ 5 (the search's bound; see below), the bridge is the cheapest that is correct on both axes, and it leaves the machine's signed-overflow flag valid as-is. No cheaper bridge exists within the search. Every length-5 program the search found is tagged with whether its flag is valid; see "Superoptimizer".
+**Answer to the author's focus.**
+- **No add of length ≤ 4 exists** in the search's operation set, with or without the flag.
+- Of the 160 length-5 programs (all of which generalise to 64 bits):
+  - 82 leave the machine's signed-overflow flag exact on both axes: 32 bridges (flag on the 2nd instruction; half of them are the `sub` form $(w_1 \text{ XOR } \lnot G) - w_2$, which is $\lnot(v_1 + v_2)$, and its overflow is the same), and 50 re-add/pre-carry programs (flag on the last);
+  - 78 are carry-pair forms, whose flags are wrong.
+- All 160 pass the branch-free sign test.
+- So add + overflow check is **5 on x86-64** (re-add: no `mov`, flag on the final `add`), **4 on ARM64** (bridge with `bfi`; outside the search's operation set), and **8 on RV64** (5 + the 3-instruction test).
 
 ### Against the C layout and int64
 
@@ -180,7 +198,7 @@ $$
 
 | Target | $N$ | Shortest | Hits at that length | Searched |
 | --- | --- | --- | --- | --- |
-| same-axis add (exact word) | 4, 6 | **none ≤ 4**; RESULT_L5 | RESULT_L5_HITS | ≤ 4 on $N = 6$ (5.9M nodes), ≤ 5 on $N = 4$ |
+| same-axis add (exact word) | 4, 6 | **5** (none ≤ 4 on $N = 4$ or $6$) | **160** at $N = 4$ (873M nodes, 12 min): 32 bridge `OF@v2`, 50 re-add/pre-carry `OF@v5`, 78 carry pair with no valid flag; all `signtest-ok`. All 160 re-checked on $n = 6, 8$ (exhaustive) and 64 (random): no failures. List: [`add-L5-hits.txt`](test/complement/add-L5-hits.txt) | ≤ 4 on $N = 6$ (5.9M nodes), ≤ 5 on $N = 4$ |
 | same-axis add, either zero allowed | 4 | none ≤ 4 | | ≤ 4 |
 | same-axis subtract | 4, 6 | **4** | 4: the formula above, with $w_1$ or $w_2$ as fix source, and the merge form; all `OF@v1 signtest-ok` | |
 | negate | 4, 6 | **4** | 5: the formula above with OR/XOR/+, `OF@v2`; the $K$ variants have no valid flag | |
@@ -188,11 +206,11 @@ $$
 
 The 4-bit no-hit results also rule out any width-generic program of that length, provided its shift amounts and constants exist at 4 bits.
 
-Reproduce: `gcc -O3 -o so superopt.c && ./so 6 add 4 && ./so 4 add 5 2000 && ./so 6 sub 4 && ./so 6 neg 4 && ./so 4 full 4`.
+Reproduce: `gcc -O3 -o so superopt.c && ./so 6 add 4 && ./so 4 add 5 2000 && ./so 6 sub 4 && ./so 6 neg 4 && ./so 4 full 4`, then `python3 -I generalize.py add-L5-hits.txt`. None of the hits use shifts or rotations, so the 4-bit programs carry over to 64 bits symbol for symbol ($G, \lnot G, C, K$).
 
 ## Approaches tried that do not beat the bridge
 
-- **Carry pair** (use the count's overflow into the axis as information): $\delta = $ bit $n-2$ of $s \text{ XOR } w_1$, then flip bits $n-1$ and $n-2$. This is 5–6, and it spoils the flag.
+- **Carry pair** (use the count's overflow into the axis as information): $\delta = $ bit $n-2$ of $s \text{ XOR } w_1$, then flip bits $n-1$ and $n-2$. It ties at 5, but it spoils the flag. Using the same $\delta$ to correct an *input* and add again (re-add) keeps the flag. That is the search's best idea.
 - **Add as subtract.**
   - Bridge by `sub`, $w_1 - (w_2 \text{ XOR } \lnot G)$: this gives $v_1 + v_2 + 1$, and its OF is that of the wrong sum.
   - $\lnot(\lnot v_1 - v_2)$ (Warren §2-2): 6.
@@ -204,5 +222,5 @@ Reproduce: `gcc -O3 -o so superopt.c && ./so 6 add 4 && ./so 4 add 5 2000 && ./s
 ## Open points
 
 - The "either zero" relaxation did not shorten add at length ≤ 4. Length 5 was not run for it.
-- Length 6 was not searched. The full add (16) and the multiply/divide (18) are hand-built, not searched.
+- Length 6 was not searched, and length 5 only at $N = 4$ (the $N = 6$ run would take about 2 hours on this machine). The full add (16) and the multiply/divide (18) are hand-built, not searched.
 - Nothing is timed. The x86-64 and ARM64 counts are by hand.

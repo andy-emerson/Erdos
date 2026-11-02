@@ -51,6 +51,17 @@ theorem topMulLea_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (
     have := add_le_mul_succ ha hb
     refine ⟨by qomega, Or.inl (by qomega)⟩
 
+/-- A high part and a low part, read back after reducing mod `4 · P`. -/
+theorem parts_mod {P a b : Nat} (hP : 0 < P) (hb : b < P) :
+    (P * a + b) % (P * 4) / P = a % 4 := by
+  rw [Nat.mod_mul_right_div_self, Nat.mul_add_div hP, Nat.div_eq_of_lt hb, Nat.add_zero]
+
+theorem parts_lo {P a b : Nat} (hb : b < P) : (P * a + b) % P = b := by
+  rw [Nat.mul_add_mod, Nat.mod_eq_of_lt hb]
+
+theorem parts_hi {P a b : Nat} (hP : 0 < P) (hb : b < P) : (P * a + b) / P = a := by
+  rw [Nat.mul_add_div hP, Nat.div_eq_of_lt hb, Nat.add_zero]
+
 /-- **Top exact division**: the quotient's magnitude always, and its direction unless the dividend is zero. -/
 theorem topDiv_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hy : 0 < m2) (hd : m2 ∣ m1) :
     (topDec (topDiv (topEnc m1 d1) (topEnc m2 d2))).m = (div ⟨m1, d1⟩ ⟨m2, d2⟩).m ∧
@@ -61,14 +72,18 @@ theorem topDiv_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hy 
   rw [NM_eq, and_high (by decide) hx, Nat.or_comm, or_low (by qomega)]
   simp only [topDec, Fin.ext_iff, Fin.val_ofNat, Fin.sub_def, topEnc]
   have := d1.isLt; have := d2.isLt
+  have hQ : (0 : Nat) < Q := by decide
+  rw [← Q_eq]
+  have hqQ : m1 / m2 < Q := Nat.lt_of_le_of_lt hq h1
   by_cases z : m1 = 0
-  · have hz : m1 / m2 = 0 := by simp [z]
-    simp only [hz, Nat.add_zero]
-    refine ⟨by qomega, Or.inr z⟩
+  · refine ⟨parts_lo hqQ, Or.inr z⟩
   · have hge : m2 ≤ m1 := Nat.le_of_dvd (by omega) hd
-    have hq1 : 1 ≤ m1 / m2 := Nat.div_pos hge hy
-    refine ⟨by qomega, Or.inl ?_⟩
-    qomega
+    have e1 : ↑d1 * Q + m1 + (W64 - (↑d2 * Q + m2)) = Q * (↑d1 + 4 - ↑d2) + (m1 - m2) := by qomega
+    have e2 : W64 = Q * 4 := rfl
+    rw [e1, e2, parts_mod hQ (by omega)]
+    refine ⟨parts_lo hqQ, Or.inl ?_⟩
+    rw [parts_hi hQ hqQ, Nat.mod_mod]
+    omega
 
 end Packed
 end Header

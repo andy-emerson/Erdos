@@ -220,8 +220,19 @@ def mul (w1 w2 : Word) : Word :=
   p ||| ((w1 ^^^ w2) &&& 1#64)
 
 /-- **Exact division** (the current rule): `q = (w1 and not 1) / (w2 and not 1)`, signed, so `2v1 / 2v2 = v1 / v2`;
-then shift left 1 (`2q`); negated when `a2 = 1` and `a1 = 0`; then OR `(w1 xor w2) and 1`. -/
+then `q' = q` negated when `a2 = 1` and `a1 = 0`, by the mask `m = 0 - (((w1 xor w2) and 1) and w2)` as
+`q' = (q xor m) - m`; then `(q' shl 1) + ((w1 xor w2) and 1)`. -/
 def div (w1 w2 : Word) : Word :=
+  let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
+  let t := (w1 ^^^ w2) &&& 1#64
+  let m := 0#64 - (t &&& w2)
+  let q' := (q ^^^ m) - m
+  (q' <<< 1) + t
+
+/-- **Exact division, the second rule** (the fix as first written): the same divide, then shift left 1, negated when
+`a2 = 1` and `a1 = 0` (by a branch), then OR `(w1 xor w2) and 1`. `div_eq_divShl` proves `div` gives the same word
+on every input. -/
+def divShl (w1 w2 : Word) : Word :=
   let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
   let q := q <<< 1
   let q := if w2 &&& 1#64 = 1#64 ∧ w1 &&& 1#64 = 0#64 then -q else q
@@ -570,13 +581,53 @@ theorem div_cond (a1 a2 : Bool) :
     (BitVec.ofInt 64 (abit a2) = 1#64 ∧ BitVec.ofInt 64 (abit a1) = 0#64) ↔ (!a1 && a2) = true := by
   cases a1 <;> cases a2 <;> decide
 
+/-- The mask `m = 0 - (((w1 xor w2) and 1) and w2)` is all ones exactly when `a2 = 1` and `a1 = 0`, else 0. -/
+theorem div_mask (w1 w2 : Word) :
+    0#64 - (((w1 ^^^ w2) &&& 1#64) &&& w2) = if (!(dec w1).a && (dec w2).a) = true then -1#64 else 0#64 := by
+  have h : ((w1 ^^^ w2) &&& 1#64) &&& w2 = ((w1 ^^^ w2) &&& 1#64) &&& (w2 &&& 1#64) := by
+    ext i hi; simp only [BitVec.getElem_and, BitVec.getElem_xor, BitVec.getElem_one]
+    by_cases h : i = 0 <;> simp [h]
+  rw [h, xor_axis, lo_eq w2]
+  cases (dec w1).a <;> cases (dec w2).a <;> decide
+
+/-- `(q xor m) - m` with `m` all ones is `-q`. -/
+theorem xor_ones_sub (q : Word) : (q ^^^ -1#64) - -1#64 = -q := by
+  rw [show (-1#64 : Word) = BitVec.allOnes 64 by decide, BitVec.xor_allOnes, BitVec.neg_eq_not_add,
+    BitVec.sub_eq_add_neg, show -(BitVec.allOnes 64) = 1#64 by decide]
+
+/-- A doubled word has bit 0 clear, so OR-ing the axis bit adds it. -/
+theorem shl_or_axis (x w1 w2 : Word) :
+    (x <<< 1) ||| ((w1 ^^^ w2) &&& 1#64) = (x <<< 1) + ((w1 ^^^ w2) &&& 1#64) := by
+  refine (BitVec.add_eq_or_of_and_eq_zero _ _ ?_).symm
+  ext i hi
+  simp only [BitVec.getElem_and, BitVec.getElem_xor, BitVec.getElem_one, BitVec.getElem_shiftLeft,
+    BitVec.getElem_zero]
+  by_cases h : i = 0 <;> simp [h]
+
+/-- **The current rule gives the second rule's word on every input**: negating before or after the doubling is the
+same mod `2^64`, the mask negate is the branch's negate, and adding the axis bit to an even word is OR-ing it. -/
+theorem div_eq_divShl (w1 w2 : Word) : div w1 w2 = divShl w1 w2 := by
+  unfold div divShl
+  simp only []
+  rw [div_mask]
+  simp only [lo_eq w1, lo_eq w2, div_cond]
+  generalize (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64) = q
+  cases (!(dec w1).a && (dec w2).a)
+  · simp only [Bool.false_eq_true, ↓reduceIte, BitVec.xor_zero, BitVec.sub_zero]
+    rw [shl_or_axis]
+  · simp only [↓reduceIte]
+    have hn : -(q <<< 1) = (-q) <<< 1 := by
+      rw [BitVec.shiftLeft_eq_mul_twoPow, BitVec.shiftLeft_eq_mul_twoPow, BitVec.neg_mul]
+    rw [xor_ones_sub, hn, shl_or_axis]
+
 /-- When `v2 ≠ 0` divides `v1`, the division rule's word is `2·v + a` of the quotient pair, mod `2^64` (no range
 hypothesis on the quotient). -/
 theorem div_eq {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) (hd : (dec w2).v ∣ (dec w1).v) :
     div w1 w2 = BitVec.ofInt 64 (2 * (divNum (dec w1) (dec w2)).v + abit (divNum (dec w1) (dec w2)).a) := by
+  rw [div_eq_divShl]
   obtain ⟨k, hk⟩ := hd
   have h1 := dec_range w1; rw [hk] at h1
-  unfold div
+  unfold divShl
   simp only []
   rw [clr_eq w1, clr_eq w2, lo_eq w1, lo_eq w2, xor_axis, hk, sdiv_exact hv2 (dec_range w2) h1, shl_one]
   simp only [div_cond]
@@ -640,16 +691,27 @@ theorem div_never_faults {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) :
   · exact hv2 ((clr_eq_zero_iff w2).1 h)
   · exact div_never_traps w1 w2 h
 
-/-- **`(-2^62) / (-i) = -2^62 i`**, the case that trapped under the old rule, step by step: `2v1 / 2v2 = -2^63 / -2`
-is `2^62`; `2q = 2^63` wraps to `-2^63`; the negation (`a2 = 1`, `a1 = 0`) leaves `-2^63`; and OR 1 gives
-`-2^63 + 1 = 2·(-2^62) + 1`, the word of `-2^62 i`. -/
+/-- **`(-2^62) / (-i) = -2^62 i`**, the case that trapped under the old rule, step by step under the current rule:
+`2v1 / 2v2 = -2^63 / -2` is `2^62`; the mask is all ones (`a2 = 1`, `a1 = 0`), so `q' = -2^62`; `q' shl 1 = -2^63`
+(no wrap in this order); and adding the axis bit gives `-2^63 + 1 = 2·(-2^62) + 1`, the word of `-2^62 i`. -/
 theorem div_edge_steps :
     let w1 := enc ⟨-2^62, false⟩
     let w2 := enc ⟨-1, true⟩
     let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
-    (w1 &&& ~~~1#64).toInt = -2^63 ∧ (w2 &&& ~~~1#64).toInt = -2 ∧
-    q.toInt = 2^62 ∧ (q <<< 1).toInt = -2^63 ∧ (-(q <<< 1)).toInt = -2^63 ∧
-    (-(q <<< 1) ||| ((w1 ^^^ w2) &&& 1#64)) = enc ⟨-2^62, true⟩ := by
+    let t := (w1 ^^^ w2) &&& 1#64
+    let m := 0#64 - (t &&& w2)
+    let q' := (q ^^^ m) - m
+    (w1 &&& ~~~1#64).toInt = -2^63 ∧ (w2 &&& ~~~1#64).toInt = -2 ∧ q.toInt = 2^62 ∧ m = -1#64 ∧
+    q'.toInt = -2^62 ∧ (q' <<< 1).toInt = -2^63 ∧ (q' <<< 1) + t = enc ⟨-2^62, true⟩ := by
+  decide +kernel
+
+/-- Under the second rule the same case went through a wrap: `2q = 2^63` wrapped to `-2^63`, and the negation left
+it there. -/
+theorem divShl_edge_steps :
+    let w1 := enc ⟨-2^62, false⟩
+    let w2 := enc ⟨-1, true⟩
+    let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
+    (q <<< 1).toInt = -2^63 ∧ (-(q <<< 1)).toInt = -2^63 ∧ divShl w1 w2 = enc ⟨-2^62, true⟩ := by
   decide +kernel
 
 theorem div_edge_example : div (enc ⟨-2^62, false⟩) (enc ⟨-1, true⟩) = enc ⟨-2^62, true⟩ := by

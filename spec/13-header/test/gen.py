@@ -14,7 +14,11 @@ Timing rows, 1024 pairs each, from one seed (builder's readings, src/README.md C
 - complex: each operand on a random axis; for add and sub a nonzero pair across axes has one operand (chosen at
   random) replaced by a zero of its direction, before the order mix;
 - B's operands enter collapsed. B's collapse rows collapse the B sums of the add rows' pairs (same mixes).
-  python3 test/gen.py [out_dir]       writes the 72 timing rows (default build/work)
+The complement layout (cpl) holds -2^62 .. 2^62 - 1 on each axis, so it has its own copy of the rows, drawn the same
+way with one bit less (cap): bit lengths 1..61 for add, sub and neg, so sums stay below 2^62; for mul and div L1
+uniform 1..61 and L2 uniform 1..62 - L1, so every product and quotient is below 2^62. Same row names, seeds and mixes;
+the other builds' rows are unchanged. They are written to <out_dir>/cpl/ (default build/work/cpl).
+  python3 test/gen.py [out_dir]       writes the 72 timing rows and the 54 cpl rows (no collapse: B's only)
 """
 import random
 import struct
@@ -125,14 +129,14 @@ def direction(rng, kind, pneg):
     return axis + 2 * neg
 
 
-def draw(rng, kind, op, pneg, porder):
-    """one pair for a timing row"""
+def draw(rng, kind, op, pneg, porder, cap=0):
+    """one pair for a timing row; cap = 1 takes one bit off every bound (the cpl rows)"""
     if op in ("add", "sub", "neg"):
-        m1, _ = bits(rng, 1, 62)
-        m2, _ = bits(rng, 1, 62)
-    else:                                   # mul, div: a factor of L1 bits and one of L2 bits, L1 + L2 <= 63
-        x, L1 = bits(rng, 1, 62)
-        y, _ = bits(rng, 1, 63 - L1)
+        m1, _ = bits(rng, 1, 62 - cap)
+        m2, _ = bits(rng, 1, 62 - cap)
+    else:                                   # mul, div: a factor of L1 bits and one of L2 bits, L1 + L2 <= 63 - cap
+        x, L1 = bits(rng, 1, 62 - cap)
+        y, _ = bits(rng, 1, 63 - cap - L1)
         m1, m2 = (x, y) if op == "mul" else (x * y, y)
     d1, d2 = direction(rng, kind, pneg), direction(rng, kind, pneg)
     if op in ("add", "sub") and kind == "cx" and (d1 ^ d2) & 1:
@@ -145,8 +149,8 @@ def draw(rng, kind, op, pneg, porder):
     return Opnd.collapsed(kind, d1, m1), Opnd.collapsed(kind, d2, m2)
 
 
-def rows():
-    """name -> (kind, op, pairs); the collapse rows from the add rows' pairs"""
+def rows(cap=0):
+    """name -> (kind, op, pairs); the collapse rows from the add rows' pairs (none when cap: the cpl rows)"""
     out = {}
     for kind in KINDS:
         for op in ("add", "sub", "neg", "mul", "div"):
@@ -154,11 +158,11 @@ def rows():
                 for o, porder in (ORDERS.items() if op in ("add", "sub") else [(None, None)]):
                     name = f"{kind}-{op}-{s}" + (f"-{o}" if o else "")
                     rng = random.Random(f"{SEED}-{name}")
-                    pairs = [draw(rng, kind, op, pneg, porder) for _ in range(N)]
+                    pairs = [draw(rng, kind, op, pneg, porder, cap) for _ in range(N)]
                     if op == "neg":
                         pairs = [(a, ZERO) for a, _ in pairs]
                     out[name] = (kind, op, pairs)
-                    if op == "add":
+                    if op == "add" and not cap:
                         cp = []
                         for a, b in pairs:
                             p = [x + y for x, y in zip(a.p, b.p)]
@@ -179,10 +183,12 @@ def to_dm(v):
     return (0, re) if re >= 0 else (2, -re)
 
 
-def generate(work):
-    """writes every row; returns name -> (path, kind, op, expected checksum)"""
+def generate(work, cap=0):
+    """writes every row; returns name -> (path, kind, op, expected checksum). cap = 1: the cpl rows, in work/cpl"""
     res = {}
-    for name, (kind, op, pairs) in rows().items():
+    if cap:
+        work = work / "cpl"
+    for name, (kind, op, pairs) in rows(cap).items():
         path = work / f"{name}.bin"
         write_job(path, kind, op, pairs)
         res[name] = (path, kind, op, checksum(exact(kind, op, a, b) for a, b in pairs))
@@ -193,3 +199,5 @@ if __name__ == "__main__":
     work = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "build" / "work"
     r = generate(work)
     print(f"{len(r)} rows in {work}")
+    r = generate(work, cap=1)
+    print(f"{len(r)} cpl rows in {work / 'cpl'}")

@@ -4,7 +4,9 @@ Case sets, for integers and for complex numbers on the axes, for every operation
 - "ctl": every magnitude and every result part below 2^63, so Control can hold them: all four builds;
 - "wide": magnitudes up to 2^64 - 1 with no result overflowing a word (A's magnitude, B's parts): A, A's branch-free
   row and B;
-- "bun": B with uncollapsed operands (both parts nonzero), no part overflowing: B only.
+- "bun": B with uncollapsed operands (both parts nonzero), no part overflowing: B only;
+- "cpl": every operand and every result part in -2^62 .. 2^62 - 1, the complement layout's range on each axis: the
+  complement layout and Control (whose answers are the same values).
 Each set has edge cases (zeros in every direction, equal magnitudes, magnitudes near 2^32, 2^63 and 2^64, every
 direction pair) and random ones (bit lengths uniform 0..64 or 0..63, zero included). For add and sub, complex
 operands on different axes have a zero (two nonzero ones are the error cases below).
@@ -16,8 +18,10 @@ What is checked, per result:
   with bits 0-5 clear is accepted on a zero sum or difference;
 - B: the parts are exactly §4's: add, sub, neg and mul part by part; collapse with one part of each axis 0; division
   with the quotient in slot (d1 - d2) mod 4 of the collapsed operands' directions and the other slots 0.
-Also: errors (A and A's branch-free row exit 3 on a sum or difference across axes of two nonzero numbers, alone or
-after valid cases); each timing row's checksum in every build against the exact values' (gen.py); bytes per value.
+- cpl: the word decoded (value (c - 2^62 s) i^a); a zero result may be on either axis (0 or 0i).
+Also: errors (A, A's branch-free row and cpl exit 3 on a sum or difference across axes of two nonzero numbers, alone or
+after valid cases); each timing row's checksum in every build against the exact values' (gen.py; cpl, and Control
+beside it, on gen.py's capped cpl rows); bytes per value.
 
   python3 test/check.py [--quick]     prints PASS or FAILED (exit 1)
 """
@@ -34,13 +38,16 @@ from gen import Opnd, M64, exact, value_of_parts, to_dm  # noqa: E402
 HERE = gen.HERE
 BIN = HERE / "build" / "bin"
 WORK = HERE / "build" / "check"
-BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b")
+BUILDS = ("control", "a", "abf", "anm", "amul", "alg", "b")   # the builds of the shared rows
+CPL_LO, CPL_HI = -(1 << 62), (1 << 62) - 1                     # the complement layout's range on each axis
 D = 0xC0
 E63 = [0, 1, 2, 3, 0xFFFFFFFF, 1 << 32, (1 << 32) + 1, (1 << 62) - 1, 1 << 62, (1 << 62) + 1, (1 << 63) - 2,
        (1 << 63) - 1]
 E64 = E63 + [1 << 63, (1 << 63) + 1, M64 - (1 << 32), M64 - 1, M64]
+E62 = [0, 1, 2, 3, 0xFFFFFFFF, 1 << 32, (1 << 32) + 1, (1 << 61) - 1, 1 << 61, (1 << 61) + 1, (1 << 62) - 2,
+       (1 << 62) - 1, 1 << 62]                      # 2^62 only as -2^62 (fits drops +2^62)
 LIM = {"ctl": 1 << 63, "wide": 1 << 64, "bun": 1 << 64}
-SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "amul", "alg", "b"), "bun": ("b",)}
+SET_BUILDS = {"ctl": BUILDS, "wide": ("a", "abf", "anm", "amul", "alg", "b"), "bun": ("b",), "cpl": ("control", "cpl")}
 
 
 # ------------------------------------------------------------------------------------------------ §3 and §4 as stated
@@ -106,6 +113,13 @@ def b_parts(kind, op, a, b):
 # ------------------------------------------------------------------------------------------------ the cases
 def fits(kind, op, a, b, s):
     """no overflow in the builds the set is for"""
+    if s == "cpl":
+        if op == "div" and (b.m == 0 or a.m % b.m):
+            return False
+        vals = list(a.value(kind)) + list(b.value(kind)) + list(exact(kind, op, a, b))
+        if any(not CPL_LO <= x <= CPL_HI for x in vals):
+            return False
+        return not (op in ("add", "sub") and kind == "cx" and (a.d ^ b.d) & 1 and a.m and b.m)
     lim = LIM[s]
     if a.m >= lim or b.m >= lim or any(x >= lim for x in a.p + b.p):
         return False
@@ -144,7 +158,7 @@ def uncollapsed(kind, d, m, k1, k2):
 
 
 def edge_cases(kind, op, s):
-    E = E63 if s == "ctl" else E64
+    E = E63 if s == "ctl" else E62 if s == "cpl" else E64
     out = []
     if s == "bun":
         pads = [1, 2, 0xFFFFFFFF, 1 << 62, (1 << 63) - 1, M64 - 3]
@@ -207,7 +221,7 @@ def edge_cases(kind, op, s):
 
 def random_cases(kind, op, s, n):
     rng = random.Random(f"{gen.SEED}-check-{kind}-{op}-{s}")
-    top = 63 if s == "ctl" else 64
+    top = 63 if s == "ctl" else 62 if s == "cpl" else 64
 
     def mag(lo=0, hi=top):
         L = rng.randint(lo, hi)
@@ -260,6 +274,10 @@ def parse(b, kind, line):
     if b in ("a", "abf", "anm", "amul", "alg"):
         h, m = int(t[0], 16), int(t[1], 16)
         return gen.value_of(h >> 6, m) if not h & 0x3F else (None, None), h
+    if b == "cpl":
+        w = int(t[0], 16)
+        v = (w & ((1 << 62) - 1)) - (w >> 63 << 62)
+        return ((0, v) if (w >> 62) & 1 else (v, 0)), w
     p = [int(x, 16) for x in t]
     return value_of_parts(kind, p + [0, 0]), p
 
@@ -309,8 +327,8 @@ def main():
     fails, total = [], {}
     for kind in gen.KINDS:
         for op in gen.OPS:
-            for s in ("ctl", "wide", "bun"):
-                if op == "collapse" and s == "ctl":
+            for s in ("ctl", "wide", "bun", "cpl"):
+                if op == "collapse" and s in ("ctl", "cpl"):
                     continue                         # B's only: its sets are wide and bun
                 pairs = edge_cases(kind, op, s)
                 ne = len(pairs)
@@ -332,12 +350,12 @@ def main():
                            for _ in range(lead)]
                     path = WORK / f"err-{op}-{d1}{d2}-{lead}.bin"
                     gen.write_job(path, "cx", op, pre + [(Opnd.collapsed("cx", d1, 7), Opnd.collapsed("cx", d2, 1))])
-                    for b in ("a", "abf", "anm", "amul", "alg"):
+                    for b in ("a", "abf", "anm", "amul", "alg", "cpl"):
                         nerr += 1
                         p = run(b, "dump", path, WORK / "err.txt")
                         if p.returncode != 3:
                             fails.append(f"{b} error case {op} d{d1} d{d2} lead {lead}: exit {p.returncode}, want 3")
-    print(f"errors: {nerr} cases (A and A's branch-free row: exit 3)")
+    print(f"errors: {nerr} cases (A, its rows and cpl: exit 3)")
     # the timing rows: each build's checksum against the exact values'
     rows = gen.generate(HERE / "build" / "work")
     nsum = 0
@@ -352,9 +370,25 @@ def main():
             got = p.stdout.split()[1] if p.returncode == 0 else f"exit {p.returncode}"
             if got != want:
                 fails.append(f"{b} {name}: checksum {got}, want {want}")
-    print(f"timing rows: {len(rows)} rows, {nsum} checksums against the exact values")
-    want = {"control": (8, 16), "a": (9, 9), "abf": (9, 9), "anm": (9, 9), "amul": (9, 9), "alg": (9, 9), "b": (16, 32)}
-    for b in BUILDS:
+    # the cpl rows (gen.py's capped copy): cpl, and Control on the same operands
+    crows = gen.generate(HERE / "build" / "work", cap=1)
+    for name, (path, kind, op, want) in crows.items():
+        for b in ("cpl", "control"):
+            p = run(b, "sum", path)
+            nsum += 1
+            got = p.stdout.split()[1] if p.returncode == 0 else f"exit {p.returncode}"
+            if got != want:
+                fails.append(f"{b} cpl/{name}: checksum {got}, want {want}")
+    # cpl refuses an operand outside its range (+2^62, as the shared rows can hold): exit 2
+    path = WORK / "cpl-range.bin"
+    gen.write_job(path, "int", "add", [(Opnd.collapsed("int", 0, 1 << 62), Opnd.collapsed("int", 0, 1))])
+    p = run("cpl", "sum", path)
+    if p.returncode != 2:
+        fails.append(f"cpl with an operand of +2^62: exit {p.returncode}, want 2")
+    print(f"timing rows: {len(rows)} rows and {len(crows)} cpl rows, {nsum} checksums against the exact values")
+    want = {"control": (8, 16), "a": (9, 9), "abf": (9, 9), "anm": (9, 9), "amul": (9, 9), "alg": (9, 9), "b": (16, 32),
+            "cpl": (8, 8)}
+    for b in want:
         t = run(b, "bytes").stdout.split()
         if (int(t[3]), int(t[5])) != want[b]:
             fails.append(f"{b} bytes per value {t}, want {want[b]}")

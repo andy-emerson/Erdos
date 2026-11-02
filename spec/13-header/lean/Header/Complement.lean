@@ -499,5 +499,246 @@ theorem cdiv_ref (x y : Num) (hx : fits x) (hy : fits y) (hy0 : 0 < y.m) (hz : f
   simp only [div]
   rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> decide
 
+/-! ## Round 2 (M1): the generic multiply (17, wraps) and divide (15)
+
+`../complement-research.md`, "Round 2: optimization", M1, the generic (RV64-style) forms; the build `cpl2` (`cMul2`,
+`cDiv2` in `../src/designcpl.nim`). With `L = w shl 1`, `D = w + (L sar 1) = 2v` (3 steps, one fewer than `sext`):
+
+* multiply, scaled: `x2 = D2 sar 1`, `m = (L1 and L2) sar 63`, `P = ((D1 xor m) − m) · x2 = ±2p`, `p = P sar 1`, the
+  fix. On overflow the result is the 63-bit wrap of the product on its axis (`cmul2_wrap`);
+* divide: `q = D1 ÷ D2` (signed, truncating; `= v1 / v2`), `m = (L2 and not L1) sar 63`, `(q xor m) − m`, the fix.
+  The only quotient that does not fit is `+2^62`; it gives the zero of its axis (`cdiv2_ovf`).
+-/
+
+/-- The multiply of `cpl2` (`cMul2`). -/
+def cmul2 (w1 w2 : Nat) : Nat :=
+  let L1 := (w1 <<< 1) % W
+  let D1 := (w1 + Isa.wsra L1 1) % W
+  let L2 := (w2 <<< 1) % W
+  let D2 := (w2 + Isa.wsra L2 1) % W
+  let x2 := Isa.wsra D2 1
+  let m := sar63 (L1 &&& L2)
+  let P := ((((D1 ^^^ m) + (W - m)) % W) * x2) % W
+  let p := Isa.wsra P 1
+  p ^^^ ((p ^^^ w1 ^^^ w2) &&& G)
+
+/-- The divide of `cpl2` (`cDiv2`). -/
+def cdiv2 (w1 w2 : Nat) : Nat :=
+  let L1 := (w1 <<< 1) % W
+  let D1 := (w1 + Isa.wsra L1 1) % W
+  let L2 := (w2 <<< 1) % W
+  let D2 := (w2 + Isa.wsra L2 1) % W
+  let m := sar63 (L2 &&& (L1 ^^^ ONES))
+  let q := Isa.wdiv D1 D2
+  let qm := ((q ^^^ m) + (W - m)) % W
+  qm ^^^ ((qm ^^^ w1 ^^^ w2) &&& G)
+
+/-- The 63-bit wrap of an integer: the value in `−2^62 … 2^62 − 1` equal to `t` mod `2^63`. -/
+def wrap63 (t : Int) : Int := (t + (G : Int)) % (2 * (G : Int)) - (G : Int)
+
+/-- The word of a signed value `v` (in `−2^62 … 2^62 − 1`) on axis `a`. -/
+def cencI (a : Nat) (v : Int) : Nat := P (2 * ((v % (2 * (G : Int))).toNat / G) + a) ((v % (2 * (G : Int))).toNat % G)
+
+theorem cencI_cenc {z : Num} (hz : fits z) : cencI (z.d.val % 2) (sv z) = cenc z := by
+  obtain ⟨m, d⟩ := z
+  unfold fits at hz
+  unfold cencI cenc cu sv
+  dsimp only at hz ⊢
+  by_cases hd : d.val < 2 <;> by_cases zm : m = 0 <;> simp only [hd, zm, ite_true, ite_false, or_true,
+    or_false] at hz ⊢ <;> comega
+
+theorem wrap63_of_fits {t : Int} (h1 : -(G : Int) ≤ t) (h2 : t < G) : wrap63 t = t := by
+  unfold wrap63; comega
+
+theorem wrap63_range (t : Int) : -(G : Int) ≤ wrap63 t ∧ wrap63 t < G := by
+  unfold wrap63; comega
+
+/-- **`2v` in three steps** (research identity I1): `w + ((w shl 1) sar 1)` is the word of `2v`. -/
+theorem two_v {x : Num} (hx : fits x) :
+    (cenc x + Isa.wsra ((cenc x <<< 1) % W) 1) % W = Isa.ofInt (2 * sv x) := by
+  obtain ⟨m, d⟩ := x
+  unfold fits at hx
+  unfold cenc cu sv Isa.wsra Isa.toInt Isa.ofInt Isa.H Isa.W
+  rw [Nat.shiftLeft_eq]
+  dsimp only at hx ⊢
+  by_cases hd : d.val < 2 <;> by_cases zm : m = 0 <;> simp only [hd, zm, ite_true, ite_false, or_true,
+    or_false] at hx ⊢ <;> (have : d.val < 4 := d.isLt) <;> (repeat' split) <;> comega
+
+/-- `P sar 1` of the word of `2t` is the word of `t`'s 63-bit wrap. -/
+theorem half_wrap (t : Int) : Isa.wsra (Isa.ofInt (2 * t)) 1 = Isa.ofInt (wrap63 t) := by
+  unfold Isa.wsra Isa.toInt Isa.ofInt Isa.H Isa.W wrap63
+  (repeat' split) <;> comega
+
+theorem two_sv_fits {x : Num} (hx : fits x) : Isa.Fits (2 * sv x) := by
+  obtain ⟨m, d⟩ := x
+  unfold fits at hx; unfold sv Isa.Fits Isa.H; dsimp only at hx ⊢
+  split <;> split at hx <;> comega
+
+/-- Bit 63 of `w shl 1` is the axis. -/
+theorem shl_top {x : Num} (hx : fits x) : (cenc x <<< 1) % W < W ∧ (2 ^ 63 ≤ (cenc x <<< 1) % W ↔ x.d.val % 2 = 1) := by
+  have h4 := cenc_h hx
+  have hc := cenc_c x
+  have : x.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+  unfold cenc
+  rw [Nat.shiftLeft_eq]
+  constructor
+  · exact Nat.mod_lt _ (by decide)
+  · comega
+
+/-- `(x and y) sar 63`: all ones exactly when both top bits are set. -/
+theorem sar63_and {x y : Nat} (hx : x < W) (hy : y < W) :
+    sar63 (x &&& y) = if 2 ^ 63 ≤ x ∧ 2 ^ 63 ≤ y then ONES else 0 := by
+  have ex : x = 2 ^ 63 * (x / 2 ^ 63) + x % 2 ^ 63 := (Nat.div_add_mod x _).symm
+  have ey : y = 2 ^ 63 * (y / 2 ^ 63) + y % 2 ^ 63 := (Nat.div_add_mod y _).symm
+  have hxm : x % 2 ^ 63 < 2 ^ 63 := Nat.mod_lt _ (by decide)
+  have hym : y % 2 ^ 63 < 2 ^ 63 := Nat.mod_lt _ (by decide)
+  have e : x &&& y = 2 ^ 63 * (x / 2 ^ 63 &&& y / 2 ^ 63) + (x % 2 ^ 63 &&& y % 2 ^ 63) := by
+    conv => lhs; rw [ex, ey]
+    exact and_parts hxm hym
+  have hr : x % 2 ^ 63 &&& y % 2 ^ 63 < 2 ^ 63 := Nat.and_lt_two_pow _ hym
+  have ha : x / 2 ^ 63 < 2 := by comega
+  have hb : y / 2 ^ 63 < 2 := by comega
+  unfold sar63
+  rw [e]
+  have hab : ∀ a b : Nat, a < 2 → b < 2 → (a &&& b = 1 ↔ a = 1 ∧ b = 1) ∧ (a &&& b = 0 ∨ a &&& b = 1) := by
+    intro a b ha hb
+    rcases (by omega : a = 0 ∨ a = 1) with rfl|rfl <;> rcases (by omega : b = 0 ∨ b = 1) with rfl|rfl <;> decide
+  obtain ⟨h1, h2⟩ := hab _ _ ha hb
+  by_cases c : 2 ^ 63 ≤ x ∧ 2 ^ 63 ≤ y
+  · have : x / 2 ^ 63 &&& y / 2 ^ 63 = 1 := h1.2 ⟨by comega, by comega⟩
+    simp only [c, and_self, ite_true, this]
+    split
+    · exfalso; comega
+    · rfl
+  · have : x / 2 ^ 63 &&& y / 2 ^ 63 = 0 := by
+      rcases h2 with h|h
+      · exact h
+      · exfalso; exact c ⟨by have := (h1.1 h).1; comega, by have := (h1.1 h).2; comega⟩
+    simp only [c, ite_false, this]
+    split
+    · rfl
+    · exfalso; comega
+
+/-- The sign rule of multiply on signed values: `±v1 · v2` is the signed value of round 1's product. -/
+theorem sv_mul (x y : Num) :
+    (if decide (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then -sv x else sv x) * sv y = sv (mul x y) := by
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
+    simp [sv, mul, Int.neg_mul, Int.mul_neg, Int.natCast_mul]
+
+/-- The sign rule of divide: `±(v1 ÷ v2)` (truncating) is the signed value of round 1's quotient. -/
+theorem sv_div (x y : Num) :
+    (if decide (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then -(sv x).tdiv (sv y) else (sv x).tdiv (sv y)) =
+      sv (div x y) := by
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
+    simp [sv, div, Int.neg_tdiv, Int.tdiv_neg]
+
+theorem mul_axis (x y : Num) : (mul x y).d.val % 2 = (x.d.val + y.d.val) % 2 := by
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  simp only [mul]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> decide
+
+theorem div_axis (x y : Num) : (div x y).d.val % 2 = (x.d.val + y.d.val) % 2 := by
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  simp only [div]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> decide
+
+/-- The word `ofInt v` on parts, for `v` in range. -/
+theorem ofInt_parts {v : Int} (h1 : -(G : Int) ≤ v) (h2 : v < G) :
+    Isa.ofInt v = P (3 * ((v % (2 * (G : Int))).toNat / G)) ((v % (2 * (G : Int))).toNat % G) := by
+  unfold Isa.ofInt Isa.W; comega
+
+/-- **The fix on any signed value in range**: `cencI` on axis `a1 xor a2`. -/
+theorem fix_int {x y : Num} (hx : fits x) (hy : fits y) {v : Int} (h1 : -(G : Int) ≤ v) (h2 : v < G) :
+    Isa.ofInt v ^^^ ((Isa.ofInt v ^^^ cenc x ^^^ cenc y) &&& G) = cencI ((x.d.val + y.d.val) % 2) v := by
+  have hu : (v % (2 * (G : Int))).toNat < 2 * G := by comega
+  have h3 : 3 * ((v % (2 * (G : Int))).toNat / G) < 4 := by comega
+  have hxy : 2 * (cu x / G) + x.d.val % 2 ^^^ 2 * (cu y / G) + y.d.val % 2 < 4 :=
+    h_xor_lt (cenc_h hx) (cenc_h hy)
+  rw [ofInt_parts h1 h2, Nat.xor_assoc, cenc, cenc, P_xor (cenc_c x) (cenc_c y),
+    fix_P h3 hxy (Nat.mod_lt _ (by decide)) (Nat.xor_lt_two_pow (n := 62) (cenc_c x) (cenc_c y)), cencI,
+    h_xor_mod2 (cenc_h hx) (cenc_h hy)]
+  congr 1
+  have : (v % (2 * (G : Int))).toNat / G < 2 := by comega
+  have : x.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+  have : y.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+  omega
+
+/-- **The round 2 multiply wraps.** For all numbers that fit, with no hypothesis on the product: the word of the
+63-bit wrap of round 1's product, on its axis. -/
+theorem cmul2_wrap (x y : Num) (hx : fits x) (hy : fits y) :
+    cmul2 (cenc x) (cenc y) = cencI ((mul x y).d.val % 2) (wrap63 (sv (mul x y))) := by
+  obtain ⟨hL1, hb1⟩ := shl_top hx
+  obtain ⟨hL2, hb2⟩ := shl_top hy
+  have hm : sar63 ((cenc x <<< 1) % W &&& (cenc y <<< 1) % W) =
+      if decide (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then ONES else 0 := by
+    rw [sar63_and hL1 hL2]; simp only [hb1, hb2, decide_eq_true_eq]
+  unfold cmul2
+  simp only []
+  rw [two_v hx, two_v hy, half_wrap, wrap63_of_fits (by have := two_sv_fits hy; unfold sv fits at *; split at hy <;>
+    split <;> comega) (by unfold sv fits at *; split at hy <;> split <;> comega), hm, condneg_ofInt]
+  have e : (if decide (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then -(2 * sv x) else 2 * sv x) * sv y =
+      2 * sv (mul x y) := by
+    rw [← sv_mul]; split <;> simp [Int.mul_assoc, Int.neg_mul, Int.mul_neg]
+  rw [show ∀ a b : Nat, (a * b) % W = Isa.wmul a b from fun _ _ => rfl, Isa.wmul_ofInt, e, half_wrap,
+    fix_int hx hy (wrap63_range _).1 (wrap63_range _).2, mul_axis]
+
+/-- **The round 2 multiply is round 1's multiply** when the product fits. -/
+theorem cmul2_ref (x y : Num) (hx : fits x) (hy : fits y) (hz : fits (mul x y)) :
+    cmul2 (cenc x) (cenc y) = cenc (mul x y) := by
+  rw [cmul2_wrap x y hx hy, wrap63_of_fits, cencI_cenc hz]
+  · unfold sv fits at *; split at hz <;> split <;> comega
+  · unfold sv fits at *; split at hz <;> split <;> comega
+
+/-- The truncating divide of the doubled values is the divide of the values. -/
+theorem wdiv_two {x y : Num} (hx : fits x) (hy : fits y) :
+    Isa.wdiv (Isa.ofInt (2 * sv x)) (Isa.ofInt (2 * sv y)) = Isa.ofInt ((sv x).tdiv (sv y)) := by
+  rw [Isa.wdiv_ofInt (two_sv_fits hx) (two_sv_fits hy), Int.mul_tdiv_mul_of_pos _ _ (by decide)]
+
+/-- The quotient as a word, before the fix. -/
+theorem cdiv2_q (x y : Num) (hx : fits x) (hy : fits y) :
+    cdiv2 (cenc x) (cenc y) =
+      Isa.ofInt (sv (div x y)) ^^^ ((Isa.ofInt (sv (div x y)) ^^^ cenc x ^^^ cenc y) &&& G) := by
+  obtain ⟨hL1, hb1⟩ := shl_top hx
+  obtain ⟨hL2, hb2⟩ := shl_top hy
+  have hn : (cenc x <<< 1) % W ^^^ ONES < W := Nat.xor_lt_two_pow (n := 64) hL1 (by decide)
+  have hm : sar63 ((cenc y <<< 1) % W &&& ((cenc x <<< 1) % W ^^^ ONES)) =
+      if decide (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then ONES else 0 := by
+    rw [sar63_and hL2 hn, show ONES = 18446744073709551615 from rfl, Isa.xor_ones hL1]
+    have : x.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+    have e : (2 ^ 63 ≤ 18446744073709551615 - (cenc x <<< 1) % W) ↔ x.d.val % 2 = 0 := by
+      have := hb1; comega
+    simp only [hb2, e, decide_eq_true_eq]
+  unfold cdiv2
+  simp only []
+  rw [two_v hx, two_v hy, hm, wdiv_two hx hy, condneg_ofInt, sv_div]
+
+/-- **The round 2 divide is round 1's division** (a nonzero divisor, the quotient fits; divisibility not needed). -/
+theorem cdiv2_ref (x y : Num) (hx : fits x) (hy : fits y) (hz : fits (div x y)) :
+    cdiv2 (cenc x) (cenc y) = cenc (div x y) := by
+  rw [cdiv2_q x y hx hy, fix_cenc hx hy hz (div_axis x y)]
+
+/-- **The one quotient that does not fit**, `+2^62` (`−2^62 / ±1` with the sign rule), gives the zero of its axis
+(the research: "0 on the right axis", not the wrap). -/
+theorem cdiv2_ovf (x y : Num) (hx : fits x) (hy : fits y) (hy0 : 0 < y.m) (hz : ¬ fits (div x y)) :
+    cdiv2 (cenc x) (cenc y) = cenc ⟨0, (div x y).d⟩ := by
+  have hG : sv (div x y) = (G : Int) := by
+    obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+    have hle : m1 / m2 ≤ m1 := Nat.div_le_self _ _
+    unfold fits at hx hz; unfold sv; simp only [div] at hz ⊢; dsimp only at hx hy0
+    rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
+      simp at hx hz ⊢ <;> comega
+  rw [cdiv2_q x y hx hy, hG]
+  have hxy : 2 * (cu x / G) + x.d.val % 2 ^^^ 2 * (cu y / G) + y.d.val % 2 < 4 :=
+    h_xor_lt (cenc_h hx) (cenc_h hy)
+  rw [show Isa.ofInt (G : Int) = P 1 0 from rfl, Nat.xor_assoc, cenc, cenc, P_xor (cenc_c x) (cenc_c y),
+    fix_P (by decide) hxy (by decide) (Nat.xor_lt_two_pow (n := 62) (cenc_c x) (cenc_c y)),
+    h_xor_mod2 (cenc_h hx) (cenc_h hy)]
+  have e0 : cenc ⟨0, (div x y).d⟩ = P ((div x y).d.val % 2) 0 := by simp [cenc, cu]
+  rw [e0, div_axis]
+  congr 1
+  omega
+
 end Cpl
 end Header

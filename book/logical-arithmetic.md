@@ -300,15 +300,7 @@ Instructions: 3 each, 4 for both; the compare that gives $k$ is one more
 
 ## Arithmetic operations
 
-### Addition from XOR and AND
-
-$$a + b = (a \text{ XOR } b) + 2\,(a \text{ AND } b)$$
-
-Instructions: 4
-
-XOR adds each bit without carrying. AND marks the bits that carry, and each carry moves one place left, which doubles it.
-
-### Addition from AND and OR
+### Addition
 
 $$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
 
@@ -335,8 +327,7 @@ OR counts each bit set in either word once, and AND counts again the bits set in
 ## Glossary
 
 - **Absolute value** (XOR): $x$ or $-x$, by the sign's mask. 2 instructions.
-- **Addition from AND and OR** (arithmetic): $a + b$ as AND plus OR. 3.
-- **Addition from XOR and AND** (arithmetic): $a + b$ as the sum without carries plus the carries. 4.
+- **Addition** (arithmetic): $a + b$ as AND plus OR. 3.
 - **Combining flags** (OR): 1 if either flag is 1. 1.
 - **Comparing** (XOR): 0 exactly when two words are equal. 1.
 - **Conditional add** (AND): adds $y$ or nothing. 2.

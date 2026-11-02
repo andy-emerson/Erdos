@@ -12,7 +12,9 @@ arithmetic shift right (`sar`); `sdiv` is the signed divide, truncating toward z
 RISC-V `div`); `<` on `BitVec` is the **unsigned** compare. `toInt` reads a word signed (two's complement),
 `toNat` unsigned, and `BitVec.ofInt 64 z` stores the integer `z` mod `2^64`.
 
-The rules are transcribed from spec §4a. `none` is "an error (an expression)".
+The rules are transcribed from spec §4a. `none` is "an error (an expression)". `div` is the current division rule,
+whose divisor is `w2 and not 1`; `divOld`, the first rule (divisor `w2 sar 1`), is kept for finding C-a. Section 7
+proves the reference facts for Control (the machine's signed negate and divide).
 -/
 
 set_option linter.unusedVariables false
@@ -217,12 +219,30 @@ def mul (w1 w2 : Word) : Word :=
   let p := if w1 &&& w2 &&& 1#64 = 1#64 then -p else p
   p ||| ((w1 ^^^ w2) &&& 1#64)
 
-/-- **Exact division**: `q = (w1 and not 1) / (w2 sar 1)`, signed, negated when `a2 = 1` and `a1 = 0`, then OR
-`(w1 xor w2) and 1`. -/
+/-- **Exact division** (the current rule): `q = (w1 and not 1) / (w2 and not 1)`, signed, so `2v1 / 2v2 = v1 / v2`;
+then shift left 1 (`2q`); negated when `a2 = 1` and `a1 = 0`; then OR `(w1 xor w2) and 1`. -/
 def div (w1 w2 : Word) : Word :=
+  let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
+  let q := q <<< 1
+  let q := if w2 &&& 1#64 = 1#64 ∧ w1 &&& 1#64 = 0#64 then -q else q
+  q ||| ((w1 ^^^ w2) &&& 1#64)
+
+/-- **Exact division, the old rule** (spec §4a before the fix): `q = (w1 and not 1) / (w2 sar 1)`, signed, negated
+when `a2 = 1` and `a1 = 0`, then OR `(w1 xor w2) and 1`. Kept to record finding C-a. -/
+def divOld (w1 w2 : Word) : Word :=
   let q := (w1 &&& ~~~1#64).sdiv (w2.sshiftRight 1)
   let q := if w2 &&& 1#64 = 1#64 ∧ w1 &&& 1#64 = 0#64 then -q else q
   q ||| ((w1 ^^^ w2) &&& 1#64)
+
+/-- The most negative word, `-2^63`. -/
+def intMin : Word := BitVec.intMin 64
+
+/-- **x86-64's `idiv` overflow trap**: a 64-by-64-bit signed divide raises a divide error when the dividend is
+`-2^63` and the divisor is `-1` (the quotient `2^63` does not fit). -/
+def idivTraps (x y : Word) : Prop := x = intMin ∧ y = -1#64
+
+/-- Every fault of `idiv`: the overflow trap, or a zero divisor (also a divide error on x86-64). -/
+def idivFaults (x y : Word) : Prop := y = 0#64 ∨ idivTraps x y
 
 /-! ### The word pieces, read as integers -/
 
@@ -530,28 +550,35 @@ theorem val_divNum_mul {x y : Num} (hy : y.v ≠ 0) (hd : y.v ∣ x.v) : (divNum
   simp only [divNum, Int.mul_ediv_cancel_left _ hy]
   apply GI.ext' <;> cases a1 <;> cases a2 <;> simp <;> grind
 
-/-- The signed divide of `2(v2 k)` by `v2` is `2k`, exactly, when both operands are in range. -/
+/-- The signed divide of `2(v2 k)` by `2v2` is `k`, exactly, when `v2 ≠ 0` and both values are in range. -/
 theorem sdiv_exact {k v2 : Int} (hv2 : v2 ≠ 0) (h2 : InRange v2) (hk : InRange (v2 * k)) :
-    (BitVec.ofInt 64 (2 * (v2 * k))).sdiv (BitVec.ofInt 64 v2) = BitVec.ofInt 64 (2 * k) := by
+    (BitVec.ofInt 64 (2 * (v2 * k))).sdiv (BitVec.ofInt 64 (2 * v2)) = BitVec.ofInt 64 k := by
   unfold InRange at h2 hk
   apply BitVec.eq_of_toInt_eq
   rw [BitVec.toInt_sdiv, BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega)
       (by show _ < 2^63; omega),
     BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega) (by show _ < 2^63; omega),
-    BitVec.toInt_ofInt, Int.mul_left_comm, Int.mul_tdiv_cancel_left _ hv2]
+    BitVec.toInt_ofInt, ← Int.mul_assoc, Int.mul_tdiv_cancel_left _ (by omega)]
+
+/-- Shifting left by one doubles, mod `2^64`. -/
+theorem shl_one (k : Int) : BitVec.ofInt 64 k <<< 1 = BitVec.ofInt 64 (2 * k) := by
+  apply BitVec.eq_of_toNat_eq
+  rw [BitVec.toNat_shiftLeft, BitVec.toNat_ofInt, BitVec.toNat_ofInt, Nat.shiftLeft_eq]
+  omega
 
 theorem div_cond (a1 a2 : Bool) :
     (BitVec.ofInt 64 (abit a2) = 1#64 ∧ BitVec.ofInt 64 (abit a1) = 0#64) ↔ (!a1 && a2) = true := by
   cases a1 <;> cases a2 <;> decide
 
-/-- When `v2 ≠ 0` divides `v1`, the division rule's word is `2·v + a` of the quotient pair, mod `2^64`. -/
+/-- When `v2 ≠ 0` divides `v1`, the division rule's word is `2·v + a` of the quotient pair, mod `2^64` (no range
+hypothesis on the quotient). -/
 theorem div_eq {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) (hd : (dec w2).v ∣ (dec w1).v) :
     div w1 w2 = BitVec.ofInt 64 (2 * (divNum (dec w1) (dec w2)).v + abit (divNum (dec w1) (dec w2)).a) := by
   obtain ⟨k, hk⟩ := hd
   have h1 := dec_range w1; rw [hk] at h1
   unfold div
   simp only []
-  rw [clr_eq, sar_eq, lo_eq w1, lo_eq w2, xor_axis, hk, sdiv_exact hv2 (dec_range w2) h1]
+  rw [clr_eq w1, clr_eq w2, lo_eq w1, lo_eq w2, xor_axis, hk, sdiv_exact hv2 (dec_range w2) h1, shl_one]
   simp only [div_cond]
   simp only [divNum, hk, Int.mul_ediv_cancel_left _ hv2]
   cases !(dec w1).a && (dec w2).a
@@ -583,45 +610,122 @@ theorem div_unique {x y z : Num} (hy : y.v ≠ 0) (hd : y.v ∣ x.v) (h : z.val 
   · exact Int.eq_of_mul_eq_mul_right hy him
   · exact Int.eq_of_mul_eq_mul_right hy (by omega)
 
-/-- **Overflow in division.** `-2^62 / -1 = 2^62` is out of range. The model's signed divide wraps (`-2^63 / -1`
-gives `-2^63`), so the word decodes to `-2^62`. On x86-64, `idiv` of `-2^63` by `-1` raises a divide error
-instead (ARM64 `sdiv` and RISC-V `div` give `-2^63`, as here). -/
-theorem div_overflow_example : div (enc ⟨-2^62, false⟩) (enc ⟨-1, false⟩) = enc ⟨-2^62, false⟩ := by
+/-! ### The divide never faults -/
+
+theorem intMin_toInt : intMin.toInt = -2^63 := by decide
+
+theorem idivTraps_iff (x y : Word) : idivTraps x y ↔ x.toInt = -2^63 ∧ y.toInt = -1 := by
+  unfold idivTraps
+  rw [← BitVec.toInt_inj (x := x), ← BitVec.toInt_inj (x := y), intMin_toInt,
+    show (-1#64 : Word).toInt = -1 by decide]
+
+/-- `w and not 1`, read signed, is `2v`: an even number. -/
+theorem clr_toInt (w : Word) : (w &&& ~~~1#64).toInt = 2 * (dec w).v := by
+  have h1 := dec_range w
+  rw [clr_eq]; unfold InRange at h1
+  exact BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega) (by show _ < 2^63; omega)
+
+/-- **The new divide never traps**, for any two words: its divisor `w2 and not 1` is even, so never `-1`. -/
+theorem div_never_traps (w1 w2 : Word) : ¬ idivTraps (w1 &&& ~~~1#64) (w2 &&& ~~~1#64) := by
+  rw [idivTraps_iff, clr_toInt, clr_toInt]; omega
+
+/-- Its divisor is zero exactly when `v2 = 0`. -/
+theorem clr_eq_zero_iff (w : Word) : w &&& ~~~1#64 = 0#64 ↔ (dec w).v = 0 := by
+  rw [← BitVec.toInt_inj, clr_toInt, show (0#64 : Word).toInt = 0 by decide]; omega
+
+/-- **So it never faults** when `v2 ≠ 0`, with no range hypothesis on the quotient. -/
+theorem div_never_faults {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) :
+    ¬ idivFaults (w1 &&& ~~~1#64) (w2 &&& ~~~1#64) := by
+  rintro (h | h)
+  · exact hv2 ((clr_eq_zero_iff w2).1 h)
+  · exact div_never_traps w1 w2 h
+
+/-- **`(-2^62) / (-i) = -2^62 i`**, the case that trapped under the old rule, step by step: `2v1 / 2v2 = -2^63 / -2`
+is `2^62`; `2q = 2^63` wraps to `-2^63`; the negation (`a2 = 1`, `a1 = 0`) leaves `-2^63`; and OR 1 gives
+`-2^63 + 1 = 2·(-2^62) + 1`, the word of `-2^62 i`. -/
+theorem div_edge_steps :
+    let w1 := enc ⟨-2^62, false⟩
+    let w2 := enc ⟨-1, true⟩
+    let q := (w1 &&& ~~~1#64).sdiv (w2 &&& ~~~1#64)
+    (w1 &&& ~~~1#64).toInt = -2^63 ∧ (w2 &&& ~~~1#64).toInt = -2 ∧
+    q.toInt = 2^62 ∧ (q <<< 1).toInt = -2^63 ∧ (-(q <<< 1)).toInt = -2^63 ∧
+    (-(q <<< 1) ||| ((w1 ^^^ w2) &&& 1#64)) = enc ⟨-2^62, true⟩ := by
   decide +kernel
 
-/-- **An in-range quotient through `-2^63 / -1`.** `(-2^62) / (-i) = -2^62 i`, which is in range, so `dec_div`
-covers it and the rule is right in this model. But the rule's intermediate is `(w1 and not 1) / (w2 sar 1)`
-`= -2^63 / -1`, the one signed divide that overflows: x86-64's `idiv` raises a divide error on it, so on x86-64 this
-in-range division traps instead of returning. (ARM64 and RISC-V return `-2^63`, and the negation then gives the right
-word, as here.) -/
 theorem div_edge_example : div (enc ⟨-2^62, false⟩) (enc ⟨-1, true⟩) = enc ⟨-2^62, true⟩ := by
   decide +kernel
 
 theorem div_edge_in_range : InRange (divNum ⟨-2^62, false⟩ ⟨-1, true⟩).v := by decide
 
-theorem div_edge_intermediate :
-    (enc ⟨-2^62, false⟩ &&& ~~~1#64).toInt = -2^63 ∧ ((enc ⟨-1, true⟩).sshiftRight 1).toInt = -1 := by
+/-! ### The old rule (finding C-a) -/
+
+/-- The old rule's signed divide of `2(v2 k)` by `v2` is `2k` in the model (wrapping on `-2^63 / -1`). -/
+theorem sdivOld_exact {k v2 : Int} (hv2 : v2 ≠ 0) (h2 : InRange v2) (hk : InRange (v2 * k)) :
+    (BitVec.ofInt 64 (2 * (v2 * k))).sdiv (BitVec.ofInt 64 v2) = BitVec.ofInt 64 (2 * k) := by
+  unfold InRange at h2 hk
+  apply BitVec.eq_of_toInt_eq
+  rw [BitVec.toInt_sdiv, BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega)
+      (by show _ < 2^63; omega),
+    BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega) (by show _ < 2^63; omega),
+    BitVec.toInt_ofInt, Int.mul_left_comm, Int.mul_tdiv_cancel_left _ hv2]
+
+theorem divOld_eq {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) (hd : (dec w2).v ∣ (dec w1).v) :
+    divOld w1 w2 = BitVec.ofInt 64 (2 * (divNum (dec w1) (dec w2)).v + abit (divNum (dec w1) (dec w2)).a) := by
+  obtain ⟨k, hk⟩ := hd
+  have h1 := dec_range w1; rw [hk] at h1
+  unfold divOld
+  simp only []
+  rw [clr_eq, sar_eq, lo_eq w1, lo_eq w2, xor_axis, hk, sdivOld_exact hv2 (dec_range w2) h1]
+  simp only [div_cond]
+  simp only [divNum, hk, Int.mul_ediv_cancel_left _ hv2]
+  cases !(dec w1).a && (dec w2).a
+  · simp only [Bool.false_eq_true, ↓reduceIte]; rw [or_axis]
+  · simp only [↓reduceIte]; rw [← BitVec.ofInt_neg, ← Int.mul_neg, or_axis]
+
+/-- **The new rule agrees with the old** on every exact division (`v2 ≠ 0`, `v2 ∣ v1`), as words, in the model
+(where the old rule's divide wraps instead of trapping). -/
+theorem div_eq_divOld {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) (hd : (dec w2).v ∣ (dec w1).v) :
+    div w1 w2 = divOld w1 w2 := by
+  rw [div_eq hv2 hd, divOld_eq hv2 hd]
+
+/-- ... in particular wherever the old rule does not trap on x86-64. -/
+theorem div_agrees_where_old_runs {w1 w2 : Word} (hv2 : (dec w2).v ≠ 0) (hd : (dec w2).v ∣ (dec w1).v)
+    (hnt : ¬ idivTraps (w1 &&& ~~~1#64) (w2.sshiftRight 1)) : div w1 w2 = divOld w1 w2 :=
+  div_eq_divOld hv2 hd
+
+/-- The two rules differ off exact division: `1 / 2` (real) is the word 1 under the old rule (it reads as `0·i`) and
+the word 0 under the new. Spec §1 excludes such operands. -/
+theorem div_inexact_differ :
+    divOld (enc ⟨1, false⟩) (enc ⟨2, false⟩) = 1#64 ∧ div (enc ⟨1, false⟩) (enc ⟨2, false⟩) = 0#64 := by
   decide +kernel
 
-/-- That is the only such case: among divisions whose quotient is in range, the intermediate divide is
-`-2^63 / -1` exactly when `v1 = -2^62` is real and `v2 = -1` is imaginary. -/
+/-- **Overflow in the old rule.** `-2^62 / -1 = 2^62` is out of range. The model's signed divide wraps (`-2^63 / -1`
+gives `-2^63`), so the word decodes to `-2^62`; on x86-64 the old rule traps here. -/
+theorem divOld_overflow_example : divOld (enc ⟨-2^62, false⟩) (enc ⟨-1, false⟩) = enc ⟨-2^62, false⟩ := by
+  decide +kernel
+
+/-- **Finding C-a, the old rule's trap.** The old rule's divide `(w1 and not 1) / (w2 sar 1)` traps exactly when
+`v1 = -2^62` and `v2 = -1`. -/
+theorem divOld_traps_iff (w1 w2 : Word) :
+    idivTraps (w1 &&& ~~~1#64) (w2.sshiftRight 1) ↔ ((dec w1).v = -2^62 ∧ (dec w2).v = -1) := by
+  rw [idivTraps_iff, clr_toInt, show (w2.sshiftRight 1).toInt = (dec w2).v from rfl]; omega
+
+/-- Among divisions whose quotient is in range, the old rule traps exactly for `v1 = -2^62` real and `v2 = -1`
+imaginary: `(-2^62) / (-i) = -2^62 i` (`div_edge_in_range`) trapped on x86-64. -/
 theorem div_trap_iff {w1 w2 : Word} (hov : InRange (divNum (dec w1) (dec w2)).v) :
-    ((w1 &&& ~~~1#64).toInt = -2^63 ∧ (w2.sshiftRight 1).toInt = -1) ↔
+    idivTraps (w1 &&& ~~~1#64) (w2.sshiftRight 1) ↔
       ((dec w1).v = -2^62 ∧ (dec w2).v = -1 ∧ (dec w1).a = false ∧ (dec w2).a = true) := by
-  have h1 := dec_range w1
-  have hc : (w1 &&& ~~~1#64).toInt = 2 * (dec w1).v := by
-    rw [clr_eq]; unfold InRange at h1
-    exact BitVec.toInt_ofInt_eq_self (by decide) (by show -2^63 ≤ _; omega) (by show _ < 2^63; omega)
-  have hs : (w2.sshiftRight 1).toInt = (dec w2).v := rfl
-  rw [hc, hs]
+  rw [divOld_traps_iff]
   constructor
   · rintro ⟨e1, e2⟩
-    have e1' : (dec w1).v = -2^62 := by omega
     unfold divNum InRange at hov
-    rw [e1', e2] at hov
-    refine ⟨e1', e2, ?_⟩
+    rw [e1, e2] at hov
+    refine ⟨e1, e2, ?_⟩
     cases ha1 : (dec w1).a <;> cases ha2 : (dec w2).a <;> simp [ha1, ha2] at hov ⊢
-  · rintro ⟨e1, e2, -, -⟩; omega
+  · rintro ⟨e1, e2, -, -⟩; exact ⟨e1, e2⟩
+
+theorem divOld_edge_example : divOld (enc ⟨-2^62, false⟩) (enc ⟨-1, true⟩) = enc ⟨-2^62, true⟩ := by
+  decide +kernel
 
 /-! ## 6. Agreement with Design A -/
 
@@ -680,6 +784,65 @@ theorem same_numbers_C_to_A (w : Word) : ∃ y : A.Num, A.val y = wval w ∧ y.m
 
 theorem same_numbers_A_to_C {y : A.Num} (hy : y.m < 2^62) : ∃ w : Word, wval w = A.val y :=
   ⟨enc (ofA y), by unfold wval; rw [dec_enc (ofA_range hy), val_ofA]⟩
+
+/-! ## 7. Control, for reference: the machine's signed negate and divide
+
+The machine's own signed integers (spec §2) on the same 64-bit words: a value is `x.toInt`, in
+`-2^63 ≤ z < 2^63` (`InRange64`). -/
+
+/-- The range of a signed 64-bit integer. -/
+def InRange64 (z : Int) : Prop := -2^63 ≤ z ∧ z < 2^63
+
+/-- **Signed negate is exact except at `-2^63`.** -/
+theorem ctl_neg {x : Word} (h : x ≠ intMin) : (-x).toInt = -x.toInt := by
+  have hx : x.toInt ≠ -2^63 := fun e => h (BitVec.toInt_inj.1 (by rw [e, intMin_toInt]))
+  have hb := toInt_bounds x
+  rw [BitVec.toInt_neg]
+  exact Int.bmod_eq_of_le (by show -(2^64/2 : Int) ≤ _; omega) (by rw [Int.natCast_pow]; omega)
+
+/-- `-(-2^63) = -2^63`: the one input whose negation wraps. -/
+theorem ctl_neg_intMin : -intMin = intMin := by decide
+
+/-- **Exactly one input has no negation in range**: `-x` is out of range exactly when `x = -2^63`. -/
+theorem ctl_neg_out_iff (x : Word) : ¬ InRange64 (-x.toInt) ↔ x = intMin := by
+  rw [← BitVec.toInt_inj, intMin_toInt]
+  have hb := toInt_bounds x
+  unfold InRange64; omega
+
+/-- A nonzero word reads as a nonzero integer. -/
+theorem toInt_ne_zero {y : Word} (hy : y ≠ 0#64) : y.toInt ≠ 0 :=
+  fun e => hy (BitVec.toInt_inj.1 (by rw [e]; decide))
+
+/-- **Signed divide traps exactly where the true quotient is out of range.** For `y ≠ 0`, the truncated quotient
+`x.toInt / y.toInt` is out of range exactly on `idivTraps x y`, i.e. `-2^63 / -1`. -/
+theorem ctl_div_out_iff (x y : Word) (hy : y ≠ 0#64) :
+    ¬ InRange64 (x.toInt.tdiv y.toInt) ↔ idivTraps x y := by
+  rw [idivTraps_iff]
+  have hy0 := toInt_ne_zero hy
+  have hx := toInt_bounds x; have hyb := toInt_bounds y
+  unfold InRange64
+  by_cases h1 : y.toInt = -1
+  · rw [h1, show (-1 : Int) = -(1 : Int) from rfl, Int.tdiv_neg, Int.tdiv_one]; omega
+  · by_cases h2 : y.toInt = 1
+    · rw [h2, Int.tdiv_one]; omega
+    · have hb : 2 ≤ y.toInt.natAbs := by omega
+      have hq : (x.toInt.tdiv y.toInt).natAbs ≤ 2^62 := by
+        rw [Int.natAbs_tdiv]
+        have := Nat.div_le_div_left (a := x.toInt.natAbs) hb (by decide)
+        show x.toInt.natAbs / y.toInt.natAbs ≤ _
+        omega
+      omega
+
+/-- The trapping case's true quotient is `2^63`, one past the range: in Control the trap is genuine overflow. -/
+theorem ctl_trap_quotient : intMin.toInt.tdiv (-1#64 : Word).toInt = 2^63 := by decide
+
+/-- Off the trap (and off a zero divisor), the machine's signed divide is the true truncated quotient. -/
+theorem ctl_sdiv {x y : Word} (hy : y ≠ 0#64) (h : ¬ idivTraps x y) :
+    (x.sdiv y).toInt = x.toInt.tdiv y.toInt := by
+  have hr := (not_congr (ctl_div_out_iff x y hy)).2 h
+  simp only [Classical.not_not, InRange64] at hr
+  rw [BitVec.toInt_sdiv]
+  exact Int.bmod_eq_of_le (by show -(2^64/2 : Int) ≤ _; omega) (by rw [Int.natCast_pow]; omega)
 
 end C
 end Header

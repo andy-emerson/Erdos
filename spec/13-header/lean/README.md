@@ -241,15 +241,29 @@ Spec v0.2 §4a and §5. A number is `Num = (v : Int, a : Bool)`, with value `val
 | **`dec_mul`**, **`mul_value`** | With the true product in range, the word decodes to `mulNum` and its value is the product. |
 | `mul_wrap_example` | `(2^31 i)(2^31 i) = −2^62`: the intermediate `v1 · 2v2 = 2^63` wraps, and the result is still right. |
 
-**Item C5, exact division.** `divNum (v1, a1) (v2, a2) = ((−1)^((1 − a1)·a2) v1/v2, a1 xor a2)`.
+**Item C5, exact division.** `divNum (v1, a1) (v2, a2) = ((−1)^((1 − a1)·a2) v1/v2, a1 xor a2)`. `div` is the current rule of §4a: `q = (w1 and not 1) / (w2 and not 1)` (`2v1 / 2v2`), `q shl 1`, negated when `a2 = 1` and `a1 = 0`, OR the axis. `divOld` is the first rule, with divisor `w2 sar 1`. `idivTraps x y` is x86-64's `idiv` overflow trap, `x = −2^63 ∧ y = −1`; `idivFaults` adds a zero divisor.
 
 | Theorem | Statement |
 | --- | --- |
 | **`val_divNum_mul`**, `div_unique` | When `v2 ≠ 0` divides `v1`, `divNum` times the divisor is the dividend, and is the only such value. |
-| `sdiv_exact`, `div_eq` | The signed divide of `2v1` by `v2` is `2(v1/v2)` exactly; the rule's word is `2v + a` of `divNum`, mod `2^64`. |
+| `sdiv_exact`, `shl_one`, `div_eq` | `2v1 / 2v2` is `v1/v2` exactly, `shl 1` doubles mod `2^64`, and the rule's word is `2v + a` of `divNum`, mod `2^64`. |
 | **`dec_div`**, **`div_value`** | With `v2 ≠ 0`, `v2 ∣ v1` and the true quotient in range, the word decodes to `divNum`. |
-| `div_overflow_example` | `−2^62 / −1` (out of range) wraps to `−2^62`. |
-| `div_edge_example`, `div_edge_in_range`, `div_edge_intermediate`, `div_trap_iff` | `(−2^62)/(−i) = −2^62 i` is in range, but its intermediate is `−2^63 / −1`; among in-range quotients this is the only such case. See finding C-a. |
+| **`div_never_traps`** | For **any** two words, the new rule's divide is not `−2^63 / −1`: its divisor `2v2` is even. No range hypothesis. |
+| **`div_never_faults`**, `clr_eq_zero_iff` | With `v2 ≠ 0` it does not fault at all (its divisor is 0 exactly when `v2 = 0`). |
+| **`div_edge_steps`**, `div_edge_example`, `div_edge_in_range` | `(−2^62)/(−i) = −2^62 i`, step by step: `−2^63 / −2 = 2^62`; `shl 1` wraps to `−2^63`; the negation leaves `−2^63`; OR 1 gives the word of `−2^62 i`. |
+| **`div_eq_divOld`**, `div_agrees_where_old_runs` | On every exact division the new rule's word equals the old rule's (in the model, where the old divide wraps), so in particular wherever the old one does not trap. |
+| `div_inexact_differ` | Off exact division they differ (`1 / 2`: old gives the word 1, new the word 0); spec §1 excludes such operands. |
+| **`divOld_traps_iff`**, **`div_trap_iff`**, `divOld_edge_example`, `divOld_overflow_example` | The old rule traps exactly when `v1 = −2^62` and `v2 = −1`; among in-range quotients, exactly for `v1` real and `v2` imaginary, `(−2^62)/(−i)`. Finding C-a, kept as a record. |
+
+**Item C7, Control for reference** (the machine's signed integers on the same words; `InRange64 z` is `−2^63 ≤ z < 2^63`).
+
+| Theorem | Statement |
+| --- | --- |
+| `ctl_neg`, `ctl_neg_intMin` | Signed negate is exact for every `x ≠ −2^63`; `−(−2^63) = −2^63`. |
+| **`ctl_neg_out_iff`** | Exactly one input has no negation in range: `−2^63`. |
+| **`ctl_div_out_iff`** | For `y ≠ 0`, the true truncated quotient is out of range exactly on `idivTraps x y`. |
+| `ctl_trap_quotient` | That quotient is `2^63`: in Control the trap is genuine overflow (unlike C's old rule). |
+| `ctl_sdiv` | Off the trap and a zero divisor, the machine's divide is the true truncated quotient. |
 
 **Item C6, agreement with A.** `toA (v, a) = (|v|, d)` with `d = 2s + a`, `s = 1` for `v < 0`; `ofA (m, d) = (±m, d mod 2)`, minus for `d = 2, 3`.
 
@@ -262,10 +276,10 @@ Spec v0.2 §4a and §5. A number is `Num = (v : Int, a : Bool)`, with value `val
 
 **Design C findings.** No rule in §4a or the notes is false under the no-overflow hypothesis.
 
-- **C-a. One in-range division traps on x86-64.** `(−2^62) / (−i) = −2^62 i` is in range, and the rule computes it right in the model (`dec_div`, `div_edge_example`). But its intermediate is `(w1 and not 1) / (w2 sar 1) = −2^63 / −1`, and x86-64's `idiv` raises a divide error on that. ARM64 `sdiv` and RISC-V `div` return `−2^63`, and the negation then gives the right word. `div_trap_iff` proves it is the only in-range case (`v1 = −2^62` real, `v2 = −1` imaginary). Spec §1's "no result overflows" does not exclude it.
+- **C-a. One in-range division trapped on x86-64 (fixed).** Under the first rule, `(−2^62) / (−i) = −2^62 i` is in range and comes out right in the model, but its intermediate `(w1 and not 1) / (w2 sar 1)` is `−2^63 / −1`, on which x86-64's `idiv` raises a divide error (ARM64 `sdiv` and RISC-V `div` return `−2^63`). `div_trap_iff` proves it was the only in-range case. Spec §4a now divides by `w2 and not 1` and shifts left after. `div_never_traps` proves the new divide never traps for any words, and `div_eq_divOld` proves it gives the same words on every exact division. The step `2q` can wrap (`2^62 → −2^63`), and the negation and OR still give the right word (`div_edge_steps`). In Control the same trap is genuine overflow (`ctl_div_out_iff`).
 - **C-b. Negation's edge case.** `−(−2^62)` is out of range, and the rule returns the operand unchanged (`neg_edge`), like the machine's own `−(−2^63)`. It also reaches subtraction across axes with `v1 = 0`, `v2 = −2^62`. This is overflow, which the spec puts out of scope, but the notes' "negation negates the value" holds only for `v > −2^62`.
 - **C-c. Zero has two words**, 0 and 1. The notes' table says C has "exactly one" form of a number; that holds for nonzero numbers, the same caveat as A's four zeros.
-- **C-d. Only the result must be in range.** Multiply and divide may wrap in their intermediates (`mul_wrap_example`) and still give the right word, since the result is fixed mod `2^64`.
+- **C-d. Only the result must be in range.** Multiply and divide may wrap in their intermediates (`mul_wrap_example`, `div_edge_steps`) and still give the right word, since the result is fixed mod `2^64`.
 
 ### Word-level routines (`Header/Words.lean`, namespace `Header.Words`)
 
@@ -349,7 +363,7 @@ Five observations do not contradict the documents:
 - `Header/Clock.lean`: the clock model and the borrow lemma.
 - `Header/DesignA.lean`: items 1–7.
 - `Header/DesignB.lean`: item 8.
-- `Header/DesignC.lean`: Design C on 64-bit words, items C1–C6.
+- `Header/DesignC.lean`: Design C on 64-bit words, items C1–C7.
 - `Header/FourSlot.lean`: item 9.
 - `Header/Words.lean`: part two, the word-level routines.
 - `.gitignore`: excludes the build directory `.lake/`.

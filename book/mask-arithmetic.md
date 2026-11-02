@@ -24,7 +24,25 @@ Flipping every bit of 6 gives 9, which is $15 - 6$.
 
 $$(x \text{ XOR } m) + k = \begin{cases} x & m = 0000,\ k = 0 \\ 16 - x & m = 1111,\ k = 1 \end{cases}$$
 
-For example, with $x = 6$ and $k = 1$: $(0110 \text{ XOR } 1111) + 1 = 1001 + 1 = 1010$, which is 10, and $10 \equiv -6 \pmod{16}$. With $k = 0$, the word comes back as 6.
+For example, take $x = 0110$ (6). With $k = 1$, the mask is $m = 1111$, and the word is negated:
+
+$$\begin{aligned}
+(x \text{ XOR } m) + k &= (0110 \text{ XOR } 1111) + 1 \\
+&= 1001 + 1 \\
+&= 1010 \\
+&= 10 \\
+&= 16 - 6 \\
+&\equiv -6 \pmod{16}
+\end{aligned}$$
+
+With $k = 0$, the mask is $m = 0000$, and the word comes back unchanged:
+
+$$\begin{aligned}
+(x \text{ XOR } m) + k &= (0110 \text{ XOR } 0000) + 0 \\
+&= 0110 + 0 \\
+&= 0110 \\
+&= 6
+\end{aligned}$$
 
 ## AND
 

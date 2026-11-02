@@ -104,7 +104,7 @@ theorem bfInt_run (m1 m2 : Nat) (hm1 : m1 < W) (hm2 : m2 < W) (xh xm yh ym zh zm
   all_goals run_prog [bfInt, pre, kk, regs6, hdr, e1, e2, e3, e4, List.range, List.range.loop,
       borrow_lemma hm1 hm2, absDiff, borrow, wsltu, wneg_zero, wneg_one, wsub_zero hd, condneg_ones hd,
       select_ones hs hd', select_ones' hs2 hsub1, select_ones' hs2 hsub2, select_ones' hs2 hm1, select_ones' hs2 hm2, wsub_zero hsub1, wsub_zero hsub2, wsub_zero hm1, wsub_zero hm2, wadd_clock hm1 hm2, wsub_of_le hm1, wsub_of_le hm2,
-      wneg_wsub hm1 hm2, h, h', h'']
+      wneg_wsub hm1 hm2, h, h', h'', mod_W_128, mod_W_0, wadd_0_0, wadd_0_128, wadd_64_0, wadd_64_128, wadd_128_0, wadd_128_128, wadd_192_0, wadd_192_128]
 
 /-- **Branch-free complex add and subtract.** One path. Register 21 ends as the error flag: 1 exactly when round 1
 gives "an expression"; otherwise it is 0 and the stores are round 1's `A.add`. -/

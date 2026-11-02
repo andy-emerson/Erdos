@@ -1,4 +1,6 @@
-⚠ [13/37] Replayed Header.ProgC
+✔ [11/27] Built Header.ProgB (1.4s)
+✔ [12/27] Built Header.Control (2.0s)
+⚠ [13/27] Built Header.ProgC (929ms)
 warning: Header/ProgC.lean:53:26: This simp argument is unused:
   BitVec.toNat_not
 
@@ -6,3 +8,5 @@ Hint: Omit it from the simp argument list.
   [apply] simp [BitVec.toNat_and]
 
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+✔ [14/27] Built Header.CA_cxAdd_run_perArm_add (33s)
+✔ [15/27] Built Header.CA_cxAdd_run_perArm_sub (36s)

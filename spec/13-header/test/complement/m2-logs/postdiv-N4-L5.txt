@@ -143,3 +143,8 @@ N=4 target=postdiv lanes=220 ext=-
   [chunk 141 done: 0 hits, 1604130574 nodes so far]
 exit 124
 --- resume at chunk 142
+N=4 target=postdiv lanes=220 ext=-
+  [chunk 142 done: 0 hits, 7924048 nodes so far]
+  [chunk 143 done: 0 hits, 15814526 nodes so far]
+  [chunk 144 done: 0 hits, 21894986 nodes so far]
+  [chunk 145 done: 0 hits, 28822608 nodes so far]

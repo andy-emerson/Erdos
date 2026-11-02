@@ -200,3 +200,115 @@ So both operations are plain rational arithmetic plus a conditional negate of op
 - **Overflow.** As in milestone 1, only the final words must fit: $D_1 D_2 < T$ (division: $D_1 |n_2| < T$) and the true numerator in $n$ signed bits. The pre-negate $s n_2$ and the cross products may wrap.
 
 Reproduce: `python3 -I test/rational/m2.py` (15 s).
+
+## Milestone 3: superoptimizer
+
+**Files.**
+- [`test/rational/rsuper.c`](test/rational/rsuper.c): exhaustive search over straight-line DAG programs, adapted from `complement/superopt.c`.
+- [`test/rational/logs/`](test/rational/logs/): every run's output.
+- [`test/rational/generalize.py`](test/rational/generalize.py): re-checks every printed hit on $n = 3 \ldots 6$ (exhaustive) and 64 (random). All 200 printed hits hold; 0 failures.
+- [`test/rational/m3.py`](test/rational/m3.py): the winners written as full routines, checked like milestones 1–2.
+- [`test/rational/collide.py`](test/rational/collide.py): the impossibility check below.
+
+**Search set.**
+- Unary: `not`, `neg`, `shl 1`, `shl N-1`, `shr N-1`, `sar N-1`.
+- Binary: `+ - * and or xor andn`.
+- Constant ops: `and/or/xor/+/rsub` with $\{1, T, \lnot T, -1\}$.
+- The **reduced set**, used for the length-6 runs: unary `not, neg, shl N-1, sar N-1`; constant ops `and T`, `and ~T`, `or 1`, `xor T`; all binaries.
+- Every program in this report uses only the reduced set.
+
+**Lanes.** Every case of milestone 1 at that $N$: 780 multiply / 312 add lanes at $N = 3$; 6,464 / 2,596 at $N = 4$. Value equality is exact. A zero result may carry either axis.
+
+**Pruning.** Safe, as in `superopt.c`: duplicate values, unused values, canonical order, ordered commutative operands. So "no hit" is a proof within the set at that $N$.
+
+**What "no hit" covers.** The pruning is safe at that $N$. A 64-bit program carries over to the 3-bit test only if it is correct at 3 bits too. That holds for every program in this report, but it is an assumption, not a theorem.
+
+**Modes.**
+- **post**: inputs $n_1, d_1, n_2, d_2$ and the raw products $P$, $Q$ given free (add: $P = n_1 d_2 + n_2 d_1$; mul: $P = n_1 n_2$; both: $Q = d_1 d_2$). The count is the correction only.
+- **pre**: inputs $n_1, d_1, n_2, d_2$ only; multiplies are searched and counted (1 each). The count is the whole routine.
+- **both** means both output words. The other output may be an input, e.g. $\text{den} = Q$.
+
+### Results
+
+| Search | Layout | Shortest | Hits / searched |
+| --- | --- | --- | --- |
+| post add, num only | offset | **4** | none ≤ 3 ($N = 4$); 48 hits |
+| post add, den only | offset | **2**: $Q \text{ OR } (d_1 \text{ AND } T)$ | none ≤ 1 ($N = 4$) |
+| post add, both | offset | **5** (raw 4 → **9**) | none ≤ 4; 30 hits ($N = 3$), one family |
+| post add, both, no `*` | offset | **6** (→ 10) | none ≤ 5 ($N = 3$) |
+| post mul, num only | offset | 4 | none ≤ 3 ($N = 4$) |
+| post mul, den only | offset | 4 | none ≤ 3 ($N = 4$); 16 hits, all conditional choice |
+| post mul, both | offset | **≥ 6**; best known 8 (→ 10) | none ≤ 5 (full set, $N = 3$); none ≤ 5 reduced; length 6 stopped (about 3 h) |
+| post add, both | negated | **4** (→ 8) | none ≤ 3; 2 hits |
+| post mul, both | negated | **4** (→ 6); $\text{den} = Q$ | none ≤ 3 ($N = 3$ and 4); 9 hits |
+| pre add, both | offset | **≥ 7**; best known 8 | none ≤ 6 (reduced; full set ≤ 5) |
+| pre add, both | negated | **≥ 7**; best known 8 | none ≤ 6 (reduced; full set ≤ 5) |
+| pre mul, both | offset | **≥ 7**; best known 10 | none ≤ 6 (reduced; full set ≤ 5) |
+| pre mul, both | negated | **6**: optimal | none ≤ 5 (full set); 51 hits at 6, one family |
+| **one post fix for add and mul** | both | **impossible**, any length | none ≤ 5; proof below |
+| one fix, told the op ($k = 0 / -1$) | negated | 7 known | none ≤ 5 |
+| one fix, told the op ($k = -1 / +1$) | negated | **6**: optimal | none ≤ 5 ($N = 3$) |
+| one fix, told the op ($k = 0 / -1$) | offset | > 5 | none ≤ 5 |
+
+### The new formulas
+
+**Offset add, post form, 9** (raw 4 + 5):
+
+$$
+A = d_1 \text{ AND } T, \qquad \text{den} = Q \text{ OR } A, \qquad \text{num} = P \text{ XOR } \big((n_1 \text{ XOR } n_2) \cdot A\big)
+$$
+
+- **The denominator fix is 2, not 3.** When $a = 0$ there is no leak. When $a = 1$ the OR sets the bit whatever $D_1 + D_2$ is.
+- $(n_1 \text{ XOR } n_2) \cdot A = T \cdot a \cdot \text{parity}(n_1 + n_2)$ is the numerator's leak, made with one multiply and the same $A$.
+- Variants in the family: $n_1 \pm n_2$ in place of XOR; $P \pm$ in place of XOR; $d_2$ in place of $d_1$.
+- It is one longer than the strip form of milestone 2 (8). The searches put the whole routine at 7 or more.
+
+**Negated multiply, 6 (optimal).** All 51 hits are the milestone 2 formula, up to form:
+- $m = (d_1 \text{ AND } d_2) \text{ sar } (n-1)$;
+- or $m = (d_1 \text{ AND NOT } d_1 d_2) \text{ sar } (n-1)$: the top bit of $d_1 \land \lnot(d_1 d_2)$ is $a_1 \land \lnot(a_1 \oplus a_2) = a_1 a_2$, so it reuses the product;
+- the negate applied to $n_1$, $n_2$ or the product, by `xor/sub`, `add/xor` or $\cdot (m \text{ OR } 1)$.
+
+**Negated add, post form, 8:** $s = (d_1 \text{ sar } (n-1)) \text{ OR } 1$, then $\text{num} = P s$, $\text{den} = Q s$. It ties the pre-negate form of milestone 2.
+
+### A single shared correction: impossible
+
+A post-correction sees only $(n_1, d_1, n_2, d_2, P, Q)$, and some add lanes and multiply lanes have **identical** inputs but **different** required outputs. So no program of any length fixes both, unless it is told which operation ran. `collide.py` finds such pairs in both layouts for every $n$ checked.
+
+| Layout | Example | Add needs | Mul needs |
+| --- | --- | --- | --- |
+| offset ($n \ge 4$) | $n_1 = n_2 = 2$, $D_1 = D_2 = 1$, both imaginary: $P = 4$, $Q = 1$ for both | $4i$: num 4, den $1 + T$ | $-4$: num $-4$, den 1 |
+| negated ($n \ge 3$) | $n_1 = n_2 = -2$, $D = 1$, both imaginary: $P = 4$, $Q = 1$ for both | $-4i$: den $-1$ | $-4$: den $+1$ |
+
+Collisions: 3 / 21 / 76 / 258 / 676 / 1,839 lanes (offset, $n = 3 \ldots 8$); 3 / 17 / 68 / 230 / 676 / 1,851 (negated).
+
+**What can be shared** is the work before the raw operation, or a fix that is told the operation.
+
+**Told the operation** (negated layout), as a word $k = -1$ for add and $+1$ for multiply, 6 (optimal: none ≤ 5):
+
+$$
+s = \big((d_1 \text{ AND } d_2) \text{ sar } (n-1)\big) \text{ OR } 1, \qquad \text{num} = P \cdot s, \qquad \text{den} = Q \cdot (s \text{ AND } k)
+$$
+
+- $s = \pm 1$ is $(-1)^a$ for add and $(-1)^{a_1 a_2}$ for multiply. $s \text{ AND } k$ is $s$ for add and $1$ for multiply.
+- With $k$ as a mask ($0 / -1$) the shortest known is 7: $\text{den} = Q \cdot ((m \text{ AND NOT } k) \text{ OR } 1)$.
+- The routines cost 4 + 6 = 10 (add) and 2 + 6 = 8 (multiply), against the separate 8 and 6. **Sharing costs 2 here.** It pays only where one code path must serve both operations (SIMD lanes of mixed operations, or a table-free dispatcher).
+
+### Conclusions
+
+1. **Negated layout, multiply: 6, proved optimal** within the search set. The offset layout's multiply cannot get below 7 (pre) or 6 + 2 raw (post); the best known is 10.
+2. **Add: 8 in either layout.** The offset strip form ($D_i = d_i \text{ AND } \lnot T$; $\text{den} = D_1 D_2 \text{ OR } A$) and the negated pre-negate form both reach it. None ≤ 6 exists in the reduced set; length 7 is open.
+3. **The offset add's denominator fix is 2**: $Q \text{ OR } (d_1 \text{ AND } T)$. Milestone 1 used 3.
+4. **No single post-correction can serve both add and multiply.** Identical inputs require different outputs. The shared idea must sit before the raw operation (milestone 2's mask $m = (d_1 \text{ AND } d_2) \text{ sar } (n-1)$ negating operand 2), or be told the operation (6 above).
+5. **Recommendation, unchanged from milestone 2:** the negated layout. Add/sub 8, multiply 6, divide 11; ARM64 *(hand)* 6 / 4 / about 9.
+
+**Not done.**
+- Lengths 7 and up are not searched; length 6 only with the reduced set.
+- The offset post-multiply at length 6 was stopped.
+- Sub and division were not searched (sub numerator searches at $N = 4$ match add's: 4 offset, 3 negated).
+
+**Reproduce:** `gcc -O3 -march=native -o rs rsuper.c`, then:
+- `./rs 3 neg mul both 0 6 60 2` (14 min);
+- `./rs 3 off add both 1 5 60` (4 min);
+- `./rs 3 neg am both 3 5 60` (8 min).
+
+Then run `python3 -I generalize.py logs/*.txt`, `python3 -I m3.py` and `python3 -I collide.py` (2 min).

@@ -263,5 +263,3 @@ XOR adds each bit without carrying. AND marks the bits that carry, and each carr
 $$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
 
 OR counts each bit set in either word once, and AND counts again the bits set in both.
-
-*(Placeholder: the rest.)*

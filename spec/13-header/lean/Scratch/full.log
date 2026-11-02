@@ -8,3 +8,6 @@ Hint: Omit it from the simp argument list.
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
 ✔ [13/26] Built Header.ProgA (1.7s)
 ✔ [15/26] Built Header.Registry (959ms)
+✖ [16/26] Building Header.CorrectB (184s)
+trace: .> LEAN_PATH=/home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean /root/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean /home/claude/erdos/spec/13-header/lean/Header/CorrectB.lean -o /home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean/Header/CorrectB.olean -i /home/claude/erdos/spec/13-header/lean/.lake/build/lib/lean/Header/CorrectB.ilean -c /home/claude/erdos/spec/13-header/lean/.lake/build/ir/Header/CorrectB.c --setup /home/claude/erdos/spec/13-header/lean/.lake/build/ir/Header/CorrectB.setup.json --json
+error: Lean exited with code 137

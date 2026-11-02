@@ -1,0 +1,18 @@
+Header/CorrectB.lean:18:85: error: omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  f ≥ 0
+  e ≥ 0
+  d ≥ 0
+  d + e - f ≥ 1
+  c ≥ 0
+  c - d - e ≥ 1
+where
+ c := ↑W
+ d := ↑a
+ e := ↑b
+ f := ↑(a + b) % ↑W
+Header/CorrectB.lean:207:8: warning: declaration uses `sorry`
+
+real	0m36.838s
+user	0m42.475s
+sys	0m3.805s

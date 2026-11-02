@@ -35,30 +35,30 @@ def neg : Prog := [.ld 10 1 0, .neg 12 10, .sd 12 3 0]
 def mul : Prog := [.ld 10 1 0, .ld 11 2 0, .mul 12 10 11, .sd 12 3 0]
 def div : Prog := [.ld 10 1 0, .ld 11 2 0, .div 12 10 11, .sd 12 3 0]
 
-section
-variable (x y z : Nat) (mem : Nat → Nat) (a b : Int) (ha : mem x = ofInt a) (hb : mem y = ofInt b)
-include ha hb
 
 /-- Each program stores the true result mod `2^64`; read as signed it is the true result whenever that fits
 (`toInt_ofInt`). -/
-theorem add_run : ∃ s, exe add (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
+theorem add_run (x y z : Nat) (mem : Nat → Nat) (a b : Int) (ha : mem x = ofInt a) (hb : mem y = ofInt b)
+    : ∃ s, exe add (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
     s.stores = [(z, ofInt (a + b))] := by
   run_prog [add, regs3, ha, hb, wadd_ofInt]
 
-theorem sub_run : ∃ s, exe sub (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
+theorem sub_run (x y z : Nat) (mem : Nat → Nat) (a b : Int) (ha : mem x = ofInt a) (hb : mem y = ofInt b)
+    : ∃ s, exe sub (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
     s.stores = [(z, ofInt (a - b))] := by
   run_prog [sub, regs3, ha, hb, wsub_ofInt]
 
-theorem mul_run : ∃ s, exe mul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
+theorem mul_run (x y z : Nat) (mem : Nat → Nat) (a b : Int) (ha : mem x = ofInt a) (hb : mem y = ofInt b)
+    : ∃ s, exe mul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧
     s.stores = [(z, ofInt (a * b))] := by
   run_prog [mul, regs3, ha, hb, wmul_ofInt]
 
 /-- Exact division: when `a = q·b` and `a, b` fit, the stored word is `q`. -/
-theorem div_run (hfa : Fits a) (hfb : Fits b) (q : Int) (hq : a = q * b) (hb0 : b ≠ 0) :
+theorem div_run (x y z : Nat) (mem : Nat → Nat) (a b : Int) (ha : mem x = ofInt a) (hb : mem y = ofInt b)
+    (hfa : Fits a) (hfb : Fits b) (q : Int) (hq : a = q * b) (hb0 : b ≠ 0) :
     ∃ s, exe div (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3] ∧ s.stores = [(z, ofInt q)] := by
   subst hq; run_prog [div, regs3, ha, hb, wdiv_ofInt hfa hfb, Int.mul_tdiv_cancel _ hb0]
 
-end
 
 theorem neg_run (x y z : Nat) (mem : Nat → Nat) (a : Int) (ha : mem x = ofInt a) :
     ∃ s, exe neg (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2] ∧ s.stores = [(z, ofInt (-a))] := by
@@ -83,21 +83,19 @@ def cdiv : Prog := [.ld 10 1 0, .ld 11 1 8, .ld 12 2 0, .ld 13 2 8,
   .div 14 11 13, .div 15 10 13, .neg 15 15,
   .sd 14 3 0, .sd 15 3 8]
 
-section
-variable (x y z : Nat) (mem : Nat → Nat) (a b : GI)
-  (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im)
-  (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
-include ha ha' hb hb'
 
-theorem cadd_run : ∃ s, exe cadd (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
+theorem cadd_run (x y z : Nat) (mem : Nat → Nat) (a b : GI) (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
+    : ∃ s, exe cadd (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
     s.stores = [(z, ofInt (a + b).re), (z + 8, ofInt (a + b).im)] := by
   run_prog [cadd, regs3, ha, ha', hb, hb', wadd_ofInt]
 
-theorem csub_run : ∃ s, exe csub (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
+theorem csub_run (x y z : Nat) (mem : Nat → Nat) (a b : GI) (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
+    : ∃ s, exe csub (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7] ∧
     s.stores = [(z, ofInt (a - b).re), (z + 8, ofInt (a - b).im)] := by
   run_prog [csub, regs3, ha, ha', hb, hb', wsub_ofInt]
 
-theorem cmul_run : ∃ s, exe cmul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] ∧
+theorem cmul_run (x y z : Nat) (mem : Nat → Nat) (a b : GI) (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
+    : ∃ s, exe cmul (regs3 x y z) mem = .done s ∧ s.trace = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] ∧
     s.stores = [(z, ofInt (a * b).re), (z + 8, ofInt (a * b).im)] := by
   run_prog [cmul, regs3, ha, ha', hb, hb', wadd_ofInt, wsub_ofInt, wmul_ofInt]
 
@@ -107,7 +105,8 @@ def cdivTrace (bim0 : Bool) : List Nat :=
 
 /-- **Complex exact division.** The divisor `b` lies on an axis and is not 0, `a = q·b`, and all parts fit. The
 program stores `q`. -/
-theorem cdiv_run (hax : b.re = 0 ∨ b.im = 0) (hb0 : b ≠ 0) (q : GI) (hq : a = q * b)
+theorem cdiv_run (x y z : Nat) (mem : Nat → Nat) (a b : GI) (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) (hb : mem y = ofInt b.re) (hb' : mem (y + 8) = ofInt b.im)
+    (hax : b.re = 0 ∨ b.im = 0) (hb0 : b ≠ 0) (q : GI) (hq : a = q * b)
     (f1 : Fits a.re) (f2 : Fits a.im) (f3 : Fits b.re) (f4 : Fits b.im) :
     ∃ s, exe cdiv (regs3 x y z) mem = .done s ∧ s.trace = cdivTrace (decide (b.im = 0)) ∧
       s.stores = [(z, ofInt q.re), (z + 8, ofInt q.im)] := by
@@ -128,7 +127,6 @@ theorem cdiv_run (hax : b.re = 0 ∨ b.im = 0) (hb0 : b ≠ 0) (q : GI) (hq : a 
     run_prog [cdiv, cdivTrace, regs3, ha, ha', hb, hb', hz, h0, wdiv_ofInt f2 f4, wdiv_ofInt f1 f4,
       wneg_ofInt, e1, e2]
 
-end
 
 theorem cneg_run (x y z : Nat) (mem : Nat → Nat) (a : GI)
     (ha : mem x = ofInt a.re) (ha' : mem (x + 8) = ofInt a.im) :

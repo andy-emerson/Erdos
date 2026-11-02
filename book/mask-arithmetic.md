@@ -74,7 +74,11 @@ $$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit
 
 ## AND
 
-AND with a mask keeps a word or deletes it:
+AND keeps bits: each bit of the result is 1 only where both words have a 1. So AND with a word $c$ keeps the bits of $x$ where $c$ has a 1 and clears the rest. Bit by bit:
+
+$$\text{bit of } (x \text{ AND } c) = \begin{cases} 0 & \text{bit of } c = 0 \\ \text{bit of } x & \text{bit of } c = 1 \end{cases}$$
+
+Against a mask, keeping some bits becomes keeping all or none. 1111 has a 1 in every place, so it keeps every bit of the word, and 0000 has none, so it clears them all. So AND with a mask keeps a word or deletes it:
 
 $$x \text{ AND } m = \begin{cases} 0 & m = 0000 \\ x & m = 1111 \end{cases}$$
 
@@ -107,12 +111,6 @@ x \text{ AND } m &= 0110 \text{ AND } 1111 \\
 ### Conditional add
 
 $$x + (y \text{ AND } m) = \begin{cases} x & m = 0000,\ k = 0 \\ x + y & m = 1111,\ k = 1 \end{cases}$$
-
-### Keeping chosen bits
-
-AND with a constant $c$ keeps the bits of $x$ where $c$ has a 1 and clears the rest. Bit by bit:
-
-$$\text{bit of } (x \text{ AND } c) = \begin{cases} 0 & \text{bit of } c = 0 \\ \text{bit of } x & \text{bit of } c = 1 \end{cases}$$
 
 ### Remainder by a power of two
 

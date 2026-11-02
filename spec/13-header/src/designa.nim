@@ -39,30 +39,7 @@ proc aAdd*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word
     rw = m1 + m2
 
 proc aSub*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word) {.inline.} =
-  ## its own tree (the author's request, Nov 1, 2026), no flip of h2. t = h1 xor h2. t = 0x80 (opposite):
-  ## m1 + m2 in direction h1. t = 0 (same): m1 - m2 and its borrow b, negated when b = 1, direction h1 + (b shl 7).
-  ## Otherwise (different axes): m1 = 0 gives -y, m2 = 0 gives x, two nonzero operands are an error.
-  let t = h1 xor h2
-  if t == 0x80:
-    rh = h1
-    rw = m1 + m2
-  elif t == 0:
-    let d = m1 - m2
-    let b = Word(m1 < m2)                 # the borrow, as a value
-    if b != 0:
-      rh = h1 + 0x80'u8
-      rw = 0'u64 - d
-    else:
-      rh = h1
-      rw = d
-  else:
-    if m1 == 0:
-      rh = h2 xor 0x80'u8
-      rw = m2
-    elif m2 != 0: specError()
-    else:
-      rh = h1
-      rw = m1
+  aAdd(h1, m1, h2 xor 0x80'u8, m2, rh, rw)
 
 # ------------------------------------------------------------------------------------------------ add, narrow mask row
 proc aAddNM*(h1: uint8; m1: Word; h2: uint8; m2: Word; rh: var uint8; rw: var Word) {.inline.} =

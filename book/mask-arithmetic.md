@@ -132,26 +132,21 @@ x + (y \text{ AND } m) &= 0110 + (0011 \text{ AND } 0000) \\
 
 ### Congruence
 
-Keeping the low $j$ bits of $x$ gives the number between 0 and $2^j - 1$ that is congruent to $x$ mod $2^j$, its remainder:
+The low $j$ bits of $x$ are its remainder mod $2^j$:
 
 $$x \text{ AND } (2^j - 1) \equiv x \pmod{2^j}$$
 
-Each bit above the lowest $j$ stands for a multiple of $2^j$, and the AND clears exactly those bits, so what is left is the remainder.
+The bits above them are multiples of $2^j$, and the AND clears them.
 
-The modulus is usually a constant, such as 4 for directions or 2 for the axis, and then the mask $2^j - 1$ is written into the program as a constant (0011, or 0001); the machine never computes it. When $j$ changes as the program runs, the mask is two instructions, a shift and a subtraction:
+For a constant modulus, the mask is a constant in the program (0011 for mod 4). Otherwise it is $(1 \text{ shl } j) - 1$.
 
-$$2^j - 1 = (1 \text{ shl } j) - 1$$
-
-For example, take $x = 1101$ (13) and the modulus $4 = 2^2$, so the mask is $2^2 - 1 = 0011$:
+For example, $13 \bmod 4$:
 
 $$\begin{aligned}
-x \text{ AND } (2^j - 1) &= 1101 \text{ AND } (2^2 - 1) \\
-&= 1101 \text{ AND } 0011 \\
+1101 \text{ AND } (2^2 - 1) &= 1101 \text{ AND } 0011 \\
 &= 0001 \\
 &= 1
 \end{aligned}$$
-
-and $13 = 3 \cdot 4 + 1$, so $13 \equiv 1 \pmod 4$.
 
 ## XOR and AND
 

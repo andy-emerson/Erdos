@@ -31,7 +31,7 @@ theorem Q_eq : Q = 2 ^ 62 := rfl
 theorem W64_eq : W64 = 2 ^ 64 := rfl
 
 /-- `omega` after unfolding the word constants. -/
-macro "qomega" : tactic => `(tactic| ((try simp only [Q, W64] at *) <;> omega))
+macro "qomega" : tactic => `(tactic| ((try simp only [Q, W64, Nat.reducePow] at *) <;> omega))
 
 /-- A layout: where the magnitude and the direction sit in a word. -/
 structure Layout where

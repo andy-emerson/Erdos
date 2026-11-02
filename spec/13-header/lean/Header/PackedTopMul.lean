@@ -9,7 +9,7 @@ open A
 
 theorem enc_xor_low (m : Nat) (d : Fin 4) (h : m < Q) : topEnc m d ^^^ m = Q * d.val := by
   have e : topEnc m d ^^^ m = (2 ^ 62 * d.val + m) ^^^ (2 ^ 62 * 0 + m) := by simp [enc_comm]
-  rw [e, xor_parts (by qomega) (by qomega), Nat.xor_zero, Nat.xor_self, Nat.add_zero]; rfl
+  rw [e, xor_parts (by qomega) (by qomega), Nat.xor_zero, Nat.xor_self, Nat.add_zero]
 
 /-- **Top multiply** gives the word of round 1's `A.mul` exactly, when the product fits. -/
 theorem topMul_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hp : m1 * m2 < Q) :
@@ -40,8 +40,14 @@ theorem topMulLea_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (
   have := d1.isLt; have := d2.isLt
   by_cases z : m1 * m2 = 0
   · refine ⟨by qomega, Or.inr z⟩
-  · have ha : 1 ≤ m1 := by rcases Nat.eq_zero_or_pos m1 with h | h <;> simp_all
-    have hb : 1 ≤ m2 := by rcases Nat.eq_zero_or_pos m2 with h | h <;> simp_all
+  · have ha : 1 ≤ m1 := by
+      rcases Nat.eq_zero_or_pos m1 with h | h
+      · simp [h] at z
+      · omega
+    have hb : 1 ≤ m2 := by
+      rcases Nat.eq_zero_or_pos m2 with h | h
+      · simp [h] at z
+      · omega
     have := add_le_mul_succ ha hb
     refine ⟨by qomega, Or.inl (by qomega)⟩
 
@@ -56,10 +62,12 @@ theorem topDiv_eq (m1 m2 : Nat) (d1 d2 : Fin 4) (h1 : m1 < Q) (h2 : m2 < Q) (hy 
   simp only [topDec, Fin.ext_iff, Fin.val_ofNat, Fin.sub_def, topEnc]
   have := d1.isLt; have := d2.isLt
   by_cases z : m1 = 0
-  · refine ⟨by qomega, Or.inr z⟩
+  · have hz : m1 / m2 = 0 := by simp [z]
+    simp only [hz, Nat.add_zero]
+    refine ⟨by qomega, Or.inr z⟩
   · have hge : m2 ≤ m1 := Nat.le_of_dvd (by omega) hd
+    have hq1 : 1 ≤ m1 / m2 := Nat.div_pos hge hy
     refine ⟨by qomega, Or.inl ?_⟩
-    simp only [Fin.val_ofNat]
     qomega
 
 end Packed

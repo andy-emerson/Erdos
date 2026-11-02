@@ -232,3 +232,9 @@ N=4 target=postdiv lanes=220 ext=-
   [chunk 227 done: 0 hits, 888485626 nodes so far]
   [chunk 228 done: 0 hits, 894718972 nodes so far]
   [chunk 229 done: 0 hits, 900661157 nodes so far]
+  [chunk 230 done: 0 hits, 914792683 nodes so far]
+  [chunk 231 done: 0 hits, 927846749 nodes so far]
+  [chunk 232 done: 0 hits, 941924392 nodes so far]
+  [chunk 233 done: 0 hits, 954932279 nodes so far]
+L=5: 0 hits, 954932279 nodes
+exit 0

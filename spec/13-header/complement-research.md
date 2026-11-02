@@ -318,7 +318,7 @@ Runs are resumable by first instruction (`SO_LMIN`, `SO_START`). Logs: [`test/co
 | conditional negate of $x$ by that mask, from $x, w_1, w_2$ | 4 | **5** (none ≤ 4) | round 1's mask + `xor`/`sub` is optimal; M1 saves only through the shared $L_i$ |
 | axis fix $p \to r$ (no negation) | 6 | **4** (none ≤ 3) | 4: round 1's fix and its merge form |
 | i·i sign + fix, from $(p, w_1, w_2)$ | 4 | **none ≤ 5** (by hand: 9) | all 234 first instructions, 2.55·10⁹ nodes |
-| divide sign + fix, from $(q, w_1, w_2)$ | 4 | POSTDIV | |
+| divide sign + fix, from $(q, w_1, w_2)$ | 4 | **none ≤ 5** (by hand: 9) | all 234 first instructions, 2.56·10⁹ nodes |
 
 So every piece of M1's multiply (17) and divide (15) is at its shortest in this operation set, given the inputs it takes. What is left to win is in sharing across pieces (as $L_i$ does), and that is beyond the search. No whole-program lower bound is claimed.
 
@@ -368,7 +368,7 @@ So every piece of M1's multiply (17) and divide (15) is at its shortest in this 
 Reproduce:
 - `gcc -O3 -o so2 superopt2.c`;
 - `./so2 6 sext 4`, `./so2 6 twov 3`, `./so2 6 mmul 3`, `./so2 6 fix 4`, `./so2 4 cnegm 4`, `./so2 4 faxis 4 40 Z`, `./so2 4 faxis 3 40 U`, `./so2 4 eflag 4 40 ZQU` (seconds each);
-- `SO_LMIN=5 SO_START=0 ./so2 4 postmul 5` (about 35 min, resumable by chunk);
+- `SO_LMIN=5 SO_START=0 ./so2 4 postmul 5` and `postdiv` (about 35 min each, resumable by chunk);
 - `python3 -I m2.py` (about 1 min).
 
 **Open.**

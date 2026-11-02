@@ -1,6 +1,8 @@
 # Literature survey: exact signed, rational and complex arithmetic at the machine level
 
-Status: Milestone 1 (books) complete. Milestone 2 (libraries and languages) pending.
+Status: Milestone 1 (books) and Milestone 2 (libraries and languages) complete.
+Scope (updated during Milestone 2): exact integers in the complex plane, i.e. Gaussian
+integers ℤ[i] and Gaussian integers mod n, ℤ[i]/n. Rational-specific items are background.
 Method: web research only (searches and fetched publisher pages, tables of contents, and
 author pages), November 2026. Every claim carries a link. Claims marked **[unverified]**
 come from memory or from an indirect source and were not confirmed on a fetched page.

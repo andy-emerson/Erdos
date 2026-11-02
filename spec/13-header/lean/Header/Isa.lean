@@ -335,13 +335,13 @@ theorem xor_cancel (s d : Nat) : s ^^^ (d ^^^ s) = d := by
 /-! ## The machine's add, subtract and negate are round 1's clock operations -/
 
 theorem wadd_clock {a b : Nat} (ha : a < W) (hb : b < W) : wadd a b = clockAdd W a b := by
-  unfold wadd clockAdd; split <;> omega
+  unfold wadd clockAdd; unfold W at *; split <;> omega
 
 theorem wsub_clock {a b : Nat} (ha : a < W) (hb : b < W) : wsub a b = clockSub W a b := by
-  unfold wsub clockSub; split <;> omega
+  unfold wsub clockSub; unfold W at *; split <;> omega
 
 theorem wneg_clock {a : Nat} (ha : a < W) : wneg a = clockNeg W a := by
-  unfold wneg wsub clockNeg; split <;> omega
+  unfold wneg wsub clockNeg; unfold W at *; split <;> omega
 
 theorem wsub_lt' (a b : Nat) : wsub a b < W := by unfold wsub W; omega
 

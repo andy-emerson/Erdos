@@ -1,4 +1,6 @@
-# Mask arithmetic
+# Logical arithmetic
+
+The four logical operators, AND, OR, XOR and NOT, work on words bit by bit. Each section below starts with what its operator does, then its uses without a mask, then its uses with one.
 
 The examples use the 4-bit clock, where every number is a 4-bit word from 0000 to 1111 and arithmetic is mod 16.
 
@@ -19,6 +21,16 @@ For example, $1010 \text{ sar } 3 = 1111$ and $0110 \text{ sar } 3 = 0000$. The 
 XOR compares two words bit by bit: each bit of the result is 1 where the words differ and 0 where they agree. So it is 0 exactly when they are equal:
 
 $$a \text{ XOR } b = \begin{cases} 0000 & a = b \\ \text{not } 0000 & a \ne b \end{cases}$$
+
+### Toggling chosen bits
+
+XOR with a constant $c$ toggles the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
+
+$$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ toggled} & \text{bit of } c = 1 \end{cases}$$
+
+Toggling the same bits twice restores them: $(x \text{ XOR } c) \text{ XOR } c = x$.
+
+### With a mask
 
 Against a mask, the comparison becomes a flip. Compared with 0000, a word differs exactly where it has a 1, so it comes back unchanged. Compared with 1111, it differs exactly where it has a 0, so every bit flips. So XOR with a mask leaves a word alone or flips every bit of it:
 
@@ -66,19 +78,31 @@ Subtracting $m$ then does the work of adding the flag, since $-1111 = +1$ on the
 
 $$(x \text{ XOR } m) - m = \begin{cases} x & m = 0000 \\ -x & m = 1111 \end{cases}$$
 
-### Toggling chosen bits
-
-XOR with a constant $c$ toggles the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
-
-$$\text{bit of } (x \text{ XOR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ \text{bit of } x \text{ toggled} & \text{bit of } c = 1 \end{cases}$$
-
-Toggling the same bits twice restores them: $(x \text{ XOR } c) \text{ XOR } c = x$.
-
 ## AND
 
 AND keeps bits: each bit of the result is 1 only where both words have a 1. So AND with a word $c$ keeps the bits of $x$ where $c$ has a 1 and clears the rest. Bit by bit:
 
 $$\text{bit of } (x \text{ AND } c) = \begin{cases} 0 & \text{bit of } c = 0 \\ \text{bit of } x & \text{bit of } c = 1 \end{cases}$$
+
+### Congruence
+
+The low $j$ bits of $x$ are its remainder mod $2^j$:
+
+$$x \text{ AND } (2^j - 1) \equiv x \pmod{2^j}$$
+
+The bits above them are multiples of $2^j$, and the AND clears them.
+
+For a constant modulus, the mask is a constant in the program (0011 for mod 4). Otherwise it is $(1 \text{ shl } j) - 1$.
+
+For example, $13 \bmod 4$:
+
+$$\begin{aligned}
+1101 \text{ AND } (2^2 - 1) &= 1101 \text{ AND } 0011 \\
+&= 0001 \\
+&= 1
+\end{aligned}$$
+
+### With a mask
 
 Against a mask, keeping some bits becomes keeping all or none. 1111 has a 1 in every place, so it keeps every bit of the word, and 0000 has none, so it clears them all. So AND with a mask keeps a word or deletes it:
 
@@ -132,33 +156,11 @@ x + (y \text{ AND } m) &= 0110 + (0011 \text{ AND } 0000) \\
 &= 6
 \end{aligned}$$
 
-### Congruence
-
-The low $j$ bits of $x$ are its remainder mod $2^j$:
-
-$$x \text{ AND } (2^j - 1) \equiv x \pmod{2^j}$$
-
-The bits above them are multiples of $2^j$, and the AND clears them.
-
-For a constant modulus, the mask is a constant in the program (0011 for mod 4). Otherwise it is $(1 \text{ shl } j) - 1$.
-
-For example, $13 \bmod 4$:
-
-$$\begin{aligned}
-1101 \text{ AND } (2^2 - 1) &= 1101 \text{ AND } 0011 \\
-&= 0001 \\
-&= 1
-\end{aligned}$$
-
 ## OR
 
 OR sets bits: each bit of the result is 1 where either word has a 1. So OR with a word $c$ sets the bits of $x$ where $c$ has a 1 and keeps the rest. Bit by bit:
 
 $$\text{bit of } (x \text{ OR } c) = \begin{cases} \text{bit of } x & \text{bit of } c = 0 \\ 1 & \text{bit of } c = 1 \end{cases}$$
-
-Against a mask, setting some bits becomes setting all or none. So OR with a mask keeps a word or fills it:
-
-$$x \text{ OR } m = \begin{cases} x & m = 0000,\ k = 0 \\ 1111 & m = 1111,\ k = 1 \end{cases}$$
 
 ### Setting chosen bits
 
@@ -171,6 +173,12 @@ On flags, OR means "either":
 $$k_1 \text{ OR } k_2 = \begin{cases} 0 & k_1 = 0,\ k_2 = 0 \\ 1 & \text{otherwise} \end{cases}$$
 
 A flag OR-ed with each new flag stays 1 once any of them is 1.
+
+### With a mask
+
+Against a mask, setting some bits becomes setting all or none. So OR with a mask keeps a word or fills it:
+
+$$x \text{ OR } m = \begin{cases} x & m = 0000,\ k = 0 \\ 1111 & m = 1111,\ k = 1 \end{cases}$$
 
 ## NOT
 
@@ -222,17 +230,17 @@ a \text{ XOR } \big((a \text{ XOR } c) \text{ AND } m\big) &= 0110 \text{ XOR } 
 &= 6
 \end{aligned}$$
 
-### Conditional swap
-
-With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
-
-$$(a \text{ XOR } d,\ b \text{ XOR } d) = \begin{cases} (a, b) & m = 0000,\ k = 0 \\ (b, a) & m = 1111,\ k = 1 \end{cases}$$
-
 ### Conditional choice with OR
 
 Keeping one word and deleting the other, then combining, is a second way to choose:
 
 $$(a \text{ AND NOT } m) \text{ OR } (c \text{ AND } m) = \begin{cases} a & m = 0000,\ k = 0 \\ c & m = 1111,\ k = 1 \end{cases}$$
+
+### Conditional swap
+
+With $d = (a \text{ XOR } b) \text{ AND } m$, XOR-ing $d$ into both words trades them or leaves them:
+
+$$(a \text{ XOR } d,\ b \text{ XOR } d) = \begin{cases} (a, b) & m = 0000,\ k = 0 \\ (b, a) & m = 1111,\ k = 1 \end{cases}$$
 
 ### Minimum and maximum
 
@@ -244,4 +252,16 @@ $$x \text{ XOR } \big((x \text{ XOR } y) \text{ AND } m\big) = \begin{cases} x &
 
 ## Arithmetic operations
 
-*(Placeholder.)*
+### Addition from XOR and AND
+
+$$a + b = (a \text{ XOR } b) + 2\,(a \text{ AND } b)$$
+
+XOR adds each bit without carrying. AND marks the bits that carry, and each carry moves one place left, which doubles it.
+
+### Addition from AND and OR
+
+$$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
+
+OR counts each bit set in either word once, and AND counts again the bits set in both.
+
+*(Placeholder: the rest.)*

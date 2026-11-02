@@ -1,0 +1,45 @@
+N=4 target=faxis lanes=158 ext=ZQ
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 156 nodes
+L=3: 0 hits, 27378 nodes
+  v1=w1 add K; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 add v3; 
+  v1=w1 add K; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 or v3; 
+  v1=w1 add K; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 xor v3; 
+  v1=w1 sub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 add v3; 
+  v1=w1 sub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 or v3; 
+  v1=w1 sub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 xor v3; 
+  v1=w1 rsub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 add v3; 
+  v1=w1 rsub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 or v3; 
+  v1=w1 rsub G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 xor v3; 
+  v1=w1 and ~G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 add v3; 
+  v1=w1 and ~G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 or v3; 
+  v1=w1 and ~G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 xor v3; 
+  v1=w1 and ~G; v2=w2 czero.nez v1; v3=w1 czero.nez v2; r=v2 add v3; 
+  v1=w1 and ~G; v2=w2 czero.nez v1; v3=w1 czero.nez v2; r=v2 or v3; 
+  v1=w1 and ~G; v2=w2 czero.nez v1; v3=w1 czero.nez v2; r=v2 xor v3; 
+  v1=w1 xor G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 add v3; 
+  v1=w1 xor G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 or v3; 
+  v1=w1 xor G; v2=w1 czero.eqz v1; v3=w2 czero.nez v2; r=v2 xor v3; 
+  v1=w1 candn G; v2=w2 sub v1; v3=seqz v2; r=w2 sub v3; 
+  v1=w1 candn G; v2=w2 xor v1; v3=seqz v2; r=w2 sub v3; 
+  v1=w1 candn G; v2=v1 sub w2; v3=seqz v2; r=w2 sub v3; 
+  v1=w1 add w2; v2=w1 and ~G; v3=v1 czero.nez v2; r=w1 add v3; 
+  v1=w1 add w2; v2=w1 and ~G; v3=v1 czero.nez v2; r=w1 xor v3; 
+  v1=w1 add w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 add v3; 
+  v1=w1 add w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 xor v3; 
+  v1=w1 sub w2; v2=w1 and ~G; v3=v1 czero.eqz v2; r=w2 add v3; 
+  v1=w1 sub w2; v2=w1 and ~G; v3=v1 czero.nez v2; r=w1 sub v3; 
+  v1=w1 sub w2; v2=w2 and ~G; v3=v1 czero.eqz v2; r=w1 sub v3; 
+  v1=w1 sub w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 add v3; 
+  v1=w1 sub w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 xor v3; 
+  v1=w1 xor w2; v2=w1 and ~G; v3=v1 czero.eqz v2; r=w2 xor v3; 
+  v1=w1 xor w2; v2=w1 and ~G; v3=v1 czero.nez v2; r=w1 add v3; 
+  v1=w1 xor w2; v2=w1 and ~G; v3=v1 czero.nez v2; r=w1 xor v3; 
+  v1=w1 xor w2; v2=w2 and ~G; v3=v1 czero.eqz v2; r=w1 xor v3; 
+  v1=w1 xor w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 add v3; 
+  v1=w1 xor w2; v2=w2 and ~G; v3=v1 czero.nez v2; r=w2 xor v3; 
+  v1=w2 add K; v2=w2 czero.eqz v1; v3=w1 czero.nez v2; r=v2 add v3; 
+  v1=w2 add K; v2=w2 czero.eqz v1; v3=w1 czero.nez v2; r=v2 or v3; 
+  v1=w2 add K; v2=w2 czero.eqz v1; v3=w1 czero.nez v2; r=v2 xor v3; 
+  v1=w2 sub G; v2=w2 czero.eqz v1; v3=w1 czero.nez v2; r=v2 add v3; 
+L=4: 62 hits, 5663260 nodes

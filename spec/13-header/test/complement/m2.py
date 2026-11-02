@@ -27,7 +27,7 @@ def ext_ops(n):
 
 def run(prog, n, w1, w2):
     F, ops = ext_ops(n)
-    env = {'w1': w1, 'w2': w2, 'G': 1 << (n - 2), 'NG': ~(1 << (n - 2)) & F, 'S': 1 << (n - 1), 'ONE': 1}
+    env = {'w1': w1, 'w2': w2, 'G': 1 << (n - 2), 'NG': ~(1 << (n - 2)) & F, 'S': 1 << (n - 1), 'ONE': 1, 'K': 3 << (n - 2)}
     for dst, op, *args in prog:
         env[dst] = ops[op](*[env[a] if isinstance(a, str) else a for a in args])
     return env['r'], env.get('e', None)
@@ -57,8 +57,19 @@ def fsub_generic(n):   # without Zbb: z1 - z2 passes the borrow on every input; 
             ('Z1', 'seqz', 'z1'), ('Z1', 'neg', 'Z1'), ('src', 'and', 't', 'Z1'), ('src', 'xor', 'w1', 'src')] + FIX + \
            [('e', 'andn', 't', 'Z1'), ('e', 'shr', 'e', n - 2), ('z2', 'snez', 'z2'), ('e', 'and', 'e', 'z2')]
 
+# ---- without the flag (found by superopt2's faxis target: the result axis without a zero mask) ----
+SRC_GEN = [('y', 'andn', 'G', 'w1'), ('y', 'xor', 'w2', 'y'), ('y', 'seqz', 'y'), ('src', 'sub', 'w2', 'y')]  # 4
+SRC_ZBB = [('v', 'maxu', 'w1', 'w2'), ('y', 'sub', 'K', 'v'), ('src', 'maxu', 'v', 'y')]                    # 3
+
+def fadd_gen10(n): return [('z1', 'and', 'w1', 'NG'), ('b', 'or', 'w2', 'G'), ('b', 'add', 'z1', 'b')] + SRC_GEN + FIX
+def fadd_zbb9(n):  return [('z1', 'and', 'w1', 'NG'), ('b', 'or', 'w2', 'G'), ('b', 'add', 'z1', 'b')] + SRC_ZBB + FIX
+def fsub_gen10(n): return [('z1', 'and', 'w1', 'NG'), ('z2', 'and', 'w2', 'NG'), ('b', 'sub', 'z1', 'z2')] + SRC_GEN + FIX
+def fsub_zbb9(n):  return [('z1', 'and', 'w1', 'NG'), ('z2', 'and', 'w2', 'NG'), ('b', 'sub', 'z1', 'z2')] + SRC_ZBB + FIX
+
 PROGS = [('full add, round 1', full11, False), ('full add, Zbb', full_zbb, False),
-         ('full sub, Zbb', fsub_zbb, True), ('full sub, generic', fsub_generic, True)]
+         ('full sub, Zbb', fsub_zbb, True), ('full sub, generic', fsub_generic, True),
+         ('add, no flag, generic', fadd_gen10, False), ('add, no flag, Zbb', fadd_zbb9, False),
+         ('sub, no flag, generic', fsub_gen10, True), ('sub, no flag, Zbb', fsub_zbb9, True)]
 
 def check(n, pairs):
     val, ax, enc, inr = m1.layout(n); F = (1 << n) - 1; G = 1 << (n - 2)
@@ -73,9 +84,9 @@ def check(n, pairs):
             elif iz(w1): v, a = (-v2 if sub else v2), a2
             elif iz(w2): v, a = v1, a1
             else:
-                bad += e != 1; continue
+                bad += e is not None and e != 1; continue
             want = enc(v, a)
-            ok = e == 0 and (r == want or (iz(want) and r == want ^ G))
+            ok = e in (0, None) and (r == want or (iz(want) and r == want ^ G))
             bad += not ok
         out[name] = (len(prog), bad)
     return out

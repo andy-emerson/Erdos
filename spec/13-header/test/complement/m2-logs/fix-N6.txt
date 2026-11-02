@@ -1,0 +1,9 @@
+N=6 target=fix lanes=1004 ext=-
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 258 nodes
+L=3: 0 hits, 59985 nodes
+  v1=p xor w1; v2=w2 xor v1; v3=v2 and G; r=p xor v3; 
+  v1=p xor w2; v2=w1 xor v1; v3=v2 and G; r=p xor v3; 
+  v1=w1 xor w2; v2=p xor v1; v3=v2 and G; r=p xor v3; 
+  v1=w1 xor w2; v2=p xor v1; v3=v2 and ~G; r=v1 xor v3; 
+L=4: 4 hits, 14986231 nodes

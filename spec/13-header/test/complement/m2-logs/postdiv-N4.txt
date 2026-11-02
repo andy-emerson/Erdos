@@ -1,0 +1,5 @@
+N=4 target=postdiv lanes=220 ext=-
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 234 nodes
+L=3: 0 hits, 49725 nodes
+L=4: 0 hits, 11424259 nodes

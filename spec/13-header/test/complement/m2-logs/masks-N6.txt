@@ -1,0 +1,12 @@
+N=6 target=mmul lanes=4096 ext=-
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 164 nodes
+  v1=w1 and w2; v2=v1 shl 1; r=v2 sar 5; 
+  v1=w1 and w2; v2=v1 rol 1; r=v2 sar 5; 
+L=3: 2 hits, 29110 nodes
+N=6 target=mdiv lanes=4096 ext=-
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 164 nodes
+  v1=w2 andn w1; v2=v1 shl 1; r=v2 sar 5; 
+  v1=w2 andn w1; v2=v1 rol 1; r=v2 sar 5; 
+L=3: 2 hits, 29110 nodes

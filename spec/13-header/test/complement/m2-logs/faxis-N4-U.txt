@@ -1,0 +1,5 @@
+N=4 target=faxis lanes=158 ext=U
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 152 nodes
+  v1=w1 maxu w2; v2=v1 rsub K; r=v1 maxu v2; 
+L=3: 1 hits, 26068 nodes

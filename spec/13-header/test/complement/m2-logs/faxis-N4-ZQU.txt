@@ -1,0 +1,14 @@
+N=4 target=faxis lanes=158 ext=ZQU
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 160 nodes
+  v1=w1 maxu w2; v2=v1 add K; r=v1 czero.eqz v2; 
+  v1=w1 maxu w2; v2=v1 sub G; r=v1 czero.eqz v2; 
+  v1=w1 maxu w2; v2=v1 rsub G; r=v1 czero.eqz v2; 
+  v1=w1 maxu w2; v2=v1 rsub K; r=v1 maxu v2; 
+  v1=w1 maxu w2; v2=v1 and ~G; r=v1 czero.eqz v2; 
+  v1=w1 maxu w2; v2=v1 xor G; r=v1 czero.eqz v2; 
+L=3: 6 hits, 29680 nodes
+
+real	0m0.177s
+user	0m0.062s
+sys	0m0.000s

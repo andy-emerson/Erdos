@@ -1,0 +1,15 @@
+N=4 target=faxis lanes=158 ext=Z
+L=1: 0 hits, 0 nodes
+L=2: 0 hits, 152 nodes
+L=3: 0 hits, 25156 nodes
+  v1=w1 candn G; v2=w2 sub v1; v3=seqz v2; r=w2 sub v3; 
+  v1=w1 candn G; v2=w2 xor v1; v3=seqz v2; r=w2 sub v3; 
+  v1=w1 candn G; v2=v1 sub w2; v3=seqz v2; r=w2 sub v3; 
+  v1=w2 candn G; v2=w1 sub v1; v3=seqz v2; r=w1 sub v3; 
+  v1=w2 candn G; v2=w1 xor v1; v3=seqz v2; r=w1 sub v3; 
+  v1=w2 candn G; v2=v1 sub w1; v3=seqz v2; r=w1 sub v3; 
+L=4: 6 hits, 4775202 nodes
+
+real	0m7.906s
+user	0m5.151s
+sys	0m0.000s

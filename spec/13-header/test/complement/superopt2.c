@@ -28,6 +28,8 @@
      full   complex add: same axis -> sum; different axes with one operand zero -> the other; any zero ok
      fullsub  the same for w1 - w2 (w1 zero, cross -> -w2 on w2's axis)
      faxis  (w1, w2) -> any word with the full add's result axis in bit N-2 (other bits free)
+     cnegm, cnegd  (x, w1, w2) -> (-1)^k x, x = w1's sign-extended value, k = a1 a2 / a2 AND NOT a1
+     eflag  (w1, w2) -> 1 (or all ones) when both are nonzero on different axes, else 0
      fullb  (w1, w2, b) -> full, with b = (w1 AND ~G) + (w2 OR G) given (the bridge on every input)
 */
 #include <stdio.h>
@@ -262,6 +264,20 @@ int main(int argc, char **argv) {
             else { v = value(a); ax = axis(a); }
             u8 bb = (u8)((a & ~G & MSK) + (b | G)) & MSK;
             lane(a, b, bb, enc(v, ax), MSK, 1);
+        }
+    } else if (!strcmp(t, "cnegm") || !strcmp(t, "cnegd")) {
+        /* (x, w1, w2) -> (-1)^k x, x = w1's value sign-extended; k = a1 a2 (cnegm) or a2 AND NOT a1 (cnegd) */
+        NIN = 3; inname[0] = "x"; inname[1] = "w1"; inname[2] = "w2";
+        for (int a = 0; a < W; a++) for (int b = 0; b < W; b++) {
+            int k = !strcmp(t, "cnegm") ? (axis(a) && axis(b)) : (axis(b) && !axis(a)), x = value(a);
+            lane((u8)x & MSK, a, b, (u8)(k ? -x : x) & MSK, MSK, 0);
+        }
+    } else if (!strcmp(t, "eflag")) {
+        /* the expression flag: 1 exactly when both are nonzero on different axes (0/1 in bit 0, or any mask) */
+        NIN = 2;
+        for (int a = 0; a < W; a++) for (int b = 0; b < W; b++) {
+            int e = axis(a) != axis(b) && !iszero(a) && !iszero(b);
+            lane(a, b, 0, e, MSK, 0); alt[NL - 1] = e ? MSK : 0;
         }
     } else if (!strcmp(t, "faxis")) {
         /* any word whose axis bit is the full add's (and full subtract's) result axis; zero results: free */

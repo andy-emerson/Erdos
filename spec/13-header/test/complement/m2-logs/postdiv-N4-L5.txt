@@ -163,3 +163,6 @@ N=4 target=postdiv lanes=220 ext=-
   [chunk 158 done: 0 hits, 163707819 nodes so far]
   [chunk 159 done: 0 hits, 176808606 nodes so far]
   [chunk 160 done: 0 hits, 193406938 nodes so far]
+  [chunk 161 done: 0 hits, 210170557 nodes so far]
+  [chunk 162 done: 0 hits, 226211188 nodes so far]
+  [chunk 163 done: 0 hits, 241925881 nodes so far]

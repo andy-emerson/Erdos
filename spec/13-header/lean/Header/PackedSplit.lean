@@ -26,7 +26,7 @@ def spEnc (m : Nat) (d : Fin 4) : Nat := T3 (d.val / 2) m (d.val % 2)
 /-- `split.py`'s `dec_split`: `((w >> 1) & MAX, 2 (w >> 63) + (w & 1))`. -/
 def spDec (w : Nat) : Num := ⟨w / 2 % Q, Fin.ofNat 4 (2 * (w / 2 ^ 63) + w % 2)⟩
 
-theorem T3_dec {s m a : Nat} (hs : s < 2) (hm : m < Q) (ha : a < 2) :
+theorem T3_dec {s m a : Nat} (_hs : s < 2) (hm : m < Q) (ha : a < 2) :
     spDec (T3 s m a) = ⟨m, Fin.ofNat 4 (2 * s + a)⟩ := by
   simp only [spDec, T3]
   have e1 : (2 ^ 63 * s + (2 ^ 1 * m + a)) / 2 % Q = m := by qomega
@@ -158,6 +158,179 @@ theorem sp_and_F (h : m < Q) : spEnc m d &&& SF = 2 * m := by
   simp only [T3]; omega
 
 end
+
+theorem xm_lt {m1 m2 : Nat} (h1 : m1 < Q) (h2 : m2 < Q) : m1 ^^^ m2 < Q :=
+  Nat.xor_lt_two_pow (n := 62) h1 h2
+
+theorem axor_lt : ∀ d1 d2 : Fin 4, d1.val % 2 ^^^ d2.val % 2 < 2 := by decide
+theorem sxor : ∀ d1 d2 : Fin 4, d1.val / 2 ^^^ d2.val / 2 = if d1.val / 2 = d2.val / 2 then 0 else 1 := by decide
+
+theorem two_T3 (m : Nat) : 2 * m = T3 0 m 0 := by simp only [T3]; omega
+
+/-! ## Add and subtract -/
+
+section
+variable {m1 m2 : Nat} {d1 d2 : Fin 4}
+
+/-- `t sar 63` is all ones exactly when the signs differ. -/
+theorem sp_sar (h1 : m1 < Q) (h2 : m2 < Q) :
+    sar63 (spEnc m1 d1 ^^^ spEnc m2 d2) = if d1.val / 2 = d2.val / 2 then 0 else 2 ^ 64 - 1 := by
+  rw [sp_xor h1 h2, sxor]
+  have := xm_lt h1 h2; have := axor_lt d1 d2
+  unfold sar63 T3
+  split <;> rename_i h <;> simp only [h, if_true, if_false] <;> qomega
+
+theorem sp_t_lt (h1 : m1 < Q) (h2 : m2 < Q) : spEnc m1 d1 ^^^ spEnc m2 d2 < 2 ^ 64 :=
+  Nat.xor_lt_two_pow (sp_lt h1) (sp_lt h2)
+
+/-- `t and 1` is the axis check. -/
+theorem sp_t1 (h1 : m1 < Q) (h2 : m2 < Q) : (spEnc m1 d1 ^^^ spEnc m2 d2) &&& 1 = d1.val % 2 ^^^ d2.val % 2 := by
+  rw [Nat.and_one_is_mod, sp_xor h1 h2, T3_mod2, Nat.mod_eq_of_lt (axor_lt d1 d2)]
+
+theorem sp_shl1 {m : Nat} {d : Fin 4} (h : m < Q) : (spEnc m d <<< 1) % W64 = 4 * m + 2 * (d.val % 2) := by
+  rw [Nat.shiftLeft_eq, spEnc, T3]; have := dlt d; have := alt d; qomega
+
+/-- The first compare: all ones when `w2`'s magnitude-and-axis is the larger. -/
+theorem spL0_eq (h1 : m1 < Q) (h2 : m2 < Q) (t : Nat) :
+    spL0 (spEnc m1 d1) (spEnc m2 d2) t =
+      if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0 := by
+  rw [spL0, sp_shl1 h1, sp_shl1 h2, ltb]
+  have := alt d1; have := alt d2
+  by_cases h : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
+  · have : 4 * m1 + 2 * (d1.val % 2) < 4 * m2 + 2 * (d2.val % 2) := by omega
+    simp only [h, this, if_true]; decide
+  · have : ¬ 4 * m1 + 2 * (d1.val % 2) < 4 * m2 + 2 * (d2.val % 2) := by omega
+    simp only [h, this, if_false]; decide
+
+theorem sflip : ∀ d1 d2 : Fin 4, d1.val / 2 ^^^ ((d1.val / 2 ^^^ d2.val / 2) &&& 1) = d2.val / 2 := by decide
+
+/-- The second compare: `w1` with `w2`'s sign, then an unsigned compare. -/
+theorem spL1_eq (h1 : m1 < Q) (h2 : m2 < Q) :
+    spL1 (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
+      if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0 := by
+  have hx := xm_lt h1 h2; have ha := axor_lt d1 d2
+  rw [spL1, sp_xor h1 h2, SB_T3, T3_and hx (by decide) ha (by decide), Nat.and_zero, Nat.and_zero, spEnc,
+    T3_xor h1 (by decide) (alt d1) (by decide), Nat.xor_zero, Nat.xor_zero, sflip, ltb]
+  have : T3 (d2.val / 2) m1 (d1.val % 2) < spEnc m2 d2 ↔ 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 := by
+    simp only [spEnc, T3]; omega
+  by_cases h : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
+  · simp only [h, this.mpr h, if_true]; decide
+  · simp only [h, (iff_false_left h).mp this, if_false]; decide
+
+/-- `W ± v`: the sum on the same sign, the difference otherwise. -/
+theorem sp_addsub {mW mv : Nat} {dW : Fin 4} (p : Prop) [Decidable p] (hle : mv ≤ mW) (hs : mW + mv < Q) :
+    (spEnc mW dW + ((2 * mv) ^^^ (if p then 0 else 2 ^ 64 - 1)) + (W64 - (if p then 0 else 2 ^ 64 - 1))) % W64 =
+      if p then spEnc (mW + mv) dW else spEnc (mW - mv) dW := by
+  have := dlt dW; have := alt dW
+  by_cases h : p
+  · simp only [h, if_true, Nat.xor_zero, spEnc, T3]; qomega
+  · simp only [h, if_false, xor_ones64 (by qomega : 2 * mv < 2 ^ 64), spEnc, T3]; qomega
+
+variable (Lf : Nat → Nat → Nat → Nat)
+
+/-- The add body on two encoded words, for any compare `L` with the compare's fact. -/
+theorem spAddWith_eval (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
+    (hL : Lf (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
+      if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0) :
+    spAddWith Lf (spEnc m1 d1) (spEnc m2 d2) =
+      (if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then
+          (if d1.val / 2 = d2.val / 2 then spEnc (m2 + m1) d2 else spEnc (m2 - m1) d2)
+        else (if d1.val / 2 = d2.val / 2 then spEnc (m1 + m2) d1 else spEnc (m1 - m2) d1),
+       (d1.val % 2 ^^^ d2.val % 2) &&&
+         nzb (2 * if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then m1 else m2)) := by
+  simp only [spAddWith, hL, sp_sar h1 h2]
+  have := alt d1; have := alt d2
+  by_cases hc : 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2
+  · simp only [hc, if_true, and_ones64 (sp_t_lt h1 h2), xor_xor_cancel, xor_xor_cancel', sp_and_F h1,
+      sp_t1 h1 h2]
+    rw [sp_addsub _ (by omega) (by omega)]
+  · simp only [hc, if_false, Nat.and_zero, Nat.xor_zero]
+    rw [xor_xor_cancel, sp_and_F h2, sp_t1 h1 h2, sp_addsub _ (by omega) (by omega)]
+
+/-- The add body, decoded. -/
+theorem spAddWith_dec (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
+    (hL : Lf (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
+      if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0) :
+    spDec (spAddWith Lf (spEnc m1 d1) (spEnc m2 d2)).1 =
+      (if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then
+          (if d1.val / 2 = d2.val / 2 then ⟨m2 + m1, d2⟩ else ⟨m2 - m1, d2⟩)
+        else (if d1.val / 2 = d2.val / 2 then ⟨m1 + m2, d1⟩ else ⟨m1 - m2, d1⟩)) := by
+  rw [spAddWith_eval Lf h1 h2 hs hL]
+  split_ifs <;> exact spEnc_dec _ _ (by omega)
+
+/-- **Split add**, for either compare: with no overflow (`m1 + m2 < 2^62`), the flag is 0 and the word decodes to
+round 1's sum (its magnitude, and its direction unless the sum is zero) whenever round 1 gives a number, and the flag
+is 1 when round 1 reports an expression. -/
+theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
+    (hL : Lf (spEnc m1 d1) (spEnc m2 d2) (spEnc m1 d1 ^^^ spEnc m2 d2) =
+      if 2 * m1 + d1.val % 2 < 2 * m2 + d2.val % 2 then 2 ^ 64 - 1 else 0) :
+    match add Q ⟨m1, d1⟩ ⟨m2, d2⟩ with
+    | some r => (spAddWith Lf (spEnc m1 d1) (spEnc m2 d2)).2 = 0 ∧
+        (spDec (spAddWith Lf (spEnc m1 d1) (spEnc m2 d2)).1).m = r.m ∧
+        ((spDec (spAddWith Lf (spEnc m1 d1) (spEnc m2 d2)).1).d = r.d ∨ r.m = 0)
+    | none => (spAddWith Lf (spEnc m1 d1) (spEnc m2 d2)).2 = 1 := by
+  have hd := spAddWith_dec Lf h1 h2 hs hL
+  have hf := congrArg Prod.snd (spAddWith_eval Lf h1 h2 hs hL)
+  simp only at hf
+  rw [hd, hf]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
+  all_goals by_cases hl : m1 < m2 <;> by_cases he : m1 = m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
+  all_goals try (exfalso; omega)
+  all_goals simp [add, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, he, z1, z2, nzb,
+    Fin.ext_iff]
+  all_goals (repeat' split) <;> qomega
+
+end
+
+/-- **Split add** (`lvariant = 0`). -/
+theorem spAdd_eq {m1 m2 : Nat} {d1 d2 : Fin 4} (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q) :
+    match add Q ⟨m1, d1⟩ ⟨m2, d2⟩ with
+    | some r => (spAdd (spEnc m1 d1) (spEnc m2 d2)).2 = 0 ∧
+        (spDec (spAdd (spEnc m1 d1) (spEnc m2 d2)).1).m = r.m ∧
+        ((spDec (spAdd (spEnc m1 d1) (spEnc m2 d2)).1).d = r.d ∨ r.m = 0)
+    | none => (spAdd (spEnc m1 d1) (spEnc m2 d2)).2 = 1 :=
+  spAddWith_eq spL0 h1 h2 hs (spL0_eq h1 h2 _)
+
+/-- **Split add** (`lvariant = 1`). -/
+theorem spAdd1_eq {m1 m2 : Nat} {d1 d2 : Fin 4} (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q) :
+    match add Q ⟨m1, d1⟩ ⟨m2, d2⟩ with
+    | some r => (spAdd1 (spEnc m1 d1) (spEnc m2 d2)).2 = 0 ∧
+        (spDec (spAdd1 (spEnc m1 d1) (spEnc m2 d2)).1).m = r.m ∧
+        ((spDec (spAdd1 (spEnc m1 d1) (spEnc m2 d2)).1).d = r.d ∨ r.m = 0)
+    | none => (spAdd1 (spEnc m1 d1) (spEnc m2 d2)).2 = 1 :=
+  spAddWith_eq spL1 h1 h2 hs (spL1_eq h1 h2)
+
+theorem sp_flip_bits : ∀ d : Fin 4, d.val / 2 ^^^ 1 = (d + 2).val / 2 ∧ d.val % 2 = (d + 2).val % 2 := by decide
+
+/-- Flipping bit 63 turns the direction by 2. -/
+theorem sp_flip {m : Nat} {d : Fin 4} (h : m < Q) : spEnc m d ^^^ SB = spEnc m (d + 2) := by
+  rw [spEnc, spEnc, SB_T3, T3_xor h (by decide) (alt d) (by decide), Nat.xor_zero, Nat.xor_zero,
+    (sp_flip_bits d).1, (sp_flip_bits d).2]
+
+/-- **Split negate** gives the word of round 1's `A.neg` exactly. -/
+theorem spNeg_eq {m : Nat} {d : Fin 4} (h : m < Q) :
+    spNeg (spEnc m d) = spEnc (neg ⟨m, d⟩).m (neg ⟨m, d⟩).d := by
+  rw [spNeg, sp_flip h]; rfl
+
+/-- **Split subtract** (`lvariant = 0`), as the add. -/
+theorem spSub_eq {m1 m2 : Nat} {d1 d2 : Fin 4} (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q) :
+    match sub Q ⟨m1, d1⟩ ⟨m2, d2⟩ with
+    | some r => (spSub (spEnc m1 d1) (spEnc m2 d2)).2 = 0 ∧
+        (spDec (spSub (spEnc m1 d1) (spEnc m2 d2)).1).m = r.m ∧
+        ((spDec (spSub (spEnc m1 d1) (spEnc m2 d2)).1).d = r.d ∨ r.m = 0)
+    | none => (spSub (spEnc m1 d1) (spEnc m2 d2)).2 = 1 := by
+  simp only [spSub, sp_flip h2, sub, neg]
+  exact spAdd_eq h1 h2 hs
+
+/-- **Split subtract** (`lvariant = 1`). -/
+theorem spSub1_eq {m1 m2 : Nat} {d1 d2 : Fin 4} (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q) :
+    match sub Q ⟨m1, d1⟩ ⟨m2, d2⟩ with
+    | some r => (spSub1 (spEnc m1 d1) (spEnc m2 d2)).2 = 0 ∧
+        (spDec (spSub1 (spEnc m1 d1) (spEnc m2 d2)).1).m = r.m ∧
+        ((spDec (spSub1 (spEnc m1 d1) (spEnc m2 d2)).1).d = r.d ∨ r.m = 0)
+    | none => (spSub1 (spEnc m1 d1) (spEnc m2 d2)).2 = 1 := by
+  simp only [spSub1, sp_flip h2, sub, neg]
+  exact spAdd1_eq h1 h2 hs
 
 end Packed
 end Header

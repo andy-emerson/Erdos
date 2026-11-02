@@ -332,6 +332,26 @@ theorem xor_lt {x y : Nat} (hx : x < W) (hy : y < W) : x ^^^ y < W := by
 theorem xor_cancel (s d : Nat) : s ^^^ (d ^^^ s) = d := by
   rw [Nat.xor_comm d s, ← Nat.xor_assoc, Nat.xor_self, Nat.zero_xor]
 
+/-! ## The machine's add, subtract and negate are round 1's clock operations -/
+
+theorem wadd_clock {a b : Nat} (ha : a < W) (hb : b < W) : wadd a b = clockAdd W a b := by
+  unfold wadd clockAdd; split <;> omega
+
+theorem wsub_clock {a b : Nat} (ha : a < W) (hb : b < W) : wsub a b = clockSub W a b := by
+  unfold wsub clockSub; split <;> omega
+
+theorem wneg_clock {a : Nat} (ha : a < W) : wneg a = clockNeg W a := by
+  unfold wneg wsub clockNeg; split <;> omega
+
+theorem wsub_lt' (a b : Nat) : wsub a b < W := by unfold wsub W; omega
+
+/-- With a borrow, negating the difference gives `m2 − m1`. -/
+theorem wneg_wsub {a b : Nat} (ha : a < W) (hb : b < W) (h : a < b) : wneg (wsub a b) = b - a := by
+  unfold wneg wsub; unfold W at *; omega
+
+theorem wsub_of_le {a b : Nat} (ha : a < W) (hb : b ≤ a) : wsub a b = a - b := by
+  unfold wsub; unfold W at *; omega
+
 /-! ## Running a program symbolically
 
 `run_prog [facts]` unfolds the interpreter step by step with `simp`, using the given program, register file and

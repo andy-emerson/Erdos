@@ -118,12 +118,14 @@ theorem cdiv_run (hax : b.re = 0 ∨ b.im = 0) (hb0 : b ≠ 0) (q : GI) (hq : a 
     have e1 : a.re.tdiv b.re = q.re := by rw [hre, h0]; simp [Int.mul_tdiv_cancel _ hr]
     have e2 : a.im.tdiv b.re = q.im := by
       rw [him, h0]; simp only [Int.mul_zero, Int.zero_add]; exact Int.mul_tdiv_cancel _ hr
-    run_prog [cdiv, cdivTrace, regs3, ha, ha', hb, hb', h0, ofInt_eq_zero f4, wdiv_ofInt f1 f3, wdiv_ofInt f2 f3, e1, e2]
+    have hz : mem (y + 8) = 0 := by rw [hb', h0]; decide
+    run_prog [cdiv, cdivTrace, regs3, ha, ha', hb, hz, h0, wdiv_ofInt f1 f3, wdiv_ofInt f2 f3, e1, e2]
   · have hr : b.re = 0 := by omega
     have e1 : a.im.tdiv b.im = q.re := by rw [him, hr]; simp [Int.mul_tdiv_cancel _ h0]
     have e2 : -(a.re.tdiv b.im) = q.im := by
       rw [hre, hr]; simp only [Int.mul_zero, Int.zero_sub, Int.neg_tdiv, Int.mul_tdiv_cancel _ h0, Int.neg_neg]
-    run_prog [cdiv, cdivTrace, regs3, ha, ha', hb, hb', h0, ofInt_eq_zero f4, wdiv_ofInt f2 f4, wdiv_ofInt f1 f4,
+    have hz : ofInt b.im ≠ 0 := fun h => h0 ((ofInt_eq_zero f4).1 h)
+    run_prog [cdiv, cdivTrace, regs3, ha, ha', hb, hb', hz, h0, wdiv_ofInt f2 f4, wdiv_ofInt f1 f4,
       wneg_ofInt, e1, e2]
 
 end

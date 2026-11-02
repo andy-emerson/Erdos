@@ -1,6 +1,6 @@
-# Notes: two designs for signed and complex numbers
+# Notes: three designs for signed and complex numbers
 
-*Temporary notes (Nov 1, 2026). The mathematics of spec 13's two designs, with no code, for the author to compare. To be taken into the book or archived.*
+*Temporary notes (Nov 1, 2026). The mathematics of spec 13's three designs, with no code, for the author to compare. To be taken into the book or archived.*
 
 Machine arithmetic is modular arithmetic. A word of $n$ bits is like an odometer with $n$ binary digits. It counts up from $0000$ to $1111$; one more rolls it over to $0000$, and rolling back below $0000$ shows $1111$. Read as numbers, $n$ binary digits show the $2^n$ values from 0 to $2^n - 1$, and the rollover is arithmetic mod $2^n$. That is the same situation in a more useful form, and from here on these notes picture it as a clock with $2^n$ hours. On a 16-hour clock ($n = 4$), $15 + 1 = 16 \equiv 0$ and $3 - 5 = -2 \equiv 14 \pmod{16}$.
 
@@ -220,16 +220,99 @@ $$m_0 + m_1 i - m_2 - m_3 i.$$
 
 Design B nests the wrong way round for rationals. A rational in B would be a ratio of two of its complex numbers, rather than a complex number whose parts are rationals. Both give the same field, since every ratio of Gaussian integers can be written as $p + qi$ with $p$ and $q$ rational, but they differ in reduction to lowest terms. A pair of rationals reduces with the ordinary gcd of integers. A ratio of Gaussian integers needs a gcd of Gaussian integers, a different and slower algorithm, unique only up to a factor of $1$, $i$, $-1$ or $-i$.
 
+## Design C: an axis and a signed value
+
+Design C keeps the two bits of a direction apart. In the table of directions above, the low bit of $d$ is the **axis**: 0 for 1 and $-1$, 1 for $i$ and $-i$. The high bit is the **sign**: $d = 2s + a$. Design C stores the axis as a bit of its own, as A stores the whole direction, and leaves the sign inside the value, where the machine already handles it.
+
+### The sign inside the value
+
+The machine has a second way to read a word, beside reading it as a magnitude. Read **signed**, the upper half of the clock stands for the negative numbers: on a 16-hour clock, the hours 8 to 15 are read as $-8$ to $-1$. In binary, the top bit then counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**. Nothing about the clock changes, only the reading: $3 - 5$ still lands on 14, and 14 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays between $-2^{n-1}$ and $2^{n-1} - 1$. Outside that range is overflow, the second problem, which now starts at half the clock.
+
+### A number
+
+A number is a signed value $v$ and an axis $a$, with value
+
+$$v \cdot i^a.$$
+
+So $(5, 0)$ is 5, $(-5, 0)$ is $-5$ and $(5, 1)$ is $5i$. It is stored as one word,
+
+$$w = 2v + a,$$
+
+the axis in the lowest bit and $v$, in two's complement, in the $n - 1$ bits above it. Both come back out at once: $a$ is the lowest bit, and $v$ is $w$ read signed and halved, rounding down, which the machine does with one shift. On a 16-hour clock $v$ runs from $-4$ to 3; 3 is $0110$, $-2$ is $1100$ and $2i$ is $0101$.
+
+**Zero** is $v = 0$ on either axis, the words 0 and 1. As in A, it keeps whatever axis the operation that produced it left.
+
+### The case check
+
+There is one check, of the axes: the lowest bit of $w_1$ XOR $w_2$. There is no magnitude check, because nothing is subtracted as a magnitude: the sign is in the value, and the clock handles it.
+
+```text
+axis check (XOR)
+├── same axis      → add the words, the second with its axis bit cleared
+└── different axes → zero check
+    ├── a zero     → the other number
+    └── no zero    → an expression
+```
+
+The zero check is one comparison: $v = 0$ exactly when $w$ is 0 or 1, that is, when $w < 2$ read as a magnitude. Integers never reach it.
+
+### Addition
+
+**Same axis.** Clearing the second word's axis bit and adding gives
+
+$$w_1 + (w_2 - a_2) = 2v_1 + a_1 + 2v_2 = 2(v_1 + v_2) + a_1,$$
+
+the sum's value on the first number's axis, which is also the second's. The signs take care of themselves. For example, $1 + (-3)$ is $0010 + 1010 = 1100$, and $1100$ is $-2$.
+
+**Different axes.** If one value is zero, the sum is the other number, whole. If neither is, the sum, such as $3 + 4i$, is an expression, as in A.
+
+### Negation
+
+Negation negates the value and keeps the axis:
+
+$$-(v, a) = (-v, a), \qquad w \mapsto 2a - w,$$
+
+since $2(-v) + a = 2a - (2v + a)$. Negating zero gives a zero on the same axis.
+
+### Subtraction
+
+Subtraction needs no negation first. On the same axis,
+
+$$w_1 - (w_2 - a_2) = 2(v_1 - v_2) + a_1,$$
+
+the machine's subtraction in place of its addition, after the same check. On different axes, the difference is $w_1$ when $v_2 = 0$, and the negation of $w_2$ when $v_1 = 0$.
+
+### Multiplication
+
+Multiplication multiplies the values and adds the axes. Two imaginary axes make the real axis with a turn of 2, since $i \cdot i = -1$:
+
+$$(v_1, a_1) \cdot (v_2, a_2) = \big((-1)^{a_1 a_2}\, v_1 v_2,\ a_1 \text{ XOR } a_2\big).$$
+
+In words, $v_1$ (the first word shifted) times $2v_2$ (the second word with its axis bit cleared) is $2 v_1 v_2$, negated when both axes are 1, with the axis bit $a_1$ XOR $a_2$ put back. For integers both axes are 0, and only the product remains.
+
+### Exact division
+
+Exact division divides the values and subtracts the axes. Dividing by $i$ is multiplying by $-i$, so a real number divided by an imaginary one turns by 2:
+
+$$(v_1, a_1) / (v_2, a_2) = \big((-1)^{(1 - a_1) a_2}\, v_1 / v_2,\ a_1 \text{ XOR } a_2\big),$$
+
+when $v_2$ is not 0 and divides $v_1$. On words, $2v_1 / v_2$ is the first word with its axis bit cleared divided by the second word shifted, which is already doubled.
+
+### What C gives up
+
+Values run from $-2^{n-2}$ to $2^{n-2} - 1$: one bit goes to the axis, and one to the sign, so overflow comes sooner than in A, whose magnitudes use all $n$ bits. C solves the first problem the machine's way, by reading the clock signed, not by splitting the sign from the magnitude.
+
 ## Where they differ
 
-| | Design A | Design B |
-| --- | --- | --- |
-| A number | one magnitude, one direction | one magnitude per direction: two for integers, four for complex numbers |
-| Forms of one number | exactly one | many, until collapsed |
-| Addition | a direction check; for opposite directions, a subtraction and its borrow | one formula, additions only |
-| Multiplication | one product, directions added | four products for integers, sixteen for complex numbers |
-| Where magnitudes are subtracted | in every addition of opposite directions | only in collapse |
-| Sums across axes | not held | held directly |
+| | Design A | Design B | Design C |
+| --- | --- | --- | --- |
+| A number | one magnitude, one direction | one magnitude per direction: two for integers, four for complex numbers | one word: an axis bit and a signed value |
+| Forms of one number | exactly one | many, until collapsed | exactly one |
+| Addition | a direction check; for opposite directions, a subtraction and its borrow | one formula, additions only | an axis check; on the same axis, one addition |
+| Multiplication | one product, directions added | four products for integers, sixteen for complex numbers | one product, axes XORed, negated when both are imaginary |
+| Where magnitudes are subtracted | in every addition of opposite directions | only in collapse | nowhere: the sign is in the value |
+| Sums across axes | not held | held directly | not held |
+| Largest value | $2^n - 1$ | $2^n - 1$ per part | $2^{n-2} - 1$ |
 
 ## To return to: expressions in Design A
 

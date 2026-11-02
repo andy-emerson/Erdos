@@ -6,6 +6,7 @@
 #   -d:bld=alg       Design A's header form (headers loaded sign-extended, the larger operand's direction, no branch)
 #   -d:bld=anm       Design A's narrow mask row (borrow by mask, other branches kept)
 #   -d:bld=b         Design B: a list of records of two words (four for complex)
+#   -d:bld=cpl       the complement layout: one list of words (sign start, axis, count), no branch
 # Not a build: it reads a job file (one row: a kind, an operation and its operand pairs), converts the operands to the
 # build's stored form outside the clock, and runs the operation over them. Every result is stored; after the clock the
 # results are checksummed over their values, (re < 0, |re|, im < 0, |im|), so every build computing the same values
@@ -15,7 +16,7 @@
 #   calib <job> [min_ns]        r, the smallest power of two with a rep of at least min_ns (50 ms), cap 10 s
 #   time <job> <r> <reps>       reps timed reps of r passes over the operands; then the checksum
 #   bytes                       bytes per value: integers, complex
-# Exit 3: an error of the spec (A: a sum across axes of two nonzero numbers). Exit 4: the build has no such operation
+# Exit 3: an error of the spec (A, cpl: a sum across axes of two nonzero numbers). Exit 4: the build has no such operation
 # (collapse is B's only).
 import std/[strutils, os]
 
@@ -23,6 +24,7 @@ const bld {.strdefine.} = "a"
 when bld == "control": import control
 elif bld in ["a", "abf", "anm", "amul", "alg"]: import designa
 elif bld == "b": import designb
+elif bld == "cpl": import designcpl
 else: {.error: "unknown build".}
 import pseudo
 
@@ -167,6 +169,55 @@ elif bld in ["a", "abf", "anm", "amul", "alg"]:
   proc raw(kind, j: int): string = toHex(sH[2][j]).toLowerAscii & " " & toHex(sW[2][j]).toLowerAscii
   const bytesInt = sizeof(uint8) + sizeof(Word)
   const bytesCx = sizeof(uint8) + sizeof(Word)
+
+elif bld == "cpl":
+  var gWA, gWB, gWR: ptr UncheckedArray[Word]
+  template loopW(name: untyped; call: untyped) =
+    ## one list of words per operand and for the results; err as in abf (sticky, tested after the pass)
+    proc name(r: int) {.exportc, noinline.} =
+      let a {.inject.} = gWA
+      let b {.inject.} = gWB
+      let res {.inject.} = gWR
+      let n = gN
+      var err {.inject.} = 0'u64
+      for it in 0 ..< r:
+        for j {.inject.} in 0 ..< n:
+          call
+        barrier()
+      gErr = gErr or err
+  loopW(loop_int_add, cAdd(a[j], b[j], err, res[j]))
+  loopW(loop_int_sub, cSub(a[j], b[j], err, res[j]))
+  loopW(loop_int_neg, cNeg(a[j], res[j]))
+  loopW(loop_int_mul, cMul(a[j], b[j], res[j]))
+  loopW(loop_int_div, cDiv(a[j], b[j], res[j]))
+  # one code for integers and complex numbers on the axes, as in A: the complex rows run the same loops
+  const loops = [[loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil],
+                 [loop_int_add, loop_int_sub, loop_int_neg, loop_int_mul, loop_int_div, nil]]
+  var sW: array[3, seq[Word]]
+  proc enc(d: int; m: uint64): Word =
+    ## m i^d as a word; the operand must be on its axis's range -2^62 .. 2^62 - 1 (gen.py's cpl rows)
+    let lim = if d < 2: (1'u64 shl 62) - 1 else: 1'u64 shl 62
+    if m > lim:
+      stderr.writeLine "cpl: operand out of range (-2^62 .. 2^62 - 1): direction " & $d & " magnitude " & $m
+      quit 2
+    cEncode(d and 1, (if d < 2: cast[int64](m) else: 0'i64 - cast[int64](m)))
+  proc load(kind, d1: int; m1: uint64; p1: array[4, uint64]; d2: int; m2: uint64; p2: array[4, uint64]) =
+    sW[0].add enc(d1, m1)
+    sW[1].add enc(d2, m2)
+    sW[2].add 0
+  proc bindRow() =
+    gWA = cast[ptr UncheckedArray[Word]](sW[0][0].addr); gWB = cast[ptr UncheckedArray[Word]](sW[1][0].addr)
+    gWR = cast[ptr UncheckedArray[Word]](sW[2][0].addr)
+  proc value(kind, j: int): array[4, uint64] =
+    let (ax, v) = cDecode(sW[2][j])
+    let n = uint64(v < 0)
+    let m = if v < 0: 0'u64 - cast[uint64](v) else: cast[uint64](v)
+    if m == 0: [0'u64, 0, 0, 0]
+    elif ax == 0: [n, m, 0, 0]
+    else: [0'u64, 0, n, m]
+  proc raw(kind, j: int): string = toHex(sW[2][j]).toLowerAscii
+  const bytesInt = sizeof(Word)
+  const bytesCx = sizeof(Word)
 
 else:
   var gIA, gIB, gIR: ptr UncheckedArray[BI]

@@ -304,6 +304,8 @@ Instructions: 3 each, 4 for both; the compare that gives $k$ is one more
 
 $$a + b = (a \text{ AND } b) + (a \text{ OR } b)$$
 
+OR counts each bit set in either word once, and AND counts again the bits set in both.
+
 Instructions: 3
 
 ### Subtraction from logic
@@ -321,8 +323,6 @@ With a mask in place of NOT, one line adds or subtracts:
 $$a + (b \text{ XOR } m) + k = \begin{cases} a + b & m = 0000,\ k = 0 \\ a - b & m = 1111,\ k = 1 \end{cases}$$
 
 Instructions: 3
-
-OR counts each bit set in either word once, and AND counts again the bits set in both.
 
 ## Glossary
 

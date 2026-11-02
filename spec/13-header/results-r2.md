@@ -374,17 +374,17 @@ The builds in `build/bin/` (from `src/build.sh`, gcc -O2 with if-conversion off)
 ## 8. Findings
 
 1. "Each step one instruction on x86-64, ARM64 and RV64IM" holds only for RISC-V. On the other two, `sltu`, a two-register compare-and-branch and (x86-64) a divide or a three-operand op with a live source take two or three instructions; flag reuse, folding into `cmp`/`test`, `lea` and shifted adds take some back. The tables give both the step count and the per-family counts.
-2. With the class code always 0, every `and D` in A is redundant: the headers are `64·d`, their XOR is again of that form, and the result is stored as a byte, so `(h1 + h2)`, `(h1 − h2)` and `(h1 + (b shl 7))` mod 256 already have bits 0 to 5 clear. The programs keep them, as §3 writes them: one step on every add, subtract, multiply and divide path, and one more for `t`.
+2. With the class code always 0, every `and D` in A is redundant: the headers are `64·d`, their XOR is again of that form, and the result is stored as a byte, so `(h1 + h2)`, `(h1 − h2)` and `(h1 + (b shl 7))` mod 256 already have bits 0 to 5 clear. The programs keep them, as §3 writes them: one step on every add, subtract, multiply and divide path, and one more for `t`. The author dropped the mask (spec v0.2 §3); round 1 rerun for it in HeaderByte.lean; round 2 is not rerun, so these counts keep it.
 3. Control's complex division has a data-dependent branch (the divisor's axis), which A, B and C do not have in division. Under round 3's random axes it is unpredictable.
 4. B's division, routed by address, stores 3 (integers) or 5 (complex) words and writes one part twice. A branch on the sign would store 2 or 4 but add an unpredictable branch under random signs.
 5. The per-arm form saves the `neg` and the `mv` on the borrow path but, with the stores shared at the end, puts a jump on both opposite paths; the notes' form reaches the stores from the no-borrow path by its taken branch. Per path: A integer add 13/14 steps (per arm) against 12/15 (notes).
 6. A's branch-free row stores on every input, the error case included, and leaves the error flag for the caller; the build's row keeps it sticky across a pass.
 7. C's multiply is written with a mask, not the branch its round 1 definition states; `mul_mask` proves the two equal on every pair of words.
-8. Lean: the symbolic runs are heavy. A's proofs are split over several files (`CorrectA.lean` and the four `CA_cxAdd_*.lean`) and B's complex division over two (`CB_cdiv_*.lean`), since one file per design ran out of memory when built beside another (Lean exited with code 137 on this 8 GB machine). A `variable … include` section with many memory hypotheses made the symbolic runs stall (well past 10 minutes for 8 goals that take 3 seconds as plain theorem binders); the files use plain binders. The complex branch-free row's proof stalls the same way after its tactics finish and is parked (§3).
+8. Lean: the symbolic runs are heavy. A's proofs are split over several files (`CorrectA.lean` and the four `CA_cxAdd_*.lean`) and B's complex division over eight (`CB_cdiv_run_*.lean`, one per form and pair of axes), since one file per design ran out of memory when built beside another (Lean exited with code 137 on this 8 GB machine). A `variable … include` section with many memory hypotheses made the symbolic runs stall (well past 10 minutes for 8 goals that take 3 seconds as plain theorem binders); the files use plain binders. The complex branch-free row's proof stalls the same way after its tactics finish and is parked (§3).
 
 ## 9. Checks
 
-`lake build` builds every module with no errors. No file of round 2 contains `sorry`, `admit` or `native_decide`. `#print axioms` was run on every round 2 theorem; see `lean/README.md`.
+`lake build` builds every module with no errors. No file in the build contains `sorry`, `admit` or `native_decide`. `#print axioms` was run on all 151 round 2 theorems: 116 depend on `propext`, `Quot.sound` and `Classical.choice` or a subset of them, and 35 on no axiom. The parked proof of the complex branch-free row (`lean/Pending/`, not imported) is the one gap in §3.
 
 ## Appendix: the programs
 

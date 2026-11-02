@@ -398,4 +398,17 @@ Results and tables: [`../results-r2.md`](../results-r2.md). Files:
 
 Coverage: every `_run` theorem holds for every input, and names the trace as a function of the inputs, so the listed paths cover every input.
 
-**Build time.** Design A's proofs run the programs symbolically for all 16 direction pairs and every magnitude case and take most of the build. As one file (`CorrectA.lean`) they took about 16 minutes and, built beside `CorrectB`, ran out of memory on this 8 GB machine (Lean exited with code 137), so the complex part is split into the four `CA_cxAdd_*.lean` files, and B's complex division into `CB_cdiv_notes.lean` and `CB_cdiv_perArm.lean` (combined in `CorrectB2.lean`). Theorems with many memory hypotheses are stated with plain binders, not `variable … include`: with an `include` section the same symbolic runs stalled.
+**Build time.** Design A's proofs run the programs symbolically for all 16 direction pairs and every magnitude case and take most of the build. As one file (`CorrectA.lean`) they took about 16 minutes and, built beside `CorrectB`, ran out of memory on this 8 GB machine (Lean exited with code 137), so the complex part is split into the four `CA_cxAdd_*.lean` files, and B's complex division into eight `CB_cdiv_run_*.lean` files (form × axis of `x` × axis of `y`), combined in `CB_cdiv_notes.lean`, `CB_cdiv_perArm.lean` and `CorrectB2.lean` (`PB.cdiv_run`). Even split, a few files take 2–3 GB; if `lake build` is killed (code 137), build the `CB_cdiv_run_*` modules one at a time first. `#print axioms` on all 151 round 2 theorems: 116 use `propext`, `Quot.sound`, `Classical.choice` or a subset, 35 none. `Pending/` holds the parked `bfCx_run` proof files (not imported). Theorems with many memory hypotheses are stated with plain binders, not `variable … include`: with an `include` section the same symbolic runs stalled.
+
+## A's header rules without `and D` (`Header/HeaderByte.lean`, from the coordinator)
+
+The author's change after round 2's finding 2: A's header rules with no mask. `hb d = 64·d` is the header byte.
+
+| Theorem | Statement |
+| --- | --- |
+| `hb_lt`, `hb_low`, `hb_inj` | A header byte is below 256, has bits 0–5 clear, and determines its direction. |
+| `hb_xor`, `t_mask` | `h1 xor h2` is `64·(d1 xor d2)`, so the mask on `t` changes nothing. |
+| `hb_borrow` | The borrow path's header `h1 + (b shl 7)`, stored as a byte, is the right direction. |
+| `hb_neg`, `hb_mul`, `hb_div` | Negate (`h xor 0x80`), multiply (`h1 + h2`) and divide (`h1 − h2` in a 64-bit register), stored as a byte, give `hb` of round 1's direction. |
+| `addByte_eq`, `subByte_eq`, `negByte_eq`, `mulByte_eq`, `divByte_eq` | A's operations on (header byte, magnitude) with no `and D` agree with round 1's `A.add`, `A.sub`, `A.neg`, `A.mul`, `A.div` under the encoding `enc`. |
+| `result_canonical` | Every result header is again a canonical byte. |

@@ -180,3 +180,43 @@ The divide's remainder costs a MUL and a SUB (one `msub` on ARM64; x86-64 `idiv`
 **The gcd loop is data-dependent.** Its step count varies, and the loop test is a branch. A branch-free version would run the bound's 63 steps at K = 32, with masks holding (a, b) once b = 0 (zero guard 2, conditional choice of two words 6, about 57 per step). That is about 3,600 instructions, against about 14 × 50 + 22 ≈ 720 for the observed mean. This was not implemented. Infinity inputs to the gcd are outside this study.
 
 **Binary-gcd analogue (literature; details unverified).** A. Weilert, "(1+i)-ary GCD computation in Z[i] as an analogue to the binary GCD algorithm", J. Symbolic Computation 30 (2000). Its title was found by search; the journal details are from memory and were not checked. It plays (1 + i), the prime above 2, the part that 2 plays in the binary gcd. a + bi is divisible by 1 + i exactly when a ≡ b (mod 2), and (a + bi)/(1 + i) = ((a + b) + (b − a)i)/2, an add, a subtract and two shifts, with no divide. I. Damgård and G. S. Frandsen, "Efficient algorithms for gcd and cubic residuosity in the ring of Eisenstein integers", BRICS RS-03-8 (2003). Its abstract was read; it generalises the binary gcd to the Eisenstein integers in O(n²) time and states that the technique gives equally fast algorithms for gcd and quartic residuosity in Z[i]. S. Agarwal and G. S. Frandsen, "Binary GCD like algorithms for some complex quadratic rings", ANTS 2004, is from memory and was not checked. None of these was implemented or tested here; a (1+i)-ary gcd would replace the two divides per step by shifts and masks, at the cost of more steps.
+
+## Study 7: deferred check, one shared path for overflow and infinity (deferred.py)
+
+**What was checked.** Each operation (add, sub, mul) does its plain arithmetic and ORs one per-half test of its result into a running sticky word. Inputs are not tested per operation. A run's external inputs are tested once (study 1's detector). Every later operand is the result of an earlier operation, which was tested. Once a sticky word is nonzero its element is infinity, so its value no longer matters (it may be garbage). At the end of the run, one check turns every flagged element into the canonical infinity pack(MIN, MIN).
+
+The per-operation test must catch exactly "a result half outside the symmetric range", given operands in range:
+
+- **add and sub:** signed overflow of the half (4) OR the result half equals MIN (study 1's detector, 5). The second test is needed because a true value of exactly −2^(K−1) wraps to MIN with no signed overflow. It cannot be left to the end: pack(−HI, 0) + pack(−1, 0) gives pack(MIN, 0) with no signed overflow, and adding pack(1, 0) next gives pack(−HI, 0), an ordinary finite value that no later test would catch.
+- **mul:** study 2's range test on the exact 2K-bit parts, which also catches MIN.
+
+Two variants were checked against study 2's semantics (an operation gives infinity when an input is infinity or a true result half leaves the symmetric range):
+
+- **V1, per-element sticky:** a sticky word per element, held in a register through the element's run. Each external input is tested once, with one canonical choice per element at the end.
+- **V2, one sticky word for the whole array:** every element's tests are ORed into one word. Once per array, a zero word means the array is exact. A nonzero word sends the whole array to recomputation with study 2's per-operation marking: one branch per array, and it needs the inputs kept.
+
+A run is acc = x₀ followed by acc = op(acc, xⱼ) or op(xⱼ, acc), with the side chosen per step. Study 2's chain (`run_study2`, per-operation marking) was also checked against the true-value reference on every run.
+
+**Cases.**
+- K = 3, exhaustive: every word and every choice of operation and side, for runs of 1 operation (24,576) and 2 operations (9,437,184), plus 20,000 random runs of 3 to 8 operations. 9,481,760 runs in all.
+- K = 4: exhaustive for runs of 1 operation (393,216), plus 20,000 random runs of 3 to 8.
+- K = 32: 100,000 random runs of 1 to 16 operations. 4% of inputs have a MIN half, 16% are built from edge values, 50% are small, the rest random.
+- V2: 2,000 arrays of 64 elements at K = 3 and 4, and 400 arrays of 256 at K = 32. Half are filled with small values and half with random words. At K = 32, 200 arrays stayed exact on the fast path and 200 were recomputed. At small K almost every array overflows (7 fast at K = 4), so the fast path is exercised mainly at K = 32. Each fast-path array was checked to contain no infinity.
+- **Failures: none** (V1, V2, and study 2's chain).
+
+**Instruction counts.**
+
+| | deferred, per operation | study 2, per operation |
+|---|---|---|
+| add or sub (plain 5, overflow 4, MIN result 5, OR 1, sticky OR 1) | 16 (15 with andn) | 26 force, 32 canon |
+| mul (plain 15, range test 5, sticky OR 1) | 21 | 32 |
+
+| once | V1 | V2 |
+|---|---|---|
+| per external input element | 6 (detector 5 + OR 1; 5 with andn) | 6 |
+| per element at the end of the run | 5 (compare, mask, choice) | 0 |
+| per array | 0 | 2 (compare and branch), plus a full recomputation at study 2's cost when any element is flagged |
+
+The deferred test saves 10 instructions per add or sub and 11 per mul against study 2's canonical form. It moves the input test from every operation to once per external input. The once-per-element costs (6 per input, 5 at the end) are paid once, however long the run. A run of R operations with R + 1 fresh inputs costs 16R + 6(R + 1) + 5 for adds. That is 33 against 32 at R = 1 (no gain) and 99 against 128 at R = 4. The saving grows when inputs are reused across many operations, as in a product of matrices, where an input element is tested once and used many times.
+
+Structure, per RULES' "one structure each": in V1 the sticky word is local to an element's run when the run is fused into one loop. Across separate passes over an array, V1 would need a stored sticky array, a second structure. V2 keeps one word, but its slow path needs the inputs kept for the recomputation.

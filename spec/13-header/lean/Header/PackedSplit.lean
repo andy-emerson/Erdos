@@ -286,9 +286,8 @@ theorem spAddWith_eq (h1 : m1 < Q) (h2 : m2 < Q) (hs : m1 + m2 < Q)
   all_goals try (exfalso; omega)
   all_goals simp only [fv0, fv1, fv2, fv3, Nat.reduceMod, Nat.reduceDiv, Nat.reduceXor, Nat.add_zero, ↓reduceIte]
   all_goals simp only [add, hc]
-  all_goals simp [dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb]
-  all_goals (repeat' split) <;> (try simp only [Nat.zero_xor, Nat.xor_zero] at *) <;>
-    first | qomega | (simp_all; done) | (simp_all; qomega)
+  all_goals simp [dirCheck, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, nzb]
+  all_goals (repeat' split) <;> first | qomega | (simp_all; done) | (simp_all; qomega)
 
 end
 
@@ -341,6 +340,117 @@ theorem spSub1_eq {m1 m2 : Nat} {d1 d2 : Fin 4} (h1 : m1 < Q) (h2 : m2 < Q) (hs 
     | none => (spSub1 (spEnc m1 d1) (spEnc m2 d2)).2 = 1 := by
   simp only [spSub1, sp_flip h2, sub, neg]
   exact spAdd1_eq h1 h2 hs
+
+/-! ## Multiply and divide: exact words -/
+
+section
+variable {m1 m2 : Nat} {d1 d2 : Fin 4}
+
+/-- The multiply body gives the word of round 1's `A.mul` exactly, for any direction part with its one fact. -/
+theorem spMulWith_eq (Df : Nat → Nat → Nat → Nat) (h1 : m1 < Q) (h2 : m2 < Q) (hp : m1 * m2 < Q)
+    (hD : Df (spEnc m1 d1) (spEnc m2 d2) (2 * m2) = T3 ((d1 + d2).val / 2) 0 ((d1 + d2).val % 2)) :
+    spMulWith Df (spEnc m1 d1) (spEnc m2 d2) = spEnc (mul ⟨m1, d1⟩ ⟨m2, d2⟩).m (mul ⟨m1, d1⟩ ⟨m2, d2⟩).d := by
+  simp only [spMulWith, sp_and_F h1, sp_and_F h2, hD, mul]
+  have e : ((2 * m1 * (2 * m2)) % W64) >>> 1 = T3 0 (m1 * m2) 0 := by
+    rw [Nat.mul_mul_mul_comm, Nat.shiftRight_eq_div_pow, T3]
+    generalize m1 * m2 = P at hp ⊢
+    qomega
+  rw [e, T3_or hp (by decide) (by decide) (alt _), Nat.zero_or, Nat.or_zero, Nat.zero_or]; rfl
+
+theorem mulD0_core : ∀ d1 d2 : Fin 4,
+    (T3 (d1.val / 2) (2 ^ 62 - 1) (d1.val % 2) + T3 (d2.val / 2) 0 (d2.val % 2)) % W64 &&& SK =
+      T3 ((d1 + d2).val / 2) 0 ((d1 + d2).val % 2) := by decide
+
+/-- `D = ((w1 or F) + (w2 xor x2)) and K`: `w1 or F` fills bits 1–62 with ones, `w2 xor x2` empties them, so the axis
+carry reaches the sign. -/
+theorem spMulD0_eq (h1 : m1 < Q) (h2 : m2 < Q) :
+    spMulD0 (spEnc m1 d1) (spEnc m2 d2) (2 * m2) = T3 ((d1 + d2).val / 2) 0 ((d1 + d2).val % 2) := by
+  rw [spMulD0, spEnc, spEnc, SF_T3, T3_or h1 M62_lt (alt d1) (by decide), Nat.or_zero, Nat.or_zero,
+    or_ones_low (by qomega), two_T3, T3_xor h2 h2 (alt d2) (by decide), Nat.xor_zero, Nat.xor_self, Nat.xor_zero]
+  exact mulD0_core d1 d2
+
+theorem mulD1_core : ∀ d1 d2 : Fin 4,
+    T3 ((d1.val / 2 ^^^ d2.val / 2 ^^^ (d1.val % 2 &&& d2.val % 2) % 2) &&& 1) 0 ((d1.val % 2 ^^^ d2.val % 2) &&& 1) =
+      T3 ((d1 + d2).val / 2) 0 ((d1 + d2).val % 2) := by decide
+
+/-- `D = ((w1 xor w2) xor ((w1 and w2) shl 63)) and K`: the two-field rule. -/
+theorem spMulD1_eq (h1 : m1 < Q) (h2 : m2 < Q) (x : Nat) :
+    spMulD1 (spEnc m1 d1) (spEnc m2 d2) x = T3 ((d1 + d2).val / 2) 0 ((d1 + d2).val % 2) := by
+  rw [spMulD1, sp_xor h1 h2, spEnc, spEnc, T3_and h1 h2 (alt d1) (alt d2), shl63, T3_mod2,
+    T3_xor (xm_lt h1 h2) (by decide) (axor_lt d1 d2) (by decide), Nat.xor_zero, Nat.xor_zero, SK_T3,
+    T3_and (xm_lt h1 h2) (by decide) (axor_lt d1 d2) (by decide), Nat.and_zero]
+  exact mulD1_core d1 d2
+
+/-- **Split multiply** (`variant = 0`) gives the word of round 1's `A.mul` exactly, when the product fits. -/
+theorem spMul_eq (h1 : m1 < Q) (h2 : m2 < Q) (hp : m1 * m2 < Q) :
+    spMul (spEnc m1 d1) (spEnc m2 d2) = spEnc (mul ⟨m1, d1⟩ ⟨m2, d2⟩).m (mul ⟨m1, d1⟩ ⟨m2, d2⟩).d :=
+  spMulWith_eq spMulD0 h1 h2 hp (spMulD0_eq h1 h2)
+
+/-- **Split multiply** (`variant = 1`). -/
+theorem spMul1_eq (h1 : m1 < Q) (h2 : m2 < Q) (hp : m1 * m2 < Q) :
+    spMul1 (spEnc m1 d1) (spEnc m2 d2) = spEnc (mul ⟨m1, d1⟩ ⟨m2, d2⟩).m (mul ⟨m1, d1⟩ ⟨m2, d2⟩).d :=
+  spMulWith_eq spMulD1 h1 h2 hp (spMulD1_eq h1 h2 _)
+
+/-- The divide body gives the word of round 1's `A.div` exactly, for any quotient and direction parts with their
+facts. -/
+theorem spDivWith_eq (qf : Nat → Nat → Nat) (Df : Nat → Nat → Nat → Nat → Nat) (h1 : m1 < Q) (h2 : m2 < Q)
+    (hq : qf (2 * m1) (2 * m2) = 2 * (m1 / m2))
+    (hD : Df (spEnc m1 d1) (spEnc m2 d2) (2 * m1) (2 * m2) = T3 ((d1 - d2).val / 2) 0 ((d1 - d2).val % 2)) :
+    spDivWith qf Df (spEnc m1 d1) (spEnc m2 d2) = spEnc (div ⟨m1, d1⟩ ⟨m2, d2⟩).m (div ⟨m1, d1⟩ ⟨m2, d2⟩).d := by
+  simp only [spDivWith, sp_and_F h1, sp_and_F h2, hq, hD, div]
+  have hqQ : m1 / m2 < Q := Nat.lt_of_le_of_lt (Nat.div_le_self _ _) h1
+  rw [two_T3, T3_or hqQ (by decide) (by decide) (alt _), Nat.zero_or, Nat.or_zero, Nat.zero_or]; rfl
+
+/-- `q = (x1 /u x2) shl 1`. -/
+theorem spDivQ0_eq (h1 : m1 < Q) : spDivQ0 (2 * m1) (2 * m2) = 2 * (m1 / m2) := by
+  rw [spDivQ0, Nat.mul_div_mul_left _ _ (by decide : 0 < 2), Nat.shiftLeft_eq]
+  have : m1 / m2 ≤ m1 := Nat.div_le_self _ _
+  generalize m1 / m2 = q at this ⊢
+  qomega
+
+/-- `q = x1 /u (x2 shr 1)`, which is `2 m1 / m2`; exact since `m2` divides `m1`. -/
+theorem spDivQ1_eq (hd : m2 ∣ m1) : spDivQ1 (2 * m1) (2 * m2) = 2 * (m1 / m2) := by
+  rw [spDivQ1, Nat.shiftRight_eq_div_pow, show 2 * m2 / 2 ^ 1 = m2 by omega, Nat.mul_div_assoc _ hd]
+
+theorem divD0_core : ∀ d1 d2 : Fin 4,
+    (T3 (d1.val / 2) 0 (d1.val % 2) + (W64 - T3 (d2.val / 2) 0 (d2.val % 2))) % W64 &&& SK =
+      T3 ((d1 - d2).val / 2) 0 ((d1 - d2).val % 2) := by decide
+
+/-- `D = ((w1 xor x1) − (w2 xor x2)) and K`: bits 1–62 of both are 0, so the axis borrow reaches the sign. -/
+theorem spDivD0_eq (h1 : m1 < Q) (h2 : m2 < Q) :
+    spDivD0 (spEnc m1 d1) (spEnc m2 d2) (2 * m1) (2 * m2) = T3 ((d1 - d2).val / 2) 0 ((d1 - d2).val % 2) := by
+  rw [spDivD0, spEnc, spEnc, two_T3, two_T3, T3_xor h1 h1 (alt d1) (by decide), T3_xor h2 h2 (alt d2) (by decide),
+    Nat.xor_zero, Nat.xor_zero, Nat.xor_self, Nat.xor_self, Nat.xor_zero, Nat.xor_zero]
+  exact divD0_core d1 d2
+
+theorem divD1_core : ∀ d1 d2 : Fin 4,
+    T3 ((d1.val / 2 ^^^ d2.val / 2 ^^^ (d2.val % 2 &&& (d1.val % 2 ^^^ 1)) % 2) &&& 1) 0
+        ((d1.val % 2 ^^^ d2.val % 2) &&& 1) =
+      T3 ((d1 - d2).val / 2) 0 ((d1 - d2).val % 2) := by decide
+
+theorem a1_lt : ∀ d : Fin 4, d.val % 2 ^^^ 1 < 2 := by decide
+
+/-- `D = ((w1 xor w2) xor ((w2 and not w1) shl 63)) and K`: the two-field rule for a difference. -/
+theorem spDivD1_eq (h1 : m1 < Q) (h2 : m2 < Q) (x y : Nat) :
+    spDivD1 (spEnc m1 d1) (spEnc m2 d2) x y = T3 ((d1 - d2).val / 2) 0 ((d1 - d2).val % 2) := by
+  have hn : m1 ^^^ (2 ^ 62 - 1) < Q := xm_lt h1 M62_lt
+  rw [spDivD1, sp_xor h1 h2, spEnc, spEnc, ones_T3, T3_xor h1 M62_lt (alt d1) (by decide),
+    T3_and h2 hn (alt d2) (a1_lt d1), shl63, T3_mod2,
+    T3_xor (xm_lt h1 h2) (by decide) (axor_lt d1 d2) (by decide), Nat.xor_zero, Nat.xor_zero, SK_T3,
+    T3_and (xm_lt h1 h2) (by decide) (axor_lt d1 d2) (by decide), Nat.and_zero]
+  exact divD1_core d1 d2
+
+/-- **Split exact division** (`variant = 0`) gives the word of round 1's `A.div` exactly. -/
+theorem spDiv_eq (h1 : m1 < Q) (h2 : m2 < Q) :
+    spDiv (spEnc m1 d1) (spEnc m2 d2) = spEnc (div ⟨m1, d1⟩ ⟨m2, d2⟩).m (div ⟨m1, d1⟩ ⟨m2, d2⟩).d :=
+  spDivWith_eq spDivQ0 spDivD0 h1 h2 (spDivQ0_eq h1) (spDivD0_eq h1 h2)
+
+/-- **Split exact division** (`variant = 1`): exact when `m2` divides `m1`. -/
+theorem spDiv1_eq (h1 : m1 < Q) (h2 : m2 < Q) (hd : m2 ∣ m1) :
+    spDiv1 (spEnc m1 d1) (spEnc m2 d2) = spEnc (div ⟨m1, d1⟩ ⟨m2, d2⟩).m (div ⟨m1, d1⟩ ⟨m2, d2⟩).d :=
+  spDivWith_eq spDivQ1 spDivD1 h1 h2 (spDivQ1_eq hd) (spDivD1_eq h1 h2 _ _)
+
+end
 
 end Packed
 end Header

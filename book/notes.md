@@ -29,9 +29,16 @@ The machine has an answer to both problems. We will start with the first.
 
 ## The machine's answer: signed integers
 
-Rather than counting up from 0, as we do when we measure a magnitude such as distance on an odometer, the machine can put zero in the middle of its range. A signed word of $n$ bits counts from $-2^{n-1}$ to $2^{n-1} - 1$: with 4 bits, from $-8$ to $7$; with 64 bits, from $-9{,}223{,}372{,}036{,}854{,}775{,}808$ to $9{,}223{,}372{,}036{,}854{,}775{,}807$. There are still $2^n$ values, shifted down by half.
+Rather than counting up from 0, as we do when we measure a magnitude such as distance on an odometer, the machine can put zero in the middle of its range. A signed word of $n$ bits counts from $-2^{n-1}$ to $2^{n-1} - 1$: with 4 bits, from $-8$ to $7$; with 8 bits, from $-128$ to $127$. There are still $2^n$ values, shifted down by half.
 
-How it does this comes from running the odometer backward. One kilometer back from 000000 shows 999999, and two back shows 999998. The 4-bit odometer does the same: one below 0000 is 1111, and two below is 1110. The machine takes that reading at its word: 1111 is $-1$, 1110 is $-2$, and so on down to 1000, which is $-8$. Every word whose top bit is 1 is read as negative. Equivalently, the top bit counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**.
+How it does this comes from running the odometer backward. One kilometer back from 000000 shows 999999, and two back shows 999998. The 4-bit odometer does the same: one below 0000 is 1111, and two below is 1110. The machine takes that reading at its word: 1111 is $-1$, 1110 is $-2$, and so on down to 1000, which is $-8$.
+
+| Word | 0000 | 0001 | 0010 | 0011 | 0100 | 0101 | 0110 | 0111 | 1000 | 1001 | 1010 | 1011 | 1100 | 1101 | 1110 | 1111 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Unsigned | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
+| Signed | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | −8 | −7 | −6 | −5 | −4 | −3 | −2 | −1 |
+
+Notice that every word interpreted as a negative in this way has the top bit equal 1. Therefore, every word whose top bit is 1 is read as negative, and every word whose top bit is 0 is read as zero or positive. Equivalently, the top bit counts $-2^{n-1}$ in place of $+2^{n-1}$, so $1110$ is $-8 + 4 + 2 = -2$. This is **two's complement**.
 
 Nothing about the counter changes, only the reading. $3 - 5$ still lands on 1110, and 1110 read signed is $-2$, the answer on the line. So the machine's own addition and subtraction already give the right result below zero, with no check, as long as the result stays in range. Outside that range is overflow, the second problem, which now starts at half the clock. The range is lopsided: $-2^{n-1}$ has no negation, since $2^{n-1}$ is out of range, and dividing it by $-1$ overflows the same way; on some machines (x86-64) that division stops the program instead of wrapping. This holds for the machine's own signed integers, and for C below.
 

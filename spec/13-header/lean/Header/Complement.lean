@@ -220,21 +220,32 @@ theorem cenc_c (x : Num) : cu x % G < G := Nat.mod_lt _ (by decide)
 /-- The top two bits of `cenc x`. -/
 def cenc_hy (x : Num) : Nat := 2 * (cu x / G) + x.d.val % 2
 
+theorem fits_le {x : Num} (hx : fits x) : x.m ≤ G := by
+  unfold fits at hx; split at hx <;> omega
+
 theorem cenc_lt {x : Num} (hx : fits x) : cenc x < W := P_lt (cenc_h hx) (cenc_c x)
 
 /-- **Either zero.** The layout has one zero per axis: `0` and `−0` (directions `d` and `d + 2`) are one word, `0`
 on the real axis and `G` on the imaginary one. This is the only identification the encoding makes. -/
 theorem cenc_zero : ∀ d : Fin 4, cenc ⟨0, d⟩ = cenc ⟨0, d + 2⟩ ∧ cenc ⟨0, d⟩ = G * (d.val % 2) := by decide
 
-theorem cenc_inj {x y : Num} (hx : fits x) (hy : fits y) :
-    cenc x = cenc y ↔ x.m = y.m ∧ (x.d = y.d ∨ (x.m = 0 ∧ x.d.val % 2 = y.d.val % 2)) := by
-  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
-  unfold fits at hx hy
-  simp only [cenc, cu, P] at hx hy ⊢
-  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
-  all_goals by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
-  all_goals simp [z1, z2] at hx hy ⊢
-  all_goals comega
+/-- Decoding: a word's round 1 number (`0` for the zeros, so `cdec G = ⟨0, 1⟩`, `cdec 0 = ⟨0, 0⟩`). -/
+def cdec (w : Nat) : Num :=
+  match w / G with
+  | 0 => ⟨w % G, 0⟩
+  | 1 => ⟨w % G, 1⟩
+  | 2 => ⟨G - w % G, 2⟩
+  | _ => ⟨G - w % G, 3⟩
+
+/-- **Every word is a number.** Each 64-bit word is the encoding of a round 1 number that fits, so the theorems below,
+stated on `cenc x`, cover every word. -/
+theorem cenc_cdec {w : Nat} (hw : w < W) : fits (cdec w) ∧ cenc (cdec w) = w := by
+  have h4 : w / G < 4 := by comega
+  rcases four_cases h4 with h|h|h|h
+  all_goals simp only [cdec, h, fits, cenc, cu, P]
+  all_goals by_cases z : w % G = 0
+  all_goals simp [z]
+  all_goals (repeat' split) <;> comega
 
 /-! ## The add, subtract and negate are round 1's -/
 
@@ -270,31 +281,56 @@ theorem cneg_ref (x : Num) (hx : fits x) (hn : fits (neg x)) : cneg (cenc x) = c
 /-- **The exception of negate**: `−2^62` has no negation in the layout; the formula gives `−2^62` back (the 63-bit
 wrap, as int64's `neg` does with its minimum). -/
 theorem cneg_min (d : Fin 4) (hd : 2 ≤ d.val) : cneg (cenc ⟨G, d⟩) = cenc ⟨G, d⟩ := by
-  rcases fin4_cases d with rfl|rfl|rfl|rfl <;> simp at hd <;> decide
+  have hx : fits ⟨G, d⟩ := by unfold fits; dsimp only; split <;> omega
+  unfold cenc
+  rw [cneg_parts (cenc_h hx) (cenc_c _)]
+  rcases fin4_cases d with rfl|rfl|rfl|rfl <;> simp at hd <;> simp [cu] <;> decide
 
-/-- **Subtract is round 1's subtract** (negate `w2`, then the full add), with the same statement as `cadd_ref`. No
-exception for `w2 = −2^62`: the negation wraps, and the add's wrap undoes it whenever round 1's difference fits. -/
+/-- Subtracting `−2^62` (magnitude `m2 = 2^62`, direction `d`, `2 ≤ d`): round 1 adds `2^62` in direction `d + 2`,
+which does not fit the layout; the formula adds the word of `−2^62` itself. The two agree mod `2^63` on the axis, so
+the word is right whenever round 1's result fits. (`m2` is kept a variable, `m2 = 2^62` a hypothesis, so that `omega`
+and not `simp` does the arithmetic.) -/
+theorem cadd_min (x : Num) (m2 : Nat) (d : Fin 4) (hm : m2 = G) (hd : 2 ≤ d.val) (hx : fits x) :
+    match add W x ⟨m2, d + 2⟩ with
+    | some r => fits r → cadd (cenc x) (cenc ⟨m2, d⟩) = (cenc r, 0)
+    | none => (cadd (cenc x) (cenc ⟨m2, d⟩)).2 = 1 := by
+  have hy : fits ⟨m2, d⟩ := by unfold fits; dsimp only; split <;> omega
+  have e := cadd_parts (cenc_h hx) (cenc_h hy) (cenc_c x) (cenc_c ⟨m2, d⟩)
+  unfold cenc
+  rw [e]; clear e
+  have hs : x.m + m2 < W := by have := fits_le hx; comega
+  have z2 : m2 ≠ 0 := by comega
+  obtain ⟨m1, d1⟩ := x
+  simp only at hs
+  unfold fits at hx
+  clear hy
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d with rfl|rfl|rfl|rfl <;> simp at hd
+  all_goals by_cases hl : m1 < m2 <;> by_cases z1 : m1 = 0
+  all_goals try (exfalso; omega)
+  all_goals simp [add, cu, fits, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, P, hs]
+    at hx ⊢
+  all_goals (repeat' split) <;> comega
+
+/-- **Subtract is round 1's subtract** (negate `w2`, then the full add), with the same statement as `cadd_ref`. There
+is no exception for `w2 = −2^62`: its negation wraps to itself, and the add's 63-bit wrap undoes it whenever round
+1's difference fits (`cadd_min`). -/
 theorem csub_ref (x y : Num) (hx : fits x) (hy : fits y) :
     match sub W x y with
     | some r => fits r → csub (cenc x) (cenc y) = (cenc r, 0)
     | none => (csub (cenc x) (cenc y)).2 = 1 := by
-  have hn4 : 2 * (((cenc_hy y % 2 + 7 - cenc_hy y + (G - cu y % G) / G) % 4) / 2) + cenc_hy y % 2 < 4 := by
-    have : (cenc_hy y % 2 + 7 - cenc_hy y + (G - cu y % G) / G) % 4 < 4 := Nat.mod_lt _ (by decide)
-    have : cenc_hy y % 2 < 2 := Nat.mod_lt _ (by decide)
-    omega
-  have e := cadd_parts (cenc_h hx) hn4 (cenc_c x) (Nat.mod_lt (G - cu y % G) (by decide))
-  unfold csub cenc
-  rw [cneg_parts (cenc_h hy) (cenc_c y)]
-  unfold cenc_hy at e
-  rw [e]
-  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
-  unfold fits at hx hy
-  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl
-  all_goals by_cases hl : m1 < m2 <;> by_cases z1 : m1 = 0 <;> by_cases z2 : m2 = 0
-  all_goals try (exfalso; omega)
-  all_goals simp [sub, neg, add, cu, fits, dirCheck, clockAdd, absDiffClock, clockSub, clockNeg, borrow, hl, z1, z2, P]
-    at hx hy ⊢
-  all_goals (repeat' split) <;> comega
+  unfold csub sub
+  by_cases hn : fits (neg y)
+  · rw [cneg_ref y hy hn]
+    exact cadd_ref x (neg y) hx hn
+  · obtain ⟨m2, d2⟩ := y
+    have hm : m2 = G ∧ 2 ≤ d2.val := by
+      unfold fits at hy hn; simp only [neg] at hn
+      rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> simp at hy hn ⊢ <;> omega
+    obtain ⟨hm, hd⟩ := hm
+    have e := cneg_min d2 hd
+    rw [← hm] at e
+    rw [e]
+    exact cadd_min x m2 d2 hm hd hx
 
 end Cpl
 end Header

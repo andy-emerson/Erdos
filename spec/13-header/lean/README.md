@@ -533,3 +533,38 @@ left in register 21. Subtract is `xori h2, h2, −128` after the loads.
 
 `#print axioms`: `lgRow_gen`, `lg_core` use `propext`, `Quot.sound`; `lgCx_run`, `lgInt_run`, `lgOut_some`, `lgOut_none`
 also `Classical.choice`; `lgRow_no_branch` and `table_eq` `propext` only.
+
+## The complement layout, round 1 (`Header/Complement.lean`)
+
+`../complement-research.md` and the build `cpl` (`../src/designcpl.nim`; results in [`../results-cpl.md`](../results-cpl.md)).
+One 64-bit word: bit 63 the sign start `s`, bit 62 the axis `a` (`G = 2^62`), bits 0–61 the count `c`; value
+`(c − 2^62 s) · i^a`, so each axis holds `−2^62 … 2^62 − 1`. The formulas are the ones built, on natural numbers mod
+`2^64`, one definition each:
+
+- `cadd`: the full add, "branch-free, no selects", with the bridge `b = z1 + (w2 or G)` and the expression flag `e`;
+- `cneg`: `z = w and G; d = z − w; r = (d and not G) or z`;
+- `csub`: `cneg w2`, then `cadd`.
+
+**Against round 1.** These formulas are not checked through `Packed.Layout`. `Layout` requires that decoding inverts
+encoding in every direction, and this layout has no `−0`. Instead, `cenc` writes a round 1 number `⟨m, d⟩` as the
+word of the signed value `±m` on axis `d mod 2`. `fits x` is the no-overflow hypothesis: `±m` in `−2^62 … 2^62 − 1`.
+The theorems are then exact word equalities.
+
+**Exception (either zero).** `⟨0, d⟩` and `⟨0, d + 2⟩` are one word (`cenc_zero`). That is the only identification
+made, and every result on a zero is stated through it.
+
+| Theorem | Statement |
+| --- | --- |
+| `cadd_ref` | For `x`, `y` that fit: when `A.add (2^64) x y` gives `r` and `r` fits, `cadd (cenc x) (cenc y) = (cenc r, 0)`; when it gives an expression (different axes, both nonzero), the flag is 1. |
+| `csub_ref` | The same for `csub` against `A.sub`. There is no exception for `y = −2^62`: its negation wraps to itself (`cneg_min`), and the add's 63-bit wrap undoes it whenever the difference fits (`cadd_min`). |
+| `cneg_ref` | For `x` whose negation fits (all but `−2^62`), `cneg (cenc x) = cenc (A.neg x)`. |
+| `cneg_min` | The exception: `cneg` of `−2^62` is `−2^62` (the 63-bit wrap). |
+| `cenc_cdec` | Every word below `2^64` is `cenc` of a number that fits (`cdec`), so the theorems cover every word. |
+| `cenc_zero` | `cenc ⟨0, d⟩ = cenc ⟨0, d + 2⟩ = G · (d mod 2)`. |
+| `cadd_parts`, `cneg_parts` | The formulas evaluated on parts `P h c = 2^62 h + c` (`h < 4`, `c < 2^62`): `cadd`'s sign start is bit 63 of the bridge; its axis is `w2`'s when `w1` is a zero, else `w1`'s; its count is the counts' sum mod `2^62`; its flag is `(a1 xor a2)` unless an operand is a zero. |
+| `P_and`, `P_xor`, `P_or`, `P_add`, `P_sub`, `P_shr`, `fix_P` | AND, OR, XOR, add, subtract and shift on parts; the fix `x xor ((x xor y) and G)` gives `x` with `y`'s axis bit. |
+
+Multiply and exact division are not yet in this file (phase B, second milestone).
+
+`#print axioms`: every theorem uses `propext`, `Classical.choice`, `Quot.sound` (or fewer). `Header.Complement`
+builds in about 17 s with no warnings.

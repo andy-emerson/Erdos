@@ -296,3 +296,82 @@ Control (pair of int64) is 9 for multiply and 7 for divide on the same basis. Th
 - **(I3) with `mulh` to recover the sign:** 19 on generic machines. It only pays with x86's widening `imul` + `shrd` (14).
 - **Folding the i·i negation into $D$:** $-2v = w - 3h$ holds, but a conditional form costs as much as `xor`/`sub` after it.
 - **A cheaper sign extension:** none of length ≤ 3 is known; M2 searches for one.
+
+### M2: superoptimizer searches, and the full add
+
+**Tool.** [`test/complement/superopt2.c`](test/complement/superopt2.c): the same exhaustive DAG search as `superopt.c`, with the same safe pruning, so "none ≤ L" is a proof within the operation set. It adds:
+- up to 3 inputs per lane (for example the machine's own product $p$ beside $w_1, w_2$);
+- a care mask per lane (only some bits must match);
+- optional operations: `mul`, `div`, `seqz`/`snez` (Z), RISC-V Zicond `czero.eqz`/`czero.nez` (Q), and Zbb `maxu`/`minu` with `sltu` (U).
+
+Runs are resumable by first instruction (`SO_LMIN`, `SO_START`). Logs: [`test/complement/m2-logs/`](test/complement/m2-logs/). Checks of the new formulas: [`test/complement/m2.py`](test/complement/m2.py), exhaustive on $n = 4, 6, 8$ and 60,000 random/edge 64-bit pairs, **0 failures**.
+
+**Multiply and divide: the pieces around the machine's `mul`/`div`.** A whole multiply (M1: 17) is far beyond exhaustive reach, so each piece was searched separately.
+
+| Piece | $N$ | Shortest | Hits / note |
+| --- | --- | --- | --- |
+| sign extension $x$ | 6 | **4** (none ≤ 3) | 235, e.g. round 1's and M1's $(w + ((w \text{ shl } 1) \text{ sar } 1)) \text{ sar } 1$ |
+| $v \bmod 2^{n-1}$ (top bit free) | 6 | **4** (none ≤ 3) | 937. Freeing the top bit does not help, so only BMI2 `pext` (1) beats 4. |
+| $2v$ | 6 | **3** (none ≤ 2) | 10, including M1's $w + ((w \text{ shl } 1) \text{ sar } 1)$ and the shift-free $(w \text{ OR } G) + (w \text{ OR } K)$ and $z + (z \text{ AND } C)$, $z = w \text{ AND } \lnot G$ |
+| $-2v$ | 6 | 4 | 232 |
+| mask of $a_1 a_2$ / of $a_2 \bar a_1$ from $w_1, w_2$ | 6 | **3** | round 1's (and `rol 1` for `shl 1`). From M1's $L_i$ it is 2. |
+| conditional negate of $x$ by that mask, from $x, w_1, w_2$ | 4 | **5** (none ≤ 4) | round 1's mask + `xor`/`sub` is optimal; M1 saves only through the shared $L_i$ |
+| axis fix $p \to r$ (no negation) | 6 | **4** (none ≤ 3) | 4: round 1's fix and its merge form |
+| i·i sign + fix, from $(p, w_1, w_2)$ | 4 | **none ≤ 5** (by hand: 9) | all 234 first instructions, 2.55·10⁹ nodes |
+| divide sign + fix, from $(q, w_1, w_2)$ | 4 | POSTDIV | |
+
+So every piece of M1's multiply (17) and divide (15) is at its shortest in this operation set, given the inputs it takes. What is left to win is in sharing across pieces (as $L_i$ does), and that is beyond the search. No whole-program lower bound is claimed.
+
+**Full add on the axes.** The search target `faxis` asks only for a word whose axis bit is the result's axis: $a_1$, except $a_2$ when $w_1$ is a zero on the other axis; zero results are free. It found sources shorter than round 1's mask-and-select (5, with $Z_1$):
+
+| Ops | Shortest | Axis source |
+| --- | --- | --- |
+| base + `seqz` | **4** (none ≤ 3) | $\textit{src} = w_2 - \operatorname{seqz}\big(w_2 \text{ XOR } (G \text{ AND NOT } w_1)\big)$ |
+| + Zicond | 4 | `czero` selects, e.g. $y = \operatorname{czero.eqz}(w_1, w_1 - G)$; $\textit{src} = y + \operatorname{czero.nez}(w_2, y)$ |
+| + Zbb | **3** (none ≤ 2) | $v = \operatorname{maxu}(w_1, w_2)$; $\textit{src} = \operatorname{maxu}(v, K - v)$ |
+
+- **Generic source.** $G \text{ AND NOT } w_1$ is the zero word on the axis other than $a_1$. So the XOR is 0 exactly when $w_2$ is that zero, the only case where the axis must come from $w_1$. Subtracting 1 from that zero ($G \to C$, or $0 \to$ all ones) puts $a_1$ into bit $n-2$. Otherwise $\textit{src} = w_2$, whose axis is right.
+- **Zbb source.** A zero word is 0 or $G$, so the unsigned maximum is the nonzero operand. The one exception is a positive real below $G$ against the imaginary zero $G$. There $v = G$, and $K - v = S$ wins with axis 0.
+- **Expression flag** $e$: none of length ≤ 4 even with Z, Q and U (`eflag`, $N = 4$). Round 1's 5 shares $Z_1$, and the rotated-key form below shares $\rho_i$.
+
+**Results** (operation only; the fix is $r = b \text{ XOR } ((b \text{ XOR } \textit{src}) \text{ AND } G)$, 3):
+
+| | Bridge $b$ (3) | Source | Total | Round 1 |
+| --- | --- | --- | --- | --- |
+| full add, no flag, generic | $(w_1 \text{ AND } \lnot G) + (w_2 \text{ OR } G)$ | `seqz` form, 4 | **10** | 11 |
+| full add, no flag, Zbb | same | `maxu` form, 3 | **9** | 11 |
+| full add + $e$, generic | round 1 (the flag reuses $Z_1$) | | 16 | 16 |
+| full add + $e$, Zbb | same | $\rho_i = \operatorname{rol}(w_i, 2)$, $\textit{src} = \operatorname{ror}(\operatorname{maxu}(\rho_1, \rho_2), 2)$, 4; $e = \operatorname{sltu}(1, \operatorname{minu}(\rho_1, \rho_2)) \text{ AND } (\rho_1 \text{ XOR } \rho_2)$, 4 | **14** | 16 |
+| full sub, no flag | $z_1 - z_2$ ($z_i = w_i \text{ AND } \lnot G$) | 4 / 3 | **10** / **9** (Zbb) | 15 (negate 4 + 11) |
+| full sub + $e$, generic | $z_1 - z_2$; round 1's $Z_1$, src and $e$, with $z_2$ shared | | **15** | 20 |
+| full sub + $e$, Zbb | $z_1 - z_2$ | rotated keys as for add | **14** | 20 |
+
+- **Subtract needs no negate first.** In $z_1 - z_2$ both axis bits are cleared, so the axis column is $0 - 0 - \beta$. It outputs $\beta$ and borrows $\beta$ on every input, including the cross cases ($w_1$ zero gives $-v_2$). That is round 1's same-axis subtract argument, applied to all lanes. The source and the fix are the add's, because the result's axis rule is the same.
+- **Rotated keys.** $\rho = \operatorname{rol}(w, 2) = 4c + 2s + a$. A zero word gives $\rho \le 1$, and every nonzero word gives $\rho \ge 2$. So $\operatorname{maxu}$ picks the nonzero operand, and its bit 0 is the axis. $\operatorname{minu} \ge 2$ means both operands are nonzero, and bit 0 of $\rho_1 \text{ XOR } \rho_2$ is "different axes". The flag $e$ is bit 0.
+- Same-axis overflow is the $(n-1)$-bit wrap in every form, as in round 1: the bridge's sign and count are round 1's. The cross cases never overflow.
+- **x86-64 / ARM64** *(hand)*:
+  - `maxu` is `cmp` + `cmovb` or `csel` (2), so the Zbb source is 5 there.
+  - The generic `seqz` source is 5 on ARM64 (`bic t,G,w1`, `eor`, `cmp`+`cset`, `sub`) and 6 on x86-64 (`andn`, `xor`, `test`+`sete`+`movzx`, `sub`).
+  - So off RISC-V the gain is about 1, and round 1's ARM64 select form (8) is still the shortest there.
+
+**Summary of round 2** (operation only, without loads and the store; the harness adds 3):
+
+| Operation | Round 1 | Generic (RV64, no extensions) | RV64 + Zbb | x86-64 *(hand)* | ARM64 *(hand)* |
+| --- | --- | --- | --- | --- | --- |
+| multiply | 18 | **17** (wraps) | 17 | **14** (BMI2 **11**) | **10** |
+| divide | 18 (19 no `andn`) | **15** (16 no `andn`) | 15 | **15** | **10** |
+| full add + $e$ | 16 | 16 | **14** | | |
+| full sub + $e$ | 20 | **15** | **14** | | |
+| full add / sub, no flag | 11 / 15 | **10** / **10** | **9** / **9** | | |
+| same-axis add / sub / negate | 5 / 4 / 4 | unchanged (round 1 searched) | | | |
+
+Reproduce:
+- `gcc -O3 -o so2 superopt2.c`;
+- `./so2 6 sext 4`, `./so2 6 twov 3`, `./so2 6 mmul 3`, `./so2 6 fix 4`, `./so2 4 cnegm 4`, `./so2 4 faxis 4 40 Z`, `./so2 4 faxis 3 40 U`, `./so2 4 eflag 4 40 ZQU` (seconds each);
+- `SO_LMIN=5 SO_START=0 ./so2 4 postmul 5` (about 35 min, resumable by chunk);
+- `python3 -I m2.py` (about 1 min).
+
+**Open.**
+- Whole-program searches for multiply, divide and the full add (lengths 9–17) are out of reach. Only the pieces are shown optimal.
+- The post-multiply and post-divide bounds are at $N = 4$ and stop at length 5, against 9 by hand.
+- Nothing was timed or assembled.

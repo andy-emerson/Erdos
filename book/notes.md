@@ -60,7 +60,7 @@ This is why the split works on a machine. Neither the magnitude nor the exponent
 
 ### A sign in a header
 
-*(Placeholder: the line's version of the header. A number is a magnitude, one full word, and a sign kept outside it. The case check and the borrow, now in the header design below, are introduced here first, on two directions only. Pros and cons: all $n$ bits for the magnitude and a symmetric range, against an addition that needs the check and the borrow. In rounds 2 and 3 this is the header design restricted to directions 0 and 2.)*
+*(Placeholder: the line's version of the header. A number is a magnitude, one full word, and a sign kept outside it. The two facts about addition and the borrow, now in the header design below, are introduced here first, on two directions only. Pros and cons: all $n$ bits for the magnitude and a symmetric range, against an addition that needs the check and the borrow. In rounds 2 and 3 this is the header design restricted to directions 0 and 2.)*
 
 ## The plane
 
@@ -165,13 +165,11 @@ Values run from $-2^{n-2}$ to $2^{n-2} - 1$: one bit goes to the axis, and one t
 
 ### The direction in a header: the header design
 
-The header design stores each number as one such pair. Its addition begins with a case check, which finds the case before any arithmetic is done.
+The header design stores each number as one such pair. Two facts about addition let it add with one rule, in place of a tree of cases.
 
-#### The case check
+#### Two facts about addition
 
-Adding two numbers in the same direction adds their magnitudes. Adding two in opposite directions subtracts them, since one pulls against the other. That subtraction is the only place a magnitude can go below zero, so it is where the first problem has to be solved. Addition therefore needs two answers before it can work: how the two directions relate, and, when they are opposite, which magnitude is larger. Each is one check.
-
-**The direction check** is one XOR of the two directions' bits, from the table above. It gives a 1 wherever the bits differ:
+Write a direction as two bits, $d = 2s + a$: the high bit $s$ is the **sign** (0 for 1 and $i$, 1 for $-1$ and $-i$), and the low bit $a$ is the **axis**. One XOR of two directions shows where their bits differ:
 
 | $d_1$ \ $d_2$ | 00 | 01 | 10 | 11 |
 | --- | --- | --- | --- | --- |
@@ -180,70 +178,51 @@ Adding two numbers in the same direction adds their magnitudes. Adding two in op
 | **10** | 10 opp | 11 diff | 00 same | 01 diff |
 | **11** | 11 diff | 10 opp | 01 diff | 00 same |
 
-00 means the same direction. 10 means opposite: the axis matches and the sign does not. A low bit of 1 means different axes. Integers only ever give 00 or 10.
+A high bit of 1 means the signs differ. A low bit of 1 means the axes differ. Integers only ever give 00 or 10.
 
-**The magnitude check** is needed only for opposite directions, and there the subtraction answers it. The machine's subtraction instruction reports one more thing as it works: whether it had to wrap below zero, as a schoolbook subtraction would need to borrow past its leftmost column. That report is the **borrow**:
+**The signs decide add or subtract.** On one axis, the magnitudes add when the signs agree and subtract when they differ, since one number pulls against the other. On different axes, one magnitude must be zero, or the sum is an expression, and with a zero both ways agree: $m_1 + 0 = |m_1 - 0|$. So the axes never need checking to decide:
 
-$$b = \begin{cases} 1 & \text{if } m_1 < m_2, \\ 0 & \text{otherwise.} \end{cases}$$
+$$m = \begin{cases} m_1 + m_2 & s_1 = s_2 \\ |m_1 - m_2| & s_1 \ne s_2 \end{cases}$$
 
-The borrow gives the result's direction at once. A borrow means the second number won, so the first direction turns halfway round:
+**The larger magnitude sets the direction.** In the same direction, both directions are the result's. In opposite directions, the larger number pulls the result its way. On different axes, the nonzero number is the larger. When the magnitudes are equal, either direction will do: the directions are the same, or the result is zero. So
 
-$$d \equiv d_1 + 2b \pmod 4.$$
+$$d = \begin{cases} d_1 & m_1 \ge m_2 \\ d_2 & m_1 < m_2 \end{cases}$$
 
-It also gives the magnitude, from the same subtraction. A borrow means the clock wrapped, and negating on the clock unwraps it:
+**One compare serves both.** The machine's subtraction reports whether it had to wrap below zero, as a schoolbook subtraction would need to borrow past its leftmost column. That report is the **borrow**:
 
-$$m \equiv (-1)^b \cdot (m_1 - m_2) \pmod{2^n}.$$
+$$b = \begin{cases} 1 & m_1 < m_2 \\ 0 & m_1 \ge m_2 \end{cases}$$
 
-Both are modular, the direction mod 4 and the magnitude mod $2^n$, yet together, as $m \cdot i^d$, they give the answer on the line, even when it is below zero. They do nothing for overflow: a result of $2^n$ or more is still the second problem. The examples below are $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, on a 16-hour clock, so the first direction is 1 and all modular arithmetic in the table is mod 16:
+It is the compare that picks the direction, and it also gives the difference's magnitude, from the same subtraction. A borrow means the clock wrapped, and negating on the clock unwraps it:
 
-| Subtraction | Borrow $b$ | Modular direction | Modular magnitude | Linear result |
+$$|m_1 - m_2| \equiv (-1)^b \cdot (m_1 - m_2) \pmod{2^n}.$$
+
+Both are modular, the direction mod 4 and the magnitude mod $2^n$, yet together, as $m \cdot i^d$, they give the answer on the line, even when it is below zero. They do nothing for overflow: a result of $2^n$ or more is still the second problem. The examples below are $5 + (-3)$, $4 + (-4)$ and $3 + (-5)$, on a 16-hour clock, so all modular arithmetic in the table is mod 16:
+
+| Subtraction | Borrow $b$ | Direction | Modular magnitude | Linear result |
 | --- | --- | --- | --- | --- |
-| $5 - 3 \equiv 2$ | 0 | $(-1)^0 \cdot 1 = 1$ | $(-1)^0 \cdot 2 = 2$ | 2 |
-| $4 - 4 \equiv 0$ | 0 | $(-1)^0 \cdot 1 = 1$ | $(-1)^0 \cdot 0 = 0$ | 0 |
-| $3 - 5 \equiv 14$ | 1 | $(-1)^1 \cdot 1 = -1$ | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $-2$ |
+| $5 - 3 \equiv 2$ | 0 | the first, 1 | $(-1)^0 \cdot 2 = 2$ | 2 |
+| $4 - 4 \equiv 0$ | 0 | the first, 1 | $(-1)^0 \cdot 0 = 0$ | 0 |
+| $3 - 5 \equiv 14$ | 1 | the second, $-1$ | $(-1)^1 \cdot 14 = -14 \equiv 2$ | $-2$ |
 
-The machine never computes $(-1)^b$. The subtraction gives its result and $b$ together. With no borrow, the result is the magnitude and nothing more is done. With a borrow, two more instructions run: a negation, which turns 14 into 2, and taking the second number's direction.
+**Zero** needs no check. The rules give the right answer for a zero in any direction. The one test left is for an expression: different axes with neither magnitude zero.
 
-**Zero** needs no check here. A machine could test for it and skip the arithmetic, but the test costs as much as the addition or subtraction it would skip, so it would only add an instruction. The rules above already give the right answer for a zero in any direction. The one exception is different axes, where $5 + (0, 1)$ must give 5 and not an expression.
-
-**The tree.** The checks run in the order the machine finds cheapest:
-
-```text
-direction check (XOR)
-├── same           → add the magnitudes
-├── opposite       → subtract; the borrow is the magnitude check
-│   ├── no borrow  → the difference, first direction
-│   └── borrow     → negate it, second direction
-└── different axes → zero check
-    ├── a zero     → it takes the other's direction, then add
-    └── no zero    → an expression
-```
-
-**Not an order.** The same checks, with one more for zero (two zeros with different directions are equal), can say which of two numbers is larger, but only when they share an axis. For two nonzero numbers on different axes there is no answer. This is the **component order**: real parts are compared with real parts and imaginary with imaginary, and when both pairs differ, nothing is decided. It is not a total order. No total order can agree with multiplication either, since such an order makes every nonzero square positive, and $i^2 = -1$. So the case check is a helper inside addition, not a standalone comparison. Addition's two halves, the case check and the rule for each case, are worked out separately here, before they are joined in one routine.
+**Not an order.** The XOR and the compare can say which of two numbers is larger, but only when they share an axis. For two nonzero numbers on different axes there is no answer. This is the **component order**: real parts are compared with real parts and imaginary with imaginary, and when both pairs differ, nothing is decided. It is not a total order. No total order can agree with multiplication either, since such an order makes every nonzero square positive, and $i^2 = -1$. So these checks are helpers inside addition, not a standalone comparison.
 
 #### Addition
 
-Addition is more involved here than on paper, because of the problem these notes began with: it has to bring a result on the circle back to the right place on the line. The case check's tree does that, and each of its branches is a case with its own rule.
+The two facts give one rule:
 
-**Same direction.** The magnitudes add, and the direction stays. With $d_1 = d_2 = d$,
+$$(m_1, d_1) + (m_2, d_2) = \big(m,\ d\big), \quad m = \begin{cases} m_1 + m_2 & s_1 = s_2 \\ |m_1 - m_2| & s_1 \ne s_2 \end{cases}, \quad d = \begin{cases} d_1 & m_1 \ge m_2 \\ d_2 & m_1 < m_2 \end{cases}$$
 
-$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d) + (m_2, d) \\ &= (m_1 + m_2,\ d), \end{aligned}$$
+except that two nonzero numbers on different axes give an expression. For example:
 
-since $m_1 i^d + m_2 i^d = (m_1 + m_2) i^d$.
+- $3 + (-5) = (3, 0) + (5, 2)$: the signs differ, so $m = |3 - 5| = 2$, and the second is larger, so $d = 2$. The sum is $(2, 2) = -2$.
+- $5 + (0, 1)$: the signs agree, so $m = 5 + 0 = 5$, and the first is larger, so $d = 0$. The sum is 5.
+- $0 + (5, 3)$: the signs differ, so $m = |0 - 5| = 5$, and the second is larger, so $d = 3$. The sum is $(5, 3) = -5i$.
 
-**Opposite directions.** The magnitudes subtract, and the borrow settles the rest, by the two formulas of the magnitude check:
+If neither magnitude is zero on different axes, a sum such as $3 + 4i$ is not a magnitude times a single direction, and the header design holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
 
-$$(m_1, d_1) + (m_2, d_2) = \big((-1)^b \cdot (m_1 - m_2),\ d_1 + 2b\big).$$
-
-With no borrow, the first number is at least as large, and the sum is $m_1 - m_2$ in the first direction; equal magnitudes give zero. With a borrow, the second is larger, and the sum is the negated difference in the second direction, since $d_1 + 2 = d_2$. The rule holds because $m_1 i^{d_1} + m_2 i^{d_1 + 2} = (m_1 - m_2) \cdot i^{d_1}$.
-
-**Different axes.** If a magnitude is zero, that zero takes the other number's direction, and the addition becomes one in the same direction. With $m_2 = 0$,
-
-$$\begin{aligned} (m_1, d_1) + (m_2, d_2) &= (m_1, d_1) + (0, d_2) \\ &= (m_1, d_1) + (0, d_1) \\ &= (m_1 + 0,\ d_1) \\ &= (m_1, d_1), \end{aligned}$$
-
-and similarly when $m_1 = 0$. For example, $5 + (0, 1)$ becomes $5 + (0, 0) = 5$. If neither magnitude is zero, a sum such as $3 + 4i$ is not a magnitude times a single direction, and the header design holds it as an expression, still to be worked out (see the end of these notes). Integers never reach this case.
-
-The rules were checked against the true sum of every pair of small numbers in all four directions, including zeros in every direction ([`verify-notes/addition.py`](verify-notes/addition.py)).
+The rule is proved in Lean against the true sum, for every pair of magnitudes below $2^{64}$ in all sixteen pairs of directions, along with the two facts it rests on ([`../spec/13-header/lean/Header/LargerRow.lean`](../spec/13-header/lean/Header/LargerRow.lean)).
 
 #### Negation
 
@@ -255,7 +234,7 @@ since $-1 \cdot i^d = i^2 \cdot i^d = i^{d+2}$. The magnitude is untouched. Nega
 
 #### Subtraction
 
-Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. Addition's checks then find the branch, once, as for any addition. For example, $3 - 5$ is $(3, 0) + (5, 2)$: opposite directions with a borrow, which gives $-2$, as in the table.
+Subtraction is addition of the negation: $a - b = a + (-b)$. Negating $b$ turns its direction by 2 and leaves its magnitude alone, so subtraction runs addition with the second direction turned. For example, $3 - 5$ is $(3, 0) + (5, 2)$: the signs differ and the second is larger, which gives $-2$, as in the table.
 
 #### Multiplication
 
@@ -280,7 +259,7 @@ $$(m_1, d_1) / (m_2, d_2) = (m_1 / m_2,\ d_1 - d_2).$$
 | | Signed integers | Complex integer | Header | Packed |
 | --- | --- | --- | --- | --- |
 | A number | one word, the sign inside | one word: an axis bit and a signed value | one magnitude word and a direction in a header | one word: a magnitude and a 2-bit direction |
-| Addition | one addition | an axis check; on the same axis, one addition | a direction check; for opposite directions, a subtraction and its borrow | to come |
+| Addition | one addition | an axis check; on the same axis, one addition | the sign bits choose add or subtract; one compare gives the direction | to come |
 | Multiplication | one product | one product, axes XORed, negated when both are imaginary | one product, directions added | to come |
 | Sums across axes | no axes | not held | not held | not held |
 | Largest value | $2^{n-1} - 1$ | $2^{n-2} - 1$ | $2^n - 1$ | $2^{n-2} - 1$ |

@@ -218,7 +218,14 @@ They are compared with round 1's `A.add`, `A.sub`, `A.neg`, `A.mul` and `A.div` 
 - Subtract reuses `cneg_ref` and `cadd_ref`, plus `cadd_min` for the −2^62 case. Proving it directly, with the negate's parts nested inside the add's, ran past 1M heartbeats.
 - Multiply and divide go through the signed reading. Sign extension of `cenc x` is `Isa.ofInt (±m)` (`sext_cenc`), so the round 2 lemmas `Isa.wmul_ofInt` and `Isa.wdiv_ofInt` give the product and quotient of the signed values. The masked negation is `condneg_ofInt`, and the sign rule (`i·i = −1`, `v/(iu) = −i v/u`) is 16 direction cases with `simp`. The fix maps the signed result's word back to `cenc` (`fix_cenc`).
 
-**Build.** `lake build` passes with no errors and no warnings. `Header.Complement` takes about 17 s. It is imported in `lean/Header.lean` and listed in `lean/README.md`. `#print axioms`: `propext`, `Classical.choice`, `Quot.sound` (or fewer) for every theorem.
+**Round 2 (M1): `cpl2`'s multiply and divide** (`cmul2`, `cdiv2`, the generic forms as built in `cMul2`/`cDiv2`):
+- **`cmul2_wrap`, the overflow behaviour:** for all numbers that fit, with no hypothesis on the product, the result is the word of the **63-bit wrap** of round 1's product on its axis (`wrap63`, `cencI`). This is the same wrap as add's. Round 1's `cmul` has no such statement, since its overflow is not the wrap.
+- **`cmul2_ref`:** when the product fits, the word of `A.mul x y` exactly.
+- **`cdiv2_ref`:** when the quotient fits, the word of `A.div x y` exactly. Divisibility is not needed, and the divisor `2v2` is even, so the machine's divide never meets −2^63 / −1. A zero divisor is the machine's trap; the model's `Int.tdiv` gives 0 there, as round 1's `m1 / 0` does, so no hypothesis is needed, but the theorem says nothing about the machine on a zero divisor.
+- **`cdiv2_ovf`, the one quotient that does not fit:** +2^62, from −2^62 / ±1 with the sign rule. It gives the zero of its axis, not the wrap, as the research says.
+- **Method.** `two_v` proves research identity I1 (`w + ((w shl 1) sar 1)` is the word of `2v`), and `half_wrap` proves that the final `sar 1` of the word of `2t` is the word of `wrap63 t`. Isa's `wmul_ofInt`/`wdiv_ofInt` and core's `Int.mul_tdiv_mul_of_pos` (`2v1 ÷ 2v2 = v1 ÷ v2`) do the rest. `sar63_and` reads the masks from the top bits of `L1`, `L2`.
+
+**Build.** `lake build` passes with no errors and no warnings. `Header.Complement` takes about 22 s, with a peak of about 1.2 GB. It is imported in `lean/Header.lean` and listed in `lean/README.md`. `#print axioms`: `propext`, `Classical.choice`, `Quot.sound` (or fewer) for every theorem. No heartbeat or recursion limit is raised.
 
 ## Round 3: counts (`lean/Header/ProgCpl.lean`, `Counts.lean`)
 

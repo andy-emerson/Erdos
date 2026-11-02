@@ -572,8 +572,25 @@ made, and every result on a zero is stated through it.
 | `condneg_ofInt`, `sar_shl1` | `((x xor m) − m)` with `m = 0` or all ones is `x` or `−x`; `(x shl 1) sar 63` is all ones exactly when bit 62 of `x` is set. |
 | `P_and`, `P_xor`, `P_or`, `P_add`, `P_sub`, `P_shr`, `fix_P`, `sext_parts` | AND, OR, XOR, add, subtract and shift on parts; the fix `x xor ((x xor y) and G)` gives `x` with `y`'s axis bit; `sext` copies bit 63 into bit 62. |
 
+**Round 2 (M1): the multiply and divide of the build `cpl2`** (`cmul2`, `cdiv2`; `../complement-research.md`,
+"Round 2: optimization", the generic forms). With `L = w shl 1` and `D = w + (L sar 1) = 2v`: the multiply is
+`x2 = D2 sar 1`, `m = (L1 and L2) sar 63`, `P = ((D1 xor m) − m) · x2`, `p = P sar 1` and the fix (17). The divide is
+`q = D1 ÷ D2` (`Isa.wdiv`), `m = (L2 and not L1) sar 63`, `(q xor m) − m` and the fix (15). Shifts right are
+`Isa.wsra`; `wrap63 t` is the value in `−2^62 … 2^62 − 1` equal to `t` mod `2^63`; `cencI a v` is the word of `v` on
+axis `a`.
+
+| Theorem | Statement |
+| --- | --- |
+| `cmul2_wrap` | **The overflow behaviour.** For all `x`, `y` that fit, with no hypothesis on the product: `cmul2 (cenc x) (cenc y) = cencI a (wrap63 (±m1·m2))`, the 63-bit wrap of round 1's product on its axis `a`, as for add. |
+| `cmul2_ref` | When the product fits, `cmul2 (cenc x) (cenc y) = cenc (A.mul x y)`. |
+| `cdiv2_ref` | When the quotient fits, `cdiv2 (cenc x) (cenc y) = cenc (A.div x y)`. Divisibility is not needed. The divisor `D2` is even, so the machine's divide never meets `−2^63 / −1`. A zero divisor is the machine's trap; the model gives 0, as round 1 does, so the statement needs no hypothesis but says nothing about the machine there. |
+| `cdiv2_ovf` | **The one quotient that does not fit**, `+2^62` (`−2^62 / ±1` with the sign rule), gives the zero of its axis, `cenc ⟨0, d⟩`, and not the wrap. |
+| `two_v`, `half_wrap` | `w + ((w shl 1) sar 1)` is the word of `2v` (research identity I1). `(word of 2t) sar 1` is the word of `wrap63 t`. |
+| `sar63_and`, `shl_top` | `(x and y) sar 63` is all ones exactly when both top bits are set; bit 63 of `w shl 1` is the axis. |
+| `sv_mul`, `sv_div`, `fix_int`, `cencI_cenc` | The sign rules on signed values; the fix on any value in range gives `cencI`; `cencI` of a fitting number's signed value is its `cenc`. |
+
 `#print axioms`: every theorem uses `propext`, `Classical.choice`, `Quot.sound` (or fewer). `Header.Complement`
-builds in about 17 s with no warnings.
+builds in about 22 s (peak about 1.2 GB) with no warnings.
 
 ## The complement layout, round 3 counts (`Header/ProgCpl.lean`)
 

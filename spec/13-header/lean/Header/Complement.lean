@@ -714,21 +714,24 @@ theorem cdiv2_q (x y : Num) (hx : fits x) (hy : fits y) :
   simp only []
   rw [two_v hx, two_v hy, hm, wdiv_two hx hy, condneg_ofInt, sv_div]
 
-/-- **The round 2 divide is round 1's division** (a nonzero divisor, the quotient fits; divisibility not needed). -/
+/-- **The round 2 divide is round 1's division** when the quotient fits; divisibility is not needed. A zero divisor
+is the machine's trap; the model's `Int.tdiv` gives 0 there, as round 1's `m1 / 0` does, so the statement needs no
+hypothesis for it, but it says nothing about the machine on a zero divisor. -/
 theorem cdiv2_ref (x y : Num) (hx : fits x) (hy : fits y) (hz : fits (div x y)) :
     cdiv2 (cenc x) (cenc y) = cenc (div x y) := by
   rw [cdiv2_q x y hx hy, fix_cenc hx hy hz (div_axis x y)]
 
 /-- **The one quotient that does not fit**, `+2^62` (`−2^62 / ±1` with the sign rule), gives the zero of its axis
 (the research: "0 on the right axis", not the wrap). -/
-theorem cdiv2_ovf (x y : Num) (hx : fits x) (hy : fits y) (hy0 : 0 < y.m) (hz : ¬ fits (div x y)) :
+theorem cdiv2_ovf (x y : Num) (hx : fits x) (hy : fits y) (hz : ¬ fits (div x y)) :
     cdiv2 (cenc x) (cenc y) = cenc ⟨0, (div x y).d⟩ := by
   have hG : sv (div x y) = (G : Int) := by
-    obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
-    have hle : m1 / m2 ≤ m1 := Nat.div_le_self _ _
-    unfold fits at hx hz; unfold sv; simp only [div] at hz ⊢; dsimp only at hx hy0
-    rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
-      simp at hx hz ⊢ <;> comega
+    have hle : x.m / y.m ≤ G := Nat.le_trans (Nat.div_le_self _ _) (fits_le hx)
+    unfold fits at hz; unfold sv
+    simp only [div] at hz ⊢
+    by_cases hd : (x.d - y.d).val < 2
+    · simp only [hd, ite_true] at hz ⊢; comega
+    · simp only [hd, ite_false] at hz; exact absurd hle hz
   rw [cdiv2_q x y hx hy, hG]
   have hxy : 2 * (cu x / G) + x.d.val % 2 ^^^ 2 * (cu y / G) + y.d.val % 2 < 4 :=
     h_xor_lt (cenc_h hx) (cenc_h hy)

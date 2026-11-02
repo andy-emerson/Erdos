@@ -1,5 +1,6 @@
 import Header.ProgLg
 import Header.LargerRow
+import Header.Split
 /-!
 # The header form's add and subtract are correct (round 2)
 
@@ -71,27 +72,48 @@ theorem lgOut_eq (sub : Bool) (h1 m1 h2 m2 : Nat) :
     lgOut sub h1 m1 h2 m2 = A.largerAddX (wsxb h1) m1 (if sub then wsxb h2 ^^^ (W - 128) else wsxb h2) m2 := by
   cases sub <;> rfl
 
-/-- **The header form's program, every input.** It runs every instruction once and ends normally; it stores the
-formula's header byte and magnitude; the complex program leaves the formula's expression flag in register 21. -/
-theorem lgRow_gen (cx sub : Bool) (h1 h2 m1 m2 : Nat) (xh xm yh ym zh zm : Nat) (mem : Nat → Nat)
-    (e1 : mem xh = h1) (e2 : mem yh = h2) (e3 : mem xm = m1) (e4 : mem ym = m2) :
+/-- The statement of `lgRow_gen` for one program. -/
+def LgGen (cx sub : Bool) : Prop :=
+  ∀ (h1 h2 m1 m2 : Nat) (xh xm yh ym zh zm : Nat) (mem : Nat → Nat),
+    mem xh = h1 → mem yh = h2 → mem xm = m1 → mem ym = m2 →
     ∃ s, exe (lgRow cx sub) (regs6 xh xm yh ym zh zm) mem = .done s ∧
       s.trace = List.range (lgRow cx sub).length ∧
       s.stores = [(zh, (lgOut sub h1 m1 h2 m2).1), (zm, (lgOut sub h1 m1 h2 m2).2.1)] ∧
-      (cx = true → s.r 21 = (lgOut sub h1 m1 h2 m2).2.2) := by
-  have g1 : wsxb h1 < W := sx_lt h1
-  have g2 : wsxb h2 < W := sx_lt h2
-  have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by decide)
-  rw [lgOut_eq]
-  cases sub
-  · rw [if_neg (by decide), lg_core _ _ _ _ g1 g2]
-    cases cx <;>
-    simp [exe, run, start, exec, St.set, St.get, St.store, St.goto, St.next, lgRow, preL, lgFlag, regs6,
-      e1, e2, e3, e4, List.range, List.range.loop]
-  · rw [if_pos rfl, lg_core _ _ _ _ g1 g2']
-    cases cx <;>
-    simp [exe, run, start, exec, St.set, St.get, St.store, St.goto, St.next, lgRow, preL, lgFlag, regs6,
-      e1, e2, e3, e4, List.range, List.range.loop]
+      (cx = true → s.r 21 = (lgOut sub h1 m1 h2 m2).2.2)
+
+/-- Run the first `k` instructions (all of them) with `stepN`, read off the end state, and finish with `run_split`. -/
+syntax "lg_tac" num : tactic
+set_option hygiene false in
+macro_rules
+  | `(tactic| lg_tac $k) => `(tactic| (
+    intro h1 h2 m1 m2 xh xm yh ym zh zm mem e1 e2 e3 e4
+    have g1 : wsxb h1 < W := sx_lt h1
+    have g2 : wsxb h2 < W := sx_lt h2
+    have g2' : wsxb h2 ^^^ (W - 128) < W := xor_lt g2 (by decide)
+    simp only [lgOut_eq, ite_true, ite_false, Bool.false_eq_true, lg_core _ _ _ _ g1 g2, lg_core _ _ _ _ g1 g2']
+    cases hst : stepN (lgRow _ _) $k (start (regs6 xh xm yh ym zh zm) mem) with
+    | none => simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6] at hst
+    | some S =>
+      have f := congrArg (Option.map fun s => (s.pc, s.trace, s.stores, s.r 21)) hst
+      simp [stepN, start, exec, St.set, St.get, St.store, lgRow, preL, lgFlag, regs6, e1, e2, e3, e4] at f
+      obtain ⟨fpc, ftr, fsto, f21⟩ := f
+      rw [exe, show (lgRow _ _).length + 1 = 1 + $k from rfl, run_split _ $k 1 _ _ hst]
+      refine ⟨S, ?_, ?_, ?_, ?_⟩
+      · simp [run, ← fpc, lgRow, preL, lgFlag]
+      · rw [← ftr]; rfl
+      · rw [← fsto]
+      · first | (intro hc; exact hc.elim) | rw [← f21] | (intro _; rw [← f21])))
+
+theorem lgGen_int_add : LgGen false false := by lg_tac 18
+theorem lgGen_int_sub : LgGen false true := by lg_tac 19
+theorem lgGen_cx_add : LgGen true false := by lg_tac 23
+theorem lgGen_cx_sub : LgGen true true := by lg_tac 24
+
+/-- **The header form's program, every input.** It runs every instruction once and ends normally; it stores the
+formula's header byte and magnitude; the complex program leaves the formula's expression flag in register 21. -/
+theorem lgRow_gen (cx sub : Bool) : LgGen cx sub := by
+  cases cx <;> cases sub
+  exacts [lgGen_int_add, lgGen_int_sub, lgGen_cx_add, lgGen_cx_sub]
 
 end PA
 end Header

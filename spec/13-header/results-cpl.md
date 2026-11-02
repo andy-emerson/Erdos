@@ -127,23 +127,31 @@ For comparison, the add loop is 30 instructions in `cpl`, 38 in `alg` and 49 in 
 
 ## Lean, round 1 (`lean/Header/Complement.lean`)
 
-Phase B, first milestone: the full add, subtract and negate. They are proved for every input in core Lean, with no `sorry`, `admit`, `native_decide` or `bv_decide`. Multiply and exact division come in the second milestone.
+Phase B: the full add, subtract, negate, multiply and exact division, all five formulas as built. They are proved for every input in core Lean, with no `sorry`, `admit`, `native_decide` or `bv_decide`.
 
 **What is proved.** The formulas are written exactly as built, on natural numbers mod 2^64:
 - `cadd`: the bridge `b = z1 + (w2 OR G)`, `Z1 = 0 − (z1 = 0)`, `src`, the fix, and `e = ((t AND NOT Z1) shr 62) AND (z2 ≠ 0)`;
 - `cneg`: the 4-step negate;
-- `csub`: `cneg w2`, then `cadd`.
+- `csub`: `cneg w2`, then `cadd`;
+- `cmul`, `cdiv`: the 18-step forms. Sign extension, the mask `m`, `(x XOR m) − m` on the first factor (multiply) or on the quotient (divide), the machine's product or truncating signed divide (`Isa.wdiv`), then the fix.
 
-They are compared with round 1's `A.add`, `A.sub` and `A.neg` (`lean/Header/DesignA.lean`) through an encoding `cenc ⟨m, d⟩`, the word of the signed value ±m on axis `d mod 2`:
+They are compared with round 1's `A.add`, `A.sub`, `A.neg`, `A.mul` and `A.div` (`lean/Header/DesignA.lean`) through an encoding `cenc ⟨m, d⟩`, the word of the signed value ±m on axis `d mod 2`:
 - **`cadd_ref`:** for numbers that fit (±m in −2^62 … 2^62 − 1), when `A.add` gives `r` and `r` fits, the formula gives exactly `cenc r` with flag 0. When `A.add` gives an expression, the flag is 1.
 - **`csub_ref`:** the same against `A.sub`.
 - **`cneg_ref`:** `cneg (cenc x) = cenc (A.neg x)` whenever `−x` fits.
+- **`cmul_ref`:** `cmul (cenc x) (cenc y) = cenc (A.mul x y)` whenever the product fits.
+- **`cdiv_ref`:** `cdiv (cenc x) (cenc y) = cenc (A.div x y)` whenever `y.m > 0` and the quotient fits.
 - **`cenc_cdec`:** every 64-bit word is `cenc` of a number that fits, so nothing is left out.
 
 **Hypotheses and exceptions, stated explicitly:**
 - **No overflow:** the operands and round 1's result fit (`fits`). The magnitudes of round 1's add are on a 2^64 clock, which never wraps here.
 - **Either zero (`cenc_zero`):** round 1's `⟨0, d⟩` and `⟨0, d + 2⟩` (0 and −0) are the same word, 0 or G by the axis. This is the only identification, and with it the results are exact word equalities. No "any direction for a zero" clause is needed, unlike `LargerRow` and the packed checkers. The result's zero is on `w2`'s axis when `w1` is a zero, else on `w1`'s, which is what round 1 gives under `cenc`.
 - **Negate of −2^62 (`cneg_min`):** it has no negation in range, and the formula returns −2^62, the 63-bit wrap, as int64's `neg` does.
+- **Multiply and divide.**
+  - Multiply needs the product to fit. On overflow the formula is not the 63-bit wrap (the research says the same), and the theorem says nothing about it.
+  - Divide needs a nonzero divisor, since the machine's `idiv` traps on zero, and a quotient that fits; only −2^62 / ±1 toward +2^62 does not.
+  - Divisibility is **not** needed. Truncating division commutes with the signs, as round 1's `m1 / m2` does, so `cdiv` is round 1's division for every pair, not only exact ones.
+  - The sign-extended words are at least −2^62, so the machine divide never meets −2^63 / −1. This is what `Isa.wdiv_ofInt`'s `Fits` hypotheses check.
 - **Subtract has no such exception.** Subtracting −2^62 is right whenever the difference fits: the negation wraps, and the add's wrap undoes it (`cadd_min`). The harness's `cpl` check set already contains such pairs (−1 − (−2^62) = 2^62 − 1).
 
 **Method.** A word is written by its parts, `P h c = 2^62·h + c` (the two top bits and the count).
@@ -151,6 +159,7 @@ They are compared with round 1's `A.add`, `A.sub` and `A.neg` (`lean/Header/Desi
 - So each formula is evaluated once, symbolically, on parts (`cadd_parts`, `cneg_parts`).
 - The comparison with round 1 is then a case split on the directions (16 pairs), the zero tests and the order of the magnitudes, closed by `omega`.
 - Subtract reuses `cneg_ref` and `cadd_ref`, plus `cadd_min` for the −2^62 case. Proving it directly, with the negate's parts nested inside the add's, ran past 1M heartbeats.
+- Multiply and divide go through the signed reading. Sign extension of `cenc x` is `Isa.ofInt (±m)` (`sext_cenc`), so the round 2 lemmas `Isa.wmul_ofInt` and `Isa.wdiv_ofInt` give the product and quotient of the signed values. The masked negation is `condneg_ofInt`, and the sign rule (`i·i = −1`, `v/(iu) = −i v/u`) is 16 direction cases with `simp`. The fix maps the signed result's word back to `cenc` (`fix_cenc`).
 
 **Build.** `lake build` passes with no errors and no warnings. `Header.Complement` takes about 17 s. It is imported in `lean/Header.lean` and listed in `lean/README.md`. `#print axioms`: `propext`, `Classical.choice`, `Quot.sound` (or fewer) for every theorem.
 

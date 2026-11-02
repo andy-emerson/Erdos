@@ -543,7 +543,10 @@ One 64-bit word: bit 63 the sign start `s`, bit 62 the axis `a` (`G = 2^62`), bi
 
 - `cadd`: the full add, "branch-free, no selects", with the bridge `b = z1 + (w2 or G)` and the expression flag `e`;
 - `cneg`: `z = w and G; d = z − w; r = (d and not G) or z`;
-- `csub`: `cneg w2`, then `cadd`.
+- `csub`: `cneg w2`, then `cadd`;
+- `cmul`, `cdiv`: the 18-step multiply and exact division. Each sign-extends both words (`sext`) and negates the first
+  factor (multiply) or the quotient (divide) by the mask `m`: for `i · i = −1`, and for `v / (i u) = −i · v/u`. Then
+  the machine's product, or its truncating signed divide `Isa.wdiv`, and the fix that writes the axis `a1 xor a2`.
 
 **Against round 1.** These formulas are not checked through `Packed.Layout`. `Layout` requires that decoding inverts
 encoding in every direction, and this layout has no `−0`. Instead, `cenc` writes a round 1 number `⟨m, d⟩` as the
@@ -562,9 +565,12 @@ made, and every result on a zero is stated through it.
 | `cenc_cdec` | Every word below `2^64` is `cenc` of a number that fits (`cdec`), so the theorems cover every word. |
 | `cenc_zero` | `cenc ⟨0, d⟩ = cenc ⟨0, d + 2⟩ = G · (d mod 2)`. |
 | `cadd_parts`, `cneg_parts` | The formulas evaluated on parts `P h c = 2^62 h + c` (`h < 4`, `c < 2^62`): `cadd`'s sign start is bit 63 of the bridge; its axis is `w2`'s when `w1` is a zero, else `w1`'s; its count is the counts' sum mod `2^62`; its flag is `(a1 xor a2)` unless an operand is a zero. |
-| `P_and`, `P_xor`, `P_or`, `P_add`, `P_sub`, `P_shr`, `fix_P` | AND, OR, XOR, add, subtract and shift on parts; the fix `x xor ((x xor y) and G)` gives `x` with `y`'s axis bit. |
-
-Multiply and exact division are not yet in this file (phase B, second milestone).
+| `cmul_ref` | For `x`, `y` that fit, with a product that fits: `cmul (cenc x) (cenc y) = cenc (A.mul x y)`. |
+| `cdiv_ref` | For `x`, `y` that fit, `y.m > 0` (the machine's divide traps on zero), and a quotient that fits (`−2^62 / −1` does not): `cdiv (cenc x) (cenc y) = cenc (A.div x y)`. Divisibility is not needed: truncating division commutes with the signs, as round 1's `m1 / m2` does. The sign-extended words are at least `−2^62`, inside `Isa.Fits`, so the divide never meets `−2^63 / −1`. |
+| `sext_cenc` | `sext (cenc x) = Isa.ofInt (±m)`: sign extension gives the signed value's machine word. |
+| `fix_cenc` | The fix, applied to the word of a result's signed value, gives that result's `cenc` on axis `a1 xor a2`. |
+| `condneg_ofInt`, `sar_shl1` | `((x xor m) − m)` with `m = 0` or all ones is `x` or `−x`; `(x shl 1) sar 63` is all ones exactly when bit 62 of `x` is set. |
+| `P_and`, `P_xor`, `P_or`, `P_add`, `P_sub`, `P_shr`, `fix_P`, `sext_parts` | AND, OR, XOR, add, subtract and shift on parts; the fix `x xor ((x xor y) and G)` gives `x` with `y`'s axis bit; `sext` copies bit 63 into bit 62. |
 
 `#print axioms`: every theorem uses `propext`, `Classical.choice`, `Quot.sound` (or fewer). `Header.Complement`
 builds in about 17 s with no warnings.

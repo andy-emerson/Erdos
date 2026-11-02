@@ -12,18 +12,24 @@ The formulas are the ones built, on natural numbers mod `2^64` (as in `MulRow.le
 * full add (`cadd`): the research's "Branch-free, no selects" add, the bridge `b = z1 + (w2 OR G)` and the
   expression flag `e`;
 * negate (`cneg`): `z = w AND G; d = z − w; r = (d AND NOT G) OR z`;
-* subtract (`csub`): `cneg w2`, then `cadd`.
+* subtract (`csub`): `cneg w2`, then `cadd`;
+* multiply (`cmul`) and exact division (`cdiv`): the 18-step forms, sign extension (`sext`), the mask `m` for
+  `i · i = −1` (divide: `v / (i u) = −i · v/u`), `(x xor m) − m`, the machine's product or signed divide
+  (`Isa.wdiv`, truncating), and the fix that writes the axis `a1 xor a2`.
 
 **Round 1.** `cenc` writes a round 1 number `⟨m, d⟩` (`A.Num`, value `m · i^d`) as a word: the signed value
 `±m` on axis `d mod 2`. It needs `±m` in `−2^62 … 2^62 − 1` (`fits`). The layout has one zero per axis, so
 `⟨0, d⟩` and `⟨0, d + 2⟩` (`0` and `−0`) are the same word: this is the only place where "either zero" enters, and
 it is stated by `cenc_zero`. With that, the theorems are exact word equalities with round 1's `A.add`, `A.sub`,
-`A.neg` (`cadd_ref`, `csub_ref`, `cneg_ref`): whenever round 1's result fits the layout, the formula gives its word
-and flag 0; when round 1 gives an expression, the flag is 1.
+`A.neg`, `A.mul`, `A.div` (`cadd_ref`, `csub_ref`, `cneg_ref`, `cmul_ref`, `cdiv_ref`): whenever round 1's result
+fits the layout, the formula gives its word (and, for add and subtract, flag 0); when round 1's add gives an
+expression, the flag is 1.
 
 **Proof method.** A word is written by its parts `P h c = 2^62·h + c` (`h < 4` the two top bits, `c < 2^62`);
 each formula is evaluated on parts (`cadd_parts`, `cneg_parts`), then compared with `cenc` of round 1's result by
-cases on the directions and `omega`.
+cases on the directions and `omega`. Multiply and divide go through the signed reading instead: `sext (cenc x)` is
+`Isa.ofInt (±m)` (`sext_cenc`), so `Isa.wmul_ofInt` and `Isa.wdiv_ofInt` give the product and quotient of the signed
+values, and `fix_cenc` turns the signed result's word back into `cenc`.
 -/
 
 namespace Header
@@ -331,6 +337,167 @@ theorem csub_ref (x y : Num) (hx : fits x) (hy : fits y) :
     rw [← hm] at e
     rw [e]
     exact cadd_min x m2 d2 hm hd hx
+
+/-! ## Multiply and exact division (18 steps each) -/
+
+/-- Sign extension (4): `s` copied into bit 62, so the word is the 64-bit two's complement of the axis value. -/
+def sext (w : Nat) : Nat := w ^^^ ((w ^^^ (w >>> 1)) &&& G)
+
+/-- Multiply: `m` all ones when both are imaginary (`i · i = −1`), the first factor negated by `m`, the product, and
+the fix that writes the axis `a1 xor a2`. -/
+def cmul (w1 w2 : Nat) : Nat :=
+  let x1 := sext w1
+  let x2 := sext w2
+  let m := sar63 (((w1 &&& w2) <<< 1) % W)
+  let p := ((((x1 ^^^ m) + (W - m)) % W) * x2) % W
+  p ^^^ ((p ^^^ w1 ^^^ w2) &&& G)
+
+/-- Exact division: the machine's signed divide (`Isa.wdiv`, truncating) on the sign-extended words, the quotient
+negated when `a2 = 1` and `a1 = 0` (`v / (i u) = −i · v/u`), and the same fix. -/
+def cdiv (w1 w2 : Nat) : Nat :=
+  let x1 := sext w1
+  let x2 := sext w2
+  let m := sar63 (((w2 &&& (w1 ^^^ ONES)) <<< 1) % W)
+  let q := Isa.wdiv x1 x2
+  let qm := ((q ^^^ m) + (W - m)) % W
+  qm ^^^ ((qm ^^^ w1 ^^^ w2) &&& G)
+
+/-- The signed value `±m` of a round 1 number on its axis. -/
+def sv (x : Num) : Int := if x.d.val < 2 then (x.m : Int) else -(x.m : Int)
+
+theorem P_shr1 {h c : Nat} : P h c >>> 1 = P (h / 2) ((h % 2) * 2305843009213693952 + c / 2) := by
+  rw [Nat.shiftRight_eq_div_pow]; comega
+
+theorem sext_parts {h c : Nat} (hh : h < 4) (hc : c < G) : sext (P h c) = P (3 * (h / 2)) c := by
+  have hc' : (h % 2) * 2305843009213693952 + c / 2 < G := by
+    have : h % 2 < 2 := Nat.mod_lt _ (by decide); comega
+  unfold sext
+  rw [P_shr1, P_xor hc hc', P_and_G (Nat.xor_lt_two_pow (n := 62) hc hc'), P_xor_P0 hc]
+  congr 1
+  rcases four_cases hh with rfl|rfl|rfl|rfl <;> rfl
+
+/-- The word `ofInt (±m)` on parts: the sign start in both top bits. -/
+theorem ofInt_sv {x : Num} (hx : fits x) : Isa.ofInt (sv x) = P (3 * (cu x / G)) (cu x % G) := by
+  obtain ⟨m, d⟩ := x
+  unfold fits at hx
+  unfold sv cu Isa.ofInt Isa.W
+  dsimp only at hx ⊢
+  by_cases hd : d.val < 2 <;> by_cases z : m = 0 <;> simp only [hd, z, ite_true, ite_false, or_true,
+    or_false] at hx ⊢ <;> comega
+
+/-- **Sign extension of an encoded number** is the machine word of its signed value. -/
+theorem sext_cenc {x : Num} (hx : fits x) : sext (cenc x) = Isa.ofInt (sv x) := by
+  unfold cenc
+  rw [sext_parts (cenc_h hx) (cenc_c x), ofInt_sv hx]
+  congr 1
+  have : x.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+  omega
+
+theorem sv_fits {x : Num} (hx : fits x) : Isa.Fits (sv x) := by
+  obtain ⟨m, d⟩ := x
+  unfold fits at hx; unfold sv Isa.Fits Isa.H; dsimp only at hx ⊢
+  split <;> split at hx <;> comega
+
+/-- `x sar 63` of `x shl 1`: all ones exactly when bit 62 of `x` is set. -/
+theorem sar_shl1 (x : Nat) : sar63 ((x <<< 1) % W) = if (x / G) % 2 = 1 then ONES else 0 := by
+  unfold sar63
+  rw [Nat.shiftLeft_eq]
+  by_cases h : (x / G) % 2 = 1
+  · have : ¬ (x * 2 ^ 1 % W < 2 ^ 63) := by comega
+    simp only [this, h, ite_false, ite_true]
+  · have : x * 2 ^ 1 % W < 2 ^ 63 := by comega
+    simp only [this, h, ite_false, ite_true]
+
+theorem P_div {h c : Nat} (hc : c < G) : P h c / G = h := by comega
+
+/-- The conditional negate `((x xor m) + (2^64 − m)) mod 2^64` with `m = 0` or all ones. -/
+theorem condneg_ofInt (v : Int) (b : Bool) :
+    ((Isa.ofInt v ^^^ (if b then ONES else 0)) + (W - (if b then ONES else 0))) % W =
+      Isa.ofInt (if b then -v else v) := by
+  have hl := Isa.ofInt_lt v
+  cases b
+  · simp only [Bool.false_eq_true, ite_false, Nat.xor_zero, Nat.sub_zero]
+    unfold Isa.W at hl; comega
+  · simp only [ite_true]
+    rw [show ONES = 18446744073709551615 from rfl, Isa.xor_ones hl]
+    unfold Isa.ofInt Isa.W at *; comega
+
+/-- The axis bit of `cenc x` is `d mod 2`. -/
+theorem cenc_h_mod {x : Num} : (2 * (cu x / G) + x.d.val % 2) % 2 = x.d.val % 2 := by omega
+
+theorem h_and_bit {h k : Nat} (hh : h < 4) (hk : k < 4) : (h &&& k) % 2 = 1 ↔ (h % 2 = 1 ∧ k % 2 = 1) := by
+  rcases four_cases hh with rfl|rfl|rfl|rfl <;> rcases four_cases hk with rfl|rfl|rfl|rfl <;> decide
+
+theorem h_andn_bit {h k : Nat} (hh : h < 4) (hk : k < 4) :
+    (k &&& (h ^^^ 3)) % 2 = 1 ↔ (k % 2 = 1 ∧ h % 2 = 0) := by
+  rcases four_cases hh with rfl|rfl|rfl|rfl <;> rcases four_cases hk with rfl|rfl|rfl|rfl <;> decide
+
+/-- The final fix of multiply and divide: from the signed result's word, `cenc` of a number on axis `a1 xor a2`. -/
+theorem fix_cenc {x y z : Num} (hx : fits x) (hy : fits y) (hz : fits z)
+    (ha : z.d.val % 2 = (x.d.val + y.d.val) % 2) :
+    Isa.ofInt (sv z) ^^^ ((Isa.ofInt (sv z) ^^^ cenc x ^^^ cenc y) &&& G) = cenc z := by
+  have hs := cu_lt hz
+  have h3 : 3 * (cu z / G) < 4 := by comega
+  have hxy : 2 * (cu x / G) + x.d.val % 2 ^^^ 2 * (cu y / G) + y.d.val % 2 < 4 :=
+    h_xor_lt (cenc_h hx) (cenc_h hy)
+  rw [ofInt_sv hz, Nat.xor_assoc, cenc, cenc, P_xor (cenc_c x) (cenc_c y),
+    fix_P h3 hxy (cenc_c z) (Nat.xor_lt_two_pow (n := 62) (cenc_c x) (cenc_c y)), cenc,
+    h_xor_mod2 (cenc_h hx) (cenc_h hy)]
+  congr 1
+  have : z.d.val % 2 < 2 := Nat.mod_lt _ (by decide)
+  have : (cu z / G) < 2 := by comega
+  omega
+
+/-- **Multiply is round 1's multiply.** For numbers that fit, whose product fits, the word of `A.mul x y` exactly. -/
+theorem cmul_ref (x y : Num) (hx : fits x) (hy : fits y) (hz : fits (mul x y)) :
+    cmul (cenc x) (cenc y) = cenc (mul x y) := by
+  have hm : sar63 (((cenc x &&& cenc y) <<< 1) % W) =
+      if (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then ONES else 0 := by
+    rw [sar_shl1, cenc, cenc, P_and (cenc_c x) (cenc_c y), P_div (Nat.and_lt_two_pow (n := 62) _ (cenc_c y))]
+    simp only [h_and_bit (cenc_h hx) (cenc_h hy), cenc_h_mod]
+  have hb : (if (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then ONES else 0) =
+      (if decide (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then ONES else 0) := by simp
+  unfold cmul
+  simp only []
+  rw [hm, sext_cenc hx, sext_cenc hy, hb, condneg_ofInt]
+  have hp : ((Isa.ofInt (if decide (x.d.val % 2 = 1 ∧ y.d.val % 2 = 1) then -sv x else sv x) * Isa.ofInt (sv y)) % W) =
+      Isa.ofInt (sv (mul x y)) := by
+    rw [show ∀ a b : Nat, (a * b) % W = Isa.wmul a b from fun _ _ => rfl, Isa.wmul_ofInt]
+    congr 1
+    obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+    rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
+      simp [sv, mul, Int.neg_mul, Int.mul_neg, Int.natCast_mul]
+  rw [hp, fix_cenc hx hy hz]
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  simp only [mul]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> decide
+
+/-- **Exact division is round 1's division.** For numbers that fit, a nonzero divisor (the machine's divide traps on
+zero) and a quotient that fits (`−2^62 / −1` does not), the word of `A.div x y` exactly. Divisibility is not needed:
+the truncating divide commutes with the signs, as round 1's `m1 / m2` does. The sign-extended operands are at least
+`−2^62`, so the machine's divide never meets `−2^63 / −1`. -/
+theorem cdiv_ref (x y : Num) (hx : fits x) (hy : fits y) (hy0 : 0 < y.m) (hz : fits (div x y)) :
+    cdiv (cenc x) (cenc y) = cenc (div x y) := by
+  have hm : sar63 (((cenc y &&& (cenc x ^^^ ONES)) <<< 1) % W) =
+      if (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then ONES else 0 := by
+    rw [sar_shl1, cenc, cenc, ONES_P, P_xor (cenc_c x) (by decide), P_and (cenc_c y)
+      (Nat.xor_lt_two_pow (n := 62) (cenc_c x) (by decide)),
+      P_div (Nat.and_lt_two_pow (n := 62) _ (Nat.xor_lt_two_pow (n := 62) (cenc_c x) (by decide)))]
+    simp only [h_andn_bit (cenc_h hx) (cenc_h hy), cenc_h_mod]
+  have hb : (if (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then ONES else 0) =
+      (if decide (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then ONES else 0) := by simp
+  unfold cdiv
+  simp only []
+  rw [hm, sext_cenc hx, sext_cenc hy, Isa.wdiv_ofInt (sv_fits hx) (sv_fits hy), hb, condneg_ofInt]
+  have hq : (if decide (y.d.val % 2 = 1 ∧ x.d.val % 2 = 0) then -(sv x).tdiv (sv y) else (sv x).tdiv (sv y)) =
+      sv (div x y) := by
+    obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+    rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;>
+      simp [sv, div, Int.neg_tdiv, Int.tdiv_neg]
+  rw [hq, fix_cenc hx hy hz]
+  obtain ⟨m1, d1⟩ := x; obtain ⟨m2, d2⟩ := y
+  simp only [div]
+  rcases fin4_cases d1 with rfl|rfl|rfl|rfl <;> rcases fin4_cases d2 with rfl|rfl|rfl|rfl <;> decide
 
 end Cpl
 end Header

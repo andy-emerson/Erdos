@@ -7,3 +7,7 @@ Kept for the author (Nov 2, 2026). None blocks the notes.
 3. **Conditional moves (`cmov`, `csel`).** One instruction does conditional choice on x86-64 and ARM64; base RISC-V lacks it, so the builds avoid it. Question: time an extra row that uses them?
 4. **What to do with the complex integer (formerly Design C).** It stays in the notes as one of four designs; its future is open.
 5. **Binary or Gray-coded header.** The Gray-coded header (1, i, −1, −i as 0x00, 0x40, 0xFF, 0xBF) makes add 10 steps (complex 16) against 12 (17), but complex multiply and divide 8 and 9 against 2 (prior-art.md, round 2). Better for integers everywhere; for complex numbers only if adds dominate.
+
+## Ideas to return to
+
+- **Idea 6, the leak as a parity detector** (Nov 2, 2026). In complex rationals with the axis in the denominator's top bit, raw products put parity information into the top bit. Reducing a fraction needs to know when both parts are even; the leak may supply that for free. Waits until reduction is in scope.

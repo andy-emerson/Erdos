@@ -49,6 +49,9 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 14. **The residue form (quadratic residue number system) is dropped** (studies 16 and 18). Each multiply-add costs more than the direct one below 64-bit halves, and conversions are paid per entry; square matrix products pay off only from n ≈ 60 at 32-bit halves. Untested exception, noted only: high powers of a matrix.
 15. **Layout: separate arrays of real and imaginary parts** for whole-array work (study 17); pairs for single values and for moving data in and out. 32-bit lanes are the common unit on CPU vectors and GPUs.
 
+16. **Documentation stays chip-agnostic; the build targets x86-64** (the largest audience, and the only machine available for timing). AVX2 (256-bit) as the baseline, AVX-512 optional.
+17. **The sticky flag is checked once per array,** not per chunk: the copy to wider words is needed anyway, so chunks would save only arithmetic, at the cost of a branch per chunk.
+
 **Research list**
 - Barrett against Montgomery for mod n (build and prove first, then time).
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

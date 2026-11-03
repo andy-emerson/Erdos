@@ -383,7 +383,7 @@ static void do_arith_check(void) {
         acheck(n); ca++;
     }
     printf("random arrays: %ld (8 to 128 elements)\n", ca);
-    for (int k = 0; k < NAK; k++) printf("  %-9s calls %9ld, with a flag set %8ld\n", AK[k].name, acases[k] ? acases[k] : 0, aovf[k]);
+    for (int k = 0; k < NAK; k++) printf("  %-9s elements %9ld, calls with an overflow %8ld\n", AK[k].name, acases[k] ? acases[k] : 0, aovf[k]);
     printf("TOTAL failures %ld\n", afails);
 }
 

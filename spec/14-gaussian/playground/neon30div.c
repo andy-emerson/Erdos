@@ -76,11 +76,25 @@ AI void est(V a, V b, V W1, V W2, V cT, V *q1, V *q2) {
 #endif
     *q1 = vshrq_s32_r(s1, cT); *q2 = vshrq_s32_r(s2, cT);
 }
-/* the one-sided test for one part: rho (a pair) + tie bit > H -> q + 1 */
-AI V up1(V q, P2 rho, V e, V Hv) {
-    V s = vandq(vshrq_n_u32(q, 31), e);
-    V gl = vcgtq_s64(vaddw_lo_u32(rho.l, s), Hv), gh = vcgtq_s64(vaddw_high_u32(rho.h, s), Hv);
+/* the one-sided test for one part: rho (a pair) + tie bit > H -> q + 1.
+ * safe form: (rho - H) + tie bit > 0, for N near 2^63 where rho itself (up to N (1 + 2^-28)) can pass 2^63 */
+AI V up1p(V q, P2 rho, V e, P2 H, int safe) {
+    V s = vandq(vshrq_n_u32(q, 31), e), gl, gh;
+    if (safe) { const V z = vzero();
+        gl = vcgtq_s64(vaddw_lo_u32(vsubq_s64(rho.l, H.l), s), z); gh = vcgtq_s64(vaddw_high_u32(vsubq_s64(rho.h, H.h), s), z); }
+    else { gl = vcgtq_s64(vaddw_lo_u32(rho.l, s), H.l); gh = vcgtq_s64(vaddw_high_u32(rho.h, s), H.h); }
     return vsubq_s32(q, vuzp1q_w(gl, gh));
+}
+AI V up1(V q, P2 rho, V e, V Hv) { P2 H = {Hv, Hv}; return up1p(q, rho, e, H, 0); }
+/* rho = X - q N (X from smull/smlal of x and y, N = Nh 2^32 + Nl in signed-low pieces), one part, a pair of registers */
+AI P2 rho_x(P2 X, V q, V Nl, V Nh) {
+#if FAULT30 == 6
+    V t = vzero(); (void)Nh;
+#else
+    V t = vmulq_s32(q, Nh);
+#endif
+    P2 r = {vsubq_s64(vmlsl_lo_s32(X.l, q, Nl), vshll32_lo(t)), vsubq_s64(vmlsl_high_s32(X.h, q, Nl), vshll32_high(t))};
+    return r;
 }
 AI void out_qr(V a, V b, V c, V d, V q1, V q2, i32 *qr, i32 *qi, i32 *rr, i32 *ri, V *fq) {
     V r1 = vmlsq_s32(vmlaq_s32(a, q2, d), q1, c), r2 = vmlsq_s32(vmlsq_s32(b, q1, d), q2, c);
@@ -111,34 +125,149 @@ NOINL u32 k_s1(ARGS) {
     return vany(vceqq_s32(fq, C32_(IMIN))) ? 1 : 0;
 }
 /* ======================= s2: shared divisor, X form ======================= */
-NOINL u32 k_s2(ARGS) {
-    recip_t R = shared_recip(pc[0], pd[0], ~0ull);
-    if (!R.ok) return k_m4_mb2(PASS);
+AI u32 s2_body(ARGS, recip_t R, int safe) {
     const V W1 = C32_(R.W1), W2 = C32_(R.W2), cT = SHCNT(R.T), e = C32_(R.e), Hv = C64_(R.H), c = C32_(pc[0]), d = C32_(pd[0]);
-    const V Nl = C32_(R.Nl), Nh = C32_(R.Nh);
+    const V Nl = C32_(R.Nl), Nh = C32_(R.Nh); const P2 H = {Hv, Hv};
     V fq = C32_(IMAX);
     for (size_t i = 0; i < n; i += 4) {
         V a = vld1q(pa + i), b = vld1q(pb + i), q1, q2;
         est(a, b, W1, W2, cT, &q1, &q2);
-#if FAULT30 == 6
-        V t1 = vzero(), t2 = vzero(); (void)Nh;
-#else
-        V t1 = vmulq_s32(q1, Nh), t2 = vmulq_s32(q2, Nh);
-#endif
-        P2 p1 = {vsubq_s64(vmlsl_lo_s32(vmlal_lo_s32(vmull_lo_s32(a, c), b, d), q1, Nl), vshll32_lo(t1)),
-                 vsubq_s64(vmlsl_high_s32(vmlal_high_s32(vmull_high_s32(a, c), b, d), q1, Nl), vshll32_high(t1))};
-        P2 p2 = {vsubq_s64(vmlsl_lo_s32(vmlsl_lo_s32(vmull_lo_s32(b, c), a, d), q2, Nl), vshll32_lo(t2)),
-                 vsubq_s64(vmlsl_high_s32(vmlsl_high_s32(vmull_high_s32(b, c), a, d), q2, Nl), vshll32_high(t2))};
-        q1 = up1(q1, p1, e, Hv); q2 = up1(q2, p2, e, Hv);
+        P2 X = {vmlal_lo_s32(vmull_lo_s32(a, c), b, d), vmlal_high_s32(vmull_high_s32(a, c), b, d)};
+        P2 Y = {vmlsl_lo_s32(vmull_lo_s32(b, c), a, d), vmlsl_high_s32(vmull_high_s32(b, c), a, d)};
+        q1 = up1p(q1, rho_x(X, q1, Nl, Nh), e, H, safe); q2 = up1p(q2, rho_x(Y, q2, Nl, Nh), e, H, safe);
         out_qr(a, b, c, d, q1, q2, pqr + i, pqi + i, prr + i, pri + i, &fq);
     }
     return vany(vceqq_s32(fq, C32_(IMIN))) ? 1 : 0;
 }
+/* s2 never needs the safe form: rho can pass 2^63 only if N > 2^63 - 2^33 (|c|, |d| within 2 of 2^31) and the
+ * estimate errs by more than 1 + (2^63 - N) 2^T / N, while its error there is above -(1 + |dW1| + |dW2|); computing
+ * the W rounding errors of every such divisor exactly leaves no case (study 30). The lane kernels keep it (their W
+ * errors are a few units). */
+#define S2SAFE (~0ull)
+#if FAULT30 == 8
+#define LSAFE 0
+#else
+#define LSAFE 1
+#endif
+NOINL u32 k_s2(ARGS) {
+    recip_t R = shared_recip(pc[0], pd[0], ~0ull);
+    if (!R.ok) return k_m4_mb2(PASS);
+    return R.N > S2SAFE ? s2_body(PASS, R, 1) : s2_body(PASS, R, 0);
+}
+
+/* ======================= per-lane divisor =======================
+ * per lane: N = c^2 + d^2 (smull/smlal), L = floor(log2 N) by the 64-bit clz from two 32-bit clz, T = (L - 2) >> 1,
+ * dp = top 31 bits of N (N << clz64, >> 33) in [2^30, 2^31), v ~ 2^61 / dp in (2^30, 2^31) by a linear seed and three
+ * Newton steps in Q30 by sqdmulh / sqrdmulh (4 lanes each); then W = sqrdmulh(c << sc, v) with sc = 31 + T - L
+ * (a signed shift: right by 1 or 2 when L >= 61), which is c 2^(31+T) / N to within a few units.
+ * Stage 1 as the shared estimate (shift by T per lane). Stage 2, for lanes with N < 2^14 (L < 14): r0 = x - q0 y
+ * (32-bit, small there), q0 += floor(estimate(r0 << 18) / 2^(T+18)). Then s2's safe test with per-lane N pieces.
+ * Lanes with N <= 2 (units and (1+i) times units; a zero divisor becomes 1 first) set a flag: the array goes to the
+ * scalar divide, once per array. */
+#ifndef A64
+AI V qdmulh_(V a, V b) {
+    V e = _mm_srai_epi64(_mm_mul_epi32(a, b), 31);
+    V o = _mm_slli_epi64(_mm_srai_epi64(_mm_mul_epi32(_mm_srli_epi64(a, 32), _mm_srli_epi64(b, 32)), 31), 32);
+    return _mm_blend_epi32(e, o, 0xA);
+}
+#define vqdmulhq_s32(a, b) X_(qdmulh_(a, b))
+/* sshl .4s by a signed lane count (left if >= 0, arithmetic right if < 0): one NEON op */
+#define vshlq_s32_sgn(a, k) C_(({ V a_ = (a), k_ = (k); bsl_(_mm_srai_epi32(k_, 31), _mm_srav_epi32(a_, _mm_sub_epi32(_mm_setzero_si128(), k_)), _mm_sllv_epi32(a_, k_)); }))
+/* sqshl .4s #1 for x >= 0: min(2x, 2^31 - 1) */
+#define vqshlq_n1_pos(x) C_(_mm_min_epu32(_mm_slli_epi32(x, 1), _mm_set1_epi32(INT32_MAX)))
+#else
+#define vqdmulhq_s32(a, b) FS32_(vqdmulhq_s32(S32_(a), S32_(b)))
+#define vshlq_s32_sgn(a, k) FS32_(real_sshl32(S32_(a), S32_(k)))
+#define vqshlq_n1_pos(x) FS32_(vqshlq_n_s32(S32_(x), 1))
+#endif
+#ifndef A64
+#define vsraq_n_u32_31(h, l)   C_(_mm_add_epi32(h, _mm_srli_epi32(l, 31)))
+#else
+#define vsraq_n_u32_31(h, l)   vsraq_n_u32(h, l, 31)
+#endif
+#define RSEED_A 3031741621u     /* 48/17 2^30, rounded */
+#define RSEED_B 2021161080      /* 32/17 2^30 */
+AI V recip_q30(V dp) {          /* dp in [2^30, 2^31): v ~ 2^61 / dp, 0 < v < 2^31 */
+    V v = vsubq_s32(C32_((i32)RSEED_A), vqdmulhq_s32(dp, C32_(RSEED_B)));
+    _Pragma("GCC unroll 4") for (int k = 0; k < (FAULT30 == 10 ? 2 : 3); k++) {
+        V f = vsubq_s32(C32_(INT32_MIN), vqdmulhq_s32(dp, v));          /* 2^31 - D V 2^30, mod 2^32 */
+        v = vqshlq_n1_pos(vqrdmulhq_s32(v, f));
+    }
+    return v;
+}
+typedef struct { V W1, W2, T, L, Nl, Nh, e, small; P2 X, Y, H; } lane_t;
+AI void lane_setup(V a, V b, V c, V d, lane_t *S, V *fs) {
+    const V c32 = C32_(32), one = C32_(1);
+    P2 N = {vmlal_lo_s32(vmull_lo_s32(c, c), d, d), vmlal_high_s32(vmull_high_s32(c, c), d, d)};
+    V zl = vclzq_u32(N.l), zh = vclzq_u32(N.h);
+    V ch = vuzp2q_w(zl, zh), cl = vuzp1q_w(zl, zh);
+    V k = vaddq_s32(ch, vandq(cl, vceqq_s32(ch, c32)));                      /* clz64 */
+    S->L = vsubq_s32(C32_(63), k);
+    S->T = vshrq_n_s32(vsubq_s32(S->L, C32_(2)), 1);
+    *fs = vorrq(*fs, vcgtq_s32(C32_(2), S->L));                              /* N <= 2 */
+#if FAULT30 == 9
+    S->small = vcgtq_s32(C32_(8), S->L);
+#else
+    S->small = vcgtq_s32(C32_(14), S->L);
+#endif
+    V dp = vshrq_n_u32(vuzp2q_w(vshlq_u64_v(N.l, vmovl_lo_u32(k)), vshlq_u64_v(N.h, vmovl_high_u32(k))), 1);
+    V v = recip_q30(dp), sc = vsubq_s32(vaddq_s32(S->T, C32_(31)), S->L);
+    S->W1 = vqrdmulhq_s32(vshlq_s32_sgn(c, sc), v); S->W2 = vqrdmulhq_s32(vshlq_s32_sgn(d, sc), v);
+    S->Nl = vuzp1q_w(N.l, N.h); S->Nh = vsraq_n_u32_31(vuzp2q_w(N.l, N.h), S->Nl);
+#if FAULT30 == 2
+    S->e = vzero();
+#elif FAULT30 == 3
+    S->e = one;
+#else
+    S->e = vbicq(one, S->Nl);                                                /* 1 where N is even */
+#endif
+    S->H.l = vshrq_n_u64(N.l, 1); S->H.h = vshrq_n_u64(N.h, 1);
+    S->X.l = vmlal_lo_s32(vmull_lo_s32(a, c), b, d); S->X.h = vmlal_high_s32(vmull_high_s32(a, c), b, d);
+    S->Y.l = vmlsl_lo_s32(vmull_lo_s32(b, c), a, d); S->Y.h = vmlsl_high_s32(vmull_high_s32(b, c), a, d);
+}
+AI void lane_est(V a, V b, V c, V d, lane_t *S, V *q1, V *q2) {
+    V s1 = vaddq_s32(vqrdmulhq_s32(a, S->W1), vqrdmulhq_s32(b, S->W2));
+    V s2 = vsubq_s32(vqrdmulhq_s32(b, S->W1), vqrdmulhq_s32(a, S->W2));
+    *q1 = vshrq_s32_v(s1, S->T); *q2 = vshrq_s32_v(s2, S->T);
+#if FAULT30 != 7
+    V r1 = vmlsq_s32(vmlaq_s32(a, *q2, d), *q1, c), r2 = vmlsq_s32(vmlsq_s32(b, *q1, d), *q2, c);
+    V u1 = vshlq_n_s32(r1, 18), u2 = vshlq_n_s32(r2, 18), T18 = vaddq_s32(S->T, C32_(18));
+    V t1 = vaddq_s32(vqrdmulhq_s32(u1, S->W1), vqrdmulhq_s32(u2, S->W2));
+    V t2 = vsubq_s32(vqrdmulhq_s32(u2, S->W1), vqrdmulhq_s32(u1, S->W2));
+    *q1 = vaddq_s32(*q1, vandq(vshrq_s32_v(t1, T18), S->small));
+    *q2 = vaddq_s32(*q2, vandq(vshrq_s32_v(t2, T18), S->small));
+#endif
+}
+AI void lane_pass(int G, const i32 *pa, const i32 *pb, const i32 *pc, const i32 *pd, i32 *pqr, i32 *pqi, i32 *prr, i32 *pri, V *fq, V *fz, V *fs) {
+    V a[2], b[2], c[2], d[2], q1[2], q2[2]; lane_t S[2];
+    _Pragma("GCC unroll 2") for (int g = 0; g < G; g++) {
+        a[g] = vld1q(pa + 4 * g); b[g] = vld1q(pb + 4 * g); c[g] = vld1q(pc + 4 * g); d[g] = vld1q(pd + 4 * g);
+        zero_fix(&c[g], d[g], fz);
+        lane_setup(a[g], b[g], c[g], d[g], &S[g], fs);
+    }
+    _Pragma("GCC unroll 2") for (int g = 0; g < G; g++) lane_est(a[g], b[g], c[g], d[g], &S[g], &q1[g], &q2[g]);
+    _Pragma("GCC unroll 2") for (int g = 0; g < G; g++) {
+        q1[g] = up1p(q1[g], rho_x(S[g].X, q1[g], S[g].Nl, S[g].Nh), S[g].e, S[g].H, LSAFE);
+        q2[g] = up1p(q2[g], rho_x(S[g].Y, q2[g], S[g].Nl, S[g].Nh), S[g].e, S[g].H, LSAFE);
+        out_qr(a[g], b[g], c[g], d[g], q1[g], q2[g], pqr + 4 * g, pqi + 4 * g, prr + 4 * g, pri + 4 * g, fq);
+    }
+}
+static long lane_fallbacks, lane_fast;
+AI u32 lane_body(ARGS, int G) {
+    V fq = C32_(IMAX), fz = C32_(-1), fs = vzero(); size_t i = 0;
+    for (; i + 4 * G <= n; i += 4 * G) lane_pass(G, pa + i, pb + i, pc + i, pd + i, pqr + i, pqi + i, prr + i, pri + i, &fq, &fz, &fs);
+    for (; i < n; i += 4) lane_pass(1, pa + i, pb + i, pc + i, pd + i, pqr + i, pqi + i, prr + i, pri + i, &fq, &fz, &fs);
+    if (vany(fs)) { lane_fallbacks++; return s_m1_mb2(PASS); }
+    lane_fast += n;
+    return flags_out(fq, fz);
+}
+NOINL u32 k_l1(ARGS) { return lane_body(PASS, 1); }
+NOINL u32 k_l2(ARGS) { return lane_body(PASS, 2); }
 
 #ifndef A64
 /* ======================= correctness ======================= */
 typedef struct { const char *name; kf f; int shared; } kern30;
-static kern30 KD[] = { {"m4_mb2", k_m4_mb2, 1}, {"s1", k_s1, 1}, {"s2", k_s2, 1}, {"m1_mb2", s_m1_mb2, 0}, {"m5x_mb2", k_m5x_mb2, 0} };
+static kern30 KD[] = { {"m4_mb2", k_m4_mb2, 1}, {"s1", k_s1, 1}, {"s2", k_s2, 1}, {"m1_mb2", s_m1_mb2, 0}, {"m5x_mb2", k_m5x_mb2, 0}, {"l1", k_l1, 0}, {"l2", k_l2, 0} };
 #define NKD (int)(sizeof KD / sizeof KD[0])
 static long nties, dfail, dchk, kdf[16], newpath[16];
 static i32 QA[BMAX + 8], QB[BMAX + 8], QC[BMAX + 8], QD[BMAX + 8], QO[4][BMAX + 8];
@@ -177,7 +306,8 @@ static void qalone(i64 a, i64 b, i64 c, i64 d, int sel) {
     static int rot_; for (int j = 0; j < 4; j++) { QA[j] = 0; QB[j] = 0; QC[j] = (i32)c; QD[j] = (i32)d; }
     int p = rot_++ & 3; QA[p] = (i32)a; QB[p] = (i32)b; dbatch(4, sel);
 }
-#define SHR_ 0x7                      /* shared kernels: m4, s1, s2 */
+#define SHR_ 0x67                     /* m4, s1, s2 and the lane kernels l1, l2 */
+#define LAN_ 0x68                     /* m1, l1, l2 */
 static void do_dcheck(int quick, int sel) {
     /* 1. every divisor with |c|, |d| <= D0 and N >= 256 (and some below), x over every pair in a box and edge values */
     int D0 = quick ? 20 : 40; long n1 = 0;
@@ -247,8 +377,49 @@ static void do_dcheck(int quick, int sel) {
         qflush();
     }
     printf("s1 limit (N 2^58 to 2^62, x at the corners): %ld; failures so far %ld\n", n5, dfail);
+    /* 6. N within 2^35 of 2^63 (|c|, |d| near 2^31), x with |a|, |b| near 2^31 and X - qN in [2^31, 2^34]:
+     *    the estimate's worst errors with rho just above N (the case s2's safe form exists for) */
+    long n6 = 0;
+    for (int i = 0; i < 6; i++) for (int j = 0; j < 6; j++) for (int sg = 0; sg < 4; sg++) {
+        i64 c = (sg & 1) ? IMAX - i : IMIN + i, d = (sg & 2) ? IMAX - j : IMIN + j; qsel = sel;
+        int reps = (i + j <= 2) ? (quick ? 16384 : 262144) : (quick ? 1024 : 16384);
+        for (int k = 0; k < reps; k++) {
+            /* t conj y has real part about -2^31 (s_c t1 + s_d t2) - ...: pick t1, t2 with s_c t1 + s_d t2 = -kk */
+            i64 kk = rr(2, 8), t1 = rr(IMIN + 16, IMAX - 16);
+            i64 sc_ = (sg & 1) ? -1 : 1, sd_ = (sg & 2) ? -1 : 1;
+            i64 t2 = sd_ * (-kk - sc_ * t1);
+            int m = (int)(next() % 3); i64 a = t1, b = t2;
+            if (m == 1) { a += c; b += d; } else if (m == 2) { a -= c; b -= d; }
+            if (next() & 1) { i64 tmp = a; a = -b; b = tmp; }      /* times i: the same for the other part */
+            if (!fits(a) || !fits(b)) continue;
+            qpush(a, b, c, d); n6++;
+        }
+        qflush();
+    }
+    printf("N near 2^63, X just above a multiple of N: %ld; failures so far %ld\n", n6, dfail);
+    /* 7. divisors varying per lane, sizes mixed within a register (lane kernels and the scalar only) */
+    if (sel & LAN_) {
+        long n7 = 0; qsel = sel & LAN_;
+        for (int it = 0; it < (quick ? 64 : 640); it++) {
+            int unit_ok = it % 8 == 7;
+            for (int j = 0; j < BMAX; j++) {
+                int e = (int)(next() % 32); i64 c = rr(-(1ll << e), (1ll << e) - 1), d = rr(-(1ll << e), (1ll << e) - 1);
+                if ((u64)(c * c) + (u64)(d * d) <= 2 && !unit_ok) { c = 3; d = -2; }
+                if (!(c | d) && !unit_ok) c = 5;
+                int k = (int)(next() % 4); i64 a, b;
+                if (k == 0) { a = rr(IMIN, IMAX); b = rr(IMIN, IMAX); }
+                else if (k == 1) { a = EV[next() % NEV]; b = EV[next() % NEV]; }
+                else { i64 qb = (i64)1 << (int)(next() % 31), q1 = rr(-qb, qb), q2 = rr(-qb, qb);
+                       a = q1 * c - q2 * d + (k == 3 ? (c - d) / 2 : rr(-2, 2)); b = q1 * d + q2 * c + (k == 3 ? (c + d) / 2 : rr(-2, 2));
+                       if (!fits(a) || !fits(b)) { a = rr(IMIN, IMAX); b = rr(IMIN, IMAX); } }
+                qpush(a, b, c, d); n7++;
+            }
+            qflush();
+        }
+        printf("per-lane divisors of mixed sizes: %ld (every 8th batch with units, (1+i) units and zeros); failures so far %ld\n", n7, dfail);
+    }
     printf("elements with a tie (N >= 256): %ld\n", nties);
-    printf("TOTAL failures %ld (%ld element results checked)\n", dfail, dchk);
+    printf("TOTAL failures %ld (%ld element results checked); lane-kernel arrays sent to the scalar divide %ld, lane-kernel results on the vector path %ld\n", dfail, dchk, lane_fallbacks, lane_fast);
     for (int k = 0; k < NKD; k++) if ((sel >> k) & 1) printf("  %-8s failures %ld, results on the new path %ld\n", KD[k].name, kdf[k], newpath[k]);
 }
 
@@ -277,6 +448,31 @@ static void dtime(int mem) {
         fflush(stdout);
     }
 }
+static void ltime(int mem) {
+    size_t n = mem ? (1u << 24) : 1024; u64 inner = mem ? 1 : 512;
+    alloc_bufs(n);
+    static double t[8][REPS];
+    printf("varying divisor; ns per element, %s, n = %zu; median [q1, q3] of %d reps, kernels interleaved, order rotated\n", mem ? "memory" : "L1", n, REPS);
+    const char *kinds[3] = {"random 32-bit divisors", "small divisors (parts <= 256, no units or (1+i) units)", "medium divisors (parts <= 2^20)"};
+    for (int kind = 0; kind < 3; kind++) {
+        for (size_t i = 0; i < n; i++) {
+            i64 c, d; int e = kind == 0 ? 31 : kind == 1 ? 8 : 20;
+            do { c = rr(-(1ll << e), (1ll << e) - 1); d = rr(-(1ll << e), (1ll << e) - 1); } while ((u64)(c * c) + (u64)(d * d) <= 2);
+            P[0][i] = (i32)rr(IMIN, IMAX); P[1][i] = (i32)rr(IMIN, IMAX); P[2][i] = (i32)c; P[3][i] = (i32)d;
+        }
+        kf ks[5] = {s_m1_fl, s_m1_mb2, k_m5x_mb2, k_l1, k_l2}; const char *nm[5] = {"m1(floor)", "m1_mb2", "m5x_mb2", "l1", "l2"};
+        int nk = 5;
+        for (int k = 0; k < nk; k++) ks[k](P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
+        for (int r = 0; r < REPS; r++) for (int j = 0; j < nk; j++) {
+            int k = (j + r) % nk; ks[k](P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
+            u64 t0 = now_ns(); for (u64 it = 0; it < inner; it++) ks[k](P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
+            t[k][r] = (double)(now_ns() - t0) / (double)(n * inner);
+        }
+        printf("%s\n", kinds[kind]);
+        for (int k = 0; k < nk; k++) { qsort(t[k], REPS, sizeof(double), cmpd); printf("  %-11s %7.3f [%7.3f, %7.3f]\n", nm[k], t[k][REPS / 2], t[k][REPS / 4], t[k][3 * REPS / 4]); }
+        fflush(stdout);
+    }
+}
 static void dcount(void) {
 #ifdef COUNT
     size_t n = 4096; alloc_bufs(n);
@@ -288,16 +484,39 @@ static void dcount(void) {
         for (int k = 0; k < 3; k++) { nops = nmem = nmul = 0; ks[k](P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
             printf("  %s divisor: %-7s %6.2f / %5.2f / %4.2f\n", v ? "large" : "medium", nm[k], (double)nops / n, (double)nmul / n, (double)nmem / n); }
     }
+    for (size_t i = 0; i < n; i++) { P[0][i] = (i32)rr(IMIN, IMAX); P[1][i] = (i32)rr(IMIN, IMAX); P[2][i] = (i32)rr(IMIN, IMAX); P[3][i] = (i32)rr(IMIN, IMAX); }
+    kf kl[3] = {k_m5x_mb2, k_l1, k_l2}; const char *nl[3] = {"m5x_mb2", "l1", "l2"};
+    for (int k = 0; k < 3; k++) { nops = nmem = nmul = 0; kl[k](P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
+        printf("  varying divisor: %-7s %6.2f / %5.2f / %4.2f\n", nl[k], (double)nops / n, (double)nmul / n, (double)nmem / n); }
 #else
     printf("build with -DCOUNT\n");
 #endif
 }
+static void do_recip30(void) {
+    long hist[16] = {0}; double worst = 0; u64 wdp = 0;
+    for (u64 base = 1ull << 30; base < (1ull << 31); base += 4) {
+        V dp = _mm_setr_epi32((int)base, (int)(base + 1), (int)(base + 2), (int)(base + 3));
+        u32 v[4]; _mm_storeu_si128((V *)v, recip_q30(dp));
+        for (int j = 0; j < 4; j++) {
+            u64 x = base + j; i64 want = (i64)((((u128)1 << 61) + x / 2) / x); if (want > INT32_MAX) want = INT32_MAX;
+            i64 dv = (i64)v[j] - want; int bkt = dv < -7 ? 0 : dv > 7 ? 15 : (int)dv + 8; hist[bkt]++;
+            double rel = (double)(dv < 0 ? -dv : dv) / (double)want; if (rel > worst) { worst = rel; wdp = x; }
+        }
+    }
+    printf("Q30 reciprocal over all 2^30 dp: v - round(2^61/dp) histogram from -7 to 7 (ends: beyond):");
+    for (int j = 0; j < 16; j++) printf(" %ld", hist[j]);
+    printf("\nworst relative error %.3g = 2^%.2f (dp = %llu)\n", worst, __builtin_log2(worst), (unsigned long long)wdp);
+}
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "check";
-    if (!strcmp(mode, "check")) do_dcheck(0, SHR_);
+    if (!strcmp(mode, "recip")) do_recip30();
+    else if (!strcmp(mode, "lane")) do_dcheck(1, LAN_);
+    else if (!strcmp(mode, "check")) do_dcheck(0, SHR_);
     else if (!strcmp(mode, "quick")) do_dcheck(1, SHR_);
     else if (!strcmp(mode, "time")) dtime(0);
     else if (!strcmp(mode, "mem")) dtime(1);
+    else if (!strcmp(mode, "ltime")) ltime(0);
+    else if (!strcmp(mode, "lmem")) ltime(1);
     else if (!strcmp(mode, "count")) dcount();
     else if (!strcmp(mode, "scan")) scan_kernels(argv[0]);
     return 0;

@@ -295,3 +295,28 @@ The proven bound: each step at least halves N(a)·N(b), which starts below 2^(4K
 By instruction count the (1+i)-ary gcd costs about twice Euclid's: 1.7 times the steps, at about the same instructions per step. It removes every divide and most multiplies (2 per step for the norm comparison, against 12 multiplies and 2 divides). The proxies weigh a divide like an add, and on all three families a 64-bit divide takes far longer than an add, so these proxies cannot settle which is faster. Its branch-free form is simpler (the step is its own fixed point once b = 0), but its proven bound is twice Euclid's.
 
 **Portability.** ctz is x86-64 `tzcnt` (BMI1), ARM64 `rbit` + `clz` (2 instructions, counted here as 1), and RISC-V `ctz` (the Zbb extension, part of the RVA22 profile; base RV64I lacks it). Without ctz, strip would take one masked division by π per factor.
+
+## Study 10: Weilert's published (1+i)-ary gcd (not done: paper not found)
+
+**Outcome.** Weilert's text could not be retrieved, so no algorithm was implemented (no gcd_weilert.py) and nothing was guessed.
+
+- **The paper.** A. Weilert, "(1 + i)-ary GCD computation in Z[i] as an analogue to the binary GCD algorithm", J. Symbolic Computation 30(5), 605–617 (2000), DOI 10.1006/jsco.2000.0422, ScienceDirect PII S074771710090422X. This citation is now confirmed from the reference lists of Agarwal and Frandsen (ANTS 2004) and Wikström (ICALP 2005, KTH report). Every route to the text was refused or blocked: ScienceDirect, the DOI resolver, Springer PDFs, and direct download through this session's proxy.
+- **What the paper claims** (from its abstract, as indexed): it extracts powers of (1 + i) like the binary gcd. It runs in O(n²) bit operations for n-bit inputs, which it says is faster than the Euclidean algorithm in Z[i] and the Caviness–Collins algorithm, and a constant factor faster than a Lehmer-type gcd with the same O(n²). The advantage claimed is bit complexity for large numbers, not cost within one machine word.
+- **The other paper.** Weilert's ANTS 2000 paper (LNCS 1838, 595–613) is a different one, "Asymptotically fast GCD computation in Z[i]" (a fast, Schönhage-type method), not the (1+i)-ary algorithm.
+
+**Damgård and Frandsen, BRICS RS-03-8 (2003): read.** It gives an explicit algorithm, but for the Eisenstein integers Z[ζ], where 1 − ζ plays the part of 1 + i:
+
+1. Write α = unit · (1 − ζ)^j₁ · γ and β = unit · (1 − ζ)^j₂ · δ with γ, δ primary.
+2. g ← (1 − ζ)^min(j₁, j₂).
+3. Replace α, β by γ, δ.
+4. While α ≠ β, let γ be the primary part of α − β, and replace the approximately larger of α, β by γ.
+5. g ← g · α.
+
+The paper does not mention Weilert. For Z[i] it notes only the ingredients: primary = 1 + (2 + 2i)β, N((1 + i)³) = 8, and N(α − β) ≤ 4 max(N(α), N(β)). It claims O(n²) bit operations against O(n·M(n)) for the Euclid-based methods.
+
+**Two differences from study 9** appear in its Eisenstein algorithm, as reported, not tested in Z[i]:
+
+- **Loop end.** The loop runs until α = β, not until one element is 0. When both are primary and equal, the difference is 0, so this saves the last step.
+- **Approximate norm.** It replaces the element with the larger approximate norm, which is cheaper than the exact norm. In the Eisenstein case the approximation can be off by a factor up to 9/8. Study 9 compares exact norms, 2 multiplies per step.
+
+**Agarwal and Frandsen, "Binary GCD like algorithms for some complex quadratic rings"** (ANTS 2004, Lecture Notes in Computer Science, 57–71): its metadata and reference list were read, but the text was not reachable.

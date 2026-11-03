@@ -58,7 +58,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 20. **The sticky flag is final** (replacing the "survey running" note in item 13). The overflow survey found nothing better, and among the variants in use (Gubner–Boncz, CedarDB, Materialize) ours is at least as good: test inside the loop, check once per array.
 21. **Bound tracking is dropped** (a stored structure; pays only for chains of adds).
-22. **Inverses mod n: the norm route with Euclid** (x⁻¹ = conj(x) · N(x)⁻¹ mod n, study 13), with batch inversion when an array shares n.
+22. **Inverses mod n: the norm route with Euclid** (x⁻¹ = conj(x) · N(x)⁻¹ mod n, study 13). Batch inversion stays on the tricks list.
 23. **Equality only.** Gaussian integers have no order; the operation is called equality.
 
 24. **Even moduli:** Montgomery for odd n, Barrett in vector lanes for even n. The parity check is once per modulus (n is fixed for an array), so it costs nothing per element.

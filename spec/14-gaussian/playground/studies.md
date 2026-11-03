@@ -1806,3 +1806,298 @@ Stack operands per kernel (spills) grow with R on x86: 2 at R = 1, 33 at R = 3, 
   - A candidate amendment to decisions 19 and 24: Barrett for array-by-constant products.
 - **gcd:** best at 3 registers (4 ties). clz without a branch is leaner by NEON count but 5% slower on the stand-in; uncertain until timed on ARM. If a branch is kept, nbrc.
 - **Build:** the stand-in needs guarding. gcc reintroduces three-input logic and mask registers on its own; asm barriers and a scan of the binary keep the code inside the portable list.
+
+## Study 29: studies 20, 21, 23 and 25 in NEON shape (neon29isa.c, neon29a64.c, neon29div.c, neon29mul.c, neon29shr.c)
+
+**What was done.** Studies 20, 21, 23 and 25 were built for AVX2 and use instructions NEON lacks: immediate blends, the sign-bit `blendv` select, `vpmaddwd` and `vpmaddubsw`, `movemask`, x86's even-lane widening multiply, `ptest`, `vpermd`, and scalar fallbacks where AVX2 has no 64-bit multiply. Each kernel was ported to 128-bit NEON shape on study 28's stand-in (decision 34). This is not a redesign: each port starts from the study's own code and findings, and only what NEON lacks is replaced, with the best NEON-shaped substitute from portable-isa.md. Where a substitute had several reasonable forms, they were compared.
+
+**Build** (study 28's approach, kept):
+- **Macros:** every vector operation is a macro named after its NEON intrinsic, and its body is the x86 stand-in. The layer is neon29isa.c: study 28's layer plus 64-bit `abs`, `cmhs`, `usra`/`ssra`, `usubw`, `shll`, `shrn` pairs, `addhn` pairs and the 64-bit shift by a signed lane count.
+- **Barriers:** empty asm barriers against `vpternlog` fusion, and compares and `bsl` pinned to their VEX forms.
+- **Counts:** a `-DCOUNT` build counts NEON instructions (and multiplies) from the code as written.
+- **Scan:** each binary disassembles itself (`./prog scan`) and checks every `k_*` kernel against the forbidden list.
+- **Compiler:** gcc 13.3 -O2 -mavx512f -mavx512vl -mavx512cd -mavx512bw -mavx512dq (-mavx512bitalg for `cnt`).
+
+**New: the same kernels compiled for AArch64.** neon29a64.c maps the macro layer onto `arm_neon.h`, and every kernel file compiles with clang-18 --target=aarch64-linux-gnu -ffreestanding -O2 -DA64 -S. There is no AArch64 machine or emulator here, so the code is counted, not run. A script counts each kernel's main loop: instructions, vector instructions, multiplies, register copies and stack spills, with NEON's 32 registers. This checks the `-DCOUNT` figures against real target code, and shows what 32 registers do.
+
+**Lane order.** NEON's `smull` takes lanes 0 and 1 and `smull2` lanes 2 and 3; the stand-in takes even and odd lanes. Every macro keeps one convention, so the same kernel source is correct on both. Data moved through memory between sizes (study 21's widen and narrow) uses natural-order stand-ins.
+
+**Machine and timing** (all parts): the same machine as studies 19 to 28 (Xeon family 6 model 173, 2-vCPU KVM guest). Load was below 1.2 with nothing else running. Runs were pinned to one CPU, with 31 repetitions, kernels interleaved and their order rotated, and an untimed call first. Ranges are of the medians over 3 runs, except division from memory (1 run) and study 21's runs (2); quartile spreads were about ±1 to 3%. Timings are read as rankings. This guest has no hardware counters and valgrind does not run AVX-512, so x86 instruction counts per element are static counts of each kernel's main loop.
+
+### Part 1: division (study 25; neon29div.c, milestone 1)
+
+Study 25's problem and methods at 128 bits: 4 elements per register, each part's 64-bit values as a pair of registers. m3 (shift and subtract) is not ported, since decision 32 dropped it. The tie rules are up, down, toward zero and away from zero, each in the direct and the mask form; even, odd and coupled are not repeated.
+
+**What NEON lacks, and the substitutes** (AVX2 form in brackets):
+- **Front end:** `smull` + `smlal`/`smlsl` per pair [`vpmuldq` on even lanes, shifts for the odd lanes, add].
+- **Zero divisor:** fz = `umin`(fz, c | d), then c −= (c | d = 0) [64-bit compare, and, or per pair].
+- **Mask form:**
+  - |u| = `abs` in 64-bit lanes. It is correct at the wrapped 2^63, which reads as 2^63 unsigned.
+  - The 32-bit sign masks come from the high halves: mX = [hi32(X − 1) < 0], mY = [hi32(Y) < 0] (`uzp2`, `cmlt`). X = 0 counts as negative, which is harmless (q = 0, r = x).
+  - So toward and away from zero need no 64-bit mask at all. Ties up and down widen the mask (`sxtl`) for their thresholds.
+  - [64-bit compare, xor, subtract, blend]
+- **Direct form's floor remainder:** ρ = `bit`(R, N − 1 − R, s) [(R xor s) + (N and s)].
+- **Packing:** `uzp1`/`uzp2` [`vpblendd` with an immediate].
+- **Flags:** a running `smin` of the output parts (some part is −2^31 iff the minimum is), tested once per array [compare, or, `movemask` per register]. `cmeq` + `orr` would cost 2 per part against 1.
+- **Remainder:** r = x − qy by `mla`/`mls`, 2 per part [4 `vpmulld` and adds].
+- **m2:**
+  - ctz = 31 − `clz`(o AND −o), 4 instructions; NEON shifts by the negative count at the same cost. The popcount form (`cnt`, two `uaddlp`) is 6.
+  - The 1+i test by `cmtst`, 2 instructions against 3 for the shift pair.
+  - Newton steps by `mls` + `mul` [`mullo`, sub, `mullo`].
+  - [popcount by `vpshufb`, `vpmaddubsw`, `vpmaddwd`]
+- **m4 estimate:** S = U′ + hi(U′)·m′ + (lo(U′)·m′ >> 32) by `uzp1`, `uzp2`, `umlal`, `umull`, `usra`: 8 per 4 values. Narrowing each register with `xtn` and `shrn` instead is 10.
+- **Correction:**
+  - ρ = U − q̂N by `umlsl` on the low 32 bits of N, then q̂·hi(N) by `mul`, `shll` and a subtract.
+  - ρ ≥ N by `cmhs`.
+  - [two `vpmuludq`, a shift, a bias xor, `pcmpgtq`]
+- **m5 normalisation:** the 64-bit clz from the two 32-bit ones (`clz`, `uzp`, `cmeq`, `and`, `add`), then `ushl`: 12 instructions per 4 elements [a 6-step binary search, 30 per register of 2].
+- **m5 reciprocal:**
+  - Study 25's Newton steps, on dh packed in 32-bit lanes (`umlsl`, `usubw`, `shrn`, `umull`, `uzp2`).
+  - Every value that fits 32 bits (Y, f, v, e_h) stays packed. The 2^32·dh term of e_h becomes a 32-bit subtract on the high halves.
+- **m5 scaling:** th = `ushl`(U, sh − 32), one instruction with a signed count [`vpsllvq`, `vpsrlvq`, or].
+
+**Correctness** (study 25's harness):
+- Exhaustive K = 3 to 6, both kinds, with every shared divisor at each size.
+- Every quadruple of the 20 edges (−2^31 included), each element alone in a register of 4, plus exact edge products and edges over divisors in [−4, 4].
+- 10,485,760 random divisions with remainder and 10,331,021 exact ones, and 40 shared divisors × 65,536.
+- **Total:** 1,937,980,193 element results, failures none. Overflow flags and `resolve` were exact.
+- **The packed reciprocal,** over all 2^31 values of dh: short by 0 (1,162,476,704 values), 1 (896,286,121) or 2 (88,720,823) after Newton, as in study 25, and exact after the two fix-ups.
+- **Injected faults,** all caught except one: dropping the m4/m5 correction; dropping the 1+i step on x; the plain sign of X in the direct form (only the all −2^31 corner, 2 failures per kernel); the mask form's sign of X without the −1 (the same corner); m5's scaling by sh − 31; toward zero with away's threshold. The exception, as in study 25, is dropping one reciprocal fix-up: only the exhaustive reciprocal run catches it (88,720,823 values wrong).
+
+**Scan and compiled code:**
+- **x86:** no forbidden instruction in 35 kernels.
+  - gcc builds the all-ones constant in xmm16 to 31 with `vpternlogd $0xff` (NEON `movi`), allowed and counted.
+  - Spills in the main loop: m2 none, m4 up to 25 stack references, m5 7 to 21, m5x 42 to 102, m5x3 93 to 113.
+- **AArch64 (clang):**
+  - m4 and m5 at one register spill 0 to 4 times per loop. m5x spills 16 to 43 times per 8 elements and m5x3 67 to 75 per 12: two interleaved registers already exceed NEON's 32.
+  - Destructive multiply-accumulates add register copies (`mov v.16b`, 9 to 18 per m5x loop; not in the counts).
+  - clang fuses shift and add into `ssra`/`usra`, and in m2s it writes `mls` as `neg` + `mla` (+1 per register).
+  - Compiled vector instructions per element against the counted ones: m2 14.25 against 13.0, m4 22.5 against 21.0, m5 47.0 against 45.25.
+
+**NEON instructions per element** (counters, random inputs; loads and stores 1.5 to 2 more), and x86 main-loop instructions per element:
+
+| | m2 | m2p | m2s | m4 floor | m5 / m5x floor | m4 toward 0 (mask) | m5x toward 0 (mask) |
+|---|---|---|---|---|---|---|---|
+| NEON (multiplies) | 13.0 (3.5) | 13.5 | 2.0 (1.0) | 21.0 (6.5) | 45.25 (12.5) | 24.0 | 48.25 |
+| AArch64 loop, all | 16.5 | 17.0 | 5.5 | 28.75 | 50.25 / 53.75 | 33.75 | 59.6 |
+| x86 loop | 17.5 | 19.0 | 4.25 | 36.25 | 77.75 / 79.6 | 39.0 | 84.1 |
+
+The scalar control on AArch64 is 37 instructions per element for the floor core, with two `udiv` (31 exact, 29 shared), against 71 on x86.
+
+**Timing,** ns per element. L1: 1,024 elements, 3 runs. Memory: 2^24 elements, 1 run.
+
+| | L1 | memory |
+|---|---|---|
+| exact: m1 / m2 / m2p | 5.17–5.19 / 2.68–2.71 / 2.89–2.91 | 5.46 / 3.07 / 3.38 |
+| exact, shared: m1 / m2s / m4 | 5.17–5.21 / 0.39 / 3.22–3.24 | 5.27 / 1.02 / 3.65 |
+| floor, shared: m1 / m4 (random divisor) | 5.17–5.25 / 3.75–3.80 | 5.34 / 3.94 |
+| floor, shared, small divisor: m1 / m4 | 5.18–5.24 / 3.73–3.77 | 5.38 / 3.97 |
+| floor, varying: m1 / m5 / m5x / m5x3 | 5.19–5.20 / 11.24–11.27 / 8.58–8.62 / 8.61–8.62 | 5.39 / 11.50 / 8.82 / 8.77 |
+| floor, varying, small divisor: m1 / m5x | 5.20–5.30 / 8.60–8.62 | 5.43 / 8.82 |
+
+**Rankings against study 25:**
+- **Exact division, m2 against the divide: holds.** 1.9 times faster in L1 (was 3.2) and 1.8 from memory. With a shared divisor m2s is 0.39 ns, 13 times the divide (was 25), and 1.02 from memory. By count m2 is 13 NEON instructions per element against the scalar's 31 with two divides. ctz by clz beats the popcount form, by 0.5 instructions and 0.2 ns.
+- **Shared divisor, m4 against the divide: holds,** at 1.38 times in L1 (was 3.0) and 1.36 from memory: 21 NEON instructions per element against 29 scalar with two divides. Two things shrink the margin here: half the lanes, and every 64-bit correction step covering 2 values per instruction.
+- **Varying divisor, m5x against the divide: flips on x86, uncertain.** 8.6 ns against 5.2 (AVX2 had m5x at 4.45, 1.17 times faster).
+  - The stand-in spends 80 x86 instructions per element on 47 NEON ones (1.7 per NEON instruction, 12.5 of them multiplies).
+  - The scalar divide is 71 x86 instructions, or 37 AArch64 instructions with two 64-bit `udiv`.
+  - On ARM the comparison is 48 vector instructions against two divides plus 35 scalar; which wins depends on the core's divide throughput and vector width. Reopen on ARM.
+- **Interleaving:** two registers cut m5 from 11.24 to 8.6 ns (−24%); three tie with two and spill twice as much here, and on AArch64 too. Two stays the form.
+
+**The four tie rules, each in its two forms** (ns per element, L1; NEON instructions per element in brackets):
+
+| | floor | up: direct / mask | down: direct / mask | toward 0: direct / mask | away from 0: direct / mask |
+|---|---|---|---|---|---|
+| m4 | 3.75–3.77 [21.0] | 4.99–5.02 / 4.35–4.38 [26.5 / 27.0] | 4.98–5.01 / 4.38–4.40 [26.5 / 26.5] | 5.08–5.10 / 4.17–4.18 [28.0 / 24.0] | 5.09–5.11 / 4.12–4.14 [28.0 / 24.5] |
+| m5x | 8.60–8.62 [45.25] | 9.74–9.77 / 9.43–9.52 [50.75 / 51.25] | 9.76–9.79 / 9.33–9.40 [50.75 / 50.75] | 9.87–9.91 / 9.10–9.16 [52.25 / 48.25] | 9.90–9.96 / 9.12–9.17 [52.25 / 48.75] |
+| m1 (scalar) | 5.19–5.21 | 6.85–6.89 / 6.69–6.72 | 6.88–6.91 / 6.60–6.63 | 6.69–6.74 / 6.91–6.94 | 7.49–7.51 / 6.53–6.55 |
+
+From memory the order is the same (m4: 5.15 / 4.48, 5.16 / 4.54, 5.21 / 4.30, 5.24 / 4.26; m5x: 9.93 / 9.57, 9.92 / 9.59, 10.09 / 9.29, 10.11 / 9.35).
+
+- **Toward and away from zero: mask, as before,** now by 4 NEON instructions per element (study 25: 2.4 to 3.0) and 0.7 to 1.0 ns. The NEON mask form needs neither the 64-bit sign mask nor the floor-remainder fix.
+- **Ties up and ties down: a tie, as before, by NEON count** (direct 0.5 lower for up, equal for down). x86 time favours the mask form by 0.2 to 0.67 ns, because the direct form's floor remainder is `bsl`, which is `vpblendvb` here (1 to 3 µops against NEON's 1). That ranking is uncertain; by count it is a tie.
+- **The best forms against each other:** toward zero (mask) 24.0 and away from zero (mask) 24.5 are cheapest for m4, against 26.5 for up and down; for m5x, 48.25 and 48.75 against 50.75. In time, toward and away (4.12 to 4.18, 9.10 to 9.17) are ahead of up and down in either form (4.35 to 5.02, 9.33 to 9.79).
+- **Decision 28 (toward zero, mask form) holds,** with a wider margin: 2.5 NEON instructions per element cheaper than ties up (study 25: 1.1 for m4), because the mask form loses its 64-bit sign work on NEON.
+- **The scalar control** is as fragile under gcc as before (study 25); its rule timings are not used for rankings.
+
+### Part 2: the int64-half multiply (study 23; neon29mul.c, milestone 2)
+
+Study 23's kernels at 128 bits: 4 elements per pass, as two registers per array. NEON, like AVX2, has no 64-bit lane multiply, only the widening 32 × 32 → 64 and the 32-bit low multiply.
+
+**What NEON lacks, and the substitutes:**
+- **Pieces:**
+  - lo(x) and hi(x) of two registers by `uzp1`/`uzp2`, packed in 4 lanes: 2 per 4 values, the same as x86's shift per register. Narrowing each register instead (`xtn`, `shrn`) is 4.
+  - Signed high pieces by `addhn`/`addhn2` (x + 2^31, high half, narrowed): 2 per 4 values.
+- **Products:** `smull`/`smull2` with `smlal`/`smlsl` fuse each column's two products and their sum or difference [two multiplies and an add].
+- **Splits:**
+  - re's columns are differences inside int64, so floor(m / 2^32) is one `ssra` (NEON has the 64-bit arithmetic shift) and lo(m) one `and`.
+  - im's columns can reach 2^63 and keep study 23's offsets, then `usra`.
+  - [xor with 2^63, logical shift, blend]
+- **Unsigned borrows and carries:** `cmhi`, one instruction [bias xor twice, `pcmpgtq`].
+- **The bare multiply's 2^32 column** needs only 32 bits: `mul`, `mla`, `mls` on packed lanes (4 per 4 elements), then `shll` and add. k_barew keeps study 23's widening form for comparison.
+- **Flag:** the k test ORed and tested once per array, as before.
+
+**Correctness** (study 23's harness):
+- Every quadruple of the 37 edges, each element alone in a pass of 4 with its position rotating; the all −2^63 corner.
+- 4,000,000 random single elements, half aimed at the int64 boundary (67,471 within 4 of it fit, 644,601 do not), and 200,000 random arrays.
+- **Total:** 42,519,134 kernel calls, failures none. The flag counts (clear 474,196, set 5,599,966) and the calls settled by the bound (304,985) are study 23's exactly. The 16-register build (below) passes too.
+- **Injected faults,** all caught: dropping k_sgn's e_a correction terms, the wrong im offset, dropping k_uns's borrow, a logical split of re's column, `addhn` without the 2^31 offset, and a missing term in the bare middle column.
+
+**Counts and compiled code** (per element; NEON from the counters, plus 3 loads and stores; AArch64 and x86 main loops):
+
+| | s_bare | s_chk | k_bare | k_barew | k_sgn | k_uns | k_bnd (bound holds) |
+|---|---|---|---|---|---|---|---|
+| NEON (multiplies) | | | 8 (4) | 10 (6) | 34.5 (8) | 43.5 (8) | 14 (4) |
+| AArch64 loop, all | 13 | 24 | 11.75 | 13.75 | 46.0 | 47.25 | 17.75 |
+| AArch64 spills per 4 elements | 0 | 0 | 0 | 0 | 21 | 11 | 0 |
+| x86 loop | 17 | 38 | 16.25 | 21.5 | 61.0 | 65.25 | 24.75 |
+
+- **Scalar on AArch64:**
+  - `__int128` products are `mul` + `smulh`: s_chk is 4 `mul`, 4 `smulh`, `subs`/`sbc`, `adds`/`adc`, and `eor` with an `asr #63` operand for each check, with no spills (x86 needs the `rdx:rax` pair and spills, study 20).
+  - It uses 8 multiply instructions per element, the same as k_sgn, whose `smull` gives 2 products per instruction.
+- **The compiled AArch64 code** follows the counts. Two exceptions: clang turns `addhn`(x, 2^31) into `raddhn`(x, 0), saving a constant (an improvement); and k_sgn still spills 21 times per 4 elements with 32 registers.
+
+**Timing,** ns per element. L1 512 elements, L2 16,384, memory 2^25 (256 MB per array). 3 runs; L2 within 0.01 to 0.04 of L1 for every kernel.
+
+| | s_bare | s_chk | k_bare | k_barew | k_sgn | k_uns | k_bnd (bound holds) |
+|---|---|---|---|---|---|---|---|
+| L1 | 1.04–1.06 | 2.09–2.15 | 1.47–1.50 | 1.68–1.72 | 4.32–4.39 | 4.75–4.82 | 2.04–2.07 |
+| memory | 2.68–2.76 | 3.59–3.67 | 3.01–3.08 | 3.07–3.15 | 5.06–5.18 | 5.45–5.56 | 3.23–3.29 |
+
+**Rankings against study 23:**
+- **Signed against unsigned pieces: holds.** k_sgn is 9 to 10% faster in L1 and 7 to 8% from memory, 34.5 against 43.5 NEON instructions. The margin narrows on AArch64 (46 against 47.25), where k_uns spills less.
+- **Checked, vector against scalar: flips, and both measures agree.**
+  - Study 23 had v_sgn level with the scalar check (2.01 against 2.09 ns).
+  - Here k_sgn takes 4.32 to 4.39 against 2.09 to 2.15, 2.1 times slower, and 1.4 times slower from memory.
+  - On AArch64 it is 46 instructions against 24, with the same 8 multiplies.
+  - At 128 bits each 64-bit lane op covers 2 values, so the vector check costs 37.5 NEON instructions per element against AVX2's 27.5 per element at 4 lanes. The fused forms (`smlal`, `ssra`, `cmhi`) do not make that up.
+- **Bare, vector against scalar: from 1.6 times faster to a tie, uncertain.**
+  - x86 has scalar ahead (1.04 against 1.47), but the vector's 2^32 column is `pmulld` (2 µops, 10 cycles here).
+  - AArch64 has 11.75 against 13.
+- **The bound with fallback: from 2.3 times faster to a small win, uncertain.** It ties the scalar check on x86 (2.04 against 2.10) and is 17.75 against 24 on AArch64 when the bound holds. When the bound fails it costs its sweep plus the fallback, so the fallback should be the scalar check.
+- **The bare middle column in 32 bits** beats the widening form: 8 against 10 by count, and 1.47 against 1.69 ns even with `pmulld`.
+
+**Registers** (decision 35 assumed 32 registers make the vector multiply a tie or a win):
+- On x86 the build was repeated with -ffixed-xmm16 … -ffixed-xmm31, so every instruction has 16 registers.
+- k_sgn's main loop went from 39 stack references to 73, and k_uns's from 47 to 113.
+- Time rose 2 to 5% for k_sgn (L1 4.45 to 4.59) and 1 to 6% for k_uns (4.82 to 5.13), and 2 to 3% from memory. The bare kernels did not change.
+- On AArch64 even 32 registers leave k_sgn with 21 spills per pass of 4. The register count is a small effect and moves no ranking.
+
+**What this shows.** On NEON the checked int64-half multiply is best scalar: 24 AArch64 instructions per element with `smulh`, no spills, against 46 for the vector check. The vector forms do not repay their 32-bit pieces at 2 lanes per 64-bit instruction. Signed pieces stay better than unsigned ones. The bare product and the bound are roughly level with scalar, which is uncertain until timed on ARM. Decision 35's "a tie or a win, not retested" for the grown-size multiply does not hold for the checked multiply.
+
+### Part 3: the shrink test and its whole-run savings (studies 20 and 21; neon29shr.c, milestone 3)
+
+Studies 20 and 21's kernels, variants (bare, v1 overflow check only, v2 naive pass, v3 refined fused test, v3A rule A) and workloads (back, control, hover), unchanged in design. 8 int32 or 4 int64 elements per pass.
+
+**What NEON lacks, and the substitutes:**
+- **End-of-array test:** `umaxv` + move + compare, once per array [`ptest`].
+- **int32 multiply:** study 28's `smull`/`smlsl` pairs and `uzp1` [even/odd `vpmuldq`, blend]. The wrapping multiply is `mul`, `mls`/`mla`.
+- **int64 multiply:** AVX2 used scalar code, and NEON has no 64-bit lane multiply either. Following part 2, the scalar form (on ARM `mul` + `smulh`) is the main case. The vector form (part 2's k_sgn) is timed beside it.
+- **Promotion:** `sxtl`, `sxtl2` [`vpmovsxdq`].
+- **Demotion:** `uzp1` of two registers, one instruction per 4 values [two `vpermd` and a `vperm2i128` per 8].
+- **The int32 operand at int64:** `sxtl`, `sxtl2` on load.
+- **The shrink test itself is unchanged:** an add and an `orr` per register, with the mask applied once per array.
+  - The NEON alternatives considered do not fit. `cls` has 32-bit lanes only. Min/max tracking needs 64-bit min and max, which NEON lacks. A saturating narrow sets QC, which decision 37 wants for the overflow flag, and it tests 32 bits, not 31.
+  - So the test costs the same instructions as in AVX2, at half the lanes.
+
+**Correctness:**
+- **Study 20's harness:** every quadruple of 32 edges at each width, each element alone among 8, and 400,000 random arrays. 28,717,248 kernel calls, failures none. Every outcome (fits, does not fit, overflow with the shrink bit clear or set) occurs at least 4,400 times per checked kernel.
+- **Study 21's exact `__int128` replays:** every workload, L and variant, at N = 1,024 (every element) and 2^20 (every 16th), with both int64 multiplies. Failures none.
+- **Size changes as designed:** back promotes and demotes once (v2, v3); control promotes once and never demotes; hover's v3A promotes and demotes 65 times at L = 128.
+- **Injected faults,** all caught: the fused test with rule A's offset; the pass skipping the imaginary part; demotion taking the high halves (caught by the replay only); the int64 add check without its AND NOT.
+
+**Counts** (NEON per element from the counters, loads and stores apart; AArch64 loops beside):
+- **int32:** add v1 2.5 (bare 0.5), and the naive pass +1.0 plus 0.5 loads. Multiply v1 4.5 (bare 1.0).
+- **int64:** add v1 5.0, and the fused test +2.0 with no memory (AArch64 loop 35 → 43 per 4 elements). The naive pass is +2.0 plus 1 load per element.
+- **Copies, AArch64:** demotion 2.75 instructions per element, promotion 3.25.
+- **int64 × int32 multiply, AArch64:** scalar 24, vector 39.75 with 16 spills.
+
+**Study 20 timing,** ns per element, 3 runs. Sizes as study 20: L1 512, L2 16,384, memory 2^25. The mix is the mean of the six cells, with the scalar int64 multiply as in study 20; mix (vector) uses k_sgn.
+
+| | bare | v1 | v2 naive (over v1) | v3 refined (over v1) |
+|---|---|---|---|---|
+| L1, add32 / sub32 | 0.143–0.147 | 0.227–0.234 | 0.340–0.351 (+49 to 50%) | = v1 |
+| L1, mul32 | 0.266–0.268 | 0.642–0.648 | 0.753–0.764 (+17%) | = v1 |
+| L1, add64 / sub64 | 0.275–0.277 | 0.549–0.554 / 0.465 | 0.745–0.762 / 0.670–0.677 (+36 to 46%) | 0.610–0.614 / 0.607–0.610 (+0.06 / +0.14, +11 / +31%) |
+| L1, mul64 scalar / vector | 1.035–1.039 / 1.465–1.478 | 2.092–2.100 / 4.170–4.194 | 2.300–2.306 / 4.372–4.404 (+10 / +4 to 6%) | = v1 |
+| L1, mix / mix (vector) | 0.357–0.359 / 0.429–0.432 | 0.702–0.705 / 1.049–1.054 | 0.861–0.865 (+22.5%) / 1.207–1.211 (+15%) | 0.736–0.739 (+4.8%) / 1.082–1.088 (+3.2%) |
+| L2, add32 / sub32 | 0.247–0.251 | 0.245–0.271 | 0.340–0.367 (+35 to 39%) | = v1 |
+| L2, add64 / sub64 | 0.499–0.505 | 0.535–0.539 / 0.503–0.508 | 0.734–0.738 / 0.696–0.702 (+37 to 38%) | 0.614–0.616 / 0.608 (+14 / +20%) |
+| L2, mix / mix (vector) | 0.466–0.469 / 0.538–0.541 | 0.712–0.717 / 1.060–1.069 | 0.860–0.866 (+20.8%) / 1.208–1.218 (+14%) | 0.743–0.747 (+4.3%) / 1.091–1.099 (+2.9%) |
+| memory, add32 / sub32 | 1.297–1.354 | 1.367–1.442 | 1.744–1.858 (+27 to 30%) | = v1 |
+| memory, mul32 | 1.377–1.444 | 1.452–1.518 | 1.815–1.934 (+25 to 27%) | = v1 |
+| memory, add64 / sub64 | 2.712–2.764 | 2.849–2.930 | 3.671–3.781 (+28 to 29%) | 2.863–2.928 (−1 to +1.4%) |
+| memory, mul64 scalar / vector | 2.731–2.818 / 3.080–3.101 | 3.626–3.690 / 4.936–4.962 | 4.478–4.541 (+23%) / 5.756–5.885 (+17 to 19%) | = v1 |
+| memory, mix / mix (vector) | 2.028–2.077 / 2.086–2.124 | 2.273–2.317 / 2.485–2.529 | 2.881–2.956 (+27%) / 3.099–3.180 (+25%) | 2.271–2.322 (0%) / 2.484–2.534 (0%) |
+
+**Rankings against study 20:**
+- **The naive pass against the refined fused test: holds.** Over the mix the pass costs 22.5% in L1, 21% in L2 and 27% from memory (study 20: 14, 16, 28). The refined test costs 4.8%, 4.3% and 0% (study 20: 2.5, 0, 0.4).
+- **The pass from memory** costs what re-reading the results costs, as before: 0.37 to 0.42 ns at int32 and 0.81 to 0.89 at int64.
+- **What changed: the fused test is no longer free in L2.** It costs 14 to 20% of an int64 add or subtract there (study 20: −1 to +1%), and 11 to 31% in L1 (study 20: 13 to 14%). From memory it is still free.
+  - At 128 bits an int64 add moves 2 values per instruction. The add-with-test loop (10 NEON instructions per element with loads and stores, against 5.25 x86 instructions in study 20) is then bound by instructions in L2 as well as L1.
+  - Whether NEON cores, with their own balance of issue width and L2 bandwidth, show the same is uncertain.
+  - The add64 v1 against sub64 v1 gap in L1 (0.55 against 0.465, identical counts) is an x86 scheduling effect, not pinned down.
+- **The checks (v1 over bare)** cost 59% (add32) to 2.4 times (mul32) in L1 and 5 to 6% from memory (study 20: 75 to 125%, 2 to 6%).
+
+**Study 21 timing,** ns per element per run. In cache N = 1,024, 31 repetitions; memory N = 2^23, 7 repetitions. 2 runs; means of the two medians, with each run's saving.
+
+**back,** scalar int64 multiply (saved = v1 − v):
+
+| L | in cache v1 / v2 / v3 | saved v2 / v3 | memory v1 / v2 / v3 | saved v2 / v3 |
+|---|---|---|---|---|
+| 0 | 1.62 / 2.21 / 2.17 | −0.57 to −0.61 / −0.53 to −0.56 | 7.20 / 10.16 / 8.64 | −2.9 to −3.0 / −1.2 to −1.6 |
+| 1 | 2.31 / 2.66 / 2.58 | −0.35 / −0.22 to −0.31 | 9.72 / 12.22 / 10.15 | −2.3 to −2.7 / −0.4 to −0.5 |
+| 2 | 2.83 / 2.95 / 2.71 | −0.11 / +0.12 to +0.13 | 12.01 / 13.79 / 11.72 | −1.7 to −1.9 / −0.25 to +0.83 |
+| 4 | 5.52 / 4.02 / 3.58 | +1.5 / +1.9 to +2.0 | 17.09 / 17.93 / 14.42 | −0.6 to −1.0 / +2.6 to +2.7 |
+| 8 | 9.47 / 5.79 / 4.91 | +3.6 to +3.8 / +4.5 to +4.7 | 26.70 / 24.41 / 19.82 | +2.0 to +2.6 / +6.6 to +7.1 |
+| 16 | 18.55 / 9.66 / 8.02 | +8.8 to +8.9 / +10.5 to +10.6 | 46.10 / 38.10 / 30.69 | +7.6 to +8.4 / +15.0 to +15.8 |
+| 32 | 35.29 / 17.04 / 13.79 | +18.2 / +21.5 | 86.95 / 66.03 / 53.68 | +19.4 to +22.5 / +31.8 to +34.8 |
+| 64 | 70.80 / 32.24 / 25.79 | +38.1 to +39.0 / +44.6 to +45.4 | 162.88 / 119.19 / 91.98 | +40.1 to +47.2 / +70.7 to +71.1 |
+| 128 | 139.05 / 62.36 / 49.23 | +76.6 to +76.8 / +89.8 | 322.40 / 223.57 / 174.72 | +96.3 to +101.4 / +146.8 to +148.6 |
+
+**Break-even:**
+- **The refined test: L = 2, in cache and from memory.** In cache it is +0.12 at L = 2 (study 21: between 2 and 4, −0.14 at L = 2). From memory it is level at L = 2 (−0.25 and +0.83 in the two runs) and clearly ahead from L = 4 (study 21: L = 2, +0.1 to 0.4). It holds.
+- **The naive pass:** between L = 2 and 4 in cache, and between 4 and 8 from memory (study 21: L = 4 level, ahead from 8). It holds.
+- **Each further operation past break-even** saves 0.70 ns in cache and 1.20 from memory with v3, and 0.60 and 0.86 with v2. Study 21: 0.65, 1.2, 0.6, 0.8. Practically unchanged.
+- **At L = 128,** v3 takes 35% of v1's time in cache and 54% from memory (study 21: 25% and 46%).
+- **With the vector int64 multiply** the savings are larger, because that multiply is dearer (4.2 against 0.65 ns at int32): 1.44 ns per operation in cache and 1.90 from memory. The break-even is the same, L = 2.
+- **The jump at the first multiply** (L = 3) stays, now from the scalar int64 multiply against the vector int32 one. On AArch64 that is 24 instructions per element against 6.75, so it holds there too.
+
+**control** (no demotion; pure cost):
+- **In cache:** v3 adds 0.37 to 0.88 ns at L ≤ 4 and 11.5% at L = 64 to 128 (study 21: 6 to 7%). v2 adds 19% (study 21: 8 to 13%). The fused test's larger L1 cost (study 20 above) carries over.
+- **Memory:** v3 is level with v1 at every L, as before: within 2%, or −1.2 to +3.0 ns on runs of 7 to 320 ns. v2 adds 19 to 36% (study 21: 22 to 36%).
+
+**hover** (L = 128, vector multiply build; hover has no multiply):
+
+| | v1 | v2 (B) | v3 (B) | v3A (rule A) |
+|---|---|---|---|---|
+| in cache | 76.3 | 101.6 (+33%) | 99.5 (+30%) | 141.6 (1.86 times) |
+| memory | 292.0 | 396.7 (+36%) | 295.9 (+1.3%) | 563.3 (1.93 times) |
+
+Study 21: in cache +35%, +28%, 2.2 times; memory +35%, −4%, 1.9 times. Rule B's margin still removes all of rule A's cost.
+
+**Summary of part 3.** The rankings of studies 20 and 21 hold. The refined fused test is far cheaper than the naive pass (+4.8% against +22.5% of the mix in L1, 0% against +27% from memory). It breaks even after 2 further operations in cache and from memory, and saves 0.70 ns per operation in cache and 1.2 from memory after that, as in study 21. The one change is in L1 and L2: at 128 bits the fused test costs 11 to 31% of an int64 add or subtract (study 20: 13 to 14% in L1, free in L2). That raises its pure cost when values never come back (11.5% in cache, from 6 to 7%), and it is still free from memory.
+
+### Summary
+
+- **Division (decisions 28 to 30, 32):**
+  - Exact division by the inverse (m2) and the shared reciprocal (m4) stay ahead of the divide: 1.9 and 1.4 times on the stand-in, 13 and 21 NEON instructions per element against 31 and 29 scalar with two divides.
+  - The per-lane reciprocal (m5x) falls behind the divide on the stand-in: 8.6 against 5.2 ns, where AVX2 had it 1.17 times ahead. By NEON count it is 48 vector instructions against two 64-bit divides and 35 scalar. Uncertain; reopen on ARM.
+  - Two registers interleaved stay the form, and 32 registers do not fit three.
+  - Toward zero in mask form is still the cheapest tie rule, now by 2.5 NEON instructions per element over ties up (was about 1). Decision 28 holds.
+  - Ties up and down tie their two forms by count; on x86 the direct form's `bsl` (`vpblendvb`) makes it look slower (uncertain).
+- **The int64-half multiply (decision 35):**
+  - Checked, the vector form loses to scalar on both measures: 4.36 against 2.10 ns, and 46 against 24 AArch64 instructions with the same 8 multiplies. On NEON the grown-size checked multiply should be scalar `mul` + `smulh`. Decision 35's untested "a tie or a win" does not hold for it.
+  - Signed pieces still beat unsigned ones.
+  - The bare product and the per-array bound are roughly level with scalar (uncertain; the stand-in's `pmulld`).
+  - 32 registers against 16 changes the vector check by 2 to 5% and moves no ranking; even with 32 the check spills.
+- **Shrinking (decisions 18 and 26):** the refined fused test holds. It breaks even after 2 further operations, saves 0.7 ns per operation in cache and 1.2 from memory, costs nothing from memory when it never fires, and rule B's margin still removes rule A's hover cost. In L1 and L2 at 128 bits it costs 11 to 31% of an int64 add or subtract, against 13% and free in study 20.
+- **Build:**
+  - The AArch64 compile of the same kernels (neon29a64.c, clang) matches the counters within 1 to 2 instructions per element, except for register copies before destructive multiply-accumulates.
+  - Deviations found: `raddhn` for `addhn` (better), `ssra`/`usra` fusions (better), `neg` + `mla` for `mls` (worse by 1), and spills in k_sgn (21 per 4 elements) and m5x (16 to 43 per 8) even with 32 registers.
+  - On x86, gcc's all-ones constant is `vpternlogd $0xff` (allowed).
+- **ARM reopen list, additions:**
+  - m5x against the scalar divide.
+  - The bare and bounded int64 multiply against scalar.
+  - The fused shrink test's cost in L2.
+  - Ties up and down, direct against mask (`bsl`).

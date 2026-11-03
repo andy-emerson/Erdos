@@ -2101,3 +2101,227 @@ Study 21: in cache +35%, +28%, 2.2 times; memory +35%, −4%, 1.9 times. Rule B'
   - The bare and bounded int64 multiply against scalar.
   - The fused shrink test's cost in L2.
   - Ties up and down, direct against mask (`bsl`).
+
+## Study 30: the int64 multiply and division reshaped for vector lanes (neon30mul.c, neon30div.c)
+
+**What was done.** Study 29 found two operations where the NEON-shaped code lost: the checked grown-size multiply (46 AArch64 instructions per element against 24 for `mul` + `smulh`) and division with remainder (shared divisor 3.8 ns and per-lane divisor 8.6 ns, against the divide's 5.2). Both were ports of AVX2 designs. This study redesigns those two operations for 128-bit lanes rather than translating them: other layouts, other representations, and NEON instructions not used for them before (`srsra`, `sli`, `uaddl`, `smin` as a detector, `sqrdmulh`, `sqdmulh`, `sqshl`). The rules, layer, barriers, scan, `-DCOUNT` counters and AArch64 build are study 29's (neon29isa.c, neon29a64.c). The new files include study 29's (neon29mul.c, neon29div.c), so study 29's kernels run beside the new ones, in the same binary and harness. Same machine (Xeon family 6 model 173, 2-vCPU KVM guest). Timing: load below 0.5 before each run, nothing else running, pinned to one CPU, 31 repetitions, kernels interleaved with their order rotated, an untimed call first. Ranges are of the medians over 3 runs in L1 and L2, and 1 run from memory, except where stated. Quartile spreads were about ±1%. AArch64 counts are of clang-18's main loop (study 29's script), loads, stores and loop overhead included.
+
+The ranking measure is the AArch64 count (the author's main measure for ARM), with x86 time beside it. Where they disagree, the ranking is marked uncertain.
+
+### Part A: the checked int64-half multiply
+
+**The floor.** With 32 × 32 → 64 multipliers, two 32-bit pieces per int64 are the minimum. A Gaussian product is then 16 piece products, which is 8 `smull`/`smlal` per element (2 products each). That is the same 8 multiplies as scalar `mul` + `smulh`. A vector form can therefore win only on the other instructions. Scalar spends about 16 of those per element, 6 of them loads and stores.
+
+**Options surveyed:**
+- **(1) Separate arrays of 32-bit pieces.** Built (k_pc).
+- **(2) Smaller limbs.** 22 or 26 bits with delayed carries: 3 limbs make 36 piece products per element (18 multiply instructions).
+  - Karatsuba and Gauss's three products need limb sums, which fit with 22-bit limbs. They bring it to 18 products (9 instructions), plus about 10 instructions per element of 64-bit recombination.
+  - Counted, not built: neither reaches the 8-multiply floor, so neither can beat scalar.
+- **(3) Practice:**
+  - On AArch64, OpenSSL and BoringSSL bignum code, and most X25519 code, use scalar `mul`/`umulh`.
+  - Bernstein and Schwabe's radix-2^25.5 NEON arithmetic paid off on ARMv7, which has no 64-bit scalar multiply.
+  - Hybrid loops that run scalar and NEON work side by side (Lenngren's X25519; Becker and Kannwischer 2022) raise throughput, not instruction count.
+  - SVE2 has 64-bit lane `MUL`, `SMULH` and `ADCLB`/`ADCLT`, which would put the scalar algorithm itself into lanes.
+  - NEON's QC flag (decision 37) was worked through for the overflow test. With the right order of saturating steps it is exact, but it costs more than the K test below (about 10 against 7 per pair).
+
+**The new exact test** (k_pc, k_v2):
+- **Signed-low pieces.** l = the low word read as signed, h' = hi + (lo >> 31, logical): one `usra` per operand register. Then x = h'·2^32 + l.
+- **Columns.** HH = ah'ch' − bh'dh', M1 = ah'cl − bh'dl, M2 = al ch' − bl dh', LL = al cl − bl dl. Each is two `smull`/`smlsl` per pair.
+- **Low part.** Z0 = lo(M1) + lo(M2) + (LL >> 32): `uzp1` twice, `uaddl`, `uaddl2`, then `ssra`.
+- **Output pieces.** lo = `uzp1`(LL) and hi = `uzp1`(Z0). These are the standard pieces of re mod 2^64.
+- **K test.** K = HH + (M1 >> 32) + (M2 >> 32) + round(Z0 / 2^32), by `ssra`, `ssra`, `srsra`. Its value is floor((re + 2^63) / 2^64), computed mod 2^64. Since |K| ≤ 2^63, re fits int64 iff K = 0. No 64-bit result is ever formed.
+- **im.** The same with sums. LL' = al dl + bl cl reaches 2^63 when all four lows are −2^31, so it is read as LL' + 2^63 − 2^32 unsigned: one add, a `usra`, and a +1.
+- **Edges.** Study 23's edge corrections (20 instructions per register) are replaced by a running `smin` of the four h' registers. If the minimum reaches −2^31 anywhere in the array, the array is redone by the exact scalar kernel, once per array like the sticky flag's own branch. That happens only for an input within 2^31 of ±2^63. With every h' above −2^31, HH, M1 and M2 cannot wrap.
+- **Flag.** The four K registers are ORed into one, tested once per array.
+
+**Layouts:**
+- **The pieces layout (k_pc).** Each int64 array is split into its two 32-bit words, hi and lo, as two int32 arrays. The meaning is unchanged and the size stays int64. Loads give the pieces directly, and the outputs are packed pieces.
+- **The int64 layout (k_v2).** The same test, with pieces by `uzp1`, `uzp2`, `usra` on load and outputs rebuilt by `sli` (shift left and insert, one per pair).
+- **s_pc** is the scalar kernel in the pieces layout, showing what the layout costs scalar code. **k_pcb** is the bare (wrapping) product in the pieces layout.
+
+**Correctness** (study 23's harness, plus pieces):
+- **Edges:** every quadruple of 44 edges, each element alone in a pass of 4 with its position rotating. These are study 23's 37 edges plus values around 2^63 − 2^31 (where h' wraps), ±2^63 ± 2^31, and lows of −2^31.
+- **A piece grid:** high pieces from 9 values and low pieces from {−2^31, −2^31 + 1, −1, 0, 1, 2^31 − 1}, 944,784 quadruples. This reaches LL' = 2^63.
+- **Random:** 4 million single elements, half aimed at the int64 boundary, and 200,000 arrays.
+- **Totals:** 44,464,405 kernel calls, failures none. Each checked kernel saw the flag clear 366,399 times and set 8,526,482 times. 6,887,700 calls went through the edge fallback.
+- **Side kernels:** add, shrink test and promotion in both layouts, 200,000 arrays, failures none.
+- **Injected faults, all caught:**
+  - K without the `srsra` term: 18,626 failures (quick run);
+  - im without the +1;
+  - no edge fallback: 875;
+  - `ssra` in place of the offset `usra` for LL': 3, at the all −2^31 lows only, which the piece grid exists for;
+  - h' without the `usra`;
+  - Z0 dropping lo(M2).
+
+**Counts and timing,** per element:
+
+| | s_chk (scalar, int64 layout) | k_sgn (study 29) | k_v2 (new, int64 layout) | k_pc (new, pieces) | s_pc (scalar, pieces) | k_pcb (bare, pieces) |
+|---|---|---|---|---|---|---|
+| AArch64 loop | 24 | 46.0 | 25.75 | 23.5 | 38 | 9.25 |
+| AArch64 spills per 4 elements | 0 | 21 | 0 | 0 | 0 | 0 |
+| NEON counter + loads/stores | | 37.5 | 24.5 | 22.25 | | 8.5 |
+| x86 loop | 39 | 61.0 | 52.5 | 55.75 | 61 | 12.75 |
+| x86 L1 ns | 2.08–2.09 | 4.16–4.17 | 3.54–3.55 | 3.06 | 3.12 | 1.12–1.13 |
+| x86 L2 ns | 2.08–2.10 | 4.17–4.19 | 3.54–3.55 | 3.06–3.07 | 2.88–2.91 | 1.12 |
+| x86 memory ns (3 runs) | 3.45–3.47 | 4.86–4.88 | 4.30–4.33 | 3.45–3.47 | 3.51–3.54 | 2.48–2.51 |
+
+For comparison, on AArch64 the bare forms are s_bare 13 and k_bare 11.75, and the bound form k_bnd is 17.75.
+
+**Side costs of the pieces layout** (AArch64 loop per element; x86 L1 ns per element; the add is per Gaussian, promotion and the shrink test per int64 value):
+
+| | pieces | int64 layout |
+|---|---|---|
+| checked add (pieces: carry by `cmhi`, V rule on the high word) | 7.75; 0.525–0.529 | 9.5; 0.562–0.565 |
+| promotion from int32 halves (pieces: lo = x, hi = `sshr` 31; int64: `sxtl`, `sxtl2`) | 1.75; 0.129–0.130 | 2.0; 0.102 |
+| rule B shrink test (pieces: `usra` + `orr` on hi, add + `orr` on lo; int64: add + `orr`) | 2.25; 0.142–0.146 | 3.0; 0.141 |
+| demotion | take lo, no work | `uzp1` |
+| the checked multiply in scalar code | 38 | 24 |
+
+**What this shows:**
+- **By the AArch64 count, the reshaped vector multiply ties plain registers:** 23.5 against 24, 2% fewer.
+  - Unrolling by 2 would save about 0.4 more (estimated, not built).
+  - Nothing else found cuts the K test. A 32-bit-lane carry form of the low columns costs 1 more per part, not less.
+  - It does not beat the scalar form; it removes study 29's loss (46 against 24).
+- **x86 still has scalar ahead in cache:** 2.08 against 3.06 ns (1.47 times). From memory they tie (3.46 against 3.46). The stand-in spends 55.75 x86 instructions per element on 22.25 NEON ones (odd-lane `pmuldq` shifts, 64-bit `srai`). The two measures disagree, so the ranking is uncertain.
+- **The test is what moved,** not the layout. In the int64 layout the same test takes the vector check from 46 to 25.75 AArch64 instructions, and on x86 from 4.17 to 3.54 ns. Most of that is the edge corrections, replaced by the `smin` detector and the fallback.
+- **The pieces layout is a small win wherever the code stays in vector lanes:**
+  - by count: multiply −2.25, add −1.75, promotion −0.25, shrink test −0.75 per element;
+  - on x86: the add is 6% faster, the shrink test level, promotion 27% slower.
+  - It costs scalar code 14 instructions per element on the checked multiply (38 against 24): every value has to be assembled and split again.
+  - The bare product in pieces is the cheapest form of all: 9.25 against 13 scalar.
+- **Storing h' instead of hi** would save about 2 per element (no `usra`, no `smin`). It is counted, not built, because it changes the size's range to [−2^63 − 2^31, 2^63 − 2^31).
+
+### Part B: division with remainder
+
+**Options surveyed:**
+- **Estimate from the Gaussian reciprocal in 32-bit fixed point (built).** q ≈ x·conj(y)/N with conj(y)/N held as two 32-bit words, the estimate by `sqrdmulh`, and one exact test.
+- **Remainder-based test (built, s1).** The remainder is taken in 32-bit lanes, and only the test widens to 64 bits.
+- **Per-lane reciprocal by `sqdmulh` Newton in Q30 (built, l1).** It replaces m5's packed-33-bit Newton and its two 64-bit fix-ups (about 22 NEON instructions per element).
+- **`urecpe` as the seed.** An integer instruction (9 bits), it would save one Newton step. Not used: x86 has no stand-in.
+- **`sqrdmlah` (ARMv8.1).** It fuses the estimate's add (6 instead of 8 per 4 elements). Not used: it is not in the portable list.
+- **Keeping the quotient in 32-bit lanes.** The quotient has at most 33 bits: it fits as the estimate's fixed point for every divisor with N ≥ 4. It does not fit for units and (1 + i) times units.
+
+**The reshape:**
+- **Reciprocal words.** W1 = round(c·2^(31+T)/N) and W2 = round(d·2^(31+T)/N), with T the largest value such that 2^(2T+2) ≤ N. Then |W| ≤ 2^30, and T ≥ 3 for N ≥ 256.
+- **Estimate.** q̂1 = floor((`sqrdmulh`(a, W1) + `sqrdmulh`(b, W2)) / 2^T), and q̂2 likewise with b·W1 − a·W2. Two roundings of 1/2 and W's rounding of at most 1 in total give |q̂ − X/N| ≤ 2/2^T ≤ 1/4 before the floor. So q̂ is q − 1 or q for the nearest q, and at a tie it is the toward-zero candidate or one below it.
+- **One exact test per part.** Round up iff ρ + s > H, where ρ = X − q̂N, H = N >> 1, and s = [q̂ < 0] when N is even (0 when N is odd, where there are no ties). At ρ = N/2 the part goes up exactly when q̂ < 0, which is ties toward zero. The result is the same function as decision 28's rule (study 29's B2, mask form), flags included.
+  - The mask form's purpose (no sign work in the threshold) is met here by the one bit s in the low bit of ρ (`uaddw`).
+- **s1 (shared divisor, r̂ form).**
+  - r̂ = x − q̂y in 32-bit lanes (`mla`, `mls`), exact while |r̂| < 2^31. With q̂ in {q − 1, q}, |r̂| ≤ 1.77|y|, so s1 is used for N ≤ 2^59.
+  - ρ1 = r̂1·c + r̂2·d and ρ2 = r̂2·c − r̂1·d by `smull`/`smlal`.
+- **s2 (shared divisor, X form, any N ≥ 256).**
+  - ρ1 = X − q̂1·N from `smull`(a, c) + `smlal`(b, d) − `smull`(q̂1, Nl) − (q̂1·Nh mod 2^32)·2^32, with N = Nh·2^32 + Nl in signed-low pieces (`smlsl`, `mul`, `shll`, sub).
+  - ρ lies in [−εN, (1 + ε)N] with ε ≤ 2^−29, which is exact mod 2^64 unless N(1 + ε) ≥ 2^63. That needs |c| and |d| within 2 of 2^31 and an estimate error beyond 1 + (2^63 − N)·2^T/N. For every such divisor, W's rounding errors computed exactly keep the error above that bound, so no input reaches it.
+- **Shared fallback.** N < 256 goes to study 29's m4, and so does N > 2^59 for s1. This is once per array and costs nothing per element.
+- **l1 (per-lane divisor):**
+  - N = c² + d² per lane, and L = floor(log2 N) from the two 32-bit `clz` (study 29's 64-bit clz).
+  - dp = the top 31 bits of N.
+  - v ≈ 2^61/dp by a linear seed (48/17 − 32/17·D) and three Newton steps v ← 2·`sqrdmulh`(v, 2^31 − `sqdmulh`(dp, v)), with `sqshl` for the doubling.
+  - Then W = `sqrdmulh`(c << sc, v) with sc = 31 + T − L. The exponents cancel exactly, so no shift follows. When L ≥ 61, sc is a right shift by 1 or 2, harmless there because the quotient is at most 2.
+  - Stage 1 is the shared estimate, with T per lane.
+  - Lanes with N < 2^14 also run stage 2. There the stage-1 error can reach about 17, but r0 = x − q0·y stays below 2^13, so q0 += floor(estimate(r0 << 18) / 2^(T+18)). The stage-2 result is added only where an and-mask is set.
+  - The test is s2's, on per-lane pieces of N, in the form (ρ − H) + s > 0 (one more subtract per pair). Per-lane W errors are a few units, so the bound used for s2 was not established here.
+  - A unit, a (1 + i) times unit, or a zero divisor (N ≤ 2 after the zero fix) sets a flag that sends the array to the scalar divide, once per array.
+  - l2 interleaves two registers.
+
+**The per-lane reciprocal,** run over all 2^30 values of dp: v − round(2^61/dp) is −1 for 61,552,851 values, 0 for 395,212,353, 1 for 472,672,256, 2 for 141,659,099 and 3 for 2,645,265. The worst relative error is 2^−29.0.
+
+**Correctness** (an __int128 reference from exact rationals, study 25's; quotient and remainder mod 2^32, both flags, and `resolve`):
+- **Small divisors:** every divisor with |c|, |d| ≤ 32, against a box of x values and every pair of the 20 edges. 129 million results, the m4 fallback included.
+- **Ties:** batches aimed at ties (c ≡ d mod 2, x = qy + half of y, iy or (1 + i)y), 42 million results. There were 22.0 million elements at a tie in all.
+- **Edges:** every quadruple of the 20 edges, each element alone in a register of 4 (flags per element). Divisors near powers of 2 from 2^8 to 2^63, with edge and random x.
+- **Random:** shared divisors of every size, 26 million results.
+- **s1's limit:** N from 2^58 to 2^62, with x placed so that x/y − q̂ lies at the corners of [−1/4, 5/4)², where r̂ is largest. 610,326 results.
+- **Near 2^63:** N within 2^35 of 2^63 (|c|, |d| within 5 of 2^31, every sign), |a| and |b| near 2^31, and X just above a multiple of N. 2.75 million results.
+- **Per lane:** divisors whose sizes mix inside each register, from 1 bit to 32 bits, and x random, from the edges, near multiples of y, or at ties. Every 8th batch also has units, (1 + i) times units and zeros. 42 million results.
+- **Totals:** 1,092,726,750 element results, failures none. Each shared kernel had 163 to 172 million results on the new path. The lane kernels had 474 million on the vector path; 7,414 arrays went to the scalar divide (units or zeros).
+- **Injected faults, caught:**
+  - T one too large;
+  - no tie bit;
+  - a tie bit for odd N too;
+  - round in place of floor in the estimate;
+  - s1's limit at 2^62 (only by the limit test, 3,665 failures in the quick run);
+  - ρ without the Nh term;
+  - l1 without stage 2;
+  - l1 with two Newton steps.
+- **Not caught:**
+  - stage 2 below N = 2^8 only, so the 2^14 threshold has margin;
+  - l1 without the safe form of the test (neither proved nor shown needed; the safe form is kept).
+
+**Counts and timing,** shared divisor, per element:
+
+| | m1s (scalar, floor core only) | m4_mb2 (study 29) | s1 | s2 |
+|---|---|---|---|---|
+| AArch64 loop | 29 | 33.75 | 13.75 | 16.5 |
+| NEON counter + loads/stores | | 25.5 | 12.5 | 15.0 |
+| x86 loop | 58 | 54.5 | 50.5 | 55.25 |
+| x86 L1 ns, random 32-bit divisor (N ≈ 2^62.8; s1 falls back to m4) | 5.18–5.19 | 4.17–4.18 | (4.17) | 2.72–2.73 |
+| x86 L1 ns, small divisor (parts ≤ 256, N ≈ 2^14.6) | 5.18–5.21 | 4.16–4.21 | 2.93–2.94 | 2.73 |
+| x86 L1 ns, medium divisor (parts ≤ 2^20, N ≈ 2^38.8) | 5.21–5.22 | 4.17–4.21 | 2.94–2.95 | 2.73–2.75 |
+| x86 memory ns (1 run, every divisor size) | 5.33 | 4.28–4.31 | 3.22–3.25 | 3.07 |
+
+The third L1 run of the medium group was disturbed (quartiles ±8%) and is left out.
+
+**Counts and timing,** per-lane divisor, per element:
+| | m1 (scalar, floor core only) | m1_mb2 (scalar, toward zero) | m5_mb2 / m5x_mb2 (study 29) | l1 | l2 |
+|---|---|---|---|---|---|
+| AArch64 loop | 37 (study 29) | 57 | 55.75 / 59.6 | 38.25 | 43.5 |
+| AArch64 spills, register copies per 4 elements | 0 | 0 | 0 / 13.5, 6 | 0, 4 | 9.5, 14 |
+| NEON counter + loads/stores | | | 50.25 (m5x) | 34.5 | 34.5 |
+| x86 loop | 58 | 94 | 84.1 (m5x) | 206.5 | 149.6 |
+| x86 L1 ns, random 32-bit divisors | 5.18–5.21 | 6.84–6.85 | 9.10–9.11 (m5x) | 12.62 | 9.21–9.24 |
+| x86 L1 ns, small divisors (parts ≤ 256, N ≥ 4) | 5.19–5.21 | 6.84–6.89 | 9.09–9.13 | 12.63–12.65 | 9.23–9.25 |
+| x86 L1 ns, medium divisors (parts ≤ 2^20) | 5.19–5.20 | 6.83–6.87 | 9.07–9.10 | 12.62–12.64 | 9.12–9.22 |
+| x86 memory ns (1 run, the three kinds) | 5.36–5.40 | 6.96–7.01 | 9.25–9.30 | 12.80–12.85 | 9.36–9.39 |
+
+An array that holds a unit, a (1 + i) times unit or a zero divisor costs l1's sweep plus the scalar divide.
+
+**What this shows:**
+- **Shared divisor: the reshape wins on both measures.**
+  - s1 and s2 take 13.75 and 16.5 AArch64 instructions per element, against 33.75 for m4 with the same rule and 29 for the scalar divide's floor core alone (2.5 and 2.0 times fewer than m4).
+  - On x86, s2 runs 2.72 ns against m4's 4.17 (1.53 times faster) and against 5.18 for the divide's floor core (1.9 times). From memory it is 3.07 against 4.29 and 5.33.
+  - Study 29's shared ranking of the reciprocal against the divide (1.38 times) widens to about 2 times.
+- **s1 against s2: the measures disagree.**
+  - By count s1 is cheaper: 13.75 against 16.5.
+  - On x86 s2 is 7% faster (2.73 against 2.94). s1 has 4 more 32-bit `mla`/`mls` per 4 elements, which are `pmulld` here (2 µops, 10 cycles); on NEON they are one instruction each.
+  - The ranking is uncertain. By the ARM measure, s1 is the form for N ≤ 2^59, with s2 above that. s2 alone is the simpler choice and gives up 2.75 instructions per element.
+- **Per-lane divisor: the count and x86 disagree.**
+  - By count, l1 takes 38.25 AArch64 instructions per element against 57 for the scalar divide with the same rule. That is a third fewer, and level with the scalar floor core alone (37). It also takes 31 to 36% fewer than m5 (55.75) and m5x (59.6), and it does not spill.
+  - On x86, l1 is the slowest form at 12.6 ns, against 6.85 for the scalar divide with the rule. l2 (9.2) only ties m5x (9.1).
+  - l1 is latency-bound, as m5 was at one register (study 29: 11.24 ns). Each `sqdmulh`/`sqrdmulh` and the signed lane shift costs about 6 x86 instructions here, so l1's loop is 206 x86 instructions per element against 34.5 NEON ones.
+  - The ranking is uncertain. On ARM it rests on `sqrdmulh` throughput and the length of the dependency chain (normalise, 3 Newton steps, W, two estimates, test), so it joins the reopen list.
+- **Interleaving per lane:** two registers spill on AArch64 (9.5 per 4 elements, plus 14 copies), so l2 is 43.5 against l1's 38.25. On x86, l2 is 27% faster than l1. One register is the AArch64 form; two the x86 form.
+- **What the reshape removed:** in the shared kernels, all 64-bit work in the estimate (in study 29's m4 the estimate and its 64-bit correction were about 15 of 24 NEON instructions per element) and all sign work. In the lane kernels, m5's packed reciprocal with its two 64-bit fix-ups (about 22 NEON instructions per element) became a Q30 Newton of 14 per 4 elements. The one 64-bit step left is the exact test.
+- **The tie rule** stays decision 28's: ties toward zero, the same results as study 29's mask form. On this path it costs one bit, s, folded into the test by `uaddw`, 2 instructions per 4 elements per part.
+- **Compiled-code deviations:**
+  - In l1, clang negates the lane shift counts (`neg`, 10 per 4 elements) where the kernel could produce −T directly at the same cost (portable-isa.md note 1); about 2.5 per element could be saved.
+  - In s1, clang adds 2 register copies per 4 elements.
+  - No spills in s1, s2 or l1.
+
+### Summary
+- **The checked int64-half multiply:**
+  - Reshaped, the vector form ties plain registers by AArch64 count: 23.5 against 24 per element in the pieces layout, and 25.75 in the int64 layout. Study 29 had 46 against 24.
+  - The gain is a new exact test, not the layout. The overflow test K = HH + (M1 >> 32) + (M2 >> 32) + round(Z0/2^32) is built from `ssra` and `srsra`, the output pieces come straight from `uzp1`, and an `smin` detector with a once-per-array scalar fallback replaces the edge corrections.
+  - On x86, scalar stays 1.47 times faster in cache and ties from memory, so that ranking is uncertain.
+  - The multiply floor (8 per element on both sides) leaves no room for a clear vector win with 32-bit multipliers. Smaller limbs need 18 or more multiplies per element.
+  - The pieces layout is slightly cheaper for every vector operation measured (multiply, add, shrink test, promotion by count; on x86 promotion is slower) and costs scalar code 14 instructions per element on the multiply.
+  - SVE2's 64-bit lane `SMULH` and `ADCLB`/`ADCLT` would change this; not testable here.
+- **Division with remainder, shared divisor:**
+  - The 32-bit fixed-point Gaussian reciprocal (`sqrdmulh` estimate, one exact test with the tie bit) beats m4 and the divide on both measures.
+  - s1 takes 13.75 and s2 16.5 AArch64 instructions per element, against 33.75 for m4 and 29 for the divide's floor core alone.
+  - On x86, s2 takes 2.72 ns against 4.17 for m4 and 5.18 for the divide.
+  - s1 against s2 is uncertain (count favours s1, x86 s2).
+  - N < 256 stays with m4, once per array.
+- **Division with remainder, per-lane divisor:**
+  - The Q30 `sqdmulh` Newton reciprocal, per-lane W by `sqrdmulh`, and a second estimate stage for N < 2^14 take 38.25 AArch64 instructions per element. That is against 57 for the scalar divide with the rule (37 for its floor core) and 59.6 for m5x.
+  - On x86 it is the slowest form (12.6 ns, latency-bound and dear in the stand-in; two registers 9.2, against the divide's 6.85). Uncertain until timed on ARM.
+  - Arrays with unit, (1 + i) times unit or zero divisors go to the scalar divide, once per array.
+- **For the decisions** (not edited here):
+  - Decision 30's shared reciprocal could become s2 (or s1 for N ≤ 2^59).
+  - Decision 32 and the reopen item on per-lane division gain a candidate that leads by ARM count.
+  - The reopen item on the grown-size multiply now reads "ties by count, loses on x86". The pieces layout is a candidate to weigh against decision 15's int64 arrays at the grown size.
+- **ARM reopen list, additions:**
+  - k_pc against `mul` + `smulh` (tie by count).
+  - s1 against s2.
+  - l1 against the scalar divide, and l1 against l2.
+  - Whether l1 needs its safe test form.

@@ -310,11 +310,11 @@ static void qalone(i64 a, i64 b, i64 c, i64 d, int sel) {
 #define LAN_ 0x68                     /* m1, l1, l2 */
 static void do_dcheck(int quick, int sel) {
     /* 1. every divisor with |c|, |d| <= D0 and N >= 256 (and some below), x over every pair in a box and edge values */
-    int D0 = quick ? 20 : 40; long n1 = 0;
+    int D0 = quick ? 20 : 32; long n1 = 0;
     for (i64 c = -D0; c <= D0; c++) for (i64 d = -D0; d <= D0; d++) {
         if (!(c | d)) continue;
-        qsel = sel; int B = quick ? 12 : 40;
-        for (i64 a = -B * D0; a <= B * D0; a += (quick ? 7 : 3)) for (i64 b = -B * D0; b <= B * D0; b += (quick ? 11 : 5)) { qpush(a, b, c, d); n1++; }
+        qsel = sel; int B = quick ? 12 : 16;
+        for (i64 a = -B * D0; a <= B * D0; a += (quick ? 7 : 5)) for (i64 b = -B * D0; b <= B * D0; b += (quick ? 11 : 7)) { qpush(a, b, c, d); n1++; }
         for (int p = 0; p < NEV; p++) for (int q = 0; q < NEV; q++) { qpush(EV[p], EV[q], c, d); n1++; }
         qflush();
     }

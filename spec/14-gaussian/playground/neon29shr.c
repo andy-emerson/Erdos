@@ -39,8 +39,8 @@
 #endif
 #endif
 
-#define A32 const i32 *restrict ar, const i32 *restrict ai, const i32 *restrict br, const i32 *restrict bi, i32 *restrict cr, i32 *restrict ci, size_t N
-#define A64 const i64 *restrict ar, const i64 *restrict ai, const i64 *restrict br, const i64 *restrict bi, i64 *restrict cr, i64 *restrict ci, size_t N
+#define AR32 const i32 *restrict ar, const i32 *restrict ai, const i32 *restrict br, const i32 *restrict bi, i32 *restrict cr, i32 *restrict ci, size_t N
+#define AR64 const i64 *restrict ar, const i64 *restrict ai, const i64 *restrict br, const i64 *restrict bi, i64 *restrict cr, i64 *restrict ci, size_t N
 #define OVA(x, y, r) vbicq(veorq(x, r), veorq(x, y))
 #define OVS(x, y, r) vandq(veorq(x, r), veorq(x, y))
 #if FAULT == 14
@@ -60,13 +60,13 @@
 #define S64MASK vdupq_n_s64((i64)0xFFFFFFFF80000000ULL)
 
 /* ======================= study 20: base size, int32 halves (8 per pass) ======================= */
-#define BARE32(NAME, OP) NOINL int NAME(A32) {                                                   \
+#define BARE32(NAME, OP) NOINL int NAME(AR32) {                                                   \
     for (size_t i = 0; i < N; i += 8) { _Pragma("GCC unroll 2") for (int h = 0; h < 8; h += 4) { \
         vst1q(cr + i + h, OP(vld1q(ar + i + h), vld1q(br + i + h))); vst1q(ci + i + h, OP(vld1q(ai + i + h), vld1q(bi + i + h))); } } \
     return 0; }
 BARE32(k_add32_b, vaddq_s32)
 BARE32(k_sub32_b, vsubq_s32)
-#define OVF32(NAME, OP, OVF) NOINL int NAME(A32) {                                               \
+#define OVF32(NAME, OP, OVF) NOINL int NAME(AR32) {                                               \
     V o = vzero();                                                                               \
     for (size_t i = 0; i < N; i += 8) { _Pragma("GCC unroll 2") for (int h = 0; h < 8; h += 4) { \
         V x = vld1q(ar + i + h), y = vld1q(br + i + h), u = vld1q(ai + i + h), v = vld1q(bi + i + h); \
@@ -75,14 +75,14 @@ BARE32(k_sub32_b, vsubq_s32)
     return vany_and(o, SIGN32); }
 OVF32(k_add32_o, vaddq_s32, OVA)
 OVF32(k_sub32_o, vsubq_s32, OVS)
-NOINL int k_mul32_b(A32) {
+NOINL int k_mul32_b(AR32) {
     for (size_t i = 0; i < N; i += 4) {
         V a = vld1q(ar + i), b = vld1q(ai + i), c = vld1q(br + i), d = vld1q(bi + i);
         vst1q(cr + i, vmlsq_s32(vmulq_s32(a, c), b, d)); vst1q(ci + i, vmlaq_s32(vmulq_s32(a, d), b, c));
     }
     return 0;
 }
-NOINL int k_mul32_o(A32) {      /* study 28's mul_w: smull/smlsl pairs, v + 2^31 has nothing in bits 32..63, uzp1 */
+NOINL int k_mul32_o(AR32) {      /* study 28's mul_w: smull/smlsl pairs, v + 2^31 has nothing in bits 32..63, uzp1 */
     const V off = vdupq_n_s64(1LL << 31); V o = vzero();
     for (size_t i = 0; i < N; i += 4) {
         V a = vld1q(ar + i), b = vld1q(ai + i), c = vld1q(br + i), d = vld1q(bi + i);
@@ -101,13 +101,13 @@ NOINL int k_pass32(const i32 *restrict cr, const i32 *restrict ci, size_t N) {
 }
 
 /* ======================= study 20: first grown size, int64 halves (4 per pass) ======================= */
-#define BARE64(NAME, OP) NOINL int NAME(A64) {                                                   \
+#define BARE64(NAME, OP) NOINL int NAME(AR64) {                                                   \
     for (size_t i = 0; i < N; i += 4) { _Pragma("GCC unroll 2") for (int h = 0; h < 4; h += 2) { \
         vst1q(cr + i + h, OP(vld1q(ar + i + h), vld1q(br + i + h))); vst1q(ci + i + h, OP(vld1q(ai + i + h), vld1q(bi + i + h))); } } \
     return 0; }
 BARE64(k_add64_b, vaddq_s64)
 BARE64(k_sub64_b, vsubq_s64)
-#define OVF64(NAME, OP, OVF, FUSED) NOINL int NAME(A64) {                                        \
+#define OVF64(NAME, OP, OVF, FUSED) NOINL int NAME(AR64) {                                        \
     V o = vzero(), s = vzero();                                                                  \
     for (size_t i = 0; i < N; i += 4) { _Pragma("GCC unroll 2") for (int h = 0; h < 4; h += 2) { \
         V x = vld1q(ar + i + h), y = vld1q(br + i + h), u = vld1q(ai + i + h), v = vld1q(bi + i + h); \
@@ -131,17 +131,17 @@ NOINL int k_pass64(const i64 *restrict cr, const i64 *restrict ci, size_t N) {
 }
 /* the int64 multiply: scalar (study 20's mul64_b / mul64_o = s_bare / s_chk) and vector (k_bare / k_sgn) */
 #define NAIVE(NAME, AR, OPO, PASSF) NOINL int NAME(AR) { int f = OPO(ar, ai, br, bi, cr, ci, N); return f | PASSF(cr, ci, N) << 1; }
-NAIVE(k_add32_n, A32, k_add32_o, k_pass32)
-NAIVE(k_sub32_n, A32, k_sub32_o, k_pass32)
-NAIVE(k_mul32_n, A32, k_mul32_o, k_pass32)
-NAIVE(k_add64_n, A64, k_add64_o, k_pass64)
-NAIVE(k_sub64_n, A64, k_sub64_o, k_pass64)
-NAIVE(s_mul64_n, A64, s_chk, k_pass64)
-NAIVE(k_mul64_n, A64, k_sgn, k_pass64)
+NAIVE(k_add32_n, AR32, k_add32_o, k_pass32)
+NAIVE(k_sub32_n, AR32, k_sub32_o, k_pass32)
+NAIVE(k_mul32_n, AR32, k_mul32_o, k_pass32)
+NAIVE(k_add64_n, AR64, k_add64_o, k_pass64)
+NAIVE(k_sub64_n, AR64, k_sub64_o, k_pass64)
+NAIVE(s_mul64_n, AR64, s_chk, k_pass64)
+NAIVE(k_mul64_n, AR64, k_sgn, k_pass64)
 
 #ifndef A64
-typedef int (*k32_t)(A32);
-typedef int (*k64_t)(A64);
+typedef int (*k32_t)(AR32);
+typedef int (*k64_t)(AR64);
 enum { BARE, V1, V2, V3 };
 typedef struct { const char *name; int w, op, var; void *f; } s20k;   /* op: 0 add, 1 sub, 2 mul (vector), 3 mul (scalar int64) */
 static s20k KT[] = {

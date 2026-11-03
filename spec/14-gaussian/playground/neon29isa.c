@@ -16,6 +16,9 @@
  * scan_kernels() disassembles this binary and checks every function whose name starts with "k_". vpternlogd $0xff
  * (gcc's all-ones constant for xmm16..31, NEON movi #-1) and $0x55 (NOT, NEON mvn) are allowed and counted.
  */
+#ifdef A64
+#include "neon29a64.c"          /* the same layer on real NEON intrinsics, for AArch64 assembly (clang --target=aarch64) */
+#else
 #include <immintrin.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -29,6 +32,8 @@ typedef __m128i V;
 typedef struct { V l, h; } P2;          /* a pair of 64-bit-lane registers: 4 values, "lo" and "hi" halves */
 #define NOINL __attribute__((noinline))
 #define AI static inline __attribute__((always_inline))
+#define SHCNT(s) _mm_cvtsi32_si128(s)   /* a shift count held in a register (NEON: dup'd, negated for right shifts) */
+#define vgetq_u64_(v, j) ((u64)_mm_extract_epi64(v, j))
 
 /* ======================= the NEON layer (study 28) ======================= */
 #ifdef COUNT
@@ -199,3 +204,4 @@ static void scan_kernels(const char *exe) {
     pclose(p);
     printf("scan: %ld kernels, %ld instructions, %ld forbidden; vpternlogd $0xff (all-ones constant, NEON movi) %ld\n", nk, tot, bad, ones);
 }
+#endif /* A64 */

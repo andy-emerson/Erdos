@@ -62,10 +62,12 @@ NOINL int s_chk(ARGS) {
 /* ======================= NEON-shaped helpers ======================= */
 #define C64_(x) vdupq_n_s64(x)
 #define LOW_ C64_(0xFFFFFFFFll)
+#ifndef A64
 /* addhn, addhn2: high halves of (lo + c), (hi + c), packed (lo's in the "lo" lanes) */
 #define vaddhn_pair(lo, hi, c) ((void)C_(0), C_(_mm_blend_epi32(_mm_srli_epi64(_mm_add_epi64(lo, c), 32), _mm_add_epi64(hi, c), 0xA)))
 /* ssra: c + (a >> n) arithmetic, 64-bit */
 #define vsraq_n_s64(c, a, n) C_(_mm_add_epi64(c, _mm_srai_epi64(a, n)))
+#endif
 #define LD2(p, i) ((P2){vld1q((p) + (i)), vld1q((p) + (i) + 2)})
 #define ST2(p, i, v) (vst1q((p) + (i), (v).l), vst1q((p) + (i) + 2, (v).h))
 
@@ -153,35 +155,42 @@ AI void sgn_half(V ahs, V bhs, V chs, V dhs, V als, V bls, V cls, V dls, int hig
 #undef MS_
 #undef MU_
 }
-NOINL int k_sgn(ARGS) {
+/* one pass of 4 elements: stores re, im and returns the k test (nonzero: some result does not fit) */
+AI V sgn_pass(P2 a, P2 b, P2 c, P2 d, P2 *re, P2 *im) {
 #if FAULT == 5
     const V off31 = C64_(0);
 #else
     const V off31 = C64_(1LL << 31);
 #endif
     const V edge = C64_(0x7FFFFFFF7FFFFFFFLL), kim = C64_((1LL << 32) - 2);
-    V o = vzero();
-    for (size_t i = 0; i < N; i += 4) {
-        P2 a = LD2(ar, i), b = LD2(ai, i), c = LD2(br, i), d = LD2(bi, i), re, im, kr, ki;
-        V als = vuzp1q_w(a.l, a.h), bls = vuzp1q_w(b.l, b.h), cls = vuzp1q_w(c.l, c.h), dls = vuzp1q_w(d.l, d.h);
-        V ahs = vaddhn_pair(a.l, a.h, off31), bhs = vaddhn_pair(b.l, b.h, off31);
-        V chs = vaddhn_pair(c.l, c.h, off31), dhs = vaddhn_pair(d.l, d.h, off31);
-        sgn_half(ahs, bhs, chs, dhs, als, bls, cls, dls, 0, &re.l, &im.l, &kr.l, &ki.l);
-        sgn_half(ahs, bhs, chs, dhs, als, bls, cls, dls, 1, &re.h, &im.h, &kr.h, &ki.h);
-        ST2(cr, i, re); ST2(ci, i, im);
-        /* edge corrections (mod 2^64) */
-        P2 ea = {vcgtq_s64(a.l, edge), vcgtq_s64(a.h, edge)}, eb = {vcgtq_s64(b.l, edge), vcgtq_s64(b.h, edge)};
-        P2 ec = {vcgtq_s64(c.l, edge), vcgtq_s64(c.h, edge)}, ed = {vcgtq_s64(d.l, edge), vcgtq_s64(d.h, edge)};
+    P2 kr, ki;
+    V als = vuzp1q_w(a.l, a.h), bls = vuzp1q_w(b.l, b.h), cls = vuzp1q_w(c.l, c.h), dls = vuzp1q_w(d.l, d.h);
+    V ahs = vaddhn_pair(a.l, a.h, off31), bhs = vaddhn_pair(b.l, b.h, off31);
+    V chs = vaddhn_pair(c.l, c.h, off31), dhs = vaddhn_pair(d.l, d.h, off31);
+    sgn_half(ahs, bhs, chs, dhs, als, bls, cls, dls, 0, &re->l, &im->l, &kr.l, &ki.l);
+    sgn_half(ahs, bhs, chs, dhs, als, bls, cls, dls, 1, &re->h, &im->h, &kr.h, &ki.h);
+    /* edge corrections (mod 2^64) */
+    P2 ea = {vcgtq_s64(a.l, edge), vcgtq_s64(a.h, edge)}, eb = {vcgtq_s64(b.l, edge), vcgtq_s64(b.h, edge)};
+    P2 ec = {vcgtq_s64(c.l, edge), vcgtq_s64(c.h, edge)}, ed = {vcgtq_s64(d.l, edge), vcgtq_s64(d.h, edge)};
 #if FAULT == 1
 #define EA_(x, h) vzero()
 #else
 #define EA_(x, h) vandq(x.h, ea.h)
 #endif
 #define KCORR(h)                                                                                                    \
-        kr.h = vaddq_s64(kr.h, vsubq_s64(vaddq_s64(EA_(c, h), vandq(a.h, ec.h)), vaddq_s64(vandq(d.h, eb.h), vandq(b.h, ed.h)))); \
-        ki.h = vaddq_s64(ki.h, vsubq_s64(vaddq_s64(vaddq_s64(vandq(d.h, ea.h), vandq(a.h, ed.h)), vaddq_s64(vandq(c.h, eb.h), vandq(b.h, ec.h))), kim));
-        KCORR(l) KCORR(h)
-        o = vorrq(o, vorrq(vorrq(kr.l, ki.l), vorrq(kr.h, ki.h)));
+    kr.h = vaddq_s64(kr.h, vsubq_s64(vaddq_s64(EA_(c, h), vandq(a.h, ec.h)), vaddq_s64(vandq(d.h, eb.h), vandq(b.h, ed.h)))); \
+    ki.h = vaddq_s64(ki.h, vsubq_s64(vaddq_s64(vaddq_s64(vandq(d.h, ea.h), vandq(a.h, ed.h)), vaddq_s64(vandq(c.h, eb.h), vandq(b.h, ec.h))), kim));
+    KCORR(l) KCORR(h)
+#undef KCORR
+#undef EA_
+    return vorrq(vorrq(kr.l, ki.l), vorrq(kr.h, ki.h));
+}
+NOINL int k_sgn(ARGS) {
+    V o = vzero();
+    for (size_t i = 0; i < N; i += 4) {
+        P2 re, im;
+        o = vorrq(o, sgn_pass(LD2(ar, i), LD2(ai, i), LD2(br, i), LD2(bi, i), &re, &im));
+        ST2(cr, i, re); ST2(ci, i, im);
     }
     return vany(o);
 }
@@ -247,7 +256,7 @@ NOINL int k_uns(ARGS) {
 
 /* ======================= bare + per-array bound, exact fallback (study 23's v_bnd) ======================= */
 static long bnd_fast;
-static int bitlen(V s) { u64 x = (u64)_mm_extract_epi64(s, 0) | (u64)_mm_extract_epi64(s, 1); return x ? 64 - __builtin_clzll(x) : 0; }
+static int bitlen(V s) { u64 x = vgetq_u64_(s, 0) | vgetq_u64_(s, 1); return x ? 64 - __builtin_clzll(x) : 0; }
 NOINL int k_bnd(ARGS) {
     V sx = vzero(), sy = vzero();
     for (size_t i = 0; i < N; i += 4) {
@@ -263,7 +272,7 @@ NOINL int k_bnd(ARGS) {
     return k_sgn(ar, ai, br, bi, cr, ci, N);
 }
 
-#ifndef NEON29_NO_MAIN
+#if !defined(NEON29_NO_MAIN) && !defined(A64)
 typedef struct { const char *name; int chk; kf f; } kern;
 static kern KT[] = {
     {"s_bare", 0, s_bare}, {"s_chk", 1, s_chk}, {"k_bare", 0, k_bare}, {"k_barew", 0, k_barew},

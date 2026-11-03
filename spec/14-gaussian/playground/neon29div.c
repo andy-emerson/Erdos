@@ -57,7 +57,11 @@ enum { EX, FL, NA, B1, B2, ND };
 typedef u32 (*kf)(ARGS);
 
 static inline u64 div128(u64 hi, u64 lo, u64 d) {      /* floor((hi 2^64 + lo) / d), needs hi < d */
+#ifdef A64
+    return (u64)((((u128)hi << 64) | lo) / d);
+#else
     u64 q, r; __asm__("divq %4" : "=a"(q), "=d"(r) : "a"(lo), "d"(hi), "rm"(d)); return q;
+#endif
 }
 
 /* ======================= m1: scalar hardware divide (divvec.c, rules B3..B5 removed) ======================= */
@@ -251,7 +255,7 @@ AI u32 m4_body(ARGS, int mode) {
     int K = L + 32, s = L > 32 ? L - 32 : 0;
     u64 m = K >= 64 ? div128(1ull << (K - 64), 0, Ns) : (1ull << K) / Ns;
     const V mp = C32_((u32)(m - (1ull << 32))), Nl = C32_((u32)Ns), Nh = C32_((u32)(Ns >> 32)), N64 = C64_(Ns);
-    const V cs = _mm_cvtsi32_si128(s), cL = _mm_cvtsi32_si128(L - s), cb = C32_(pc[0]), db = C32_(pd[0]);
+    const V cs = SHCNT(s), cL = SHCNT(L - s), cb = C32_(pc[0]), db = C32_(pd[0]);
     const P2 Np = {N64, N64};
     V fq = C32_(IMAX);
     for (size_t i = 0; i < n; i += 4) {
@@ -397,7 +401,7 @@ AI u32 m2s_body(ARGS) {
     u32 N = (u32)c * (u32)c + (u32)d * (u32)d, iv = 3 * N ^ 2;
     for (int j = 0; j < 3; j++) iv *= 2 - N * iv;
     const V wr = C32_((u32)c * iv), wi = C32_((u32)d * iv), one = C32_(1);
-    const V ck = _mm_cvtsi32_si128(k);
+    const V ck = SHCNT(k);
     V fq = C32_(IMAX);
 #define M2S_LOOP(T)                                                                                         \
     for (size_t i = 0; i < n; i += 4) {                                                                      \
@@ -425,6 +429,7 @@ K1(s_m1s_ex, m1_body(PASS, EX, 1)) K1(s_m1s_fl, m1_body(PASS, FL, 1))
 K1(k_m2_ex, m2_body(PASS, 0)) K1(k_m2p_ex, m2_body(PASS, 1)) K1(k_m2s_ex, m2s_body(PASS))
 K1(k_m5x3_fl, m5_body(PASS, FL, 3)) K1(k_m5x3_mb2, m5_body(PASS, B2 | MAG, 3))
 
+#ifndef A64
 enum { VAR = 0, SHR = 1 };
 typedef struct { const char *name; kf f; int mode, shared; } kern;
 #define KE(p, nm, sh) {nm "_fl", p##_fl, FL, sh}, {nm "_na", p##_na, NA, sh}, {nm "_ma", p##_ma, NA | MAG, sh}, {nm "_nd", p##_nd, ND, sh}, \
@@ -739,3 +744,4 @@ int main(int argc, char **argv) {
     else if (!strcmp(mode, "scan")) scan_kernels(argv[0]);
     return 0;
 }
+#endif /* A64 */

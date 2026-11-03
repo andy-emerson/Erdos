@@ -203,19 +203,19 @@ FORMS(SHK)
 #define SRAV2(e) { V e_ = (e); *hx = _mm256_srav_epi32(*hx, e_); *hy = _mm256_srav_epi32(*hy, e_); }
 #define TST(M, W) _mm256_min_epu32(AND(x, C32(M)), C32(W))
 /* mst5: the five min results used directly as shift counts, one stage each; k is never assembled */
-#define ctz_mst5 ctz_mask5
+AI V ctz_mst5(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_mst5(V *hx, V *hy, V o) {
     V x = ISO(o);
     SRAV2(TST(0xAAAAAAAA, 1)) SRAV2(TST(0xCCCCCCCC, 2)) SRAV2(TST(0xF0F0F0F0, 4)) SRAV2(TST(0xFF00FF00, 8)) SRAV2(TST(0xFFFF0000, 16))
 }
 /* mst2: two stages, the rare large part (16 | 8) first, then 4 | 2 | 1 */
-#define ctz_mst2 ctz_mask5
+AI V ctz_mst2(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_mst2(V *hx, V *hy, V o) {
     V x = ISO(o);
     SRAV2(OR(TST(0xFF00FF00, 8), TST(0xFFFF0000, 16))) SRAV2(OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), TST(0xF0F0F0F0, 4)))
 }
 /* mlo: the low tests (1, 2, 4) on the critical path, the high ones (8, 16) ORed last */
-#define ctz_mlo ctz_mask5
+AI V ctz_mlo(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_mlo(V *hx, V *hy, V o) {
     V x = ISO(o);
     V hi = OR(TST(0xFF00FF00, 8), TST(0xFFFF0000, 16)), lo = OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), TST(0xF0F0F0F0, 4));
@@ -224,7 +224,7 @@ AI void sh_ctz_mlo(V *hx, V *hy, V o) {
 /* nbr: k < 4 in every lane of the register (95% of register-steps) -> k = T[x] (x's low byte is 1, 2, 4 or 8,
  * bytes 1..3 zero); otherwise mask5. One vptest and a branch per register-step. */
 #define T4 TBL(0, 0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0)
-#define ctz_nbr ctz_mask5
+AI V ctz_nbr(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_nbr(V *hx, V *hy, V o) {
     V x = ISO(o), e;
     if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x);
@@ -232,7 +232,7 @@ AI void sh_ctz_nbr(V *hx, V *hy, V o) {
     SRAV2(e)
 }
 /* bbr: k < 8 in every lane (99.99%) -> k from x's low byte by two nibble tables; otherwise mask5 */
-#define ctz_bbr ctz_mask5
+AI V ctz_bbr(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_bbr(V *hx, V *hy, V o) {
     V x = ISO(o), e;
     const V tl = T4, th = TBL(0, 4, 5, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0);
@@ -241,7 +241,7 @@ AI void sh_ctz_bbr(V *hx, V *hy, V o) {
     SRAV2(e)
 }
 /* tbr: as nbr but tested on the thermometer t = andn(o, o - 1) = 2^k - 1 (low byte 0, 1, 3 or 7) */
-#define ctz_tbr ctz_mask5
+AI V ctz_tbr(V o) { return ctz_mask5(o); }      /* setup only */
 AI void sh_ctz_tbr(V *hx, V *hy, V o) {
     V t = ANDN(o, ADD(o, C32(-1))), e;
     if (__builtin_expect(_mm256_testz_si256(t, C32(0xFFFFFFF8)), 1)) e = _mm256_shuffle_epi8(TBL(0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0), t);
@@ -249,7 +249,7 @@ AI void sh_ctz_tbr(V *hx, V *hy, V o) {
     SRAV2(e)
 }
 /* nbrd: nbr with dbh as the slow path */
-#define ctz_nbrd ctz_dbh
+AI V ctz_nbrd(V o) { return ctz_dbh(o); }      /* setup only */
 AI void sh_ctz_nbrd(V *hx, V *hy, V o) {
     V x = ISO(o), e;
     if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x); else e = ctz_dbh(o);

@@ -26,6 +26,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - Lazy reduction for mod n (shelved, not archived): add 1 instruction, subtract 2, but n < 2^29 (3 bits of headroom per half), which matrix multiplication would feel quickly.
 - Complex multiply with three products instead of four; real and imaginary partial products formed together in one word (from study 3).
 - Vector compares for the infinity check (first test when the vector build exists).
+- Batch inversion (Montgomery's trick, study 13): many inverses mod one n for one real inverse plus 3 products each, about 81 instructions per element against 136 alone. For element-by-element division of arrays mod n, turning fractions a/b into residues, interpolation and Chinese-remainder weights. One non-invertible element fails the batch.
 - Mod-p split form for p ≡ 1 (mod 4) (study 5): convert once, then cheaper products; for multiply-heavy work mod such primes.
 
 **Open questions**

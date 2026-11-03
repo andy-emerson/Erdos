@@ -72,19 +72,30 @@ static u64 nops, nmem;
 #define vshrq_s32_v(a, k)   C_(_mm_srav_epi32(a, k))             /* NEON: vshlq_s32(a, -k) */
 #define vshrq_u32_v(a, k)   C_(_mm_srlv_epi32(a, k))             /* NEON: vshlq_u32(a, -k) */
 #define vshrq_u64_v(a, k)   C_(_mm_srlv_epi64(a, k))             /* NEON: vshlq_u64(a, -k) */
-#define vceqq_s32(a, b)     C_(_mm_cmpeq_epi32(a, b))
-#define vceqzq_s32(a)       C_(_mm_cmpeq_epi32(a, _mm_setzero_si128()))
-#define vcgtq_s32(a, b)     C_(_mm_cmpgt_epi32(a, b))
-#define vcltq_s32(a, b)     C_(_mm_cmpgt_epi32(b, a))
-#define vceqq_s64(a, b)     C_(_mm_cmpeq_epi64(a, b))
-#define vcgtq_s64(a, b)     C_(_mm_cmpgt_epi64(a, b))
+/* Compares and selects are pinned to their VEX forms with inline asm. Left to itself, gcc turns them into
+ * compares into mask registers and masked moves whenever values sit in xmm16..31 (the VEX forms reach only
+ * xmm0..15), which breaks the no-mask-register rule. The pinned forms model NEON's one-instruction compare and
+ * bsl, at the price of the 16-register limit on their operands (noted in portable-isa.md). */
+#define ASM2_(ins, a, b) ({ V r_; __asm__(ins " %2, %1, %0" : "=x"(r_) : "x"(a), "x"(b)); r_; })
+AI V cmpeq32_(V a, V b) { return ASM2_("vpcmpeqd", a, b); }
+AI V cmpgt32_(V a, V b) { return ASM2_("vpcmpgtd", a, b); }     /* a > b */
+AI V cmpeq64_(V a, V b) { return ASM2_("vpcmpeqq", a, b); }
+AI V cmpgt64_(V a, V b) { return ASM2_("vpcmpgtq", a, b); }
+AI V bsl_(V m, V a, V b) { V r_; __asm__("vpblendvb %3, %2, %1, %0" : "=x"(r_) : "x"(b), "x"(a), "x"(m)); return r_; }  /* m ? a : b */
+#define vceqq_s32(a, b)     C_(cmpeq32_(a, b))
+#define vceqzq_s32(a)       C_(cmpeq32_(a, _mm_setzero_si128()))
+#define vcgtq_s32(a, b)     C_(cmpgt32_(a, b))
+#define vcltq_s32(a, b)     C_(cmpgt32_(b, a))
+#define vceqq_s64(a, b)     C_(cmpeq64_(a, b))
+#define vcgtq_s64(a, b)     C_(cmpgt64_(a, b))
 /* unsigned compare: one NEON op (cmhi); x86 has none without masks: xor the sign bit into both, pcmpgtd */
-#define vcgtq_u32(a, b)     C_(_mm_cmpgt_epi32(_mm_xor_si128(a, _mm_set1_epi32(INT32_MIN)), _mm_xor_si128(b, _mm_set1_epi32(INT32_MIN))))
-#define vtstq_s32(a, b)     C_(_mm_xor_si128(_mm_cmpeq_epi32(_mm_and_si128(a, b), _mm_setzero_si128()), _mm_set1_epi32(-1)))
+#define vcgtq_u32(a, b)     C_(cmpgt32_(BAR_(_mm_xor_si128(a, _mm_set1_epi32(INT32_MIN))), BAR_(_mm_xor_si128(b, _mm_set1_epi32(INT32_MIN)))))
+/* vtst: one NEON op; x86: and, compare with zero, not */
+#define vtstq_s32(a, b)     C_(BAR_(_mm_xor_si128(cmpeq32_(BAR_(_mm_and_si128(a, b)), _mm_setzero_si128()), _mm_set1_epi32(-1))))
 #define vminq_s32(a, b)     C_(_mm_min_epi32(a, b))
 #define vminq_u32(a, b)     C_(_mm_min_epu32(a, b))
 #define vmaxq_u32(a, b)     C_(_mm_max_epu32(a, b))
-#define vbslq(m, a, b)      C_(_mm_blendv_epi8(b, a, m))         /* m ? a : b, full-lane masks only */
+#define vbslq(m, a, b)      C_(bsl_(m, a, b))                    /* m ? a : b, full-lane masks only */
 #define vclzq_u32(a)        C_(_mm_lzcnt_epi32(a))
 #define vqtbl1q_u8(t, i)    C_(_mm_shuffle_epi8(t, i))
 #define vmulq_s32(a, b)     C_(_mm_mullo_epi32(a, b))
@@ -758,9 +769,326 @@ static void mod_count(void) {
 #endif
 }
 
+/* ======================= M4: the (1+i)-ary binary gcd in NEON-shaped lanes ======================= */
+/* Study 26/27's algorithm (study 24's step) on arrays of independent pairs, int32 halves, full range; gcd
+ * normalised to re > 0, im >= 0; pairs with a -2^31 half are set aside (guard) and recomputed exactly once per
+ * array (fixup); bit 0 of the return value: some gcd does not fit (2^31). 4 pairs per 128-bit register, R
+ * registers stepped together (R = 1, 2, 3, 4, 6, 8).
+ * NEON shape: every select is vbsl with a full-lane mask (vtst for "bit set"), conditional negation is
+ * bsl(m, -x, x) in place of psignd, shifts right by a lane count are vshl by the negated count.
+ * Trailing zeros (the step shifts hx, hy right by k = ctz(hx OR hy)):
+ *   clz   k = 31 - clz(x), x = o AND -o (neg, and, clz, sub: 4 ops; NEON's count -k = clz - 31 is the same sub). No branch.
+ *   nbrd  study 27: if every lane has k < 4 (one any-lane test), k = tbl(T4, x); otherwise dbh (16-bit de Bruijn).
+ *   nbrc  the same branch with clz as the rare path. */
+#define GARGS const i32 *restrict ar, const i32 *restrict ai, const i32 *restrict br, const i32 *restrict bi, \
+              i32 *restrict gr, i32 *restrict gi, size_t N
+#define PASSG ar, ai, br, bi, gr, gi, N
+#define HMAX 2147483647
+#define IMIN INT32_MIN
+
+/* ---------- exact scalar path for pairs with a -2^31 half (study 26) ---------- */
+static inline int ctz64(u64 v) { return v ? __builtin_ctzll(v) : 64; }
+static inline void normalise(i64 *px, i64 *py) {
+    i64 x = *px, y = *py;
+    if (y < 0 || (y == 0 && x < 0)) { x = -x; y = -y; }
+    if (x <= 0 && y > 0) { i64 t = x; x = y; y = -t; }
+    *px = x; *py = y;
+}
+static void pi64(i64 ax, i64 ay, i64 bx, i64 by, i64 *g1, i64 *g2) {
+#define STRIP(x, y) { int e_ = ctz64((u64)((x) | (y))) & 63; x >>= e_; y >>= e_;                 \
+    if ((x) & (y) & 1) { i64 px_ = x >> 1, py_ = y >> 1; x = px_ + py_ + 1; y = py_ - px_; } }
+#define PRIM(x, y) { if (!((x) & 1)) { i64 t_ = x; x = y; y = -t_; } if (((x) - (y)) & 2) { x = -x; y = -y; } }
+#define SZ(x, y) ((u64)((x) < 0 ? -(x) : (x)) + (u64)((y) < 0 ? -(y) : (y)))
+    int za = !(ax | ay), zb = !(bx | by);
+    int ea = ctz64((u64)(ax | ay)), eb = ctz64((u64)(bx | by));
+    int va = za ? 1000 : 2 * ea + (int)((ax >> ea) & (ay >> ea) & 1);
+    int vb = zb ? 1000 : 2 * eb + (int)((bx >> eb) & (by >> eb) & 1);
+    int k = va < vb ? va : vb;
+    STRIP(ax, ay) PRIM(ax, ay) STRIP(bx, by) PRIM(bx, by)
+    if (za) { ax = bx; ay = by; }
+    if (zb) { bx = ax; by = ay; }
+    u64 sb = SZ(bx, by);
+    if (SZ(ax, ay) < sb) { i64 t = ax; ax = bx; bx = t; t = ay; ay = by; by = t; sb = SZ(bx, by); }
+    while (ax != bx || ay != by) {
+        i64 hx = (ax >> 1) - (bx >> 1), hy = (ay >> 1) - (by >> 1);
+        STRIP(hx, hy) PRIM(hx, hy)
+        u64 s = SZ(hx, hy);
+        if (s >= sb) { ax = hx; ay = hy; } else { ax = bx; ay = by; bx = hx; by = hy; sb = s; }
+    }
+    i64 gx = k > 64 ? 0 : ax << (k >> 1), gy = k > 64 ? 0 : ay << (k >> 1);
+    if (k & 1) { i64 t = gx - gy; gy = gx + gy; gx = t; }
+    normalise(&gx, &gy); *g1 = gx; *g2 = gy;
+}
+NOINL u32 fixup(GARGS) {
+    u32 ov = 0;
+    for (size_t i = 0; i < N; i++) {
+        if (ar[i] != IMIN && ai[i] != IMIN && br[i] != IMIN && bi[i] != IMIN) continue;
+        i64 g1, g2; pi64(ar[i], ai[i], br[i], bi[i], &g1, &g2);
+        ov |= g1 > HMAX;
+        gr[i] = (i32)(u32)g1; gi[i] = (i32)(u32)g2;
+    }
+    return ov;
+}
+
+/* ---------- lane ctz forms ---------- */
+#define ONE  vdupq_n_s32(1)
+#define TBL16(...) _mm_setr_epi8(__VA_ARGS__)
+AI V iso_(V o) { return vandq(o, vnegq_s32(o)); }
+AI V ctz_clz(V o) { return vsubq_s32(vdupq_n_s32(31), vclzq_u32(iso_(o))); }
+/* dbh (study 27): vmul.i16 by 0x09AF, shift each word right 12, one tbl; the word that held the bit is moved down
+ * by s = 16 [k >= 16] (vshl by -s; -s comes from vtst and an and at the same cost as min and and) */
+#define T16 TBL16(0, 1, 2, 5, 3, 9, 6, 11, 15, 4, 8, 10, 14, 7, 13, 12)
+#define T4  TBL16(0, 0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0)
+AI V dbh_x(V x) {
+    V s = vminq_u32(vandq(x, vdupq_n_s32(0xFFFF0000)), vdupq_n_s32(16));
+    V t = vqtbl1q_u8(T16, vshrq_n_u16(vmulq_s16(x, vdupq_n_s32(0x09AF09AF)), 12));
+    return vorrq(vshrq_u32_v(t, s), s);
+}
+AI V ctz_dbh(V o) { return dbh_x(iso_(o)); }
+AI void sh_clz(V *hx, V *hy, V o) { V e = ctz_clz(o); *hx = vshrq_s32_v(*hx, e); *hy = vshrq_s32_v(*hy, e); }
+AI void sh_nbrd(V *hx, V *hy, V o) {
+    V x = iso_(o), e;
+    if (__builtin_expect(!vany_and(x, vdupq_n_s32(0xFFFFFFF0)), 1)) e = vqtbl1q_u8(T4, x); else e = dbh_x(x);
+    *hx = vshrq_s32_v(*hx, e); *hy = vshrq_s32_v(*hy, e);
+}
+AI void sh_nbrc(V *hx, V *hy, V o) {
+    V x = iso_(o), e;
+    if (__builtin_expect(!vany_and(x, vdupq_n_s32(0xFFFFFFF0)), 1)) e = vqtbl1q_u8(T4, x); else e = vsubq_s32(vdupq_n_s32(31), vclzq_u32(x));
+    *hx = vshrq_s32_v(*hx, e); *hy = vshrq_s32_v(*hy, e);
+}
+#define ctz_nbrd ctz_dbh
+#define ctz_nbrc ctz_clz
+
+/* ---------- the step's pieces ---------- */
+AI V sra1(V a) { return vshrq_n_s32(a, 1); }
+AI void stripodd(V *px, V *py) {                  /* where both parts are odd: divide by 1+i */
+    V x = *px, y = *py, m = vtstq_s32(vandq(x, y), ONE);
+    V hx = sra1(x), hy = sra1(y);
+    *px = vbslq(m, vsubq_s32(hx, vmvnq(hy)), x);
+    *py = vbslq(m, vsubq_s32(hy, hx), y);
+}
+AI void primv(V *px, V *py) {                     /* make primary: x odd (rotate by i if not), then x - y = 1 mod 4 up to sign */
+    V x = *px, y = *py, m = vtstq_s32(x, ONE);
+    V nx = vbslq(m, x, y), ny = vbslq(m, y, vnegq_s32(x));
+    V t = vtstq_s32(vsubq_s32(nx, ny), vdupq_n_s32(2));
+    *px = vbslq(t, vnegq_s32(nx), nx); *py = vbslq(t, vnegq_s32(ny), ny);
+}
+AI V sizev(V x, V y) { return vaddq_s32(vabsq_s32(x), vabsq_s32(y)); }
+AI void normstore(V gx, V gy, i32 *pr, i32 *pi) {
+    const V zero = vzero();
+    V nm = vorrq(vcltq_s32(gy, zero), vandq(vceqzq_s32(gy), vcltq_s32(gx, zero)));
+    gx = vbslq(nm, vnegq_s32(gx), gx); gy = vbslq(nm, vnegq_s32(gy), gy);
+    V rm = vandq(vcltq_s32(gx, ONE), vcgtq_s32(gy, zero));
+    V rx = vbslq(rm, gy, gx); gy = vbslq(rm, vnegq_s32(gx), gy);
+    vst1q(pr, rx); vst1q(pi, gy);
+}
+typedef struct { V ax, ay, bx, by, sb, k; } gst;
+#define SETUP(G, OFF, CTZ) {                                                                             \
+    V ax = vld1q(ar + i + (OFF)), ay = vld1q(ai + i + (OFF)), bx = vld1q(br + i + (OFF)), by = vld1q(bi + i + (OFF)); \
+    { V mn = vdupq_n_s32(IMIN); V g = vorrq(vorrq(vceqq_s32(ax, mn), vceqq_s32(ay, mn)), vorrq(vceqq_s32(bx, mn), vceqq_s32(by, mn))); \
+      ax = vbicq(ax, g); ay = vbicq(ay, g); bx = vbicq(bx, g); by = vbicq(by, g); sticky = vorrq(sticky, g); }   \
+    V oa = vorrq(ax, ay), ob = vorrq(bx, by), za = vceqzq_s32(oa), zb = vceqzq_s32(ob);                  \
+    V ea = CTZ(oa), eb = CTZ(ob);                                                                        \
+    V va = vaddq_s32(vaddq_s32(ea, ea), vandq(vandq(vshrq_s32_v(ax, ea), vshrq_s32_v(ay, ea)), ONE));    \
+    V vb = vaddq_s32(vaddq_s32(eb, eb), vandq(vandq(vshrq_s32_v(bx, eb), vshrq_s32_v(by, eb)), ONE));    \
+    (G).k = vminq_s32(vbslq(za, vdupq_n_s32(1000), va), vbslq(zb, vdupq_n_s32(1000), vb));             \
+    ax = vshrq_s32_v(ax, ea); ay = vshrq_s32_v(ay, ea); stripodd(&ax, &ay); primv(&ax, &ay);             \
+    bx = vshrq_s32_v(bx, eb); by = vshrq_s32_v(by, eb); stripodd(&bx, &by); primv(&bx, &by);             \
+    { V tx = ax, ty = ay; ax = vbslq(za, bx, ax); ay = vbslq(za, by, ay); bx = vbslq(zb, tx, bx); by = vbslq(zb, ty, by); } \
+    V sa = sizev(ax, ay), sb = sizev(bx, by);                                                            \
+    { V mn = vminq_u32(sa, sb), ge = vceqq_s32(mn, sb);                                                  \
+      (G).ax = vbslq(ge, ax, bx); (G).ay = vbslq(ge, ay, by); (G).bx = vbslq(ge, bx, ax); (G).by = vbslq(ge, by, ay); (G).sb = mn; } }
+#define STEP(G, SH) {                                                                                    \
+    V hx = vsubq_s32(sra1((G).ax), sra1((G).bx)), hy = vsubq_s32(sra1((G).ay), sra1((G).by));          \
+    V o = vorrq(hx, hy), z = vceqzq_s32(o);                                                              \
+    SH(&hx, &hy, o); stripodd(&hx, &hy); primv(&hx, &hy);                                                \
+    hx = vbslq(z, (G).bx, hx); hy = vbslq(z, (G).by, hy);                                                \
+    V s = sizev(hx, hy), mn = vminq_u32(s, (G).sb), ge = vceqq_s32(mn, (G).sb);                          \
+    V nbx = vbslq(ge, (G).bx, hx), nby = vbslq(ge, (G).by, hy);                                          \
+    (G).ax = vbslq(ge, hx, (G).bx); (G).ay = vbslq(ge, hy, (G).by); (G).bx = nbx; (G).by = nby; (G).sb = mn; }
+#define FINISH(G, OFF) {                                                                                 \
+    V s2 = vshrq_n_s32((G).k, 1);                                                                        \
+    V gx = vshlq_s32((G).ax, s2), gy = vshlq_s32((G).ay, s2), od = vtstq_s32((G).k, ONE);               \
+    V tx = vsubq_s32(gx, gy), ty = vaddq_s32(gx, gy);                                                    \
+    normstore(vbslq(od, tx, gx), vbslq(od, ty, gy), gr + i + (OFF), gi + i + (OFF)); }
+#define DIFF(G) vorrq(veorq((G).ax, (G).bx), veorq((G).ay, (G).by))
+static long gsteps;     /* register-steps, counted in the COUNT build only */
+#ifdef COUNT
+#define CSTEP gsteps++
+#else
+#define CSTEP (void)0
+#endif
+/* R registers stepped together until all are done; the tail (fewer than 4R pairs) one register at a time */
+#define PI_R(name, R, CTZ, SH)                                                                          \
+NOINL u32 name(GARGS) {                                                                                  \
+    V sticky = vzero(); size_t i = 0;                                                                    \
+    for (; i + 4 * (R) <= N; i += 4 * (R)) {                                                             \
+        gst g[R];                                                                                        \
+        _Pragma("GCC unroll 8") for (int r = 0; r < (R); r++) SETUP(g[r], 4 * r, CTZ)                    \
+        while (1) {                                                                                      \
+            V d = DIFF(g[0]);                                                                            \
+            _Pragma("GCC unroll 8") for (int r = 1; r < (R); r++) d = vorrq(d, DIFF(g[r]));             \
+            if (!vany(d)) break;                                                                         \
+            _Pragma("GCC unroll 8") for (int r = 0; r < (R); r++) { STEP(g[r], SH) CSTEP; }              \
+        }                                                                                                \
+        _Pragma("GCC unroll 8") for (int r = 0; r < (R); r++) FINISH(g[r], 4 * r)                        \
+    }                                                                                                    \
+    for (; i < N; i += 4) { gst g0; SETUP(g0, 0, CTZ) while (vany(DIFF(g0))) { STEP(g0, SH) CSTEP; } FINISH(g0, 0) } \
+    return vany(sticky) ? fixup(PASSG) : 0;                                                              \
+}
+#define FORMS_R(X, f) X(f, 1) X(f, 2) X(f, 3) X(f, 4) X(f, 6) X(f, 8)
+#define MKG(f, R) PI_R(pi##R##_##f, R, ctz_##f, sh_##f)
+FORMS_R(MKG, clz) FORMS_R(MKG, nbrd) FORMS_R(MKG, nbrc)
+typedef u32 (*gkf)(GARGS);
+typedef struct { const char *name; gkf f; } gkern;
+#define ENTG(f, R) {"pi" #R "_" #f, pi##R##_##f},
+static gkern GK[] = { FORMS_R(ENTG, clz) FORMS_R(ENTG, nbrd) FORMS_R(ENTG, nbrc) };
+#define NGK (int)(sizeof GK / sizeof GK[0])
+
+/* ---------- reference (study 6's Euclid in __int128, normalised) ---------- */
+static i128 rdiv128(i128 x, i128 n) { i128 q = x / n, r = x % n; if (r < 0) { q--; r += n; } return q + (2 * r >= n); }
+static void ref_gcd(i64 a1, i64 a2, i64 b1, i64 b2, i64 *g1, i64 *g2) {
+    i128 x1 = a1, x2 = a2, y1 = b1, y2 = b2;
+    while (y1 || y2) {
+        i128 n = y1 * y1 + y2 * y2, p = x1 * y1 + x2 * y2, q = x2 * y1 - x1 * y2;
+        i128 q1 = rdiv128(p, n), q2 = rdiv128(q, n);
+        i128 r1 = x1 - (q1 * y1 - q2 * y2), r2 = x2 - (q1 * y2 + q2 * y1);
+        x1 = y1; x2 = y2; y1 = r1; y2 = r2;
+    }
+    i64 u = (i64)x1, v = (i64)x2; normalise(&u, &v); *g1 = u; *g2 = v;
+}
+static const i32 EVM[] = {IMIN, IMIN + 1, 0, 1, -1, 2, -2, 3, HMAX, HMAX - 1, 1 << 30, -(1 << 30), (1 << 30) + 1,
+                          -(1 << 30) - 1, 1 << 16, -(1 << 16), 46341, -46341, IMIN + 2, -3};
+#define NEVM (int)(sizeof EVM / sizeof EVM[0])
+static void gen(int kind, i32 *a1, i32 *a2, i32 *b1, i32 *b2) {      /* study 26's five kinds */
+    if (kind == 0) { *a1 = rr(HMAX); *a2 = rr(HMAX); *b1 = rr(HMAX); *b2 = rr(HMAX); return; }
+    if (kind == 1) { *a1 = rr(HMAX); *a2 = rr(HMAX); *b1 = rr(1 << 12); *b2 = rr(1 << 12); return; }
+    if (kind == 4) {
+        i32 *p[4] = {a1, a2, b1, b2};
+        for (int j = 0; j < 4; j++) { int s = (int)(next() % 32); *p[j] = (next() & 3) == 0 ? IMIN : (i32)((u32)rr(HMAX) << (s & 31)); if (next() & 1) *p[j] &= ~((1u << (next() % 31)) - 1); }
+        return;
+    }
+    int e = kind == 2 ? 4 + (int)(next() % 12) : 15;
+    i64 g1 = rr(1LL << e), g2 = rr(1LL << e), lim = HMAX / (2LL << e);
+    i64 u1 = rr(lim), u2 = rr(lim), v1 = rr(lim), v2 = rr(lim);
+    *a1 = (i32)(g1 * u1 - g2 * u2); *a2 = (i32)(g1 * u2 + g2 * u1);
+    *b1 = (i32)(g1 * v1 - g2 * v2); *b2 = (i32)(g1 * v2 + g2 * v1);
+}
+
+/* ---------- correctness ---------- */
+static long gfails, gnov, gnst;
+#define GBM (1 << 16)
+static i32 GA1[GBM + 64], GA2[GBM + 64], GB1[GBM + 64], GB2[GBM + 64], GO[2][GBM + 64];
+static void gcheck(size_t n) {
+    size_t Np = (n + 3) / 4 * 4;
+    for (size_t j = n; j < Np; j++) GA1[j] = GA2[j] = GB1[j] = GB2[j] = 0;
+    static i64 W1[GBM + 64], W2[GBM + 64]; int anyov = 0, anymin = 0;
+    for (size_t j = 0; j < n; j++) {
+        ref_gcd(GA1[j], GA2[j], GB1[j], GB2[j], W1 + j, W2 + j); anyov |= W1[j] > HMAX;
+        anymin |= GA1[j] == IMIN || GA2[j] == IMIN || GB1[j] == IMIN || GB2[j] == IMIN;
+    }
+    gnov += anyov; gnst += anymin;
+    for (int k = 0; k < NGK; k++) {
+        u32 fl = GK[k].f(GA1, GA2, GB1, GB2, GO[0], GO[1], Np);
+        for (size_t j = 0; j < n; j++)
+            if (GO[0][j] != (i32)(u32)W1[j] || GO[1][j] != (i32)(u32)W2[j])
+                if (gfails++ < 10) printf("FAIL %s (%d,%d) (%d,%d): got (%d,%d) want (%lld,%lld)\n", GK[k].name, GA1[j], GA2[j], GB1[j], GB2[j],
+                                          GO[0][j], GO[1][j], (long long)W1[j], (long long)W2[j]);
+        if (fl != (u32)anyov) if (gfails++ < 10) printf("FAIL %s flag %u want %d\n", GK[k].name, fl, anyov);
+    }
+}
+/* the fitted shift of each form against o >> ctz(o) and -o >> ctz(o), every nonzero o; pass 2 forces lane 0 to
+ * a single bit so that a register mixes small and large k (both branches of nbrd and nbrc) */
+static void shift_check(void) {
+    long bad[3] = {0};
+    for (int pass = 0; pass < 2; pass++)
+        for (u64 base = 1; base < (1ull << 32); base += 4) {
+            u32 o4[4]; for (int j = 0; j < 4; j++) o4[j] = (u32)(base + j);
+            if (pass) o4[0] = 1u << (base >> 2 & 3);
+            V o = vld1q(o4);
+            for (int f = 0; f < 3; f++) {
+                V hx = o, hy = vnegq_s32(o);
+                if (f == 0) sh_clz(&hx, &hy, o); else if (f == 1) sh_nbrd(&hx, &hy, o); else sh_nbrc(&hx, &hy, o);
+                i32 rx[4], ry[4]; vst1q(rx, hx); vst1q(ry, hy);
+                for (int j = 0; j < 4; j++) { u32 v = o4[j]; if (!v) continue; int k = __builtin_ctz(v);
+                    bad[f] += rx[j] != ((i32)v >> k) || ry[j] != ((i32)(0u - v) >> k); }
+            }
+        }
+    long cb[2] = {0};    /* the setup's ctz values */
+    for (u64 base = 1; base < (1ull << 32); base += 4) {
+        V o = _mm_add_epi32(_mm_set1_epi32((int)(u32)base), _mm_setr_epi32(0, 1, 2, 3));
+        i32 r0[4], r1[4]; vst1q(r0, ctz_clz(o)); vst1q(r1, ctz_dbh(o));
+        for (int j = 0; j < 4; j++) { u32 v = (u32)(base + j); if (!v) continue; int k = __builtin_ctz(v); cb[0] += r0[j] != k; cb[1] += r1[j] != k; }
+    }
+    printf("shift by ctz, every nonzero o (two passes): wrong clz %ld, nbrd %ld, nbrc %ld; ctz values: clz %ld, dbh %ld\n", bad[0], bad[1], bad[2], cb[0], cb[1]);
+}
+static void do_gcd_check(void) {
+    shift_check();
+    for (int K = 3; K <= 6; K++) {
+        i64 lo = -(1 << (K - 1)), hi = (1 << (K - 1)) - 1; long cnt = 0; size_t n = 0;
+        for (i64 p = lo; p <= hi; p++) for (i64 q = lo; q <= hi; q++) for (i64 r = lo; r <= hi; r++) for (i64 s = lo; s <= hi; s++) {
+            GA1[n] = (i32)p; GA2[n] = (i32)q; GB1[n] = (i32)r; GB2[n] = (i32)s; n++; cnt++;
+            if (n == GBM) { gcheck(n); n = 0; }
+        }
+        if (n) gcheck(n);
+        printf("K = %d: exhaustive, %ld pairs; failures so far %ld\n", K, cnt, gfails);
+    }
+    long cnt = 0; gnov = gnst = 0;
+    for (int p = 0; p < NEVM; p++) for (int q = 0; q < NEVM; q++) for (int r = 0; r < NEVM; r++) for (int s = 0; s < NEVM; s++) {
+        GA1[0] = EVM[p]; GA2[0] = EVM[q]; GB1[0] = EVM[r]; GB2[0] = EVM[s]; gcheck(1); cnt++;
+    }
+    printf("edges incl. -2^31: %ld pairs each alone; with a -2^31 half %ld, overflowing gcd %ld; failures so far %ld\n", cnt, gnst, gnov, gfails);
+    gnov = gnst = 0;
+    for (int it = 0; it < 200000; it++) { gen(4, GA1, GA2, GB1, GB2); gcheck(1); }
+    printf("random -2^31 pairs alone: 200,000; with -2^31 %ld, overflowing %ld; failures so far %ld\n", gnst, gnov, gfails);
+    long tot = 0;
+    for (int it = 0; it < 40; it++) {
+        for (int j = 0; j < GBM; j++) gen(j % 5 == 4 ? ((next() & 63) ? 0 : 4) : j % 5, GA1 + j, GA2 + j, GB1 + j, GB2 + j);
+        gcheck(GBM - (it & 7)); tot += GBM - (it & 7);        /* lengths not a multiple of 4R: the tail loop runs */
+    }
+    printf("random: %ld pairs (five kinds)\nTOTAL failures %ld\n", tot, gfails);
+}
+
+/* ---------- timing ---------- */
+static void do_gcd_time(void) {
+    enum { N = 1056 };              /* a multiple of 4R for every R tried; 25 KB in all, in L1 */
+    static i32 buf[6][N + 256];
+    i32 *p[6]; for (int j = 0; j < 6; j++) p[j] = buf[j] + 16 * j;
+    static const int kinds[2] = {0, 3};
+    static const char *kn[2] = {"random", "large common factor 2^15"};
+    printf("ns per gcd, N = %d pairs; median [q1, q3] over %d reps; kernels interleaved, order rotated\n", N, REPS);
+    for (int c = 0; c < 2; c++) {
+        for (int j = 0; j < N; j++) gen(kinds[c], p[0] + j, p[1] + j, p[2] + j, p[3] + j);
+        static double t[NGK][REPS];
+        for (int k = 0; k < NGK; k++) GK[k].f(p[0], p[1], p[2], p[3], p[4], p[5], N);
+        for (int r = 0; r < REPS; r++)
+            for (int j = 0; j < NGK; j++) {
+                int k = (j + r) % NGK;
+                GK[k].f(p[0], p[1], p[2], p[3], p[4], p[5], N);
+                u64 t0 = now_ns();
+                for (int it = 0; it < 32; it++) GK[k].f(p[0], p[1], p[2], p[3], p[4], p[5], N);
+                t[k][r] = (double)(now_ns() - t0) / (32.0 * N);
+            }
+        printf("\n%s\n", kn[c]);
+        for (int k = 0; k < NGK; k++) { qsort(t[k], REPS, sizeof(double), cmpd);
+            printf("  %-9s %7.2f [%7.2f, %7.2f]\n", GK[k].name, t[k][REPS / 2], t[k][REPS / 4], t[k][3 * REPS / 4]); }
+        fflush(stdout);
+    }
+}
+static void gcd_count(void) {
+#ifdef COUNT
+    enum { N = 1056 }; static i32 b[6][N];
+    for (int c = 0; c < 2; c++) {
+        for (int j = 0; j < N; j++) gen(c ? 3 : 0, b[0] + j, b[1] + j, b[2] + j, b[3] + j);
+        printf("gcd (%s): NEON instructions per gcd (all / loads+stores), register-steps per register of 4\n", c ? "large common factor" : "random");
+        for (int k = 0; k < NGK; k++) { nops = nmem = 0; gsteps = 0; GK[k].f(b[0], b[1], b[2], b[3], b[4], b[5], N);
+            printf("  %-9s %7.1f / %4.2f   steps %.2f\n", GK[k].name, (double)nops / N, (double)nmem / N, (double)gsteps * 4 / N); }
+    }
+#endif
+}
+
 /* ======================= main ======================= */
 static void do_count(void);
-static void do_gcd_check(void); static void do_gcd_time(void);
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "arith-check";
     if (!strcmp(mode, "arith-check")) do_arith_check();
@@ -781,9 +1109,8 @@ static void do_count(void) {
     printf("NEON instructions per element (arithmetic / loads+stores), from the macro counters\n");
     for (int k = 0; k < NAK; k++) { nops = nmem = 0; AK[k].f(b[0], b[1], b[2], b[3], b[4], b[5], N);
         printf("  %-9s %6.3f / %5.3f\n", AK[k].name, (double)nops / N, (double)nmem / N); }
-    mod_count();
+    mod_count(); gcd_count();
 #else
     printf("build with -DCOUNT\n");
 #endif
 }
-static void do_gcd_check(void) {} static void do_gcd_time(void) {}

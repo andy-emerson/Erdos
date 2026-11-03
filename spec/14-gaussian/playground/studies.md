@@ -1492,3 +1492,79 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 - Euclid in lanes uses study 25's shift-and-subtract division, which suits its short quotients better than the reciprocal.
 - The integer ctz costs about 11% over study 24's float exponent; AVX-512's `vpopcntd` or `vplzcntd` would remove that.
 - Pairs with a −2^31 half are detected for under 1% of the time, computed exactly in a 64-bit scalar pass once per array, and flagged when the gcd itself (as 2^31) does not fit.
+
+## Study 27: integer-only lane ctz for one set bit (ctz27.c)
+
+**What was compared.** The position k of the single set bit in x = o AND −o (x = 2^k), in 32-bit AVX2 lanes, with no floating point. Study 24's float exponent (flt) is kept only as the reference. Each form was timed alone and inside study 26's binary vector gcd: pi_v3 (3 registers) and pi_v (1 register, latency-bound), both with the −2^31 guard. Op counts below include the 2 ops for x. gcc 13.3 -O2 -mavx2. The machine is a Granite Rapids Xeon (family 6, model 173), the same core as studies 24 and 26: `vpmulld` 10 cycles and 2 µops, `vpmaddwd` and `vpmullw` 5 cycles, `vcvtdq2ps` 4.
+
+**The forms.**
+
+| form | how | ops | dependency depth (cycles, estimated) |
+|---|---|---|---|
+| flt | `vcvtdq2ps`, shift 23, subtract 127 (reference) | 5 | 8 |
+| bs | study 26 (a): binary search with variable shifts | 22 | 14 |
+| pop | study 26 (b): popcount of x − 1 (nibble table, `vpmaddubsw` + `vpmaddwd`) | 11 | 17 |
+| pop2 | pop on the thermometer andn(o, o − 1) = 2^k − 1, which saves one op | 10 | 16 |
+| db | study 26 (c): de Bruijn, `vpmulld`, top 5 bits, two `vpshufb` (add 0x70, subtract 0x10) | 9 | 16 |
+| db3 | db with one index op: k = Tb[i] XOR Td[i + 0x70] (below) | 8 | 16 |
+| dbm | 16-bit de Bruijn 0x09AF through `vpmaddwd`: k mod 16 from one `vpshufb`, OR 16·[k ≥ 16] | 9 | 11 |
+| dbh | `vpmullw` by 0x09AF per word, `vpsrlw` 12, one `vpshufb`; `vpsrlvd` by s = 16·[k ≥ 16] moves the hit word down, then OR s | 9 | 11 |
+| mask5 | the five bit tests: k_j·2^j = min_epu32(x AND M_j, 2^j), ORed | 16 | 7 |
+| mask5c | the five tests with compare masks: k = 31 + Σ (cmpeq(x AND M_j, 0) AND −2^j) | 22 | 8 |
+| mix | 8·(k >> 3) from two tests, x shifted right by it, then two nibble tables | 13 | 10 |
+| mixn | 4·(k >> 2) from three tests, x shifted right by it, then one nibble table | 13 | 9 |
+
+**The tricks that made forms cheaper.**
+- **A bit test in 2 ops.** x AND M_j is 0 or x. When bit j of k is set, k ≥ 2^j, so x ≥ 2^(2^j) ≥ 2^j. Then min_epu32(x AND M_j, 2^j) is exactly k_j·2^j: an AND and a min, with no compare and no weight. The other ways of turning a test into a bit cost 3 or 4 ops per bit: compare to zero then AND with a weight (mask5c), summing masks Horner-style and negating, or the sign of −(x AND M_j) shifted by 31. Five tests and 4 ORs make 14 ops, so testing is cheap in latency but heavy in instructions.
+- **Fewer tests through a shift and a table.** After the coarse part s (two or three tests), x >> s is 2^r in the low byte or nibble, and `vpshufb` reads it. One `vpshufb` can tell apart at most 4 single-bit positions: bits 0 to 3 index the table, bit 7 zeroes the result, and bits 4 to 6 all fall on entry 0. So a table finishes a nibble (mixn: 3 tests, 1 table) or, with a second table on x >> 4, a byte (mix: 2 tests, 2 tables). Both take 13 ops.
+- **A 32-entry table with one index op (db3).** For the top-5-bit index i of the de Bruijn product (0 to 31, bytes 1 to 3 zero), set Tb[n] = K[16 + n] and Td[n] = K[n] XOR K[16 + n]. `vpshufb`(Tb, i) reads n = i AND 15. i + 0x70 has bit 7 set exactly when i ≥ 16, so `vpshufb`(Td, i + 0x70) is Td[n] for i < 16 and 0 otherwise, and the XOR is K[i]. In bytes 1 to 3 the two lookups are Tb[0] and Td[0], whose XOR is K[0] = 0. That is one op fewer than study 26's db.
+- **A shorter multiply (dbm, dbh).** `vpmaddwd` of x with 0x09AF in both words gives 2^l·0x09AF (l = k mod 16) exactly, since the other word is 0. For l = 15 the word is −2^15, and the bits read (12 to 15) still agree. 0x09AF is a 16-bit de Bruijn sequence, so its top nibble after the shift indexes a 16-entry table, and 16·[k ≥ 16] comes from one 2-op test. That is 5 cycles of multiply in place of 10, at 9 ops.
+
+**Searched and ruled out.**
+- **One `vpmaddwd` giving a 32-entry index.** An exhaustive search over both word constants (2^32 pairs), every shift and both field shapes (5 contiguous bits; bits 0 to 3 plus 7 of a byte) found nothing. The products 2^l·c for l = 14 and 15 in both words read only c's lowest bits, which forces collisions. So `vpmaddwd` alone cannot replace `vpmulld`, and dbm needs its separate k ≥ 16 test.
+- **The index read straight from the bits `vpshufb` uses** (bits 24 to 27 and 31 of the product, which would save the shift). A full search proves no `vpmulld` constant works: for k ≥ 28 the nibble is all zero-fill, so at most 2 distinct indices are left. The same holds for every byte of the `vpmaddwd` product.
+- **k = T[i AND 15] + 16·(a fifth bit) with one table.** Impossible for any multiply-made index (proof by the shift structure), so a 32-entry lookup costs 4 ops (db3) or a 16-entry one plus a test (dbm).
+- **`vpermd` as the table.** It holds 8 dwords, so it needs a byte select afterwards: 6 ops after the multiply, against db3's 4.
+- **The whole bit in one byte-level `vpshufb`.** The table cannot see which byte it is in, so the byte's position needs a horizontal sum (`vpmaddubsw` + `vpmaddwd`, 10 cycles) or a fold plus a mask (5 ops). Every such form came to 14 ops or more.
+- **Leaving k out of the step.** The step uses k only for the two `vpsravd`, which need the count. hx >> k is exact (2^k divides hx and hy), but multiplying by 2^(31−k) needs a bit reverse of x (about 7 ops) and 4 `vpmuldq` with packing, and shifting hx and hy alongside the binary search triples the shifts. Neither was built.
+- **gather from a de Bruijn table:** about 20 cycles on Intel; not built.
+
+**Correctness.**
+- Every form, against `__builtin_ctz`: all 32 single-bit inputs, then every nonzero 32-bit value. No errors, except flt on 2^31 (one value), which the gcd never produces since |h| < 2^31.
+- Inside the gcd, every pi_v3 and pi_v kernel against study 26's __int128 reference: exhaustive K = 3 to 6 (16,777,216 pairs at K = 6), the 160,000 edge pairs with −2^31, and 2,621,440 random pairs of the five kinds. 0 failures.
+- Fault injection (one wrong Td entry in db3, constant 0x09AE in dbm, the k4 test dropped from mixn): each was caught by the single-bit check and by the gcd check.
+
+**Instruction counts** (objdump). The pi_v3 step loop over 3 registers is 188 instructions with flt, 205 with db3, 206 with db and dbm, 207 with dbh, 209 with pop and pop2, 218 with mixn, 219 with mix, 231 with mask5, 238 with bs and 240 with mask5c. Per register that is 62.7, 68.3, 68.7, 69, 69.7, 72.7, 73, 77, 79.3 and 80. The loop has no stack operands. Dynamic counts per gcd on random pairs (valgrind): flt 299, db3 326, dbm and db 328, dbh 329, pop 332, mixn 347, mask5 367.
+
+**The ctz alone** (ns per register of 8, median of 51 runs, inlined; latency from a chain v ← (v + ctz(v)) OR 2^30, which adds 2 cycles):
+
+| | flt | bs | pop | pop2 | db | db3 | dbm | dbh | mask5 | mask5c | mix | mixn |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| throughput | 0.57 | 2.18 | 1.11 | 1.00 | 1.06 | 0.94 | 0.89 | 0.88 | 1.52 | 1.98 | 1.25 | 1.25 |
+| latency | 3.09 | 5.46 | 5.15 | 4.94 | 5.14 | 4.99 | 3.69 | 3.69 | 3.25 | 4.06 | 3.32 | 3.09 |
+
+**Timing in the gcd.** Same harness as study 26: load below 0.6, nothing else running, pinned to one CPU, 51 repetitions, kernels interleaved with order rotated, an untimed call first. 1,032 pairs. Ranges of the medians of three runs, ns per gcd; quartile spreads mostly ±1%, with some upper quartiles up to +10% in one run.
+
+| ns per gcd | pi_v3 random | pi_v3 large factor 2^15 | pi_v random | pi_v large factor |
+|---|---|---|---|---|
+| flt (float) | 37.7–38.3 | 20.4–20.7 | 57.9–58.8 | 29.9–30.1 |
+| dbh | 40.0–40.4 | 21.5–21.6 | 61.2–61.6 | 32.0–32.3 |
+| dbm | 40.1–40.7 | 21.6–21.7 | 62.0–62.9 | 32.2–32.5 |
+| mixn | 41.3–41.9 | 22.2–22.5 | 58.2–58.4 | 30.2–30.4 |
+| pop2 | 41.4–42.0 | 22.5–22.9 | | |
+| mix | 41.8–42.3 | 22.5–22.7 | | |
+| mask5 | 41.8–42.3 | 22.6–22.8 | 59.9–60.5 | 31.7–31.9 |
+| db3 | 42.7–43.0 | 22.9–23.1 | 67.0–67.8 | 33.9–34.0 |
+| pop (study 26) | 43.0–43.8 | 23.2–23.5 | 67.7–68.5 | 35.6–35.7 |
+| db (study 26) | 43.2–43.7 | 23.1–23.4 | 67.7–68.3 | 35.3–35.5 |
+| mask5c | 44.2–44.9 | 23.7–24.0 | | |
+| bs | 48.8–49.3 | 26.2–26.4 | | |
+
+**What the figures show.**
+- **Three registers stepped together are bound by instruction count, not by latency.** The ranking follows the step loop's size, with the 2-µop `vpmulld` counted as two. dbh and dbm (9 ops, 9 µops, 11 cycles deep) are best at 40.0 to 40.7 ns, against the float trick's 37.7 to 38.3. The gap is about 2.1 ns (5.5%) on random pairs and 1.1 ns (5.5%) with a large common factor. Study 26's best integer forms (pop, db) stood at 4.5 to 5 ns (13%), so the gap is more than halved.
+- **db3 saves an op but not time:** its `vpmulld` (10 cycles, 2 µops) leaves it at 42.7 to 43.0, between pop2 and db.
+- **The mask-test idea is fast in latency but expensive in instructions.** mask5 has the shortest chain of any integer form (7 ops deep, 3.25 ns chain) but 16 ops, so it reaches only 42 ns in pi_v3. Its best use is mixed with a table: mixn (3 tests, a shift, one 16-entry `vpshufb`) has the float trick's chain latency (3.09 ns).
+- **With one register (latency-bound), mixn ties the float trick:** 58.2 to 58.4 ns against 57.9 to 58.8, and 30.2 to 30.4 against 29.9 to 30.1. The multiply-based forms lose there: dbh 61 ns, db 68.
+- **So the best form depends on the kernel.** dbh (or dbm) for the 3-register gcd, mixn where one chain is latency-bound. No integer form here reaches flt's 5 ops: the converter's priority encoder is worth about 4 instructions per step.
+
+**Summary.** The best integer-only lane ctz for a single set bit is dbh. It multiplies each 16-bit word by the de Bruijn constant 0x09AF (`vpmullw`, 5 cycles), shifts each word right by 12, does one `vpshufb`, then shifts right by s = min_epu32(x AND 0xFFFF0000, 16) and ORs s back in. That is 9 ops including x = o AND −o. Inside study 26's 3-register binary gcd it takes 40.0 to 40.4 ns per random pair, 5.5% (about 2.1 ns) above the float trick's 37.7 to 38.3 ns. Study 26's popcount (43.0 to 43.8) and de Bruijn (43.2 to 43.7) sat 13% above it. dbm (`vpmaddwd` instead of `vpmullw`) ties dbh. The five single-bit tests cost 2 ops each with the min trick (AND, then min_epu32 with 2^j). Alone they are too many instructions (16 ops, 42 ns), but three of them plus one nibble table (mixn, 13 ops) match the float trick's latency and tie it in the latency-bound one-register gcd (58.3 against 58.3 ns). Searches ruled out a 32-entry de Bruijn index from `vpmaddwd`, and any index read straight from the bits `vpshufb` uses. The step needs k explicitly for `vpsravd`.

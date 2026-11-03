@@ -1209,12 +1209,16 @@ Studies 9 and 11 gave 22.65 and 14.05 at K = 32 for a mix of these kinds; this t
 
 **What was compared.** x = a + bi divided by y = c + di, int32 halves over the full two's complement range (decision 12 allows −2^31), separate re and im arrays, no floating point anywhere. The quotient is x·conj(y)/N with X = ac + bd, Y = bc − ad and N = c² + d², all formed exactly in 64-bit lanes by `vpmuldq`. X can reach 2^63 (all four halves −2^31), where the 64-bit sum wraps; every other value fits. Each quotient part is at most |x|/|y| ≤ 2^31.5 in size, so its magnitude is below 2^32.
 - **Floor without a sign branch.** s = [X < 0] as a mask (tested as X − 1 < −1, so the wrapped 2^63 counts as positive), U = X xor s (X, or |X| − 1), then q = floor(U/N) xor s. The floor remainder is U mod N, or N − 1 − (U mod N) where s is set. All methods share this front end and divide U by N.
-- **Modes.** Exact (y divides x, q only). The floor core: floor parts of q plus r = x − qy, the latter mod 2^32 since floor can leave |r| up to √2·|y|. Nearest rules, from the floor part q0 and floor remainder ρ: round up where 2ρ > N, and at a tie (2ρ = N):
-  - A: ties up, which is floor((2X + N)/(2N)) per part, the control (the library standard of the rounding survey).
-  - B1: ties away from zero. B2: ties toward zero. B3: ties to even. B4: ties to odd.
-  - B5, coupled: a tied part rounds away from zero if the other part, rounded away from zero, is even, and toward zero if it is odd.
-  
-  Each rule is one compare ρ > H with its own threshold H: A (N − 1) >> 1; B1 (N − 1 − s) >> 1; B2 (N + s) >> 1; B3 (N − odd(q0)) >> 1; B4 (N − 1 + odd(q0)) >> 1. B5 takes the B1 and B2 decisions and the other part's parity.
+- **Modes.** Exact (y divides x, q only). The floor core: floor parts of q plus r = x − qy, the latter mod 2^32 since floor can leave |r| up to √2·|y|. Nearest with a tie rule; a tie is a part of x/y exactly halfway between two integers, which happens only when 1 + i divides y. The four rules compared: ties up (the library standard, floor((2X + N)/(2N)) per part), ties down, ties toward zero and ties away from zero. Kept from an earlier round and reported separately: ties to even, ties to odd, and a coupled rule (a tied part rounds away from zero if the other part, rounded away from zero, is even, and toward zero if it is odd).
+- **Two forms of each nearest rule.**
+  - **Direct,** on the signed numerator: from the floor part q0 and the floor remainder ρ (3 instructions per part to form it from U mod N), round up where ρ > H. H is:
+    - (N − 1) >> 1 for ties up, N >> 1 for ties down;
+    - (N + s) >> 1 toward zero, (N − 1 − s) >> 1 away;
+    - (N − odd(q0)) >> 1 to even, (N − 1 + odd(q0)) >> 1 to odd.
+  - **Mask:** one sign mask m per part, |u| = (u xor m) − m, divide the magnitude (floor and truncation agree there), round the magnitude, then q = (q′ xor m) − m with the same m.
+    - On the magnitude, away from zero is ties up, H = (N − 1) >> 1, and toward zero is ties down, H = N >> 1, with no sign in the threshold.
+    - Ties up and ties down need the sign there: (N − 1 − m) >> 1 and (N + m) >> 1, reusing m.
+    - AVX2 has no 64-bit arithmetic shift, so m is a compare against zero: two instructions for X, whose one wrapped value 2^63 must count as positive, one for Y.
 - **Overflow.** A quotient part can be +2^31 only when y is a unit or (1 + i) times a unit and x has a −2^31 half. A nearest remainder part can be +2^31 only when |y| is near 2^31.5. Each kernel ORs "some output part equals −2^31" into a sticky flag, a superset of true overflow. Once per array, and only when the flag is set, a scalar pass decides exactly from the sign of the numerator (`resolve`). A second flag records zero divisors.
 
 **Methods.**
@@ -1237,30 +1241,32 @@ Studies 9 and 11 gave 22.65 and 14.05 at K = 32 for a mix of these kinds; this t
 - **Exhaustive at small sizes:** every (x, y) with halves in K-bit two's complement ranges, K = 3 to 6 (16,777,216 divisions with remainder at K = 6). Every exact division q·y with q and y in those ranges. The same again per shared divisor.
 - **Edges:** every quadruple of 20 edge values (−2^31, −2^31 + 1, −2^31 + 2, ±2^30, ±(2^30 + 1), ±46,341, ±2^16, ±1, ±2, ±3, 0, 2^31 − 1, 2^31 − 2), plus every edge x over every divisor with parts in [−4, 4], and every exact product of edge values that fits. Each element ran alone in a register of 8, so the flags are checked per element. Every true overflow was flagged, and `resolve` was exact.
 - **Random:** 10.5 million divisions with remainder, in kinds aimed at large quotients, N near powers of 2, divisors of every size and ties. 10.3 million exact divisions, including units with −2^31 halves. 40 shared divisors × 65,536.
-- **Totals:** 2,279,776,729 element results, failures none.
-- **Rule properties:** N(r) ≤ N(y)/2 for all six rules, and for A, r(x + ky) = r(x) for k = ±1, i, 1 + i: 13.1 million checks, failures none.
-- **Sign and unit changes:** 2,457,600 base pairs, a quarter of them at a tie, each under 13 changes, for m1, m3 and m5 and all six rules. Seven changes are symmetries of x/y:
+- **Totals:** 3,760,966,169 element results, failures none.
+- **Rule properties:** N(r) ≤ N(y)/2 for every rule in both forms. For ties up and ties down, r(x + ky) = r(x) for k = ±1, i and 1 + i (the remainder depends only on x mod y). 39.3 million checks, failures none.
+- **Sign and unit changes:** 2,457,600 base pairs, a quarter of them at a tie, each under 13 changes, for m1, m3 and m5x and every rule in both forms. Seven changes are symmetries of x/y:
   - x times −1, i or −i: q and r times the same unit.
   - y times −1, i or −i: q times the inverse unit, r unchanged.
   - Conjugating both: q and r conjugated.
   
   For these the exact predicted q and r were checked. The other six (conjugating x alone or y alone, negating one part of x or of y) are not symmetries of x/y: x̄/y = conj(x/ȳ) is no unit or conjugate image of x/y. So for those only N(r) was compared.
 
-| changes, per rule (7,372,800 cases each) | A | B1 | B2 | B3 | B4 | B5 |
-|---|---|---|---|---|---|---|
-| a symmetry, q or r not as predicted | 1.5 to 1.9 million, all at ties | 0 | 0 | 0 | 0 | 0 |
-| a symmetry, N(r) changed | 0 | 0 | 0 | 0 | 0 | 0 |
-| a one-sided change, N(r) changed | 6,079,671 | the same | the same | the same | the same | the same |
+| changes (7,372,800 cases each; both forms gave identical counts) | up | down | toward 0 | away from 0 | to even | to odd | coupled |
+|---|---|---|---|---|---|---|---|
+| a symmetry, q or r not as predicted | 1.5 to 1.9 million, all at ties | the same | 0 | 0 | 0 | 0 | 0 |
+| a symmetry, N(r) changed | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| a one-sided change, N(r) changed | 6,079,671 | the same | the same | the same | the same | the same | the same |
 
-So B1 to B5 commute exactly with −1, i, −i and conjugation. A breaks them only at ties, and even there N(r) does not change, because every candidate at a tie has the same norm. The one-sided changes alter N(r) in 82% of cases under every rule, by the same count. The remainder norm is N(y) times the squared distance from the changed x/y to the nearest lattice point, which no rule can control. N(r) ≤ N(y)/2 held in every case.
+Toward zero and away from zero (and to even, to odd, coupled) commute exactly with −1, i, −i and conjugation, in both forms. Ties up and ties down break those symmetries only at ties, and even there N(r) does not change, because every candidate at a tie has the same norm. Up and down instead have the fixed-remainder property, which the symmetric rules lack at ties (rounding survey, section 1).
 
-**Other rules with the same symmetry.** A rule commutes with units and conjugation exactly when the choice at a tie depends only on quantities they leave unchanged, and acts oddly on the tied part. B1 to B4 use the tied part alone (its sign or its parity). B5 uses the other part's parity. Others in the same family would decide by the parity of N(x) or N(y), or treat corner ties (both parts halves) differently from edge ties. At a corner the natural joint choices reduce to per-part ones:
-- the candidate of largest norm is B1, and the smallest is B2;
-- the candidate with both parts even is B3, and both odd is B4.
+The one-sided changes alter N(r) in 82% of cases under every rule, by the same count. The remainder norm is N(y) times the squared distance from the changed x/y to the nearest lattice point, which no rule can control. N(r) ≤ N(y)/2 held in every case.
 
-B5 was built and tested as the representative non-per-part rule.
+**Other rules with the same symmetry.** A rule commutes with units and conjugation exactly when the choice at a tie depends only on quantities they leave unchanged, and acts oddly on the tied part. Toward zero, away from zero, to even and to odd use the tied part alone (its sign or its parity). The coupled rule uses the other part's parity. Others in the same family would decide by the parity of N(x) or N(y), or treat corner ties (both parts halves) differently from edge ties. At a corner the natural joint choices reduce to per-part ones:
+- the candidate of largest norm is away from zero, and the smallest is toward zero;
+- the candidate with both parts even is to even, and both odd is to odd.
 
-**Tests catch faults.** Removing the m4/m5 correction, the final restore in m3, or the 1 + i step on x in m2 each failed millions of results. So did a W one too small, using bitlen(N) for m4's L, or ties down for A. The plain sign of X (without the wrapped 2^63 case) gave 41 failures. Dropping the second reciprocal fix-up was not caught end to end; the exhaustive reciprocal run is what proves it is needed.
+The coupled rule was built and tested as the representative non-per-part rule.
+
+**Tests catch faults.** Removing the m4/m5 correction, the final restore in m3, or the 1 + i step on x in m2 each failed millions of results. So did a W one too small, using bitlen(N) for m4's L, or ties down in place of ties up. The plain sign of X (without the wrapped 2^63 case) gave 41 failures. Dropping the second reciprocal fix-up was not caught end to end; the exhaustive reciprocal run is what proves it is needed.
 
 **Instruction counts** (per element, dynamic, counted with valgrind over 4,096 elements, loads, stores, loop and per-call setup included):
 
@@ -1306,28 +1312,72 @@ An m3 bit step is 39 instructions per 8 elements (4.9 per element per bit). gcc 
 
 m4's setup costs about 3.3 ns (one `div` and the broadcasts). Against the hardware divide it pays from 4 elements (m1 shared takes about 5.15 ns per element and m4's smallest call, one register of 8, 17.3 ns). Against m3 it depends on the quotients, not on the length. With random 31-bit divisors the quotients are 1 or 2 bits, and m3 ties with m4 at every length (within 5%; one register with a wide quotient costs m3 a step, as at n = 48). With small divisors m4 is 6 to 8 times faster at every length, 8 included.
 
-**What each nearest rule adds over the floor core** (instructions per element by valgrind; ns per element, L1, random inputs, middle of the three runs):
+**The four tie rules, each in its two forms.** Instructions per element (valgrind, random inputs) and ns per element. L1 is the range of the medians of three runs; memory is one run of 2^24 elements. The floor core is shown for reference.
 
-| over floor | A | B1 | B2 | B3 | B4 | B5 |
-|---|---|---|---|---|---|---|
-| m3, instructions | +5.8 | +6.8 | +6.1 | +7.9 | +7.6 | +10.8 |
-| m3, ns | +0.28 | +0.34 | +0.36 | +0.49 | +0.49 | +0.65 |
-| m4 (shared), instructions | +4.0 | +6.0 | +5.9 | +6.5 | +6.6 | +8.8 |
-| m4, ns | +0.43 | +0.47 | +0.48 | +0.56 | +0.57 | +0.68 |
-| m5x, instructions | +5.3 | +6.5 | +6.4 | +7.3 | +7.6 | +10.6 |
-| m5x, ns | +0.41 | +0.46 | +0.48 | +0.60 | +0.58 | +0.71 |
-| m1, instructions | +29 | +30 | +28 | +33 | +34 | +51 |
-| m1, ns | +1.14 | +1.32 | +1.25 | +3.19 | +1.60 | +3.06 |
+| m3 (varying divisor) | instructions | L1 | memory |
+|---|---|---|---|
+| floor core | 27.7 | 2.58–2.61 | 3.65 |
+| up: direct / mask | 33.4 / 33.2 | 2.87–2.89 / 2.89–2.92 | 3.91 / 3.93 |
+| down: direct / mask | 33.4 / 32.6 | 2.88–2.89 / 2.89–2.90 | 3.90 / 3.91 |
+| toward zero: direct / mask | 33.8 / 31.4 | 2.95–2.98 / 2.81–2.82 | 4.00 / 3.87 |
+| away from zero: direct / mask | 34.4 / 32.1 | 2.93–2.95 / 2.80–2.82 | 3.95 / 3.82 |
 
-In lanes, each rule costs a few instructions per 8 elements on top of the same shared work:
-- the floor remainder ρ from U mod N: 3 per part per 4 lanes;
-- one compare;
-- packing the round-up mask, and one subtract on the packed quotient;
-- 4 more for the remainder's overflow candidate.
+| m5x (varying divisor) | instructions | L1 | memory |
+|---|---|---|---|
+| floor core | 48.1 | 4.45–4.47 | 4.91 |
+| up: direct / mask | 53.3 / 53.0 | 4.87–4.89 / 4.85–4.88 | 5.27 / 5.26 |
+| down: direct / mask | 52.6 / 52.7 | 4.87–4.89 / 4.88–4.90 | 5.29 / 5.29 |
+| toward zero: direct / mask | 54.5 / 51.8 | 4.92–4.95 / 4.83–4.84 | 5.35 / 5.25 |
+| away from zero: direct / mask | 54.6 / 52.0 | 4.93–4.97 / 4.82–4.86 | 5.31 / 5.23 |
 
-A's threshold is shared by both parts, so A is cheapest. B1 and B2 add the sign to the threshold (1 per part). B3 and B4 add the quotient's parity (2 per part). B5 computes both B1 and B2 and couples the parts (about 2.5 more per element than B1). From memory the differences are the same within 0.1 ns.
+| m4 (shared divisor) | instructions | L1 | memory |
+|---|---|---|---|
+| floor core | 18.5 | 1.74–1.75 | 1.99 |
+| up: direct / mask | 22.5 / 23.0 | 2.16–2.18 / 2.21 | 2.38 / 2.43 |
+| down: direct / mask | 22.5 / 22.8 | 2.16–2.19 / 2.15–2.17 | 2.39 / 2.38 |
+| toward zero: direct / mask | 24.4 / 21.4 | 2.22–2.25 / 2.10–2.13 | 2.45 / 2.34 |
+| away from zero: direct / mask | 24.5 / 21.4 | 2.22–2.23 / 2.10–2.14 | 2.45 / 2.35 |
 
-The scalar control is fragile under gcc. The same rule written in equivalent ways ran at 6.4 or 12.3 ns (A and B2) and at 7.1 or 8.4 ns (B3), with the same two divides and no extra branches. Alignment and scheduling flags did not change it. The table uses one build with the sign masks kept in registers (an empty asm barrier), which was fastest for five of the six rules.
+| m1 (scalar control) | instructions | L1 | memory |
+|---|---|---|---|
+| floor core | 71 | 5.18–5.20 | 5.43 |
+| up: direct / mask | 100 / 96 | 6.35–6.59 / 9.18–9.23 | 6.85 / 9.38 |
+| down: direct / mask | 100 / 93 | 6.33–6.55 / 9.14–9.17 | 6.76 / 9.34 |
+| toward zero: direct / mask | 99 / 92 | 6.47–6.52 / 6.53–6.56 | 6.76 / 6.78 |
+| away from zero: direct / mask | 101 / 93 | 6.53–6.55 / 6.53–6.60 | 6.87 / 6.84 |
+
+**Rule by rule, direct against mask.**
+- **Ties up: direct.** In lanes the two forms tie: within 0.03 ns for m3 and m5x, and the direct form is 0.05 ns ahead for m4. The mask form saves the 3-instruction floor-remainder fix per part. But it spends one subtract to form |u| and one more to restore the sign, and its threshold needs the sign anyway. In scalar code the mask form runs 9.2 ns against 6.4 (the gcc sensitivity below).
+- **Ties down: either; direct by a hair.** The same balance: within 0.02 ns in every lane method. Scalar again favours the direct form (6.4 against 9.2).
+- **Toward zero: mask.** On the magnitude it is plain ties down, with one threshold per element instead of one per part, and no remainder fix. 2.4 to 3.0 fewer instructions per element, and 0.09 to 0.15 ns faster in L1 (m3 2.82 against 2.97, m5x 4.83 against 4.94, m4 2.12 against 2.23). From memory 0.1 ns faster. Scalar: equal.
+- **Away from zero: mask,** for the same reason (on the magnitude it is ties up): 0.08 to 0.13 ns faster in L1 and 0.08 to 0.13 ns from memory. Scalar: equal.
+
+**The four rules, each in its better form** (ns per element, L1 middle run, and the increase over the floor core):
+
+| | up (direct) | down (direct) | toward zero (mask) | away from zero (mask) |
+|---|---|---|---|---|
+| m3 | 2.88 (+0.29) | 2.88 (+0.29) | 2.82 (+0.23) | 2.80 (+0.21) |
+| m5x | 4.88 (+0.42) | 4.89 (+0.43) | 4.83 (+0.37) | 4.86 (+0.40) |
+| m4 | 2.16 (+0.41) | 2.16 (+0.41) | 2.10 (+0.35) | 2.10 (+0.35) |
+| m1 (scalar forms tie for toward and away; direct shown) | 6.45 (+1.28) | 6.38 (+1.20) | 6.48 (+1.30) | 6.53 (+1.35) |
+| instructions over floor, m3 / m5x / m4 | 5.8 / 5.3 / 4.0 | 5.8 / 4.6 / 4.0 | 3.8 / 3.7 / 2.9 | 4.4 / 3.9 / 2.9 |
+
+From memory the order is the same: m3 3.91, 3.90, 3.87, 3.82; m4 2.38, 2.39, 2.34, 2.35. In lanes the symmetric rules in mask form are the cheapest of the four, by 0.02 to 0.08 ns per element (1 to 2 instructions); the library standard (ties up) is not cheaper. All four add under half a nanosecond per element over the floor core.
+
+**How much of ties up's cost is negative handling.** Timed against copies with all sign handling removed (wrong for negative numerators, timing only):
+- m5x: floor 4.28 without signs against 4.46 with; ties up 4.54 against 4.88.
+- m4: 1.42 against 1.75; ties up 1.67 against 2.17.
+
+So in ties up's direct form the negative handling costs 5.0 instructions per element in m5x (0.34 ns of 4.88, 7%) and 4.75 in m4 (0.48 ns of 2.17, 22%). That covers the sign compares, the one's complement in and out, and the floor-remainder fix. The rounding itself costs 0.26 ns in both. For m3 the copy without signs is not a fair measure, since negative numerators read as huge magnitudes and widen the quotient. Its negative handling is the same 26 instructions per 8 elements (3.25 per element) by count.
+
+**Ties to even, to odd and coupled** (kept from the earlier round; ns L1, direct / mask):
+- m3: 3.07 / 2.99, 3.07 / 2.98, 3.23 / 3.06.
+- m5x: 5.05 / 5.00, 5.03 / 5.00, 5.18 / 5.16.
+- m4: 2.30 / 2.25, 2.32 / 2.21, 2.43 / 2.51.
+
+The mask form wins for even and odd (they also need no sign in the threshold). The coupled rule is 0.1 to 0.3 ns dearer than toward or away from zero. All three are 0.1 to 0.2 ns dearer than toward and away in their better form.
+
+**The scalar control is fragile under gcc.** The same rule written in equivalent ways ran at 6.4 or 12.3 ns (ties up direct and toward zero direct, in earlier builds), 7.1 or 8.4 ns (to even), and now 9.2 ns for both mask forms that put the sign in the threshold. The divides and branches are the same; alignment and scheduling flags did not change it. The m1 rows use one build, with the sign masks kept in registers (an empty asm barrier). The vector timings were stable to 0.03 ns across builds.
 
 **What the figures show.**
 - **Exact division: m2 is the method.** 1.6 ns against the divide's 5.2 in L1 (3.2 times) and 2.0 against 5.4 from memory. With a shared divisor it is 0.21 ns per element (25 times the divide), limited only by memory (0.89 ns) for large arrays. It needs no 64-bit arithmetic at all. A divisibility check, if the caller cannot guarantee it, would add a back-multiply (not timed).
@@ -1336,7 +1386,7 @@ The scalar control is fragile under gcc. The same rule written in equivalent way
   - m5x does not depend on the data: 4.45 ns, 1.17 times faster than the divide in L1 and 1.09 times from memory. One register at a time (m5) is slower than the divide (5.95).
   - The per-lane reciprocal costs about 30 instructions per element before any division work. The 64-bit normalisation and the Newton steps run on 4 lanes per instruction and are latency-bound.
 - **Remainder, shared divisor:** m4 at 1.74 ns is 3.0 times faster than the divide in L1 (2.75 times from memory) whatever the quotient size. Its precomputation pays from 4 elements. m3 ties with it only when the quotients are 1 or 2 bits.
-- **Nearest rules** add 0.3 to 0.7 ns in lanes (A cheapest, B5 dearest). B1 to B4 cost within 0.2 ns of each other. Choosing the symmetric rules B1 to B4 over A costs 0.05 to 0.2 ns per element.
+- **Tie rules** add 0.2 to 0.45 ns per element in lanes. With each rule in its better form, toward zero and away from zero (mask form) are the cheapest of the four; ties up and ties down (direct form) cost 0.02 to 0.08 ns more. The symmetric rules are therefore free relative to the library standard.
 - **Overflow** is confined to a few inputs with −2^31 halves or a divisor near 2^31.5 in size. The candidate flag costs 2 to 4 compares per 8 elements, and the exact decision runs only when it fires.
 
 **What AVX-512 would change** (not built). `vplzcntq` (CD) replaces m5's 6-step normalisation (30 instructions per 4 lanes) with one instruction. `vpcmpuq` into mask registers removes every bias XOR, and masked subtracts make the corrections 1 instruction. `vpmullq` (DQ) gives m2 64-bit products if wider halves are wanted. IFMA's 52-bit multiplies would let m5 use a longer reciprocal and drop the fix-ups. `vpopcntd` or `vplzcntd` gives m2's ctz in 2 to 4 instructions.
@@ -1345,4 +1395,100 @@ The scalar control is fragile under gcc. The same rule written in equivalent way
 - Exact division: multiply by the inverse mod 2^32 after stripping 2 and 1 + i, 3.2 times faster than the divide (25 times with a shared divisor).
 - Remainder with a shared divisor: the precomputed 33-bit reciprocal with one correction, 3 times faster, paying from 4 elements.
 - Remainder with varying divisors: no method dominates. Shift and subtract is twice as fast as the divide for quotients of a few bits and loses beyond about 8 bits. The per-lane Newton reciprocal is steady at 1.17 times the divide.
-- Every nearest rule adds well under a nanosecond in lanes. B1 to B5 keep N(r) ≤ N(y)/2 and commute exactly with −1, i and conjugation; A breaks that only at ties, without changing any remainder norm.
+- Tie rules: ties up and ties down are best written directly on the signed numerator; toward zero and away from zero are best written on the magnitude with one sign mask, and are then the cheapest. All keep N(r) ≤ N(y)/2. Toward and away from zero commute exactly with −1, i and conjugation; up and down break that only at ties (without changing any remainder norm) but keep the remainder a function of x mod y.
+
+## Study 26: a fair gcd comparison, integer only (gcdfair.c)
+
+**What was compared.** Study 24's arrays of independent pairs, int32 halves, now over the full two's complement range (decision 12), gcd normalised to re > 0 and im ≥ 0, with no floating point anywhere. Four rows:
+- **Euclid scalar** (study 6, two `idiv` per step).
+- **Euclid in vector lanes** (euclid_v). Each step divides by study 25's m3 (non-restoring, width per register), with ties up, study 6's rule, so its steps match the scalar Euclid's exactly. Finished lanes (b = 0) are held by masks. The test is "every b of the register is 0".
+- **Binary (1+i)-ary scalar** (pi_sb, study 24's branch-free step).
+- **Binary vector** (pi_v3, study 24's best: 3 registers stepped together).
+
+Also timed: euclid_v5 (study 25's m5x division, two registers), and pi_v with one register.
+
+**Integer-only lane ctz** (replacing study 24's float exponent):
+- (a) **bs:** binary search. Where the low 16, 8, 4, 2 bits are zero, add that count and shift them out (`vpsrlvd`), then add 1 if bit 0 is clear. 22 instructions.
+- (b) **pop:** popcount of (x AND −x) − 1. Two `vpshufb` lookups of a 16-entry nibble table, then `vpmaddubsw` and `vpmaddwd` to sum the bytes of each lane. 11 instructions.
+- (c) **db:** de Bruijn. (x AND −x)·0x077CB531 by `vpmulld`, the top 5 bits index a 32-entry table. That is two `vpshufb` on table halves; adding 0x70 or subtracting 0x10 from the index byte sets bit 7 (which `vpshufb` reads as zero) for the wrong half, and the other three bytes get 0x80. 9 instructions.
+
+**The −2^31 gap, closed.** Making a number primary negates it, and so does normalising a gcd; −2^31 has no negation in int32. The true gcd can itself be 2^31 (gcd(−2^31, 0) = 2^31, gcd(−2^31 − 5i, 0) = 2^31 + 5i), which does not fit.
+- Every kernel detects pairs with a −2^31 half: 4 compares and 3 ORs per register in lanes, one test per pair in scalar code.
+- In lanes it replaces such pairs by (0, 0), (0, 0), so every lane stays inside study 24's proven range, and ORs the mask into a sticky flag.
+- Once per array, only if the flag is set, `fixup` recomputes exactly those pairs by the (1+i)-ary gcd in 64-bit scalar registers. There every value stays within ±2^31 and |x| + |y| within 2^32.
+- It returns the overflow flag (some gcd has a part 2^31, so the array must be promoted) and stores the result mod 2^32.
+- The scalar kernels skip such pairs in their loop and call the same `fixup`.
+
+**Correctness.** Every kernel against an independent reference: study 6's Euclid in __int128 with exact rounding, normalised. The overflow flag must equal "some gcd in the batch does not fit int32".
+- **The three ctz methods:** every nonzero 32-bit value against `__builtin_ctz`: no errors.
+- **Exhaustive:** every pair with halves in K-bit two's complement ranges, K = 3 to 6 (16,777,216 pairs at K = 6). At K ≤ 4 the reference was also checked by brute force and divisibility.
+- **Edges with −2^31:** every quadruple of 20 values (−2^31, −2^31 + 1, −2^31 + 2, 0, ±1, ±2, 3, −3, 2^31 − 1, 2^31 − 2, ±2^30, ±(2^30 + 1), ±2^16, ±46,341). Each pair ran alone, so the flag is per pair: 160,000 pairs, 29,679 with a −2^31 half, 87 with an overflowing gcd.
+- **Random −2^31 pairs alone:** 200,000 pairs with planted −2^31 halves and power-of-2 factors; 1,802 overflowing gcds.
+- **Random batches:** 2,621,440 pairs, of study 24's four kinds plus a few −2^31 pairs.
+- **Failures: none.**
+- **Tests catch faults:** no fixup (1.8 million failures); no overflow flag (19,220); a wrong de Bruijn constant (18,482); no hold mask in vector Euclid (28.9 million). A broken last step in the bs ctz made a loop never end, as in study 24. With the guard removed from pi_v3, the −2^31 pairs gave 11,793 wrong results (no hang in these runs).
+
+**Steps** (65,536 pairs per kind): Euclid 20.39 steps per pair on random pairs, 23.16 per register of 8 (lane use 88%); with a large common factor 10.24 and 12.17 (84%). The vector kernel's own count of register steps matched exactly.
+
+**Instruction counts** (dynamic, valgrind, per gcd, setup and fixup checks included):
+
+| per gcd | euclid | euclid_v | euclid_v5 | pi_sb | pi_v3_bs | pi_v3_pop | pi_v3_db |
+|---|---|---|---|---|---|---|---|
+| random | 1,301 | 966 | 1,240 | 2,413 | 378 | 337 | 331 |
+| large common factor | 678 | 496 | 666 | 1,215 | 205 | 183 | 180 |
+
+The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop and db, so 79, 71 and 69 per register. Study 24's float version had 63 per register. euclid_v's step is about 330 instructions per register of 8 at the usual widths of 1 or 2 quotient bits.
+
+**The ctz alone** (ns per register of 8, median of 31; latency of a chain v ← v + ctz(v) + 1):
+
+| | instructions | throughput | latency |
+|---|---|---|---|
+| bs | 22 | 3.4–3.7 | 7.0 |
+| pop | 11 | 1.7–2.0 | 5.1–5.2 |
+| db | 9 (one `vpmulld`) | 1.25 | 4.9 |
+
+**Timing.** Same machine and harness as study 24: load below 0.6, nothing else running, pinned to one CPU, 31 repetitions, kernels interleaved with order rotated, an untimed call first. 1,032 pairs (24 KB, in L1), integer clock. Ranges of the medians of three runs, ns per gcd; quartile spreads about ±1%.
+
+| ns per gcd | random | large common factor (2^15) |
+|---|---|---|
+| Euclid scalar | 269.8–271.2 | 121.8–123.0 |
+| Euclid in lanes (m3 division, ties up) | 108.5–109.1 | 50.3–50.9 |
+| Euclid in lanes (m5x division, 2 registers) | 115.5–115.6 | 61.9–62.0 |
+| binary scalar (pi_sb) | 329.4–331.6 | 167.1–168.0 |
+| binary vector, pi_v3_bs | 48.6–49.0 | 26.0–26.2 |
+| binary vector, pi_v3_pop | 42.6–42.9 | 23.0–23.1 |
+| binary vector, pi_v3_db | 42.8–43.2 | 23.0–23.4 |
+| binary vector, pi_v3_pop without the guard | 42.3–42.8 | 22.8 |
+| one register: pi_v_bs / pop / db | 69.9–70.4 / 67.6–67.7 / 67.5–67.6 | 36.7 / 35.4–35.5 / 34.9–35.1 |
+
+**What the figures show.**
+- **The fair four rows** (random pairs, then large common factor):
+
+  | | random | ratio to scalar Euclid | large factor | ratio to scalar Euclid |
+  |---|---|---|---|---|
+  | Euclid scalar | 270 | 1 | 122 | 1 |
+  | Euclid in lanes | 109 | 2.5 times faster | 50.5 | 2.4 times faster |
+  | binary scalar | 330 | 1.2 times slower | 167 | 1.4 times slower |
+  | binary vector | 42.7 | 6.3 times faster | 23 | 5.3 times faster |
+
+  In lanes the binary gcd is still 2.5 times faster than Euclid (2.2 with a large factor). Euclid gains 2.5 times from lanes; the binary gcd gains 7.7 times over its own scalar form.
+- **Euclid's division in lanes:** m3 beats m5x (109 against 115 ns) even though m5x is the faster divider for random division. Euclid's quotients are mostly 1 or 2 bits, where m3 costs about 2 ns per element against m5x's 4.4. This matches study 25's width curve.
+- **Integer ctz against the float trick:**
+  - pop and db tie inside pi_v3 (42.6 to 43.2 ns). bs is 14% slower (49 ns): its 4 dependent compare, shift and add rounds are the longest chain.
+  - db has the shortest latency and best throughput alone, but its `vpmulld` (10 cycles on this core) leaves it no faster than pop inside the step.
+  - Against study 24's float exponent (38.1 to 38.6 and 20.0 to 20.1 ns), the integer ctz costs 11% on random pairs and 15% with a large common factor. That is the price of the no-floating-point rule here, about 4.5 ns per gcd.
+- **The −2^31 guard is nearly free:** pi_v3_pop with and without it differ by at most 0.3 ns per gcd (under 1%), about 1 instruction per gcd. The fixup runs only for arrays containing such a pair.
+
+**What AVX-512 would offer** (not built; this CPU has AVX-512 CD, BITALG and VPOPCNTDQ):
+- `vplzcntd` (CD) gives ctz as 31 − lzcnt(x AND −x), 4 instructions.
+- `vpopcntd` (VPOPCNTDQ) gives popcount((x AND −x) − 1), also 4 instructions, about 6 cycles of latency against 18 to 19 for pop and db here.
+- Neither has a direct lane tzcnt; both work on 64-bit lanes too (`vplzcntq`, `vpopcntq`).
+- With the ctz at 4 instructions the step loses about 7 instructions per register and a third of the ctz latency, which should more than recover study 24's float-trick figure.
+- Mask registers would also cut the 10 blends per step (3 µops each with `vblendvps` here) to 1 µop each.
+
+**Summary.**
+- With integer-only ctz and the −2^31 gap closed, the binary vector gcd (3 registers, popcount or de Bruijn ctz) takes 42.7 ns per random 31-bit pair. That is 6.3 times faster than scalar Euclid (270 ns) and 2.5 times faster than Euclid in vector lanes (109 ns).
+- With a large common factor: 23, 122 and 50.5 ns.
+- Euclid in lanes uses study 25's shift-and-subtract division, which suits its short quotients better than the reciprocal.
+- The integer ctz costs about 11% over study 24's float exponent; AVX-512's `vpopcntd` or `vplzcntd` would remove that.
+- Pairs with a −2^31 half are detected for under 1% of the time, computed exactly in a 64-bit scalar pass once per array, and flagged when the gcd itself (as 2^31) does not fit.

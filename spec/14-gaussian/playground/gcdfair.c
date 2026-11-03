@@ -21,7 +21,7 @@
  * The vector kernels need N to be a multiple of 8.
  *
  * Build: gcc -O2 -mavx2 -o gcdfair gcdfair.c
- * Run:   ./gcdfair check | ./gcdfair ctz | ./gcdfair time | ./gcdfair stats
+ * Run:   ./gcdfair check | ctz | time | stats | icount KIND
  */
 #include <immintrin.h>
 #include <stdint.h>
@@ -197,8 +197,6 @@ AI V ctz_pop(V o) {                                  /* (b) popcount of (x & -x)
 /* (c) de Bruijn: index = ((x & -x) * 0x077CB531) >> 27 in byte 0 of each dword; table halves by vpshufb, where
  * an index byte with bit 7 set gives 0: byte 0 + 0x70 selects the low half (idx < 16), byte 0 - 0x10 the high half,
  * and the other three bytes get 0x80 so they read 0 */
-static const i32 DB_T[32] = {0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
-                             31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
 AI V ctz_db(V o) {
     const V tlo = _mm256_setr_epi8(0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8);
     const V thi = _mm256_setr_epi8(31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9);
@@ -670,11 +668,17 @@ static void do_ctz_time(void) {
     }
 }
 
+static void do_icount(int kind) {      /* one call of every kernel on 1,032 pairs, for valgrind */
+    enum { N = 1032 }; static i32 b[6][N];
+    for (int j = 0; j < N; j++) gen(kind, b[0] + j, b[1] + j, b[2] + j, b[3] + j);
+    for (int k = 0; k < NKT; k++) KT[k].f(b[0], b[1], b[2], b[3], b[4], b[5], N);
+}
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "check";
     if (!strcmp(mode, "check")) do_check();
     else if (!strcmp(mode, "stats")) do_stats();
     else if (!strcmp(mode, "ctz")) do_ctz_time();
+    else if (!strcmp(mode, "icount")) do_icount(argc > 2 ? atoi(argv[2]) : 0);
     else do_time();
     return 0;
 }

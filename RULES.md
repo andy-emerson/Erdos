@@ -2,7 +2,7 @@
 
 The rules the work follows, in three lists. A rule holds until it is discussed; a lesson learned holds where it was tested.
 
-**The rule for this file:** only the author writes or changes it. Claude may recommend a rule, but never adds or changes one without the author's say.
+**The rule for this file:** no change is made until the author approves it.
 
 ## Algorithm design
 

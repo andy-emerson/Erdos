@@ -1070,3 +1070,63 @@ The residue's products grow only linearly in m. So for large e the ratio direct/
 - Both sides use quadratic methods. At the widths reached here (up to about 2,300 bits at b = 32, e = 64), a real direct multi-word multiply would use Karatsuba or better, and the residue conversion out could use subquadratic CRT (product trees). Neither was modelled.
 - Only powers of 2 were counted. Other e need one extra product per set bit, in both methods.
 - The direct model charges 33- to 64-bit operands as scalar words even where one operand is narrow (A in repeated multiplication), which may overcharge the direct method a little at mid widths. Repeated multiplication never beat squaring, so this does not move the winners.
+
+## Study 23: the int64-half multiply in AVX2 lanes (mul64.c)
+
+**What was compared.** The Gaussian multiply at the first grown size: int64 halves in separate re and im arrays (layout (b)), re = ac − bd, im = ad + bc. AVX2 has no 64-bit lane multiply, only the widening 32 × 32 → 64 `vpmuludq` (unsigned) and `vpmuldq` (signed), which read the low dword of each 64-bit lane. Each kernel writes the low 64 bits of re and im and, where checked, returns the full-range sticky flag: set iff some true re or im does not fit int64.
+
+- **s_bare, s_chk:** study 20's scalar kernels (four wrapping `imul`; four 64 × 64 → 128 `imul` with "high word = sign of low word").
+- **v_bare:** wrapping only. Per real product lo(a)lo(c) + ((hi(a)lo(c) + lo(a)hi(c)) << 32), so 12 multiplies per register of 4 elements.
+- **v_uns:** unsigned 32-bit pieces, 16 `vpmuludq` per register, with sign corrections.
+- **v_sgn:** signed 32-bit pieces, 16 `vpmuldq` per register, with corrections only at one edge.
+- **v_bnd:** v_bare plus a per-array magnitude bound, and v_sgn as an exact fallback (below).
+
+**The overflow test in lanes.** Let k = ⌊(re + 2^63)/2^64⌋. The result fits iff k = 0. Since |re| ≤ 2^127, |k| ≤ 2^63, so k may be computed mod 2^64 in wrapping lanes: k ≡ 0 iff k = 0. So only the 2^32 column needs exact arithmetic (its carry into k); the 2^64 column (the high-by-high products and every correction) just wraps. Splitting the 2^32 column needs no 64-bit arithmetic shift (AVX2 has none): a value m in int64 is split as hi = (m XOR 2^63) >> 32, which is ⌊m/2^32⌋ + 2^31, and lo = its low dword (one `vpblendd` with zero).
+
+- **Signed pieces (v_sgn).** x = xh·2^32 + xl, with xl the low dword read as signed and xh = (x + 2^31) >> 32. This covers [−2^63 − 2^31, 2^63 − 2^31). A value x ≥ 2^63 − 2^31 (the edge) is represented as x − 2^64, which changes nothing mod 2^64 and adds e_a·c + e_c·a to k for a product ac. That is one `vpcmpgtq` per input and two masked adds (AND, ADD) per product. Products of signed pieces lie in [−2^62 + 2^31, 2^62], so every column of re is a difference of two products inside int64, split once. The columns of im are sums in [−2^63 + 2^32, 2^63], split with the offset 2^63 − 2^32 instead of 2^63 (and 2^63 − 2^32 + 1 on one column, which absorbs a +1 the carry would otherwise need).
+- **Unsigned pieces (v_uns).** Both pieces unsigned, so x is read as x + 2^64 when negative, and k gets −(s_a·c + s_c·a) per product (s = sign masks), for every negative input rather than only at an edge. The unsigned products lie in [0, 2^64) and do not pair into int64 differences, so each of the four middle products is split on its own, and the low products need an unsigned 64-bit compare (XOR both with 2^63, `vpcmpgtq`) for their borrow or carry.
+- **Bound with fallback (v_bnd).** v_bare, plus x XOR (x < 0 mask) = |x| − [x < 0], ORed over each operand array. If every entry of the first operand is below 2^p in that form and every entry of the second below 2^q, then |re|, |im| ≤ 2^(p+q+1), which fits when p + q ≤ 61. Once per array, after the sweep: if the bound holds, the flag is 0 (exactly); if not, the array is redone by v_sgn, which writes the same results and gives the exact flag. One branch per array, like the sticky flag's own.
+- **Karatsuba and Gauss's three multiplies do not fit.** Both need sums of pieces (ah + al, or a + b), which take 33 bits, and the widening multiply reads 32. Smaller pieces (three of about 22 bits) would need 6 multiplies per real product by Karatsuba against 4 by schoolbook with two pieces. So 16 multiplies per register of 4 elements (4 per element) is the floor with 32-bit multipliers, against 4 one-operand `imul` in scalar code.
+
+**Correctness.** Every kernel was compared with __int128 (results mod 2^64, and the flag).
+- **Edge quadruples:** every quadruple of 37 edge values, 1,874,161 in all, each element alone in a register of 4 (so the flag is per element), with its position rotating. The edges: 0, ±1, ±2^k − 2 … ±2^k + 1 for k = 31, 32, 62, within range for k = 63 (so −2^63, −2^63 ± 1, 2^63 − 1, 2^63 − 2), and v_sgn's edge line ±(2^63 − 2^31) ± 1.
+- **The corner:** all four halves −2^63 in every lane (im = 2^127, the one value that also overflows int128 and wraps; s_chk still flags it).
+- **Random, alone:** 4,000,000 elements mixing edges, edges ± 4 and random bit lengths. Half were aimed at the boundary: b small (|b| ≤ 8) and d (or c) chosen so that re (or im) lands within 3 of ±2^63. 67,471 elements had re or im within 4 of the boundary and fit, 644,601 within 4 and did not.
+- **Random arrays:** 200,000 of 4 to 128 elements, a third general, a third all small (20 to 30 bits, all fit), a third small with one general value planted.
+- **Failures: none** (36 million kernel calls). Each checked kernel saw the flag clear 474,196 times and set 5,599,966 times. v_bnd was settled by its bound in 304,985 calls and fell back otherwise.
+- **The tests catch faults.** Dropping either edge correction in v_sgn, one sign correction or the borrow in v_uns, using the wrong offset on one im column, or the wrong constant in the k test each gave between 8,000 and 470,000 failures.
+
+**Instruction counts** (inner loop from objdump, gcc 13.3 -O2 -mavx2, loads, stores and loop overhead included; a vector loop does 4 elements per pass):
+
+| per element | s_bare | s_chk | v_bare | v_uns | v_sgn | v_bnd (bound holds) |
+|---|---|---|---|---|---|---|
+| instructions | 17 | 38 | 9.25 | 32.5 | 27.5 | 13 |
+| multiplies | 4 (`imul`) | 4 (`imul`, 128-bit) | 3 | 4 | 4 | 3 |
+| spill moves | 0 | 1.5 | 0 | 5 | 2.75 | 0.75 |
+
+v_sgn as written is 99 per register: loads and stores 6, pieces 8, 16 multiplies, 8 to form the four columns of each part, 3 per part for the stored low word, 15 per part for the splits and the carry into k, 20 for the edge corrections, 2 ORs and 3 of loop. AVX2's 16 registers do not hold it, and gcc adds 11 spill moves. The check is the larger share: v_bare's 37 per register becomes 110.
+
+**Timing.** Same machine and harness as studies 19 to 21 (Intel Xeon family 6 model 173, 2-vCPU KVM guest). The load was below 1 with nothing else running, pinned to one CPU, 31 repetitions with the six kernels interleaved and their order rotated, an untimed call before each timed one, and each array at its own page offset. Operands were below 2^30 (the loops do not branch, so values do not matter, except for v_bnd's choice of path). The clock ran at about 3.8 GHz (measured with an `imul` latency chain). Sizes: L1 512 elements (4 KB per array), L2 16,384 (128 KB), memory 2^25 (256 MB per array, 1.5 GB in all). The figures are the range of the medians over three runs, in ns per element. Quartile spreads were ±1–2%. An earlier set of three runs (without v_bnd) agreed within 2%, except s_chk from memory, which was 4% higher there (3.43–3.48).
+
+| ns per element | s_bare | s_chk | v_bare | v_uns | v_sgn | v_bnd (bound holds) |
+|---|---|---|---|---|---|---|
+| L1 | 1.04–1.05 | 2.09–2.12 | 0.65–0.66 | 2.27–2.30 | 2.01–2.05 | 0.88–0.91 |
+| L2 | 1.04–1.05 | 2.07–2.08 | 0.65–0.66 | 2.22–2.24 | 2.00–2.03 | 0.87–0.89 |
+| memory | 2.64–2.65 | 3.28–3.34 | 2.71–2.72 | 3.35–3.39 | 3.20–3.24 | 2.73–2.76 |
+
+When v_bnd's bound fails, it costs its own sweep plus v_sgn: about 2.9 ns in cache and 6 ns from memory.
+
+**What the figures show.**
+- **Bare, the vector multiply wins in cache:** 0.65 against 1.04 ns (1.6 times), with 3 multiplies per element against 4. From memory both are at the bandwidth limit (48 bytes per element) and tie (v_bare 3% slower).
+- **With the exact check, the vector multiply only ties.** v_sgn takes 2.01–2.05 ns against the scalar 2.09–2.12 in cache (2–4% faster) and 3.20–3.24 against 3.28–3.34 from memory (2–3% faster). It runs 1.4 times fewer instructions per element (27.5 against 38), but the vector loop is bound by AVX2's three vector ALU ports (about 7.7 cycles per element, 3.6 instructions per cycle), while the scalar loop retires about 4.75 per cycle over more ports.
+- **Unsigned pieces lose to signed ones** by 10–13% in cache and 4–5% from memory: they correct for every negative input rather than one edge, split twice as many middle products, and spill more.
+- **The bound with fallback is the fast path when it holds:** 0.88–0.91 ns in cache, 2.3 to 2.4 times faster than v_sgn and the scalar check, and level with the bare loops from memory (the bound is 4 instructions per element and reads no extra memory). Its bound is per array, not per element: it holds whenever every first operand has at most p bits and every second at most q with p + q ≤ 61, for example everything below 2^30. It fails when the arrays hold values near 2^31 and above on both sides, which is common just after a promotion from int32 (a product of two int32 halves already has 63 bits), and then it costs 44% more than v_sgn alone in cache and 85% more from memory.
+- **The check, not the multiply, is the cost:** in v_sgn the multiplies are 16 of 110 instructions. The 2^32 column needs an exact carry, and the edge (or sign) corrections are 20 instructions per register.
+
+**What AVX-512 would change** (not built; this CPU reports AVX-512F, DQ, VL and IFMA).
+- **`vpmullq`** (DQ) gives the low 64 bits of a 64 × 64 product in one instruction (3 µops on Intel). The bare multiply becomes 4 `vpmullq` and 2 add/sub per register of 8 elements. It gives no high half, so the exact check still needs the 32-bit columns or IFMA.
+- **The check gets cheaper in several small ways:** 64-bit arithmetic shift (`vpsraq`) splits a column in 1 instruction instead of 2; unsigned 64-bit compares (`vpcmpuq`) into mask registers give a borrow in 1 instead of 3; masked adds apply an edge correction in 1 instead of 2; mask registers hold the sticky; and 32 vector registers remove the spills. A rough recount of v_sgn under these rules is about 85 per 8-lane register, about 11 per element against 27.5.
+- **IFMA** (`vpmadd52luq`/`vpmadd52huq`) multiplies 52-bit pieces and adds the low or high 52 bits of the 104-bit product into a 64-bit accumulator. With 52-bit limbs each lane has 12 bits of headroom, so columns can be summed before any carry is propagated, which removes most of the split-and-carry work. A 64-bit half needs two limbs (52 + 12), so the multiply count is like the 32-bit schoolbook's; signedness needs the same kind of correction as v_uns or an offset. Not counted further.
+- **Wider registers:** 8 lanes per instruction. On Intel server cores 512-bit operations issue on two ports rather than three, so the gain per instruction is nearer 1.3 times than 2.
+
+**Summary.** In AVX2, the int64-half multiply with an exact overflow check is worth about as much as the scalar one: 2.0 against 2.1 ns per element in cache, 3.2 against 3.3 from memory, at 27.5 against 38 instructions. Signed 32-bit pieces are the better split: one edge correction instead of a correction per negative input, and every re column fits int64 as a difference of two products. Karatsuba does not fit 32-bit multipliers. The bare vector multiply is 1.6 times faster than scalar, and a per-array bound (p + q ≤ 61 bits) keeps the checked multiply near that speed (0.9 ns) whenever it holds, falling back to the exact check otherwise. AVX-512 would remove most of the check's cost (shifts, unsigned compares, masked adds, more registers) and add `vpmullq` for the low word; IFMA's headroom would remove most of the carry work.

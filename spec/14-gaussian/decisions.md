@@ -111,6 +111,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 47. **The published library code is Nim with inline ARM64 assembly,** so the reader sees exactly the machine code and the compiler cannot undo tested choices. Compiler-generated code stays in use for exploration, and its disassembly is read for tricks.
 48. **Number-theory operations beyond the gcd** (lcm, the standard associate, coprimality, divisibility, is a unit) are left out of the first textbook version. An operation built at the machine level is built optimized; that is the point of the machine level. The book should eventually teach how to optimize such operations.
 
+49. **Fixed width is always possible; growth is on by default.** A number starts at two 32-bit halves and grows and shrinks automatically. If the user declares a size, the width is held fixed: promotion and shrinking are switched off, the overflow test still runs, and a set flag is an error instead of a promotion. Growth and shrinking are separate operations that the arithmetic calls, so they can be blocked. With values reduced mod n, a fixed size never overflows, and the check costs the same every time.
+
 **Library-level ideas (later)**
 - The suppressible refusal and the canonical mod (item 40).
 - Absolute value: an exact absolute value exists when a² + b² is a perfect square (one part zero, or a Pythagorean triple such as 3 + 4i, |·| = 5); refuse otherwise. A companion in the shape of division with remainder: the integer square root of the norm with a remainder, q = the largest integer with q² ≤ N and r = N − q², both exact; the exact absolute value is the case r = 0.
@@ -125,6 +127,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - Ties up and ties down, direct against mask form (study 29: tied by count, x86 favours mask because of an x86-only select cost).
 
 **Research list**
+- Constant time: which operations have a form whose time does not depend on the values, and what replaces those that don't (the gcd's loop, inverses through Euclid, division's once-per-array fallbacks chosen by the divisor). Candidates: a fixed step count for the gcd, inverses by powers mod n or by Bernstein–Yang.
 - Overflow handling on GPUs: redoing only the failed elements from a compacted list when overflow is sparse; the cost of the per-launch flag round trip for small arrays.
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

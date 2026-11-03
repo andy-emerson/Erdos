@@ -33,7 +33,7 @@
  *
  * Build: gcc -O2 -mavx512f -mavx512vl -mavx512cd -mavx512bw -mavx512dq -mavx512bitalg -o neon29div neon29div.c
  *        (-DCOUNT for NEON counts; -DFAULT=k for the injected faults)
- * Run:   ./neon29div check | recip | time | mem | ties | tiesmem | count | scan
+ * Run:   ./neon29div check | quick | recip | time | mem | ties | tiesmem | count | icount | scan
  */
 #include "neon29isa.c"
 
@@ -537,8 +537,8 @@ static const i64 EV[] = {IMIN, IMIN + 1, -(1 << 30) - 1, -(1 << 30), -46341, -65
 #define NEV (int)(sizeof EV / sizeof EV[0])
 static int fits(i64 v) { return v >= IMIN && v <= IMAX; }
 
-static void do_check(void) {
-    for (int K = 3; K <= 6; K++) {
+static void do_check(int quick) {
+    for (int K = 3; K <= (quick ? 5 : 6); K++) {
         i64 lo = -(1 << (K - 1)), hi = (1 << (K - 1)) - 1; long cnt = 0, ce = 0;
         bexact = 0; bflag = 1;
         for (i64 a = lo; a <= hi; a++) for (i64 b = lo; b <= hi; b++) for (i64 c = lo; c <= hi; c++) for (i64 d = lo; d <= hi; d++) { push(a, b, c, d); cnt++; }
@@ -573,7 +573,7 @@ static void do_check(void) {
     printf("edges: %ld divisions with remainder, %ld exact, each alone with flags; overflows %ld, flagged %ld (m1 fl, na); failures so far %ld\n", ne, nx, novf, nflagged, fails);
     fflush(stdout);
     bflag = 1; long nr = 0, nrx = 0;
-    for (int it = 0; it < 160; it++) {
+    for (int it = 0; it < (quick ? 16 : 160); it++) {
         bexact = 0;
         for (int j = 0; j < BMAX; j++) {
             int kind = (int)(next() % 6); i64 a, b, c, d;
@@ -720,15 +720,22 @@ static void do_count(void) {
 #endif
 }
 
+/* every kernel once on 4,096 elements (random; exact kinds for EX), for a dynamic x86 count under callgrind */
+static void do_icount(void) {
+    size_t n = 4096; alloc_bufs(n);
+    for (int k = 0; k < NKT; k++) { fill(n, RULE(KT[k].mode) == EX ? 2 : 0, KT[k].shared); KT[k].f(P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n); }
+}
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "check";
-    if (!strcmp(mode, "check")) do_check();
+    if (!strcmp(mode, "check")) do_check(0);
+    else if (!strcmp(mode, "quick")) do_check(1);
     else if (!strcmp(mode, "recip")) do_recip();
     else if (!strcmp(mode, "time")) do_time(0);
     else if (!strcmp(mode, "mem")) do_time(1);
     else if (!strcmp(mode, "ties")) do_ties(0);
     else if (!strcmp(mode, "tiesmem")) do_ties(1);
     else if (!strcmp(mode, "count")) do_count();
+    else if (!strcmp(mode, "icount")) do_icount();
     else if (!strcmp(mode, "scan")) scan_kernels(argv[0]);
     return 0;
 }

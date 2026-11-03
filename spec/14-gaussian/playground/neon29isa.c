@@ -78,7 +78,7 @@ static void cntx_(void) { nmul++; nops++; }
 #define vshrq_u64_v(a, k)   C_(_mm_srlv_epi64(a, k))             /* NEON: vshlq_u64(a, -k) */
 /* NEON ushl with a signed count in each lane: left where k >= 0, right by -k where k < 0, one instruction.
  * x86 has no signed-count shift: both shifts (out-of-range counts give 0) and an OR. */
-#define vshlq_u64_sgn(a, k) C_(BAR_(_mm_or_si128(_mm_sllv_epi64(a, k), _mm_srlv_epi64(a, _mm_sub_epi64(_mm_setzero_si128(), k)))))
+#define vshlq_u64_sgn(a, k) C_(({ V x_ = (a), k_ = (k); BAR_(_mm_or_si128(_mm_sllv_epi64(x_, k_), _mm_srlv_epi64(x_, _mm_sub_epi64(_mm_setzero_si128(), k_)))); }))
 /* shift by a count held in a register, the same for every lane (NEON: ushl by a dup'd count) */
 #define vshrq_u64_r(a, c)   C_(_mm_srl_epi64(a, c))
 #define vshlq_u64_r(a, c)   C_(_mm_sll_epi64(a, c))
@@ -113,8 +113,8 @@ AI V bsl_(V m, V a, V b) { V r_; __asm__("vpblendvb %3, %2, %1, %0" : "=x"(r_) :
 #define vbslq(m, a, b)      C_(bsl_(m, a, b))                    /* m ? a : b, full-lane masks only */
 #define vclzq_u32(a)        C_(_mm_lzcnt_epi32(a))
 #define vcntq_u8(a)         C_(_mm_popcnt_epi8(a))
-#define vpaddlq_u8(a)       C_(_mm_add_epi16(BAR_(_mm_and_si128(a, _mm_set1_epi16(0xFF))), _mm_srli_epi16(a, 8)))
-#define vpaddlq_u16(a)      C_(_mm_add_epi32(BAR_(_mm_and_si128(a, _mm_set1_epi32(0xFFFF))), _mm_srli_epi32(a, 16)))
+#define vpaddlq_u8(a)       C_(({ V x_ = (a); _mm_add_epi16(BAR_(_mm_and_si128(x_, _mm_set1_epi16(0xFF))), _mm_srli_epi16(x_, 8)); }))
+#define vpaddlq_u16(a)      C_(({ V x_ = (a); _mm_add_epi32(BAR_(_mm_and_si128(x_, _mm_set1_epi32(0xFFFF))), _mm_srli_epi32(x_, 16)); }))
 #define vqtbl1q_u8(t, i)    C_(_mm_shuffle_epi8(t, i))
 #define vmulq_s32(a, b)     X_(_mm_mullo_epi32(a, b))
 #define vmlaq_s32(c, a, b)  X_(_mm_add_epi32(c, _mm_mullo_epi32(a, b)))

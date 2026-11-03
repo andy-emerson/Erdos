@@ -45,7 +45,12 @@ typedef __m256i V;
 #define IMIN INT32_MIN
 #define IMAX INT32_MAX
 enum { EX, FL, NA, B1, B2, B3, B4, B5 };
-#define NEAR(m) ((m) >= NA)
+/* form flags on the mode: MAG = magnitude form (m = sign mask, |u| = (u xor m) - m, divide and round the magnitude,
+ * q = (q' xor m) - m); NOS = no sign handling at all (only correct for X, Y >= 0; timing only) */
+#define MAG 16
+#define NOS 32
+#define RULE(m) ((m) & 15)
+#define NEAR(m) (RULE(m) >= NA)
 
 #define ARGS const i32 *restrict pa, const i32 *restrict pb, const i32 *restrict pc, const i32 *restrict pd, \
              i32 *restrict pqr, i32 *restrict pqi, i32 *restrict prr, i32 *restrict pri, size_t n
@@ -57,10 +62,34 @@ static inline u64 div128(u64 hi, u64 lo, u64 d) {      /* floor((hi 2^64 + lo) /
 }
 
 /* ======================= m1: scalar hardware divide ======================= */
+AI u32 s_out(i32 a, i32 b, i32 c, i32 d, u32 q1, u32 q2, i32 *qr, i32 *qi, i32 *rr, i32 *ri, int mode);
 AI u32 s_div(i32 a, i32 b, i32 c, i32 d, u64 N, i32 *qr, i32 *qi, i32 *rr, i32 *ri, int mode) {
     u64 X = (u64)((i64)a * c) + (u64)((i64)b * d), Y = (u64)((i64)b * c) - (u64)((i64)a * d);
     u64 sx = -(u64)((i64)(X - 1) < -1), sy = -(u64)((i64)Y < 0);
+    if (mode & NOS) sx = sy = 0;
     __asm__("" : "+r"(sx), "+r"(sy));        /* keep the masks as masks (gcc otherwise may keep a byte flag in memory) */
+    if (mode & (MAG | NOS)) {                /* magnitude form */
+        u64 ux = (X ^ sx) - sx, uy = (Y ^ sy) - sy;
+        u64 qx = ux / N, qy = uy / N;
+        u32 q1 = (u32)qx, q2 = (u32)qy;
+        if (NEAR(mode)) {
+            u64 rx = ux % N, ry = uy % N, hx, hy;
+            int R_ = RULE(mode);
+            if (R_ == NA || R_ == B1 || R_ == B5) hx = hy = (N - 1) >> 1;      /* magnitude ties up = away from zero */
+            else if (R_ == B2) hx = hy = N >> 1;
+            else if (R_ == B3) { hx = (N - (q1 & 1)) >> 1; hy = (N - (q2 & 1)) >> 1; }
+            else { hx = (N - 1 + (q1 & 1)) >> 1; hy = (N - 1 + (q2 & 1)) >> 1; }
+            u32 ux1 = (u32)((hx - rx) >> 63), uy1 = (u32)((hy - ry) >> 63);
+            if (R_ == B5) {
+                u32 tx = (u32)(((N >> 1) - rx) >> 63) ^ ux1, ty = (u32)(((N >> 1) - ry) >> 63) ^ uy1;
+                u32 ox = (q1 + ux1) & 1, oy = (q2 + uy1) & 1;
+                ux1 ^= tx & oy; uy1 ^= ty & ox;
+            }
+            q1 += ux1; q2 += uy1;
+        }
+        q1 = (q1 ^ (u32)sx) - (u32)sx; q2 = (q2 ^ (u32)sy) - (u32)sy;
+        return s_out(a, b, c, d, q1, q2, qr, qi, rr, ri, mode);
+    }
     u64 ux = X ^ sx, uy = Y ^ sy;
     u64 qx = ux / N, qy = uy / N;
     u32 q1 = (u32)(qx ^ sx), q2 = (u32)(qy ^ sy);
@@ -68,22 +97,25 @@ AI u32 s_div(i32 a, i32 b, i32 c, i32 d, u64 N, i32 *qr, i32 *qi, i32 *rr, i32 *
         u64 rx = ux % N, ry = uy % N;
         rx = (rx ^ sx) + (N & sx); ry = (ry ^ sy) + (N & sy);
         u64 hx, hy;                                                   /* round up where rho > h */
-        if (mode == NA) hx = hy = (N - 1) >> 1;
-        else if (mode == B1 || mode == B5) { hx = (N - 1 - sx) >> 1; hy = (N - 1 - sy) >> 1; }
-        else if (mode == B2) { hx = (N + sx) >> 1; hy = (N + sy) >> 1; }
-        else if (mode == B3) { hx = (N - (q1 & 1)) >> 1; hy = (N - (q2 & 1)) >> 1; }
+        if (RULE(mode) == NA) hx = hy = (N - 1) >> 1;
+        else if (RULE(mode) == B1 || RULE(mode) == B5) { hx = (N - 1 - sx) >> 1; hy = (N - 1 - sy) >> 1; }
+        else if (RULE(mode) == B2) { hx = (N + sx) >> 1; hy = (N + sy) >> 1; }
+        else if (RULE(mode) == B3) { hx = (N - (q1 & 1)) >> 1; hy = (N - (q2 & 1)) >> 1; }
         else { hx = (N - 1 + (q1 & 1)) >> 1; hy = (N - 1 + (q2 & 1)) >> 1; }
         u32 ux1 = (u32)((hx - rx) >> 63), uy1 = (u32)((hy - ry) >> 63);   /* rho > h; both below 2^63 */
-        if (mode == B5) {        /* toward zero instead where tied and the other part (away) is odd */
+        if (RULE(mode) == B5) {        /* toward zero instead where tied and the other part (away) is odd */
             u32 tx = (u32)((((N + sx) >> 1) - rx) >> 63) ^ ux1, ty = (u32)((((N + sy) >> 1) - ry) >> 63) ^ uy1;
             u32 ox = (q1 + ux1) & 1, oy = (q2 + uy1) & 1;
             ux1 ^= tx & oy; uy1 ^= ty & ox;
         }
         q1 += ux1; q2 += uy1;
     }
+    return s_out(a, b, c, d, q1, q2, qr, qi, rr, ri, mode);
+}
+AI u32 s_out(i32 a, i32 b, i32 c, i32 d, u32 q1, u32 q2, i32 *qr, i32 *qi, i32 *rr, i32 *ri, int mode) {
     *qr = (i32)q1; *qi = (i32)q2;
     u32 f = (q1 == 0x80000000u) | (q2 == 0x80000000u);
-    if (mode != EX) {
+    if (RULE(mode) != EX) {
         u32 r1 = (u32)a - (q1 * (u32)c - q2 * (u32)d), r2 = (u32)b - (q1 * (u32)d + q2 * (u32)c);
         *rr = (i32)r1; *ri = (i32)r2;
         if (NEAR(mode)) f |= (r1 == 0x80000000u) | (r2 == 0x80000000u);
@@ -126,7 +158,7 @@ AI u32 m1_body(ARGS, int mode, int shared) {
 #define PACKQ(e, o) _mm256_blend_epi32(e, _mm256_slli_epi64(o, 32), 0xAA)
 
 /* front end: 8 elements -> U[0..3] (re even, re odd, im even, im odd), sign masks S[0..3], N[0..1] (even, odd) */
-AI void front(V a, V b, V c, V d, int shared, V Nsh, V N[2], V U[4], V S[4], V *zf) {
+AI void front(V a, V b, V c, V d, int shared, V Nsh, V N[2], V U[4], V S[4], V *zf, int mode) {
     const V zero = _mm256_setzero_si256(), one = C64(1), m1 = C64(-1);
     V ao = HI32(a), bo = HI32(b), co = shared ? c : HI32(c), dO = shared ? d : HI32(d);
     V X0 = ADD64(MULS(a, c), MULS(b, d)), X1 = ADD64(MULS(ao, co), MULS(bo, dO));
@@ -137,14 +169,42 @@ AI void front(V a, V b, V c, V d, int shared, V Nsh, V N[2], V U[4], V S[4], V *
         V z0 = _mm256_cmpeq_epi64(N0, zero), z1 = _mm256_cmpeq_epi64(N1, zero);
         N[0] = OR(N0, AND(z0, one)); N[1] = OR(N1, AND(z1, one)); *zf = OR(*zf, OR(z0, z1));
     }
+    if (mode & NOS) { S[0] = S[1] = S[2] = S[3] = zero; U[0] = X0; U[1] = X1; U[2] = Y0; U[3] = Y1; return; }
     S[0] = GT64(m1, SUB64(X0, one)); S[1] = GT64(m1, SUB64(X1, one));
     S[2] = GT64(zero, Y0); S[3] = GT64(zero, Y1);
+    if (mode & MAG) {   /* |u| = (u xor m) - m */
+        U[0] = SUB64(XOR(X0, S[0]), S[0]); U[1] = SUB64(XOR(X1, S[1]), S[1]); U[2] = SUB64(XOR(Y0, S[2]), S[2]); U[3] = SUB64(XOR(Y1, S[3]), S[3]);
+        return;
+    }
     U[0] = XOR(X0, S[0]); U[1] = XOR(X1, S[1]); U[2] = XOR(Y0, S[2]); U[3] = XOR(Y1, S[3]);
 }
 /* nearest rules from the core's Q (q_u) and R (U mod N), applied to the packed floor quotients */
+AI void nearest_mag(int mode, V N[2], V Q[4], V R[4], V *qre, V *qim) {   /* on magnitudes: R is the remainder */
+    V M[4], T[4];
+    const V one = C64(1);
+    int r = RULE(mode);
+    _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
+        V Nj = N[j & 1], H;
+        if (r == NA || r == B1 || r == B5) H = _mm256_srli_epi64(SUB64(Nj, one), 1);
+        else if (r == B2) H = _mm256_srli_epi64(Nj, 1);
+        else if (r == B3) H = _mm256_srli_epi64(SUB64(Nj, AND(Q[j], one)), 1);
+        else H = _mm256_srli_epi64(ADD64(SUB64(Nj, one), AND(Q[j], one)), 1);
+        M[j] = GT64(R[j], H);
+        if (r == B5) T[j] = XOR(M[j], GT64(R[j], _mm256_srli_epi64(Nj, 1)));
+    }
+    V mr = PACK(M[0], M[1]), mi = PACK(M[2], M[3]);
+    if (r == B5) {
+        V tr = PACK(T[0], T[1]), ti = PACK(T[2], T[3]);
+        V odr = _mm256_srai_epi32(_mm256_slli_epi32(SUB32(*qre, mr), 31), 31);
+        V odi = _mm256_srai_epi32(_mm256_slli_epi32(SUB32(*qim, mi), 31), 31);
+        mr = XOR(mr, AND(tr, odi)); mi = XOR(mi, AND(ti, odr));
+    }
+    *qre = SUB32(*qre, mr); *qim = SUB32(*qim, mi);
+}
 AI void nearest(int mode, V N[2], V Q[4], V R[4], V S[4], V *qre, V *qim) {
     V M[4], T[4];
     const V one = C64(1);
+    mode = RULE(mode);
     _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
         V Nj = N[j & 1];
         V rho = ADD64(XOR(R[j], S[j]), AND(Nj, S[j]));                   /* floor remainder */
@@ -168,12 +228,19 @@ AI void nearest(int mode, V N[2], V Q[4], V R[4], V S[4], V *qre, V *qim) {
 }
 /* back end: q = q_u xor s, packed; r = x - q y mod 2^32; flags */
 AI u32 back(int mode, V a, V b, V c, V d, V Q[4], V S[4], V N[2], V R[4], i32 *qr, i32 *qi, i32 *rr, i32 *ri) {
-    V qre = XOR(PACKQ(Q[0], Q[1]), PACK(S[0], S[1])), qim = XOR(PACKQ(Q[2], Q[3]), PACK(S[2], S[3]));
-    if (NEAR(mode)) nearest(mode, N, Q, R, S, &qre, &qim);
+    V qre, qim;
+    if (mode & (MAG | NOS)) {
+        qre = PACKQ(Q[0], Q[1]); qim = PACKQ(Q[2], Q[3]);
+        if (NEAR(mode)) nearest_mag(mode, N, Q, R, &qre, &qim);
+        if (mode & MAG) { V sr = PACK(S[0], S[1]), si = PACK(S[2], S[3]); qre = SUB32(XOR(qre, sr), sr); qim = SUB32(XOR(qim, si), si); }
+    } else {
+        qre = XOR(PACKQ(Q[0], Q[1]), PACK(S[0], S[1])); qim = XOR(PACKQ(Q[2], Q[3]), PACK(S[2], S[3]));
+        if (NEAR(mode)) nearest(mode, N, Q, R, S, &qre, &qim);
+    }
     ST(qr, qre); ST(qi, qim);
     const V mn = C32(IMIN);
     V f = OR(EQ32(qre, mn), EQ32(qim, mn));
-    if (mode != EX) {
+    if (RULE(mode) != EX) {
         V rre = ADD32(SUB32(a, MULLO(qre, c)), MULLO(qim, d));
         V rim = SUB32(SUB32(b, MULLO(qre, d)), MULLO(qim, c));
         ST(rr, rre); ST(ri, rim);
@@ -223,7 +290,7 @@ AI u32 m3_body(ARGS, int mode, int shared, int wmode, int count) {
     for (size_t i = 0; i < n; i += 8) {
         V a = LD(pa + i), b = LD(pb + i), c = shared ? cs : LD(pc + i), d = shared ? ds : LD(pd + i);
         V N[2], U[4], S[4], Q[4], R[4];
-        front(a, b, c, d, shared, Nsh, N, U, S, &zf);
+        front(a, b, c, d, shared, Nsh, N, U, S, &zf, mode);
         m3_core(U, N, Q, R, wmode, count);
         f |= back(mode, a, b, c, d, Q, S, N, R, pqr + i, pqi + i, prr + i, pri + i);
     }
@@ -252,7 +319,7 @@ AI u32 m4_body(ARGS, int mode) {
     for (size_t i = 0; i < n; i += 8) {
         V a = LD(pa + i), b = LD(pb + i);
         V N[2], U[4], S[4], Q[4], R[4];
-        front(a, b, cb, db, 1, Nv, N, U, S, &zf);
+        front(a, b, cb, db, 1, Nv, N, U, S, &zf, mode);
         _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
             V u = _mm256_srl_epi64(U[j], cs);
             V Sm = ADD64(ADD64(u, MULU(HI32(u), mp)), HI32(MULU(u, mp)));
@@ -298,7 +365,7 @@ AI u32 m5_body(ARGS, int mode) {
     for (size_t i = 0; i < n; i += 8) {
         V a = LD(pa + i), b = LD(pb + i), c = LD(pc + i), d = LD(pd + i);
         V N[2], U[4], S[4], Q[4], R[4], vp[2], cl[2], cr[2], Nhi[2], Nm1b[2];
-        front(a, b, c, d, 0, zero, N, U, S, &zf);
+        front(a, b, c, d, 0, zero, N, U, S, &zf, mode);
         _Pragma("GCC unroll 9") for (int h = 0; h < 2; h++) {
             V Nn = N[h], sh = zero;                             /* normalise: Nn = N << sh, top bit set */
             _Pragma("GCC unroll 9") for (int k = 32; k >= 1; k >>= 1) {
@@ -330,7 +397,7 @@ AI u32 m5x2_body(ARGS, int mode) {
         V a[2], b[2], c[2], d[2], N[2][2], U[2][4], S[2][4], Q[2][4], R[2][4], vp[4], cl[4], cr[4], Nhi[4], Nm1b[4], Nn[4], sh[4];
         _Pragma("GCC unroll 9") for (int g = 0; g < 2; g++) {
             a[g] = LD(pa + i + 8 * g); b[g] = LD(pb + i + 8 * g); c[g] = LD(pc + i + 8 * g); d[g] = LD(pd + i + 8 * g);
-            front(a[g], b[g], c[g], d[g], 0, zero, N[g], U[g], S[g], &zf);
+            front(a[g], b[g], c[g], d[g], 0, zero, N[g], U[g], S[g], &zf, mode);
         }
         _Pragma("GCC unroll 9") for (int h = 0; h < 4; h++) { Nn[h] = N[h >> 1][h & 1]; sh[h] = zero; }
         _Pragma("GCC unroll 9") for (int k = 32; k >= 1; k >>= 1)
@@ -434,20 +501,26 @@ AI u32 m2s_body(ARGS) {
 #define BM4(md) m4_body(PASS, md)
 #define BM5(md) m5_body(PASS, md)
 #define BM5X(md) m5x2_body(PASS, md)
-KR(m5x, BM5X) KR(m1, BM1) KR(m1s, BM1S) KR(m3, BM3) KR(m3s, BM3S) KR(m4, BM4) KR(m5, BM5)
+KR(m5x, BM5X) KR(m1, BM1)
+#define KM(m, body3) K1(m##_mb1, body3(B1 | MAG)) K1(m##_mb2, body3(B2 | MAG)) K1(m##_mb3, body3(B3 | MAG)) K1(m##_mb4, body3(B4 | MAG)) \
+                     K1(m##_mb5, body3(B5 | MAG)) K1(m##_nsf, body3(FL | NOS)) K1(m##_nsa, body3(NA | NOS))
+KM(m1, BM1) KM(m3, BM3) KM(m4, BM4) KM(m5x, BM5X) KR(m1s, BM1S) KR(m3, BM3) KR(m3s, BM3S) KR(m4, BM4) KR(m5, BM5)
 K1(m1_ex, m1_body(PASS, EX, 0)) K1(m1s_ex, m1_body(PASS, EX, 1)) K1(m2_ex, m2_body(PASS)) K1(m2s_ex, m2s_body(PASS))
 K1(m5x_ex, m5x2_body(PASS, EX)) K1(m3_ex, m3_body(PASS, EX, 0, 0, 0)) K1(m3s_ex, m3_body(PASS, EX, 1, 0, 0)) K1(m4_ex, m4_body(PASS, EX)) K1(m5_ex, m5_body(PASS, EX))
 K1(m3w_fl, m3_body(PASS, FL, 0, g_W, 0)) K1(m3c_fl, m3_body(PASS, FL, 0, 0, 1))
 
 enum { VAR = 0, SHR = 1 };
-typedef struct { const char *name; kf f; int mode, shared; } kern;
+typedef struct { const char *name; kf f; int mode, shared; } kern;   /* NOS kernels are timing only (mode < 0: not checked) */
 #define KE(m, sh) {#m "_fl", m##_fl, FL, sh}, {#m "_na", m##_na, NA, sh}, {#m "_b1", m##_b1, B1, sh}, {#m "_b2", m##_b2, B2, sh}, \
                   {#m "_b3", m##_b3, B3, sh}, {#m "_b4", m##_b4, B4, sh}, {#m "_b5", m##_b5, B5, sh}
 static kern KT[] = {
     {"m1_ex", m1_ex, EX, VAR}, {"m2_ex", m2_ex, EX, VAR}, {"m3_ex", m3_ex, EX, VAR}, {"m5_ex", m5_ex, EX, VAR}, {"m5x_ex", m5x_ex, EX, VAR},
     {"m1s_ex", m1s_ex, EX, SHR}, {"m2s_ex", m2s_ex, EX, SHR}, {"m3s_ex", m3s_ex, EX, SHR}, {"m4_ex", m4_ex, EX, SHR},
     KE(m1, VAR), KE(m3, VAR), KE(m5, VAR), KE(m5x, VAR),
-    {"m3w_fl", m3w_fl, FL, VAR}, {"m3c_fl", m3c_fl, FL, VAR}, KE(m1s, SHR), KE(m3s, SHR), KE(m4, SHR),
+    {"m3w_fl", m3w_fl, FL, VAR}, {"m3c_fl", m3c_fl, FL, VAR},
+#define KEM(m, sh) {#m "_mb1", m##_mb1, B1, sh}, {#m "_mb2", m##_mb2, B2, sh}, {#m "_mb3", m##_mb3, B3, sh}, {#m "_mb4", m##_mb4, B4, sh}, \
+                   {#m "_mb5", m##_mb5, B5, sh}, {#m "_nsf", m##_nsf, -1, sh}, {#m "_nsa", m##_nsa, -2, sh}
+    KEM(m1, VAR), KEM(m3, VAR), KEM(m5x, VAR), KEM(m4, SHR), KE(m1s, SHR), KE(m3s, SHR), KE(m4, SHR),
 };
 #define NKT (int)(sizeof KT / sizeof KT[0])
 #define NMODE 8
@@ -525,6 +598,7 @@ static void check_batch(size_t n, int exact, int flagcheck) {
             RF[m][j] = ref(A[j], B[j], C[j], D[j], m); anyov[m] |= RF[m][j].ov; }
     }
     for (int k = 0; k < NKT; k++) {
+        if (KT[k].mode < 0) continue;
         if ((KT[k].mode == EX) != exact) continue;
         if (KT[k].shared && !same) continue;
         int m = KT[k].mode;
@@ -903,6 +977,10 @@ int main(int argc, char **argv) {
     if (!strcmp(mode, "check")) do_check();
     else if (!strcmp(mode, "recip")) do_recip();
     else if (!strcmp(mode, "signs")) do_signs();
+    else if (!strcmp(mode, "signsmag")) {    /* the same checks on the magnitude-form B kernels */
+        kf mk[5][3] = {{m1_mb1, m3_mb1, m5x_mb1}, {m1_mb2, m3_mb2, m5x_mb2}, {m1_mb3, m3_mb3, m5x_mb3}, {m1_mb4, m3_mb4, m5x_mb4}, {m1_mb5, m3_mb5, m5x_mb5}};
+        for (int u = 0; u < 5; u++) for (int t = 0; t < 3; t++) rule_kernels[u + 1][t] = mk[u][t];
+        do_signs(); }
     else if (!strcmp(mode, "time")) do_time(0);
     else if (!strcmp(mode, "mem")) do_time(1);
     else if (!strcmp(mode, "width")) do_width();

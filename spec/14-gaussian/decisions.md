@@ -42,6 +42,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 **Decided (Nov 2, night)**
 11. **Overflow: the family of word sizes,** replacing item 10. On overflow the whole array is copied into words twice the size (64 → 128 → …), sign on top, split in halves, same rules at every size; past the largest native size each half becomes a multi-word integer (ordinary arbitrary precision). The user opts into the 64-bit type and never sees the bookkeeping. Arrays shrink back when every element fits in half the width; the shrink rule and its margin are under test (study 12). What becomes of the reserved value is open.
 
+12. **Full two's-complement range; −2^31 is no longer reserved** (replacing items 3 and 8). Negating or conjugating −2^31 overflows like any other operation and promotes to the next size. Cheaper add, subtract, multiply and shrink test (study 15).
+
 **Research list**
 - Barrett against Montgomery for mod n (build and prove first, then time).
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

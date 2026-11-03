@@ -420,3 +420,63 @@ Under rule A a value hovering at a threshold promotes on every add and shrinks o
 | once per array: test the accumulator (compare, branch) | 2 |
 
 A promotion costs a copy of both arrays (6 per element each) and a full redo of the operation at the wider width. A shrink costs 6 per element per level. Testing for a shrink after every operation costs 9 per element, half as much again as an add. Shrinking is not needed for correctness, so the test could run less often: after operations that can shrink values, or every k operations. Neither was measured here.
+
+## Study 13: inverses mod n by the norm route (inv_norm.py)
+
+**What was checked.**
+- **Rational modulus n.** x = a + bi is a unit mod n exactly when N(x) = a² + b² is, and then x^−1 = conj(x)·N(x)^−1 mod n. The integer inverse of N(x) was taken two ways:
+  - **(i) extended Euclid:** a data-dependent loop with one divide per step;
+  - **(ii) Bernstein–Yang divsteps** with a fixed iteration count, for odd n: masks only, with no multiply and no divide.
+  The divstep invariants are f ≡ d·g₀ and g ≡ e·g₀ (mod n), starting from (δ, f, g, d, e) = (1, n, g₀, 0, 1). Each step:
+  - if δ > 0 and g is odd, then (δ, f, g, d, e) ← (−δ, g, −f, e, −d), by a conditional swap and negation;
+  - then δ += 1, g ← (g + (g mod 2)·f)/2, and e ← (e + (g mod 2)·d)/2 mod n (halving mod n: add n when odd, then shift).
+  At the end g = 0, f = ±gcd, and the inverse is ±d.
+- **Iteration count.** ⌊(49d + 80)/17⌋ for d < 46 and ⌊(49d + 57)/17⌋ otherwise. This is Bernstein and Yang's bound as I remember it; it was not looked up, so it is checked here instead.
+- **Gaussian modulus ν = c + di with gcd(c, d) = 1.** Z[i]/(ν) ≅ Z/N(ν), with i ↦ t = −c·d^−1 mod N (one integer inverse per modulus). x = p + qi maps to p + q·t mod N, which is inverted as an integer. The result z is itself a Gaussian representative of x^−1 mod ν, reduced to a small one by study 6's rounded division by ν.
+- **The norm trick fails for a Gaussian modulus.** For ν = 2 + i and x = 2 − i, N(x) = 5 is not a unit mod N(ν) = 5, yet x ≡ −1 is a unit mod ν. This was checked.
+- **Batch inversion (Montgomery's trick)** over an array sharing n: prefix products, one inverse, then two products per element going back.
+
+**Cases.**
+- **The divstep bound, exhaustive for d = 1 to 11:** every odd f < 2^d and every g < 2^d, counting divsteps until g = 0. The worst case is always below the bound, by 5 to 6 steps (d = 11: worst 30, bound 36). At d = 31, 20,000 random odd n and g < n needed at most 74 against the bound's 94.
+- **Rational n = 2 to 39:** every residue a + bi against a brute-force search over all residues.
+  - "Unit iff N(x) is a unit" was checked in 20,539 cases.
+  - Euclid matched the brute-force inverse in 13,426 cases and reported 7,113 non-units.
+  - Divsteps (odd n) matched in 9,032 cases and reported 1,627 non-units.
+- **Gaussian ν with |c|, |d| ≤ 6, coprime:** x over a 9 × 9 box against brute force over the N(ν) classes (7,452 cases). Invertible exactly when a brute-force inverse exists, x·x^−1 ≡ 1 mod ν, and the representative is reduced (2N(r) ≤ N(ν)).
+- **Batches** of 1, 2 and 5 elements for n = 5, 7, 9, 13 and 15: the batch equals the individual inverses, or reports failure when any element is not a unit.
+- **Random, 31-bit halves:**
+  - the three largest primes below 2^31, plus 2^31 − 2, 3·5·7·…·23 and 3·5·65,537, with 4,000 x each, by both methods (divsteps for odd n only);
+  - a batch of 64 per modulus;
+  - 300 random ν with 31-bit coprime parts, 30 x each.
+- **Failures: none.**
+
+**Steps.** Extended Euclid on 31-bit n: mean 16.67, max 32. On N(ν) (up to 63 bits): mean 35.82, max 53. Divsteps always run the fixed count: 94 at 31 bits, 184 at 63 bits.
+
+**Instruction counts** (extended Euclid per step: DIV, MUL and SUB for the remainder, MUL and SUB for the coefficient, loop test = 6, with 2 MUL and 1 DIV. Divsteps per step = 37: condition 4, swap and negate f, g 6, δ 3, swap d, e 4, e ← n − e 4, g update 5, e update 6, halve mod n 5).
+
+| rational n, 31-bit | instructions | multiplies | divides |
+|---|---|---|---|
+| norm route around the integer inverse (extract 4, N mod n 10, two products by N^−1 mod n 17, pack 2) | 33 | 10 | 0 |
+| integer inverse, extended Euclid (6 per step, + 3) | ≈ 103 mean, 195 max | ≈ 33 mean | ≈ 17 mean |
+| integer inverse, divsteps (94 × 37, + 6) | 3,484 always | 0 | 0 |
+| **x^−1, Euclid** | ≈ 136 mean, 228 max | ≈ 43 | ≈ 17 |
+| **x^−1, divsteps** | ≈ 3,517 | 10 | 0 |
+
+The fixed-count divsteps cost about 25 times Euclid's mean in instructions, in exchange for no divides, no branches and a fixed length (the shape vector lanes need). Two measures from the survey were not tried here: batching divsteps into 2 × 2 transition matrices on low bits, and delaying the coefficient halving into one final multiply by 2^−K mod n. Both cut the per-step coefficient work, which is 19 of the 37 instructions.
+
+**Gaussian modulus**, per element:
+- the map in: one 64-bit mulmod (a 64 × 64 → 128-bit product) and an add mod N;
+- an integer inverse mod N(ν) < 2^63: Euclid at about 36 steps, ≈ 220 instructions; divsteps at 184 × 37 ≈ 6,800;
+- the reduction back mod ν: two roundings of 128-bit products.
+Per modulus there is one more inverse (for t). Two things were not counted to the instruction. The 128-bit steps need 64 × 64 → 128 products, which are missing from some vector units (survey §4), and a Barrett-style rounding, because the 128-by-64 divide is not portable (RULES). With 63-bit N the divstep values f + g need 65 bits, so a 64-bit divstep loop does not fit as written. Staying in the Z/N image for a whole computation avoids the map back.
+
+**Batch inversion** (rational n, Gaussian product mod n 27 instructions with 8 multiplies, study 4). The cost is 3(k − 1) products plus one inverse, per element:
+
+| k | with Euclid | with divsteps | multiplies per element |
+|---|---|---|---|
+| 1 (no batch) | 136 | 3,517 | 43 / 10 |
+| 16 | ≈ 84 | ≈ 296 | ≈ 25 |
+| 64 | ≈ 82 | ≈ 135 | ≈ 24 |
+| 1,024 | ≈ 81 | ≈ 85 | ≈ 24 |
+
+With batching the inverse's cost becomes negligible, and the method of inversion stops mattering, from a few hundred elements. One non-unit makes the whole batch fail (detected by the single inverse failing); the toy then returns failure and does not bisect.

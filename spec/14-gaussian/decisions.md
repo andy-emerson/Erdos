@@ -70,3 +70,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).
 - A Gaussian version of Bernstein–Yang's fixed-count divsteps: no known bound on the step count; a separate research project.
+
+**For the documentation (Nov 3)**
+- Division's rounding: explain the box (a fundamental domain; a unique quotient is a choice of box; the box inside the unit circle gives the small remainder; no box is symmetric because +1/2 and −1/2 differ by an integer), and the author's magnitude rule (if the operands' magnitudes don't change, the answer's magnitudes don't change).
+- List the gains of a symmetric rule (sign changes, rotation by i and conjugation pass through division; magnitudes independent of signs; no favoured direction), and for each thing the fixed-box convention gives (one remainder per residue class: comparing, grouping, tables, the Chinese remainder theorem), show the clean equivalent in our library. Ties occur only when 1+i divides the divisor; for odd integer moduli every rule agrees.
+- Tabled: offering both a symmetric division and a canonical mod (as Haskell and Ada do with rem and mod).

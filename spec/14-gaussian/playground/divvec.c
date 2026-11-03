@@ -324,8 +324,8 @@ AI u32 m5_body(ARGS, int mode) {
  * dependency chain is about 160 cycles long, so one register at a time leaves the out-of-order window short */
 AI u32 m5x2_body(ARGS, int mode) {
     const V zero = _mm256_setzero_si256(), bias = C64(1ull << 63);
-    V zf = zero; u32 f = 0;
-    for (size_t i = 0; i < n; i += 16) {
+    V zf = zero; u32 f = 0; size_t i = 0;
+    for (; i + 16 <= n; i += 16) {
         V a[2], b[2], c[2], d[2], N[2][2], U[2][4], S[2][4], Q[2][4], R[2][4], vp[4], cl[4], cr[4], Nhi[4], Nm1b[4], Nn[4], sh[4];
         _Pragma("GCC unroll 9") for (int g = 0; g < 2; g++) {
             a[g] = LD(pa + i + 8 * g); b[g] = LD(pb + i + 8 * g); c[g] = LD(pc + i + 8 * g); d[g] = LD(pd + i + 8 * g);
@@ -354,6 +354,7 @@ AI u32 m5x2_body(ARGS, int mode) {
         _Pragma("GCC unroll 9") for (int g = 0; g < 2; g++)
             f |= back(mode, a[g], b[g], c[g], d[g], Q[g], S[g], N[g], R[g], pqr + i + 8 * g, pqi + i + 8 * g, prr + i + 8 * g, pri + i + 8 * g) ? 1 : 0;
     }
+    if (i < n) f |= m5_body(pa + i, pb + i, pc + i, pd + i, pqr + i, pqi + i, prr + i, pri + i, n - i, mode);   /* last 8 */
     return f | (_mm256_testz_si256(zf, zf) ? 0 : 2);
 }
 

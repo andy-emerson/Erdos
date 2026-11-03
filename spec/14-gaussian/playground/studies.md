@@ -841,3 +841,59 @@ Here the vector kernels are limited by memory traffic (12 and 24 bytes per eleme
 **Conversion costs and break-even.** In lanes, Montgomery saves about 0.12 ns per product and 0.29 per Gaussian product over Barrett. Converting a residue in costs 0.16 and out 0.13. A Gaussian product whose two inputs are converted in and whose output is converted out pays 4 × 0.16 + 2 × 0.13 ≈ 0.91 ns, about three products' saving. So in lanes Montgomery pays from about three multiplies per converted value, and in any chain of products that stays in Montgomery form. In scalar code the two methods are within a few percent either way: Montgomery is about 0.05 ns ahead on the product, and on the Gaussian they tied in two runs while Barrett was 4–7% ahead in the third. So the conversions (0.8 and 0.64 ns per residue) are never repaid, and Barrett, which also takes even n, is the better scalar choice here. Study 4's toy (R = 2^64 Montgomery) had Barrett 7% ahead on the scalar Gaussian. With R = 2^32 that gap is at most this size and not consistent.
 
 **Summary.** The scalar methods tie at about 3 times the speed of the divide for the product and 2.5 times for the Gaussian. In AVX2 lanes, Montgomery is about 1.6 to 1.7 times faster than Barrett (14 and 11 times the divide, against 8.5 and 7). The reason is that a 31-bit Barrett quotient built from 32 × 32 → 64 multiplies is off by up to 2 or 3, which forces a 64-bit correction. Against memory traffic the vector gap mostly closes. Not tried: AVX-512 (vpmullq, 64-bit compares into masks, IFMA's 52-bit multiplies) and a floating-point quotient estimate.
+
+## Study 20: what the fused shrink test costs (shrink20.c)
+
+**What was measured.** Decision 18 fuses the shrink test into the sweep of operations that can make values smaller, and only above the base size. So this study works at the first grown size: Gaussian integers with int64 halves, layout (b) (separate real and imaginary arrays), AVX2 64-bit lanes, gcc 13.3 -O2 -mavx2. The operations are add and subtract of two arrays. Division and mod also shrink values but are out of scope here. Three variants of each, otherwise identical:
+
+1. **Bare:** r = x ± y.
+2. **Shrink:** also ORs r + 2^30 into a sticky register. A half fits in 31 bits (rule B, one bit of margin below the 32-bit size) exactly when its top 34 bits are equal, which is exactly when (r + 2^30) mod 2^64 < 2^31, i.e. bits 31 to 63 of r + 2^30 are clear. This add-offset form needs no 64-bit arithmetic right shift (AVX2 has none). Cost: an add and an OR per register.
+3. **Checks:** also ORs the full-range overflow test into a second sticky: (x XOR r) AND NOT (x XOR y) for add (`vpandn`), (x XOR r) AND (x XOR y) for subtract, read at the sign bit. Cost: XOR, XOR, AND (or ANDN), OR per register.
+
+Each sticky is masked and tested once per array (`vptest` against the bit-31-to-63 mask or the sign-bit mask). The copy to the smaller size is not done; the kernels return the two flags. N is a multiple of 4.
+
+**Correctness.** Every variant was compared with __int128.
+- **Edge values:** 32 of them: 0, ±1, and 2^k − 2 … 2^k + 1 and −2^k − 1 … −2^k + 2 for k = 30, 31, 62, 63, where they fit in int64. Every quadruple (real x, real y, imaginary x, imaginary y), 1,048,576 in all, was tested as one element alone in a register, with the lane position rotating.
+- **Random:** 400,000 arrays of 4 to 128 elements. Values were edges, edges ± 4, and random bit lengths, and half the arrays were all-small (29-bit) with an occasional planted edge, so that "all fit" occurs often.
+- **Results:** every result equals the true value mod 2^64. Where no result overflows, the shrink flag says "all fit" exactly when every half fits in 31 bits (both outcomes occur about 135,000 and 790,000 times per variant). Variant 3's overflow flag is set exactly when some true result does not fit in int64. **Failures: none** (8.7 million kernel calls).
+- **One caveat, found by the test:** when a result overflows, the shrink flag describes the wrapped value and is meaningless. In 4,826 add cases and 4,465 subtract cases the overflowed results wrapped into 31 bits and the shrink flag said "all fit". With variant 3 this does no harm, since the overflow flag takes precedence and the operation is redone at the next size. It means variant 2 alone is correct only where overflow is otherwise excluded.
+
+**Instruction counts** (inner loop from objdump, per element = one Gaussian integer, loop does 4 elements per pass; loads, stores and loop overhead included):
+
+| per element | bare | shrink | checks |
+|---|---|---|---|
+| instructions | 2.25 | 3.25 | 5.25 |
+| of which vector arithmetic | 0.5 | 1.5 | 3.5 |
+| loads / stores | 1 / 0.5 | 1 / 0.5 | 1.5 / 0.5 |
+
+So the shrink test adds 1 per element and the overflow check 2 more, as counted. Add and subtract are identical in count. In variant 3 gcc reloads y from memory as a folded operand of `vpxor` instead of keeping it in a register, which adds 0.5 loads per element (L1 hits) but no instructions. The once-per-array tail is about 4 instructions for one sticky and 9 for two.
+
+**Timing.** Same machine as study 19 (Intel Xeon family 6 model 173, 2-vCPU KVM guest, L1d 48 KB and L2 2 MB per core, a reported 480 MB L3 shared with the host). The load was below 0.9 and no other process was busy. The runs were pinned to one CPU, with 31 repetitions, the six kernels interleaved and their order rotated, and an untimed call before each timed one. Values were small (no overflow, all fit), which does not matter, since the loops do not branch. Three sizes:
+- **In L1:** 512 elements, 24 KB for the six arrays, 4,096 calls per sample.
+- **In L2:** 16,384 elements, 768 KB, 128 calls.
+- **Memory:** 2^24 elements, 128 MB per array, 768 MB in all, beyond the reported L3.
+
+Each array starts at a different page offset (j × 576 bytes). With all six at the same offset, the in-cache bare loop was about 10% slower (0.165 against 0.150) and the checks variant 12% slower, and the L2 figures were noisier. The figures below are ranges of the medians over three runs, in ns per element. Quartile spreads were about ±2% in L1 and ±1–2% in L2 and memory. Two earlier runs (of about ten) had one size slowed 3 to 10 times for every kernel or for one kernel throughout. These were taken as host interference and not used.
+
+| ns per element | bare | shrink (extra) | checks (extra) |
+|---|---|---|---|
+| L1, add | 0.148–0.151 | 0.204–0.207 (+0.056, +37%) | 0.344–0.348 (+0.196, +130%) |
+| L1, sub | 0.155 | 0.205–0.207 (+0.050, +32%) | 0.346–0.351 (+0.192, +124%) |
+| L2, add | 0.512–0.525 | 0.514–0.521 (−0.005 to +0.002, ±1%) | 0.533–0.535 (+0.008 to +0.021, +2 to 4%) |
+| L2, sub | 0.513–0.523 | 0.514–0.522 (−0.002 to 0.000) | 0.531–0.535 (+0.012 to +0.018, +2 to 3%) |
+| memory, add | 2.44–2.49 | 2.56–2.58 (+0.09 to +0.15, +3.5 to 6%) | 2.61–2.63 (+0.13 to +0.20, +5 to 8%) |
+| memory, sub | 2.43–2.46 | 2.55–2.59 (+0.12 to +0.15, +5 to 6%) | 2.61–2.63 (+0.18 to +0.20, +7 to 8%) |
+
+- **In L1** the loop is bound by instructions, and the time follows the counts: 3.25/2.25 = 1.44 against a measured 1.33–1.38, and 5.25/2.25 = 2.33 against 2.24–2.33.
+- **In L2** all three are bound by L2 bandwidth (48 bytes per element, about 0.52 ns). The shrink test is free within noise, and the checks cost 2–4%.
+- **In memory** (about 20 GB/s of useful traffic, 26 GB/s with write-allocate), the shrink test costs 3.5–6% and the checks 5–8%. This excess is not specific to the checks. Probe loops showed that any change to the 9-instruction bare loop costs about the same:
+  - the bare loop with four `nop`s cost +3 to 6%;
+  - the same bare instructions with the loads unfolded cost +6.5%;
+  - the shrink test on the real half only cost +7%, as much as on both halves.
+  The bare loop unrolled twice was 1 to 3% faster than bare, while the checks unrolled twice gave the same time as the checks. The tight bare loop seems to keep a little more memory traffic in flight, which a real loop with any other work would not do either.
+
+**Summary.** The shrink test adds 1 instruction per element and the overflow check 2 more, on 2.25 for the bare add or subtract. When the loop waits on memory the shrink test and the checks are close to free:
+- **From L2:** the shrink test costs nothing measurable, and both together cost 2–4%.
+- **From DRAM:** about 5% and 7%, which is the same as the cost of lengthening the bare loop by anything at all.
+
+Only when the data sit in L1 do they cost what their instructions say: +35% for the shrink test, +130% for both. One rule follows from the test: the shrink flag is meaningful only when the overflow flag is clear, so the shrink test should not run without the overflow check. Division and mod, which also shrink values, were not measured.

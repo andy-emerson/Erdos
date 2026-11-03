@@ -1012,3 +1012,61 @@ The saving has two sources. At int32, add and subtract move half the bytes. And 
 - **Rule A:** demotes after every subtract and promotes again on every add. That is a copy down, a copy up and a redo per pair, about 0.27 ns per operation in cache and 1.8 ns from memory, which makes v3A about twice as slow as never shrinking. Rule B's margin removes all of it.
 
 **Summary.** Once values come back under the line, the refined test pays for itself after about 2 further operations from memory and 3 in cache (the first multiply). From then on it saves about 1.2 ns per operation from memory and 0.65 ns in cache, so a long run takes a quarter (in cache) to a half (memory) of the time it takes when it never shrinks. When values never come back down, it costs nothing measurable from memory and 6–7% in cache (up to 28% in an add-and-subtract-only loop). The naive pass breaks even later (L = 4 to 8 from memory), saves less, and costs 22–36% from memory when shrinking never happens. Rule A loses about half the speed when values hover near the line, and rule B none. Division and mod were not measured.
+
+## Study 22: powers of a Gaussian matrix, residue against direct (matpow.py)
+
+**What was compared.** A^e for a square n × n matrix with b-bit halves (full range), counts only, with study 18's cost model.
+
+- **Entry sizes, chosen in advance.** A's entries have |z| ≤ 2^(b − ½), and entries of A^(i+j) are at most n·|A^i|·|A^j|. So log₂|A^j| ≤ j(b − ½) + (j − 1)log₂ n, and a half of A^j needs x_j = ⌊that⌋ + 2 bits.
+- **Direct** (separate re/im arrays), by repeated multiplication (A^j = A^(j−1)·A) and by repeated squaring. Per term with operand halves of x and y bits:
+  - both ≤ 32 bits: study 18's vector forms (1, 2, 8.5);
+  - otherwise scalar multi-word, calibrated to study 18's 64-bit term (32). With word counts wx, wy for the operands, wp for the exact product and wR for the accumulator: four real products of 2·wx·wy + 4(wx·wy − 1), two combines of 2·wp, and two accumulates of 2·wR + 2. This grows with the square of the width.
+- **Residue.** m primes sized for A^e (31-bit primes, or the 27-bit variant). Convert in once, do all products in residue form by repeated squaring, convert out once. Products of Montgomery-form values, summed lazily and reduced by REDC, stay in Montgomery form, so the chain needs no corrections between products. The 31-bit primes reduce every 2 terms; the 27-bit primes reduce every min(n, 32) terms (once per entry here).
+- **Verified against exact big-integer powers:** n = 2, 3 and 4 with e = 2, 3, 4 (and 8, 16 for n ≤ 3), and n = 8 and 16 with e = 2 and 4, at b = 8, 16 and 32. Half of the matrices were the extreme one, every entry (−2^(b−1), −2^(b−1)). Every entry of A^e fits the advance bound (the direct widths), and both residue variants give A^e exactly. 51 powers, **no failures**. (e = 3 exercises the residue form's repeated-multiplication path.)
+
+**Totals** (instructions): best direct (the cheaper of repeated multiplication and squaring) / best residue (the cheaper of 31-bit and 27-bit primes). Squaring is always the cheaper direct method from e = 4 on; repeated multiplication costs up to about 9 times as much at e = 64.
+
+| b = 8 | e = 2 | 4 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| n = 2 | 16 / 142 | 84 / 374 | 308 / 786 | 1,172 / 1,788 | 3,124 / 4,542 | 8,404 / 14,054 |
+| 3 | 54 / 338 | 284 / 914 | 1,040 / 1,930 | 3,956 / 4,968 | 10,544 / 14,283 | 28,580 / 39,902 |
+| 4 | 128 / 632 | 672 / 1,752 | 2,464 / 3,720 | 9,376 / 10,512 | 24,992 / 29,592 | 67,744 / 86,792 |
+| 8 | 1,024 / 3,040 | 5,376 / 9,056 | 19,712 / 27,552 | 75,008 / **67,456** | 204,032 / **176,608** | 685,312 / **500,608** |
+| 16 | 8,192 / 16,256 | 43,008 / 52,608 | 157,696 / 159,360 | 600,064 / **384,512** | 1,632,256 / **1,070,208** | 5,515,264 / **3,070,080** |
+
+| b = 16 | e = 2 | 4 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| n = 2 | 68 / 290 | 292 / 660 | 1,156 / 1,578 | 3,108 / 4,164 | 8,388 / 13,298 | 24,932 / 42,748 |
+| 3 | 230 / 688 | 986 / 1,593 | 3,902 / 4,259 | 10,490 / 11,070 | 28,310 / 34,173 | 84,362 / 111,226 |
+| 4 | 544 / 1,288 | 2,336 / 3,024 | 9,248 / **8,832** | 24,864 / 25,472 | 67,104 / 74,128 | 199,968 / 225,616 |
+| 8 | 4,352 / 6,176 | 18,688 / **15,168** | 73,984 / **46,496** | 198,912 / **124,416** | 540,928 / **381,216** | 1,841,408 / **1,224,992** |
+| 16 | 34,816 / **32,896** | 149,504 / **85,248** | 591,872 / **259,712** | 1,591,296 / **758,912** | 4,327,424 / **2,235,008** | 14,764,032 / **6,620,416** |
+
+| b = 32 | e = 2 | 4 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| n = 2 | 224 / 534 | 1,088 / 1,368 | 3,040 / 3,786 | 8,320 / 11,412 | 24,864 / 39,242 | 82,368 / 140,714 |
+| 3 | 756 / 1,256 | 3,672 / **3,258** | 10,260 / **9,794** | 28,080 / 31,622 | 83,916 / 101,144 | 278,208 / 344,822 |
+| 4 | 1,792 / 2,328 | 8,704 / **6,112** | 24,320 / **19,680** | 66,560 / **62,264** | 198,912 / **194,512** | 659,456 / 664,312 |
+| 8 | 14,336 / **10,848** | 69,632 / **37,856** | 194,560 / **108,576** | 532,480 / **325,056** | 1,595,392 / **1,031,776** | 5,713,920 / **3,372,832** |
+| 16 | 114,688 / **55,680** | 557,056 / **200,576** | 1,556,480 / **569,472** | 4,259,840 / **1,644,288** | 12,763,136 / **5,350,272** | 45,744,128 / **17,288,192** |
+
+Bold marks the residue form winning. Primes needed at e = 64: about 18 to 28 for b = 8, 35 to 47 for b = 16, and 68 to 85 for b = 32 (31-bit and 27-bit respectively).
+
+**Where the residue form wins** (e in {2, 4, …, 64}):
+
+| | n = 2 | n = 3 | n = 4 | n = 8 | n = 16 |
+|---|---|---|---|---|---|
+| b = 8 | never | never | never | from e = 16 (27-bit primes; 31-bit only at e = 64) | from e = 16 |
+| b = 16 | never | never | only e = 8, and narrowly | from e = 4 (27-bit; 31-bit from e = 8) | from e = 2 (27-bit; 31-bit from e = 8) |
+| b = 32 | never | e = 4 and 8 only | e = 4 to 32, narrowly | from e = 2 (27-bit; 31-bit from e = 4) | from e = 2 |
+
+**Why the small cases do not keep their win.** At large e both methods are dominated by costs quadratic in the final width W:
+- **direct by squaring:** about n³ term costs per squaring at the widest size, about 6·(W/64)² each;
+- **residue:** the conversion out, O(m²) per entry with m ≈ W/31, about n²·27·(W/64)² in all.
+
+The residue's products grow only linearly in m. So for large e the ratio direct/residue tends to about n/3. The residue form wins at large powers only from n ≈ 4 on: never for n = 2 and 3, roughly breaking even at n = 4, and clearly winning at n = 8 and 16. At small e and wider inputs (b = 32), the residue form wins briefly even at n = 3 and 4, before the direct method has had to go multi-word.
+
+**Caveats.**
+- Both sides use quadratic methods. At the widths reached here (up to about 2,300 bits at b = 32, e = 64), a real direct multi-word multiply would use Karatsuba or better, and the residue conversion out could use subquadratic CRT (product trees). Neither was modelled.
+- Only powers of 2 were counted. Other e need one extra product per set bit, in both methods.
+- The direct model charges 33- to 64-bit operands as scalar words even where one operand is narrow (A in repeated multiplication), which may overcharge the direct method a little at mid widths. Repeated multiplication never beat squaring, so this does not move the winners.

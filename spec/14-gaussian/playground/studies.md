@@ -1130,3 +1130,77 @@ When v_bnd's bound fails, it costs its own sweep plus v_sgn: about 2.9 ns in cac
 - **Wider registers:** 8 lanes per instruction. On Intel server cores 512-bit operations issue on two ports rather than three, so the gain per instruction is nearer 1.3 times than 2.
 
 **Summary.** In AVX2, the int64-half multiply with an exact overflow check is worth about as much as the scalar one: 2.0 against 2.1 ns per element in cache, 3.2 against 3.3 from memory, at 27.5 against 38 instructions. Signed 32-bit pieces are the better split: one edge correction instead of a correction per negative input, and every re column fits int64 as a difference of two products. Karatsuba does not fit 32-bit multipliers. The bare vector multiply is 1.6 times faster than scalar, and a per-array bound (p + q ≤ 61 bits) keeps the checked multiply near that speed (0.9 ns) whenever it holds, falling back to the exact check otherwise. AVX-512 would remove most of the check's cost (shifts, unsigned compares, masked adds, more registers) and add `vpmullq` for the low word; IFMA's headroom would remove most of the carry work.
+
+## Study 24: the Gaussian gcd in vector lanes (gcdvec.c)
+
+**What was compared.** Arrays of independent pairs (a, b), int32 halves in four separate arrays, halves in study 6's symmetric range |x| ≤ 2^31 − 1. Output: gcd(a, b) normalised to the associate with re > 0 and im ≥ 0 (gcd(0, 0) = 0). Gcd only, no coefficients. gcc 13.3 -O2 -mavx2.
+
+- **euclid:** study 6, Euclid by rounded division, scalar in 64-bit registers (two `idiv` per step).
+- **pi_sc, pi_sb:** the (1+i)-ary gcd of studies 9 and 11 with the best variant (size |x| + |y|, stop when equal), scalar with `tzcnt`. pi_sc is written plainly, and gcc compiles its choices as branches. pi_sb is the same step written with masks, so that only the loop branches.
+- **pi_v:** the same in AVX2 lanes, 8 pairs per register, looping until every lane of the register is done, tested every step.
+- **pi_v4:** pi_v tested every 4 steps.
+- **pi_v2, pi_v3, pi_v4x:** 2, 3 or 4 registers (16, 24, 32 pairs) stepped together, until every lane of all of them is done.
+- **pi_vT:** a fixed step count with no test, T = 276, the proven bound (below).
+
+**The step in 32-bit lanes.** a and b are primary (x odd, y even, x − y ≡ 1 mod 4), so a − b can need 33 bits. But a − b is divisible by (1 + i)^3, so by 2 in each part, and h = (a − b)/2 = ((ax >> 1) − (bx >> 1), (ay >> 1) − (by >> 1)) exactly, inside 32 bits. Then:
+- **Strip:** shift both parts right by e = ctz(hx OR hy). AVX2 has no lane ctz, so e comes from the float exponent of the lowest set bit (AND with the negation, `vcvtdq2ps`, shift by 23, subtract 127), and the shift is `vpsravd`. Then one division by 1 + i where both parts are odd, as ((x >> 1) + (y >> 1) + 1, (y >> 1) − (x >> 1)), which cannot overflow.
+- **Primary:** a blend for the multiply by −i, then `vpsignd` for the conditional negation.
+- **Order:** |x| + |y| is at most 2^32 − 2, so it is compared unsigned (`vpminud`, then compare-equal). Only b's size is kept: the new b size is the minimum.
+- **Finished lanes need no hold mask.** When a = b, h = 0, and the zero is replaced by b (a compare and two blends), so (a, b) stays (b, b): a fixed point. That is also why testing every 4 steps, or never (pi_vT), is safe.
+- **Once per register:** the valuations and the minimum k, stripping and making a and b primary, the zero cases (a = 0 becomes b, and the reverse), the first ordering, and at the end the factor (1 + i)^k (`vpsllvd` by ⌊k/2⌋ and a blend for one more 1 + i), then the normalisation (study 6's).
+- **Range.** Every value stays within ±(2^31 − 1), and |x| + |y| within 2^32 − 2. This was checked in a scalar model that runs the same algorithm in 64-bit integers and flags any lane value outside the K-bit range (below). The range argument: each coordinate of h, of the 1 + i quotient and of the primary associate is at most the largest input coordinate. Inputs with a −2^31 half, which decision 12 allows, are not covered. Making such a value primary can negate −2^31, which overflows. They need a pre-step or 64-bit lanes.
+- **Proven step bound for pi_vT.** After stripping, N(a)·N(b) < 2^126, and each step that does not yet end in a = b multiplies it by at most (1 + √2)²/8 ≈ 0.7286 (study 11 (d)). The product of two nonzero norms is at least 1, so there are at most ⌊126/log₂(1/0.7286)⌋ = 275 steps before a = b. T = 276.
+
+**Correctness.** Every kernel was compared with euclid, which also checks euclid against the (1+i)-ary model.
+- **Exhaustive at small sizes:** every pair with halves in K-bit symmetric ranges, for K = 3 (2,401 pairs), 4 (50,625), 5 (923,521) and 6 (15,752,961). At K ≤ 4, each gcd was also checked to divide both inputs and to be normalised, and by brute force: N(g) equals the largest norm of any common divisor. In every exhaustive run the model stayed inside the K-bit range: no coordinate beyond 2^(K−1) − 1, no |x| + |y| beyond 2^K − 2. So the 32-bit lanes cannot overflow at K = 32, given the range argument above.
+- **31 bits:** every quadruple of 20 edge values (0, ±1, ±2, 3, ±(2^31 − 1), ±(2^31 − 2), ±2^30, ±(2^30 ± 1), ±2^16, ±46,341), 160,000 pairs. Then 2,621,440 random pairs, a quarter each of four kinds: random; b small (parts up to 2^12); a common factor with parts up to 2^e, e from 4 to 15 (study 6's mix); and a large common factor (g and the cofactors with parts up to 2^15). Each gcd was checked to divide both inputs and to be normalised.
+- **Failures: none.** The model's lane-range checks also found nothing at 31 bits.
+- **Other checks.** The instrumented vector kernel's register-step count equals the model's exactly. Removing the zero-to-b replacement gives 57.8 million failures, and T = 40 instead of 276 gives 264 failures. Breaking the 1 + i division or the ctz bias makes some loops never end.
+
+**Steps** (1,048,576 pairs per kind at 31 bits). "Register" is the mean over registers of the largest step count among its 8 lanes, which is what a register pays. Lane use is mean / register.
+
+| inputs | (1+i)-ary mean / max | Euclid mean / max | register mean / max | lane use | per register with 2 / 3 / 4 registers together |
+|---|---|---|---|---|---|
+| random | 30.32 / 46 | 20.39 / 29 | 34.36 / 46 | 88% | 35.36 / 35.89 / 36.26 |
+| b small (2^12) | 20.76 / 31 | 8.36 / 13 | 23.78 / 31 | 87% | 24.52 / 24.91 / 25.19 |
+| common factor 2^4 to 2^15 | 19.78 / 38 | 13.74 / 24 | 25.77 / 38 | 77% | 27.07 / 27.74 / 28.17 |
+| large common factor (2^15) | 14.27 / 25 | 10.25 / 15 | 17.15 / 25 | 83% | 17.88 / 18.27 / 18.53 |
+
+Studies 9 and 11 gave 22.65 and 14.05 at K = 32 for a mix of these kinds; this table separates them. Uniformly random pairs take about 30 steps.
+
+**Instruction counts** (objdump, inner loops):
+
+| | per step | once per register (8 pairs) | per gcd, random inputs |
+|---|---|---|---|
+| euclid | 62 (10 `imul`, 2 `idiv`) | | ≈ 1,300 |
+| pi_sb | 57 | | ≈ 1,800 |
+| pi_v | 59 per register (8 of them register moves), 7.4 per lane | setup 99, finish 31 | ≈ 270 |
+| pi_v4 | 48.5 per register (194 per 4 steps) | the same | ≈ 235 |
+| pi_v2 / pi_v3 / pi_v4x | 60.5 / 63.3 / 63.8 per register (12 / 33 / 56 stack operands per pass: AVX2's 16 registers do not hold 3 or 4 states) | the same | ≈ 285 to 300 |
+| pi_vT | 54 per register | the same | 276 × 54 / 8 + 16 ≈ 1,880 |
+
+**Timing.** Same machine and conditions as study 23 (load below 1, nothing else running, pinned to one CPU, 31 repetitions, kernels interleaved and their order rotated, an untimed call first; clock about 3.8 GHz). 1,024 pairs (24 KB, in L1). Ranges of the medians over three runs, ns per gcd pair. Quartile spreads were ±1–2%.
+
+| ns per gcd | random | large common factor (2^15) |
+|---|---|---|
+| euclid | 274.8–277.0 | 118.9–119.6 |
+| pi_sc (branches) | 494.8–502.9 | 250.2–250.9 |
+| pi_sb (branch-free step) | 333.9–335.6 | 171.6–172.1 |
+| pi_v | 57.3–57.7 | 29.0–29.0 |
+| pi_v4 (test every 4 steps) | 57.4–57.6 | 30.6–31.0 |
+| pi_vT (fixed 276 steps) | 420.4–423.3 | 420.5–424.0 |
+| pi_v2 | 41.2–41.3 | 21.7–21.9 |
+| pi_v3 | 38.1–38.6 | 20.0–20.1 |
+| pi_v4x | 38.4–38.7 | 20.3–20.4 |
+
+**What the figures show.**
+- **Lanes against Euclid:** pi_v3 takes 38 ns per gcd against Euclid's 276 on random pairs (7.2 times faster), and 20 against 119 with a large common factor (6.0 times). Even one register (pi_v) is 4.8 and 4.1 times faster. Euclid pays about 51 cycles per step, mostly two dependent 64-bit divides.
+- **One register is latency-bound.** The step is one long dependency chain (shifts, the float conversion, variable shifts, 10 blends). pi_v runs at about 51 cycles per register-step and 1.2 instructions per cycle. Stepping two registers together gives 1.4 times, three gives 1.5 times (about 32 cycles per register-step). Four gains nothing more: its 4 states spill, and the larger group waits on its slowest lane (36.26 against 34.36 steps per register).
+- **Finished lanes:** a register pays for its slowest lane, so 12–23% of lane-steps are idle (lane use 77–88%), more when the inputs are mixed. The fixed point makes idle lanes free of masks, but not free of time.
+- **Testing less often does not help.** The test is 5 of 59 instructions, and testing every 4 steps runs up to 3 extra steps. They tie on random inputs, and pi_v4 is 6% slower on the shorter common-factor runs.
+- **A fixed step count is not better (c).** The proven bound is 276 steps against about 34 per register in practice, so pi_vT takes 420 ns whatever the input: 7.3 times pi_v and 1.5 times slower than Euclid. A fixed count only pays where the data cannot be allowed to steer timing.
+- **In scalar code Euclid stays ahead,** as studies 9 and 11 predicted from the counts. The (1+i)-ary gcd is 1.2 to 1.5 times slower than Euclid with the branch-free step (pi_sb), and 1.8 to 2.1 times slower with branches (mispredictions). Its advantage is only that its step has no divide, so it can go into lanes, and there it wins clearly.
+
+**Not tried.** Refilling a finished lane with the next pair (per-lane indices, then a gather on load and a masked or per-lane store on finish) would recover the idle 12–23% and the cost of larger groups. AVX-512 would help in several ways: lane ctz via `vplzcntd` (CD) or `vpopcntd` instead of the float trick; mask registers for the blends (1 µop instead of the 3 that `vblendvps` costs on recent Intel cores); `vpternlogd`; and 32 registers to step 3 or 4 states without spills.
+
+**Summary.** The (1+i)-ary gcd goes into AVX2 lanes without overflow and without a divide. The trick is to halve a − b before forming it. With finished lanes held by a fixed point rather than masks, and three registers stepped together to hide the step's latency, it takes 38 ns per gcd on random 31-bit pairs, 7.2 times faster than study 6's scalar Euclid (276 ns), and 20 against 119 ns with a large common factor. A fixed step count at the proven bound (276) is 11 times slower than pi_v3's loop and slower than Euclid. In scalar code Euclid remains the better gcd. Inputs with −2^31 halves are not covered.

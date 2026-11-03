@@ -1,5 +1,8 @@
 # Spec 14: Gaussian integers in one word — decisions so far
 
+**Direction (Nov 3, pending the community survey)**
+The scope is a number-theory library at the machine level, including Gaussian integers. The direction: provide the fast, exact tools that researchers in cryptography and number theory over the Gaussian integers need, so the library grows toward their needs rather than by what occurs to us. Whether a cryptographic library is built on top, and at which level, is undecided.
+
 **Defaults (summary of the decisions below; Nov 3)**
 - Vector lanes, not plain registers (42).
 - 32 bits is the unit: a number is two int32 halves; larger sizes add 32-bit pieces, stored as separate arrays (43).

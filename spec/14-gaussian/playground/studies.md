@@ -589,3 +589,74 @@ Bit 32 of x XOR y XOR s is the carry (or borrow) into the high half. These forms
 - **B:** add, sub and mul are cheaper (no reserved value to catch). neg and conj each need a 2-instruction check, because −(−2^31) overflows. Under B, −2^31 is an ordinary value, so the type has no reserved marker.
 
 Against the earlier counts: study 7's deferred add was 16 in total (a 5 that was really 6, and a check of 4 + 5 + 1 + 1). The cheapest correct forms give 12 under A (8 under B) in scalar, and 7 under A (5 under B) per vector register.
+
+## Study 16: exact Gaussian integers in a quadratic residue number system (qrns.py)
+
+**What was checked.** Primes p ≡ 1 (mod 4) below 2^31, each with t² ≡ −1. Per prime, a + bi ↦ (u, v) = (a + bt, a − bt) mod p (study 5's split), so add and multiply are lane by lane: 2 residues per prime per Gaussian integer, m primes, M = p₁⋯p_m. The full two's-complement range is used (decision 12), so inputs are any 32-bit halves.
+
+- **Conversion in:** per prime, a mod p = Barrett(a + 2p) (a + 2p > 0 because p > 2^30), the same for b, then b·t mod p, u = a + bt, v = a − bt.
+- **Conversion out:** per prime, a = (u + v)/2 and b = (u − v)·(2t)^−1. Then Garner's mixed-radix digits over the primes, Horner to binary, and the centred value in (−M/2, M/2). Exact while |re|, |im| < M/2.
+- **Scalar residues:** Barrett (study 4).
+- **Vector lanes:** Montgomery with R = 2^32 in 32-bit lanes. REDC uses only the widening 32 × 32 → 64 multiply and a low 32-bit multiply, so it needs no 64-bit mulhi, which SSE/AVX2 and NEON lack. Then a conditional subtract by the unsigned-min trick, min(u, u − p). A chain of k products picks up R^−k; that is undone at conversion out by folding R^k into the per-prime constants (R^k/2 and R^k·(2t)^−1). The halving for a then becomes a constant multiply, which is included in the vector conversion-out count.
+
+**Cases.**
+- **Toy:**
+  - Montgomery lanes (h = 8), lane add and sub, and the scalar Barrett product, for every residue pair and every prime p ≡ 1 (mod 4) below 128 (68,414 pairs each).
+  - RNS over (5, 13, 17) with redundant prime 29 (M = 1,105): the round trip for every a, b with |a|, |b| ≤ 552 (1,221,025).
+  - RNS over (5, 13) with redundant prime 17 (M = 65): add and multiply for every pair with parts in −15 to 15 (923,521 each). Exact when the result fits, and flagged by the redundant prime otherwise (854,320 products flagged).
+  - Random chains of 1 to 4 adds and multiplies: exact when they fit (15,236), flagged otherwise (4,661).
+- **31-bit primes** (the seven largest p ≡ 1 (mod 4) below 2^31, from 2,147,483,629 down):
+  - Montgomery lanes at h = 32 for three primes, 30,000 pairs each.
+  - Products of k + 1 inputs with full-range 32-bit halves (edges −2^31 and 2^31 − 1 included), k = 0 to 4, 3,000 each with m sized by the bound: all exact.
+  - The same with one prime fewer: every result that does not fit is flagged by the redundant prime (5,448), and every one that fits is exact (9,552).
+- **Bound tracking** was never "safe" for a result that did not fit (20,691 checks).
+- **Failures: none.** A first run reported 2,079 bound-tracking failures. That was a harness bug: a chain with no operations never had its input bound checked. Fixed and rerun.
+
+**Primes needed** for products of k + 1 inputs with 32-bit halves (|z| < √2·2^31, so |re|, |im| < 2^(31.5(k+1)), plus a sign):
+
+| multiplies k | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| primes m (bits of M) | 2 (62) | 3 (93) | 4 (124) | 5 (155) | 6 (186) |
+
+Each further add needs about 1 bit, so roughly one more prime per 31 adds.
+
+**Instruction counts per Gaussian element.**
+- **Scalar** (64-bit registers, Barrett): add 5, sub 4 and multiply 8 per residue.
+- **Vector** (128-bit registers of four 32-bit lanes; an element uses 2m lanes, and 256-bit registers halve every vector figure):
+  - add: ADD, SUB, unsigned MIN = 3 per register;
+  - sub: SUB, ADD, MIN = 3;
+  - Montgomery multiply ≈ 12 per register (widening multiply 2, low multiply for m with its narrowing 2, widening m·p 2, 64-bit add 2, take the high halves 2, conditional subtract 2). The arithmetic was verified; the instruction count is a chip-agnostic estimate, ±2 by chip.
+  - The vector conversion out runs the per-prime unsplit and Garner in lanes; the Horner step to binary and the centring are scalar multiword (no portable 64 × 64 → 128 in vectors).
+
+| per element | scalar | vector (128-bit) |
+|---|---|---|
+| conversion in (extract 3; per prime: a mod p 8, b mod p 8, b·t 8, u 5, v 4 = 33; vector per prime 7: sign fix 5 ×2, Montgomery 12, u 3, v 3 per 4 elements) | 33m + 3 | ≈ 7m + 0.5 |
+| add | 10m | 1.5m |
+| sub | 8m | 1.5m |
+| multiply | 16m | 6m |
+| conj (swap u and v) | 0 (register choice) | 0 |
+| conversion out (unsplit 22 per prime; Garner 12 per digit step, m(m − 1)/2 steps, two parts; Horner and centring multiword) | 22m + 12m(m − 1) + 2(Horner + centring): 82, 172, 286, 434 for m = 2 to 5 | ≈ 7.5m + 4m(m − 1) + the scalar Horner and centring |
+
+**Break-even.**
+- **At 32-bit halves, never.** The direct multiply with full-range checks (study 15) is 19 scalar, or 15 per 128-bit register of two elements (7.5 per element). The RNS multiply is 16m scalar and 6m vector per element. With m ≥ 2, which 32-bit halves need, that is 32 against 19 scalar and 12 against 7.5 vector: the RNS multiply costs more, so no number of multiplies recovers the conversions.
+- **Where it can win: results the direct type would hold in wider halves.** Study 3's stack multiply (10L² + 24L − 2 for halves of 32L bits, wrapping, before any overflow check) is the proxy for the direct multiply at those widths:
+
+| result halves | direct multiply (stack of L) | RNS primes m | RNS multiply (scalar) | saved per multiply | conversion in + out | break-even, multiplies per converted value |
+|---|---|---|---|---|---|---|
+| 64-bit (L = 2) | 86 | 3 | 48 | 38 | 102 + 172 | ≈ 7 |
+| 96-bit (L = 3) | 160 | 4 | 64 | 96 | 135 + 286 | ≈ 4.4 |
+| 128-bit (L = 4) | 254 | 5 | 80 | 174 | 168 + 434 | ≈ 3.5 |
+
+In vector lanes the RNS keeps 32-bit lanes and grows linearly (6m per element), while a direct multiply at 64-bit halves needs 64 × 64 → 128 products that SSE/AVX2 and NEON do not have. RNS's real case is long multiply-heavy computations whose results outgrow 32-bit halves, converted once at each end.
+
+**Overflow.** RNS cannot see overflow: a result outside (−M/2, M/2) silently wraps mod M. The options:
+
+1. **Bound tracking.** Keep a bound on |z| per array (add: B₁ + B₂; multiply: B₁·B₂, starting from √2·max|half|) and compare it with M/2. That is a few scalar instructions per array operation, nothing per element. It is conservative (it assumes worst-case growth), so it may ask for more primes than the data needs, and it was verified sound.
+2. **A redundant extra prime.** Carry one more prime and check at conversion out that the reconstructed value agrees with it. The cost is one more prime of work in every operation (+10 add and +16 multiply scalar, +1.5 and +6 vector, per element). At conversion out, the redundant residue is unsplit (22) and the reconstructed value reduced mod p_r from its mixed-radix digits (about 13m per part). This catches every result with |x| < M·p_r/2: x′ − x = kM with 0 < |k| < p_r, and p_r does not divide kM. Verified.
+3. **Sizing in advance.** Choose m from the computation's known depth (the table above). Zero runtime cost, but it needs the bound before the computation starts.
+
+**Comparison and division.**
+- **Equality** is cheap: all 2m residues equal (2m compares, or 2m/4 per vector register, then OR).
+- **Order and sign** need magnitude, which the residues do not show: a mixed-radix conversion of the difference (Garner, about 12m(m − 1)/2 per part) and a centred test on the top digits. That is O(m²), much like a conversion out.
+- **Exact division** by z is a multiply by z's inverse residues when z is a unit mod every prime (both u and v nonzero for each p). The inverses cost 2m modular inverses (study 13: about 100 instructions each by Euclid), once per divisor, then 16m per element. It fails when z shares a factor with some p, which needs a different prime set.
+- **Division with remainder** (nearest Gaussian quotient) needs the magnitude: convert out, divide (study 6), and convert back in.

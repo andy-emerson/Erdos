@@ -51,11 +51,14 @@ static u64 nops, nmem;
 #define vsubq_s64(a, b)     C_(_mm_sub_epi64(a, b))
 #define vnegq_s32(a)        C_(_mm_sub_epi32(_mm_setzero_si128(), a))
 #define vabsq_s32(a)        C_(_mm_abs_epi32(a))
-#define vandq(a, b)         C_(_mm_and_si128(a, b))
-#define vorrq(a, b)         C_(_mm_or_si128(a, b))
-#define veorq(a, b)         C_(_mm_xor_si128(a, b))
-#define vbicq(a, b)         C_(_mm_andnot_si128(b, a))           /* a AND NOT b */
-#define vmvnq(a)            C_(_mm_xor_si128(a, _mm_set1_epi32(-1)))
+/* Logic ops pass through an empty asm so that gcc cannot fuse two of them into vpternlog (three-input logic,
+ * which NEON lacks); the barrier costs nothing but that freedom. */
+#define BAR_(e) ({ V r_ = (e); __asm__("" : "+v"(r_)); r_; })
+#define vandq(a, b)         C_(BAR_(_mm_and_si128(a, b)))
+#define vorrq(a, b)         C_(BAR_(_mm_or_si128(a, b)))
+#define veorq(a, b)         C_(BAR_(_mm_xor_si128(a, b)))
+#define vbicq(a, b)         C_(BAR_(_mm_andnot_si128(b, a)))     /* a AND NOT b */
+#define vmvnq(a)            C_(BAR_(_mm_xor_si128(a, _mm_set1_epi32(-1))))
 #define vshlq_n_s32(a, n)   C_(_mm_slli_epi32(a, n))
 #define vshrq_n_s32(a, n)   C_(_mm_srai_epi32(a, n))
 #define vshrq_n_u32(a, n)   C_(_mm_srli_epi32(a, n))
@@ -112,14 +115,14 @@ static u64 nops, nmem;
 #define vuzp2q_w(lo, hi)        C_(_mm_blend_epi32(_mm_srli_epi64(lo, 32), hi, 0xA))   /* high halves of a pair */
 /* vqmovn_s64 + vqmovn_high_s64 on a widening pair: saturating narrow, sets the sticky QC bit on saturation.
  * Stand-in: the value is the truncation where nothing saturates; QC is emulated in a variable. Counted as 2. */
-#define QCSAT64_(t, qc)  ((qc) = _mm_or_si128(qc, _mm_add_epi64(t, _mm_set1_epi64x(1LL << 31))))
+#define QCSAT64_(t, qc)  ((qc) = BAR_(_mm_or_si128(qc, _mm_add_epi64(t, _mm_set1_epi64x(1LL << 31)))))
 #define vqmovn_pair(lo, hi, qc) (C_(0), C_((QCSAT64_(lo, qc), QCSAT64_(hi, qc), _mm_blend_epi32(lo, _mm_slli_epi64(hi, 32), 0xA))))
 #define QC_MASK64 _mm_set1_epi64x((long long)0xFFFFFFFF00000000ull)
 /* vqaddq_s32 / vqsubq_s32: saturating; QC emulated as the OR of the overflow masks (sign bit) */
-AI V qadd_(V a, V b, V *qc) { V r = _mm_add_epi32(a, b), m = _mm_srai_epi32(_mm_andnot_si128(_mm_xor_si128(a, b), _mm_xor_si128(a, r)), 31);
-    *qc = _mm_or_si128(*qc, m); return _mm_blendv_epi8(r, _mm_xor_si128(_mm_srai_epi32(a, 31), _mm_set1_epi32(INT32_MAX)), m); }
-AI V qsub_(V a, V b, V *qc) { V r = _mm_sub_epi32(a, b), m = _mm_srai_epi32(_mm_and_si128(_mm_xor_si128(a, b), _mm_xor_si128(a, r)), 31);
-    *qc = _mm_or_si128(*qc, m); return _mm_blendv_epi8(r, _mm_xor_si128(_mm_srai_epi32(a, 31), _mm_set1_epi32(INT32_MAX)), m); }
+AI V qadd_(V a, V b, V *qc) { V r = _mm_add_epi32(a, b), m = _mm_srai_epi32(BAR_(_mm_andnot_si128(BAR_(_mm_xor_si128(a, b)), BAR_(_mm_xor_si128(a, r)))), 31);
+    *qc = BAR_(_mm_or_si128(*qc, m)); return _mm_blendv_epi8(r, _mm_xor_si128(_mm_srai_epi32(a, 31), _mm_set1_epi32(INT32_MAX)), m); }
+AI V qsub_(V a, V b, V *qc) { V r = _mm_sub_epi32(a, b), m = _mm_srai_epi32(BAR_(_mm_and_si128(BAR_(_mm_xor_si128(a, b)), BAR_(_mm_xor_si128(a, r)))), 31);
+    *qc = BAR_(_mm_or_si128(*qc, m)); return _mm_blendv_epi8(r, _mm_xor_si128(_mm_srai_epi32(a, 31), _mm_set1_epi32(INT32_MAX)), m); }
 #define vqaddq_s32(a, b, qc) C_(qadd_(a, b, &(qc)))
 #define vqsubq_s32(a, b, qc) C_(qsub_(a, b, &(qc)))
 /* vqdmulhq_s32: high half of 2ab (saturating only for a = b = -2^31, which the kernels never give).

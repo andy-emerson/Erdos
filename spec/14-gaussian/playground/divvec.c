@@ -60,6 +60,7 @@ static inline u64 div128(u64 hi, u64 lo, u64 d) {      /* floor((hi 2^64 + lo) /
 AI u32 s_div(i32 a, i32 b, i32 c, i32 d, u64 N, i32 *qr, i32 *qi, i32 *rr, i32 *ri, int mode) {
     u64 X = (u64)((i64)a * c) + (u64)((i64)b * d), Y = (u64)((i64)b * c) - (u64)((i64)a * d);
     u64 sx = -(u64)((i64)(X - 1) < -1), sy = -(u64)((i64)Y < 0);
+    __asm__("" : "+r"(sx), "+r"(sy));        /* keep the masks as masks (gcc otherwise may keep a byte flag in memory) */
     u64 ux = X ^ sx, uy = Y ^ sy;
     u64 qx = ux / N, qy = uy / N;
     u32 q1 = (u32)(qx ^ sx), q2 = (u32)(qy ^ sy);
@@ -445,7 +446,8 @@ typedef struct { const char *name; kf f; int mode, shared; } kern;
 static kern KT[] = {
     {"m1_ex", m1_ex, EX, VAR}, {"m2_ex", m2_ex, EX, VAR}, {"m3_ex", m3_ex, EX, VAR}, {"m5_ex", m5_ex, EX, VAR}, {"m5x_ex", m5x_ex, EX, VAR},
     {"m1s_ex", m1s_ex, EX, SHR}, {"m2s_ex", m2s_ex, EX, SHR}, {"m3s_ex", m3s_ex, EX, SHR}, {"m4_ex", m4_ex, EX, SHR},
-    KE(m1, VAR), KE(m3, VAR), KE(m5, VAR), KE(m5x, VAR), KE(m1s, SHR), KE(m3s, SHR), KE(m4, SHR),
+    KE(m1, VAR), KE(m3, VAR), KE(m5, VAR), KE(m5x, VAR),
+    {"m3w_fl", m3w_fl, FL, VAR}, {"m3c_fl", m3c_fl, FL, VAR}, KE(m1s, SHR), KE(m3s, SHR), KE(m4, SHR),
 };
 #define NKT (int)(sizeof KT / sizeof KT[0])
 #define NMODE 8
@@ -891,7 +893,7 @@ static void do_icount(int kind) {
     size_t n = 4096; alloc_bufs(n);
     for (int shared = 0; shared < 2; shared++) {
         fill(n, kind, shared);
-        for (int k = 0; k < NKT; k++) if (KT[k].shared == shared && ((KT[k].mode == EX) == (kind == 2)))
+        for (int k = 0; k < NKT; k++) if (KT[k].shared == shared && ((KT[k].mode == EX) == (kind == 2)) && KT[k].f != m3w_fl && KT[k].f != m3c_fl)
             KT[k].f(P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
     }
 }

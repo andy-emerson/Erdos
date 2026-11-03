@@ -58,6 +58,15 @@ In neon28.c every operation is a macro named after the NEON intrinsic, so the ke
 6. **Table lookup.** `pshufb` zeroes a byte when the index has bit 7 set and otherwise reads the low 4 bits; `tbl` zeroes it for any index ≥ 16. For indices 0 to 15 and for 0x80 to 0xFF the two agree. Kernels use only those indices.
 7. **The all-zero test.** x86 `ptest` sets flags directly. NEON needs a reduction across lanes (`umaxv`, a few cycles), a move to a general register and a compare and branch. Loops that test once per step (the gcd's loop exit, a per-step branch like study 27's nbrd) pay more on NEON than here. Rankings between a branched and a branch-free form are uncertain for that reason.
 
+8. **Register reach.** NEON has 32 vector registers, all usable by every instruction. Here the VEX compares (`vpcmpeqd`, `vpcmpgtd`, `vpcmpeqq`, `vpcmpgtq`) and `vpblendvb` reach only xmm0 to xmm15; their EVEX forms write mask registers. Kernels with many live values (the gcd at 4 or more registers interleaved) spill more here than they would on NEON.
+
+## Build notes (neon28.c)
+
+- **gcc fuses logic into `vpternlog`** when AVX-512VL is enabled, on its own. Every logic op passes through an empty asm (`BAR_`) that stops the fusion. `vpternlogq $0x55` (NOT of one input, NEON's `mvn`) is allowed.
+- **gcc rewrites compares and blends into mask-register forms** (a compare into k, a masked move) when the values sit in xmm16 to 31. Compares and `bsl` are pinned to their VEX forms with inline asm.
+- **Instruction scan.** After each build, a scan of every kernel function (harness and scalar paths excluded) looks for mask registers, ymm and zmm, `vpternlog` other than NOT, 64-bit multiplies and min/max, `vpopcntd`, `vplzcntq`, `psignd`, `blendvps`, permutes, floating-point arithmetic and conversions. The final build is clean.
+- **NEON instruction counts.** Built with `-DCOUNT`, each macro also counts one NEON instruction, so counts per element come from the code as written, whatever the x86 stand-in costs.
+
 ## NEON operations with no direct x86 equivalent
 
 The substitute used here, and what it means for rankings. Rankings that rest on these are marked uncertain in studies.md.

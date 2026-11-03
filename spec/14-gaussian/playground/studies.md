@@ -480,3 +480,54 @@ Per modulus there is one more inverse (for t). Two things were not counted to th
 | 1,024 | ≈ 81 | ≈ 85 | ≈ 24 |
 
 With batching the inverse's cost becomes negligible, and the method of inversion stops mattering, from a few hundred elements. One non-unit makes the whole batch fail (detected by the single inverse failing); the toy then returns failure and does not bisect.
+
+## Study 14: the extended (1+i)-ary gcd (xgcd1i.py)
+
+**What was checked.** Write p(z) = (re + im) mod 2, which is z mod (1 + i). Dividing by 1 + i is z/(1 + i) = ((x + y) + (y − x)i)/2 when p(z) = 0.
+
+- **Stripping.** The common power is removed exactly first: A = π^k A′, B = π^k B′ (π = 1 + i), so one of A′, B′ is prime to π.
+- **Invariants.** The algorithm keeps a = u_a A′ + v_a B′ and b = u_b A′ + v_b B′.
+- **Dividing a by π** (the survey's division-free trick). First add m·(B′, −A′) to (u_a, v_a), which leaves the sum unchanged. m ∈ {0, 1} is chosen so both coefficients become divisible: m = p(u_a) when B′ is prime to π, else m = p(v_a). This works because p(a) = p(u_a)p(A′) + p(v_a)p(B′) = 0.
+- **Making a primary** multiplies a by a unit, and the coefficients by the same unit.
+- **At the end,** g = π^k·g′ with the same coefficients (since A = π^k A′), and one normalising unit is applied to g and both coefficients.
+
+The versions:
+- **Loop version:** study 11's best variant (L1 size |x| + |y|, stop when equal). Strip a, make a and b primary, order them. While a ≠ b: a −= b (and the coefficients), divide out π while p(a) = 0, make a primary, and swap if smaller.
+- **Branch-free version:** a fixed number T of micro-steps. Each selects by the mask p(a) between "even" (a ← a/π with the coefficient fix) and "odd" (make a primary, swap if smaller, a ← a − b). Once a = 0, every micro-step is "even" on 0: a stays 0, and b, u_b, v_b never change, so the fixed count needs no freeze mask. The coefficients u_a, v_a keep changing but stay bounded; they were tracked.
+- **T from a proof.** An odd micro-step grows N(a)·N(b) by at most (1 + √2)², because the L1 ordering gives N(b) ≤ 2N(a). The next ≥ 3 even micro-steps divide it by 8. That is a factor ≤ 0.729 per 4 micro-steps, starting from N(A′)·N(B′) < 2^(4K−2). So T = 4⌈(4K − 2)/log₂(8/(1 + √2)²)⌉ + 4 + 2K: 98 at K = 3, 136 at K = 4, 174 at K = 5, 1,172 at K = 32. The run asserts a = 0 after T steps.
+- **For comparison, extended Euclid:** study 6's division with nearest rounding, with both coefficients (s, t ← t, s − q·t).
+
+Every result was checked against study 6's gcd (its rational reference) and for the Bezout identity g = uA + vB exactly.
+
+**Cases.** Exhaustive over all pairs of in-range values: K = 3 (2,401) and K = 4 (50,625), all three algorithms. K = 5 (923,521 pairs): the loop and extended Euclid exhaustive, branch-free on a 2% random sample (18,224 pairs). K = 32: 20,005 random pairs (study 6's mix plus edge pairs) for the loop and extended Euclid, and branch-free on the first 2,005. **Failures: none.**
+
+**Counts.**
+
+| K | loop: outer steps mean / max | loop: divisions by 1 + i mean / max | branch-free: micro-steps needed mean / max (T run) | extended Euclid steps mean / max |
+|---|---|---|---|---|
+| 3 | 1.19 / 3 | 4.97 / 11 | 7.17 / 15 (98) | 1.88 / 3 |
+| 4 | 2.20 / 5 | 9.14 / 18 | 12.34 / 24 (136) | 2.58 / 4 |
+| 5 | 3.21 / 8 | 13.24 / 26 | 17.46 / 35 (174) | 3.24 / 6 |
+| 32 | 22.68 / 41 | 91.09 / 149 | 114.72 / 183 (1,172) | 14.07 / 27 |
+
+**Coefficient size.** The (1+i)-ary coefficients reach about 3.4 times the input bound: the largest part seen at K = 32 is about 2^32.8, against inputs below 2^31 (up to 2 extra bits). So they do not fit the K-bit halves, but fit easily in 2K-bit registers. The same holds at small K (58 against inputs below 16 at K = 5). Euclid's coefficients were not tracked.
+
+**Instruction counts** (scalar, extracted halves; unit multiplies by masks as in study 9).
+
+| part | instructions | multiplies | divides |
+|---|---|---|---|
+| (1+i)-ary loop: one division by 1 + i with the coefficient fix (a 4, m: parity 2 + mask 1, u: masked add of B′ 4 + divide 4, v: the same 8, inner loop test 3) | 26 | 0 | 0 |
+| (1+i)-ary loop: one outer step (subtract a, u, v 6; primary on a, u, v: masks 6 + 3 × 11; L1 size 7; compare 2; swap 7 words 28; loop test 4) | 86 | 0 | 0 |
+| branch-free micro-step (even 23, odd 82, mask 3, select 13 words 39) | 147 | 0 | 0 |
+| extended Euclid step (study 6's division 49; two coefficient updates s − q·t, 4 MUL + 4 add/sub each, 16; loop test 1) | 66 | 20 | 2 |
+
+| per extended gcd, K = 32 | instructions | multiplies | divides |
+|---|---|---|---|
+| (1+i)-ary loop, at the mean (22.68 × 86 + 91.09 × 26, plus about 150 for setup and finish) | ≈ 4,470 | 0 in the loop | 0 |
+| (1+i)-ary branch-free, at the proven T (1,172 × 147) | ≈ 172,000 | 0 | 0 |
+| (1+i)-ary branch-free, at the largest count seen (183 × 147; not a bound) | ≈ 26,900 | 0 | 0 |
+| extended Euclid, at the mean (14.07 × 66, plus normalising g and two coefficients about 44) | ≈ 973 | ≈ 281 | ≈ 28 |
+| for reference, gcd only: study 11's best (1+i)-ary, Euclid (study 6) | ≈ 1,500, ≈ 725 | | |
+| for reference, study 13: x^−1 mod a 31-bit n by the norm route, with Euclid or divsteps | ≈ 136, ≈ 3,517 | | |
+
+Keeping both coefficients roughly triples the (1+i)-ary gcd. The divisions by 1 + i, about four per outer step, each carry two coefficient fixes. The extended (1+i)-ary loop is about 4.6 times extended Euclid in instructions, but uses no multiply and no divide. Its branch-free form at the proven step count is far dearer still. The bound (1,172) is 6.4 times the largest count seen (183), because the per-step factor 0.729 in the proof is far from typical. For an inverse modulo a rational n, the norm route of study 13 remains much cheaper than either extended gcd: about 136 instructions with Euclid's integer inverse.

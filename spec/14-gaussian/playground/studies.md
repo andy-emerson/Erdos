@@ -1481,9 +1481,9 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 
 **What AVX-512 would offer** (not built; this CPU has AVX-512 CD, BITALG and VPOPCNTDQ):
 - `vplzcntd` (CD) gives ctz as 31 − lzcnt(x AND −x), 4 instructions.
-- `vpopcntd` (VPOPCNTDQ) gives popcount((x AND −x) − 1), also 4 instructions, about 6 cycles of latency against 18 to 19 for pop and db here.
+- `vpopcntd` (VPOPCNTDQ) gives popcount((x AND −x) − 1), also 4 instructions, about 6 cycles of latency against about 18 for pop and db here.
 - Neither has a direct lane tzcnt; both work on 64-bit lanes too (`vplzcntq`, `vpopcntq`).
-- With the ctz at 4 instructions the step loses about 7 instructions per register and a third of the ctz latency, which should more than recover study 24's float-trick figure.
+- With the ctz at 4 instructions the step loses about 7 instructions per register and a third of the ctz latency, likely enough to recover study 24's float-trick figure (not measured).
 - Mask registers would also cut the 10 blends per step (3 µops each with `vblendvps` here) to 1 µop each.
 
 **Summary.**

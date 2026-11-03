@@ -784,3 +784,60 @@ The crossovers against layout (a) are the same: at b = 64 the direct method is s
 **Repeated products (powers A^e).** A is converted in once, the e − 1 products stay in residue form, and the result is converted out once. The conversions are spread over (e − 1)·n³ terms, so the crossover falls roughly as 1/(e − 1). The primes are sized for the final power, about e·b + (e − 1)·⌈log₂ n⌉ + 1 bits. In the direct method the intermediate products outgrow 64-bit halves after the first product, and from then on every term is a multiword multiply whose cost grows with the square of the width (study 3: 10L² + 24L − 2). The residue term cost grows only linearly with m_p. So powers move the crossover far down, to small n even at b = 8 or 16, once the entries outgrow one word. This was not counted in the sweep.
 
 **Memory** (not counted above): a residue entry holds 2·m_p 32-bit lanes against 2 parts of the direct input width. At b = 32 that is 6 lanes against 2 per entry, so the residue form moves about 3 times the data per term. Register blocking reduces loads per term in both methods, but the ratio stays.
+
+## Study 19: Barrett against Montgomery, scalar and AVX2 lanes, timed (reduce19.c)
+
+**What was compared.** Reduction mod an odd n < 2^31, residues stored as uint32 in separate arrays (x, y for the product; re and im of each factor for the Gaussian product, study 17's layout (b)). Two kernels: one product xy mod n, and the Gaussian product ((ac − bd) mod n, (ad + bc) mod n). Five versions:
+
+- **div:** scalar t % n, the hardware divide, for reference.
+- **Barrett scalar:** as study 4, m = ⌊2^64/n⌋, q = mulhi(t, m), r in [0, 2n), one conditional subtract (gcc emits cmov). The Gaussian forms t = ac + (n² − bd) and ad + bc, both below 2n².
+- **Montgomery scalar:** R = 2^32 (study 4 used 2^64), n′ = n^−1 mod 2^32, m = t·n′ mod 2^32, r = (t − mn)/2^32 in (−n, n), add n where negative. The Gaussian takes ac − bd as a signed t with a signed m (|t| < n² keeps r in (−n, n)), and ad + bc with an unsigned m. So no n² offset is needed.
+- **Barrett in AVX2 lanes:** only the 32 × 32 → 64 multiply (vpmuludq). Let L = ⌈log₂ n⌉ and mu = ⌊2^(L+31)/n⌋ < 2^32. The product uses q = ((t >> (L − 1))·mu) >> 32, and the Gaussian (t < 2n²) uses q = ((t >> L)·mu) >> 31, each in even and odd 64-bit halves. The proven quotient error is at most 2 for the product and 3 for the Gaussian. An exhaustive scan over every x = t >> s (the worst t for each x is x·2^s + 2^s − 1) shows both bounds are reached: at n = 1,073,741,827, errors of 2 and 3 occur, while at n = 2^31 − 1 the worst is 1 and 2. So r can reach 3n or 4n, which overflows 32 bits once n > 2^32/3. The fix is to subtract 2n where r ≥ 2n in 64-bit lanes (vpcmpgtq, and, sub), pack to 32-bit lanes, then subtract n where r ≥ n (min(r, r − n), unsigned). With a 32-bit x and a 32-bit mu there is no way to get the error down to 1 at 31-bit n: dropping bits of t and rounding mu down each cost about one unit near the top of the range.
+- **Montgomery in AVX2 lanes:** as study 16. vpmuludq gives m, vpmuludq (vpmuldq for the signed Gaussian real part) gives mn, a 64-bit sub, take the high dwords (shift and blend), then min(r, r + n).
+
+Conversion into Montgomery form is REDC(x·(R² mod n)); out is REDC(x). Both were timed as separate kernels.
+
+**Correctness.** Every version was compared with an exact reference (__int128 in C) through the whole Montgomery path (convert in, multiply, convert out). The Montgomery-form output (product·R mod n) and the conversion in were also checked on their own.
+- Exhaustive: the product over all (x, y) for every odd n from 3 to 1,023 (178,960,376 cases per version); the Gaussian over all (a, b, c, d) for every odd n from 3 to 63 (107,287,032 per version).
+- Random, 10^7 elements per version per kernel per n, with a quarter of residues drawn from 0, 1, 2, n − 1, n − 2 and n/2. The ten n: primes 2,147,483,647, 2,147,483,629, 1,073,741,827, 1,000,003 and 65,537; composites 2,147,483,645, 2,147,483,643, 1,431,655,767, 1,073,741,825 (2^30 + 1) and 3·5·…·23.
+- The lane Barrett reduction was also tested directly: 4·10^6 t per shape per n over the whole range [0, n²) or [0, 2n²), weighted to the top of the range and to just below multiples of n, plus the two worst-case t from the scan.
+- 1,600 Gaussian outputs of each version were checked independently in Python.
+- **Failures: none.** The same checks pass for the -march=native build.
+
+**Instruction counts** (whole inner loop from objdump, per element, including loads, stores and loop overhead; gcc 13.3 -O2 -mavx2; vector loops do 8 elements per pass; a vector multiply covers 4 lanes):
+
+| per element | div | Barrett scalar | Montgomery scalar | Barrett AVX2 | Montgomery AVX2 |
+|---|---|---|---|---|---|
+| product | 9 (1 div) | 16 (3 mul) | 16 (3 mul) | 3.88 (0.75 mul) | 2.62 (0.75 mul) |
+| Gaussian product | 22 (2 div) | 42 (8 mul) | 41 (8 mul) | 8.38 (2 mul) | 5.62 (2 mul) |
+| conversion in / out | | | 15 / 14 | | 2.25 / 1.88 |
+
+In lanes the two methods use the same multiplies. Barrett's extra cost is the rest: per half of four lanes it has a variable shift, a shift, the 64-bit compare, and and subtract (8 against Montgomery's 3), plus the n² offset in the Gaussian. In scalar code the counts are equal. In the Gaussian Barrett loop, register pressure sends m and n² to the stack, so it has 10 memory operands against 7. gcc reloads one or two inputs it already holds in the -O2 -mavx2 vector product loops. -march=native drops those reloads (30 and 20 instructions for the vector product loops) and otherwise gives the same code; it does not vectorize the scalar loops.
+
+**Timing.** The machine was an Intel Xeon (family 6, model 173) in a 2-vCPU KVM guest, with L1d 48 KB and L2 2 MB per core; the guest reports a 480 MB L3 shared with the host. Before each run the load was below 0.6 and no other process was busy. One run at a time, pinned to one CPU. Four n: 2^31 − 1 (prime), 2,147,483,645, 2^30 + 1 (both composite) and 1,000,003 (prime). For each n there were 31 repetitions. All 14 kernels were interleaved in each repetition, the order rotated each time, and each timed call was preceded by an untimed call of the same kernel. In cache: 1,024 elements per array (24 KB for the Gaussian), 2,048 calls per sample. The ranges below are medians over the four n and three runs, in ns per element (a Gaussian element writes two residues). Quartile spreads were about ±2%, except scalar Barrett (up to +15%). No difference by n, prime or composite, was seen.
+
+| in L1 | div | Barrett scalar | Montgomery scalar | Barrett AVX2 | Montgomery AVX2 |
+|---|---|---|---|---|---|
+| product | 2.60–2.62 | 0.83–1.04 (×2.5–3.2) | 0.79–0.80 (×3.3) | 0.305–0.312 (×8.5) | 0.184–0.190 (×14) |
+| Gaussian product | 5.20–5.24 | 2.08–2.14 (×2.5) | 2.09–2.25 (×2.4) | 0.74–0.75 (×7.0) | 0.457–0.463 (×11.4) |
+| conversion in / out | | | 0.79–0.81 / 0.62–0.65 | | 0.162–0.166 / 0.126–0.129 |
+
+(×k is the speed-up over the divide.) -march=native gave the same figures within noise (Montgomery AVX2 product 0.176–0.178).
+
+Large arrays: 2^22 elements, 16 MB per array, beyond L2 but within the reported L3.
+
+| 16 MB arrays | div | Barrett AVX2 | Montgomery AVX2 |
+|---|---|---|---|
+| product | 2.63–2.65 | 0.49–0.60 | 0.43–0.46 |
+| Gaussian product | 5.30–5.32 | 1.09–1.15 | 1.00–1.06 |
+
+Here the vector kernels are limited by memory traffic (12 and 24 bytes per element), and Montgomery's lead shrinks to about 10%. The scalar large-array figures depended on the harness rather than the reduction, so they are not tabulated:
+- Scalar Barrett took 0.82 ns per product run alone but 1.6 ns interleaved with one other kernel.
+- Scalar Montgomery took 0.82 alone and 1.3–2.0 interleaved, slower than Barrett in every interleaved setup, including with the input arrays swapped.
+- At 2^25 elements, run alone, both took 0.98.
+- The likely cause is how much of the data the shared host L3 holds, which the guest cannot control; it was not pinned down.
+- The scalar Gaussian product was 2.2–2.3 for both methods in every setup.
+
+**Conversion costs and break-even.** In lanes, Montgomery saves about 0.12 ns per product and 0.29 per Gaussian product over Barrett. Converting a residue in costs 0.16 and out 0.13. A Gaussian product whose two inputs are converted in and whose output is converted out pays 4 × 0.16 + 2 × 0.13 ≈ 0.91 ns, about three products' saving. So in lanes Montgomery pays from about three multiplies per converted value, and in any chain of products that stays in Montgomery form. In scalar code the two methods are within a few percent either way: Montgomery is about 0.05 ns ahead on the product, and on the Gaussian they tied in two runs while Barrett was 4–7% ahead in the third. So the conversions (0.8 and 0.64 ns per residue) are never repaid, and Barrett, which also takes even n, is the better scalar choice here. Study 4's toy (R = 2^64 Montgomery) had Barrett 7% ahead on the scalar Gaussian. With R = 2^32 that gap is at most this size and not consistent.
+
+**Summary.** The scalar methods tie at about 3 times the speed of the divide for the product and 2.5 times for the Gaussian. In AVX2 lanes, Montgomery is about 1.6 to 1.7 times faster than Barrett (14 and 11 times the divide, against 8.5 and 7). The reason is that a 31-bit Barrett quotient built from 32 × 32 → 64 multiplies is off by up to 2 or 3, which forces a 64-bit correction. Against memory traffic the vector gap mostly closes. Not tried: AVX-512 (vpmullq, 64-bit compares into masks, IFMA's 52-bit multiplies) and a floating-point quotient estimate.

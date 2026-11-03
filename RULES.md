@@ -21,6 +21,40 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 - **Fixed size beats growing** for the matrix build table. Elsewhere growing may win.
 - **Immutable stored values** have paid off in many places, but changing a value in place is not ruled out where it is better.
 
+## Research
+
+Each kind has three phases: the brief, the work, and the report. *(Placeholders: rules to be filled in.)*
+
+### Literature surveys
+
+Prior art, conventions and data from published sources.
+
+### Search by computer
+
+Superoptimization, constant searches and other searches of a design space.
+
+### Derivation
+
+Working a result out mathematically: impossibility proofs, bounds, conventions.
+
+### Exploratory models
+
+Toy versions of an idea, to see whether it is worth building.
+
+## Test design
+
+Each kind has three phases: the brief, the work, and the report. The kinds follow the five rounds of spec v0.2 §8. *(Placeholders: rules to be filled in.)*
+
+### Correctness by testing
+
+### Proof
+
+### Counting
+
+### Compiled-code check
+
+### Timing
+
 ## Optimization approach
 
 1. **Schoolbook first, then measure.** Build the textbook version, measure where the cost goes, and optimize the measured weak points, one at a time.
@@ -30,7 +64,11 @@ The rules the work follows, in three lists. A rule holds until it is discussed; 
 
 6. **Portable pseudocode.** *(Draft, Nov 1, 2026: agreed in discussion; wording awaits the author's approval.)* Machine-level pseudocode uses only steps that x86-64, ARM64 and RISC-V all provide in their common current form. A step one family lacks, such as the carry flag or the 128-by-64 divide, is not used.
 
-## Reviews
+## Specs and decisions
+
+*(Placeholders for spec and decision-file rules, beyond the reviews below.)*
+
+### Reviews
 
 1. **A spec is reviewed against the algorithm design rules** above, before anything is built.
 2. **A build is reviewed against its spec**: it does what was specified, and only that.

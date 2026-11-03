@@ -44,6 +44,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 12. **Full two's-complement range; −2^31 is no longer reserved** (replacing items 3 and 8). Negating or conjugating −2^31 overflows like any other operation and promotes to the next size. Cheaper add, subtract, multiply and shrink test (study 15).
 
+13. **Overflow detection, default: the sticky flag.** Each element's mask test is ORed into one register during an operation's sweep; checked once at the end; if set, the operation is redone at the next size from the untouched inputs. Shrink with one bit of margin (rule B, study 12). A survey of other strategies is running before this is final.
+
 **Research list**
 - Barrett against Montgomery for mod n (build and prove first, then time).
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

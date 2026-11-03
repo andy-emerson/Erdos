@@ -1532,7 +1532,7 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 **Correctness.**
 - Every form, against `__builtin_ctz`: all 32 single-bit inputs, then every nonzero 32-bit value. No errors, except flt on 2^31 (one value), which the gcd never produces since |h| < 2^31.
 - Inside the gcd, every pi_v3 and pi_v kernel against study 26's __int128 reference: exhaustive K = 3 to 6 (16,777,216 pairs at K = 6), the 160,000 edge pairs with −2^31, and 2,621,440 random pairs of the five kinds. 0 failures.
-- Fault injection (one wrong Td entry in db3, constant 0x09AE in dbm, the k4 test dropped from mixn): each was caught by the single-bit check and by the gcd check.
+- Fault injection: one wrong Td entry in db3, constant 0x09AE in dbm, and the k ≥ 16 test dropped from mixn. The single-bit check caught all three (1, 8 and 16 of 32 wrong). In the gcd they pass the exhaustive runs up to K = 5, because the faults touch only large k, and they make the 31-bit runs never end (as in studies 24 and 26). So the all-inputs ctz check is the test that matters.
 
 **Instruction counts** (objdump). The pi_v3 step loop over 3 registers is 188 instructions with flt, 205 with db3, 206 with db and dbm, 207 with dbh, 209 with pop and pop2, 218 with mixn, 219 with mix, 231 with mask5, 238 with bs and 240 with mask5c. Per register that is 62.7, 68.3, 68.7, 69, 69.7, 72.7, 73, 77, 79.3 and 80. The loop has no stack operands. Dynamic counts per gcd on random pairs (valgrind): flt 299, db3 326, dbm and db 328, dbh 329, pop 332, mixn 347, mask5 367.
 

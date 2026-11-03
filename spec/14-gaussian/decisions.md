@@ -1,5 +1,17 @@
 # Spec 14: Gaussian integers in one word — decisions so far
 
+**Defaults (summary of the decisions below; Nov 3)**
+- Vector lanes, not plain registers (42).
+- 32 bits is the unit: a number is two int32 halves; larger sizes add 32-bit pieces, stored as separate arrays (43).
+- Separate arrays of real and imaginary parts (15).
+- Integers only; no floating point, not even as a trick (1, 33).
+- No branches where avoidable (5).
+- General before special: textbook methods first, special cases go to the tricks list (RULES).
+- Overflow: mask test into a sticky flag, checked once per array; the whole array is redone at the next size; shrink with a one-bit margin (13, 17, 18, 20).
+- Mod n by Barrett (38); division with remainder rounds to nearest, ties toward zero (28).
+- Leaving the exact type is refused (40).
+- Target ARM64 (NEON); x86 with AVX-512 at 128 bits stands in; rank by ARM instruction count (34, 46).
+
 Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 **Decided**
@@ -95,6 +107,10 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 46. **Rankings use the ARM instruction count of the real compiled ARM code,** which already leaves out the instructions x86 needs only to imitate NEON. x86 times are a second opinion.
 47. **The published library code is Nim with inline ARM64 assembly,** so the reader sees exactly the machine code and the compiler cannot undo tested choices. Compiler-generated code stays in use for exploration, and its disassembly is read for tricks.
 48. **Number-theory operations beyond the gcd** (lcm, the standard associate, coprimality, divisibility, is a unit) are left out of the first textbook version. An operation built at the machine level is built optimized; that is the point of the machine level. The book should eventually teach how to optimize such operations.
+
+**Library-level ideas (later)**
+- The suppressible refusal and the canonical mod (item 40).
+- Absolute value: an exact absolute value exists when a² + b² is a perfect square (one part zero, or a Pythagorean triple such as 3 + 4i, |·| = 5); refuse otherwise. A companion in the shape of division with remainder: the integer square root of the norm with a remainder, q = the largest integer with q² ≤ N and r = N − q², both exact; the exact absolute value is the case r = 0.
 
 **Reopen when ARM64 hardware is available**
 - The gcd: count instruction against the branched lookup (item 39; study 28 milestone 4).

@@ -7,3 +7,5 @@ spec/13-header/src/*.s
 spec/14-gaussian/playground/divvec
 spec/14-gaussian/playground/divvec_t
 spec/14-gaussian/playground/gcdfair
+spec/14-gaussian/playground/*
+!spec/14-gaussian/playground/*.*

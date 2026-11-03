@@ -46,7 +46,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 13. **Overflow detection, default: the sticky flag.** Each element's mask test is ORed into one register during an operation's sweep; checked once at the end; if set, the operation is redone at the next size from the untouched inputs. Shrink with one bit of margin (rule B, study 12). A survey of other strategies is running before this is final.
 
-14. **The residue form (quadratic residue number system) is dropped** (studies 16 and 18). Each multiply-add costs more than the direct one below 64-bit halves, and conversions are paid per entry; square matrix products pay off only from n ≈ 60 at 32-bit halves. Untested exception, noted only: high powers of a matrix.
+14. **The residue form (quadratic residue number system) is dropped** (studies 16 and 18). Each multiply-add costs more than the direct one below 64-bit halves, and conversions are paid per entry; square matrix products pay off only from n ≈ 60 at 32-bit halves. Powers of a matrix (study 22): wins only for n ≥ 8, not enough to bring it back. Closed.
 15. **Layout: separate arrays of real and imaginary parts** for whole-array work (study 17); pairs for single values and for moving data in and out. 32-bit lanes are the common unit on CPU vectors and GPUs.
 
 16. **Documentation stays chip-agnostic; the build targets x86-64** (the largest audience, and the only machine available for timing). AVX2 (256-bit) as the baseline, AVX-512 optional.
@@ -60,6 +60,11 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 21. **Bound tracking is dropped** (a stored structure; pays only for chains of adds).
 22. **Inverses mod n: the norm route with Euclid** (x⁻¹ = conj(x) · N(x)⁻¹ mod n, study 13), with batch inversion when an array shares n.
 23. **Equality only.** Gaussian integers have no order; the operation is called equality.
+
+24. **Even moduli:** Montgomery for odd n, Barrett in vector lanes for even n. The parity check is once per modulus (n is fixed for an array), so it costs nothing per element.
+25. **Conversion** (replacing the "not mixed" part of item 6: Gaussian integers are not closed under division, so conversion is needed). Another type converts to ours when it can; if not, and ours can convert to it, ours converts; otherwise the operation is refused. Open caveat: converting to an inexact type (floats) gives up exactness.
+26. **Shrinking: the refined test is confirmed** by study 21 (pays for itself within 2 to 4 later operations; costs nothing measurable from memory when it never fires). Rule B for now, pending data on how often values hover near the line.
+27. **Language: Nim, calling C's vector instructions (intrinsics) directly.** Vector instructions are written explicitly, not left to the compiler.
 
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.

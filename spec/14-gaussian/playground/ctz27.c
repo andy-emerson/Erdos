@@ -17,6 +17,15 @@
  *   mask5c the five bit tests with compare masks: k = 31 + sum (cmpeq(x & M_j, 0) & -2^j)  22 ops
  *   mix    8 [k >= 8 in byte] from two tests, x >> that, then two nibble tables           13 ops
  *   mixn   4 (k >> 2) from three tests, x >> that, then one nibble table                 13 ops
+ * Fitted to the step (milestone 5): the step needs only hx, hy >> ctz(o), so these replace "k, then one vpsravd":
+ *   mst5   the five min results used directly as shift counts, five vpsravd stages per part
+ *   mst2   two stages: by (8 | 16 tests), then by (1 | 2 | 4 tests)
+ *   mlo    the 1, 2, 4 tests and the 8, 16 tests ORed separately, then together
+ *   nbr    one vptest per register-step: if k < 4 in every lane (95% of register-steps), k = vpshufb(T4, x);
+ *          else mask5
+ *   nbrd   nbr with dbh as the rare path (the best form)
+ *   bbr    k < 8 in every lane (99.99%): k from two nibble tables; else mask5
+ *   tbr    nbr tested on the thermometer andn(o, o - 1)
  *
  * Build: gcc -O2 -mavx2 -o ctz27 ctz27.c
  * Run:   ./ctz27 check | ctz | time | icount KIND

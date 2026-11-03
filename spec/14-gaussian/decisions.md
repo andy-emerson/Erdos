@@ -26,6 +26,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - Lazy reduction for mod n (shelved, not archived): add 1 instruction, subtract 2, but n < 2^29 (3 bits of headroom per half), which matrix multiplication would feel quickly.
 - Complex multiply with three products instead of four; real and imaginary partial products formed together in one word (from study 3).
 - Vector compares for the infinity check (first test when the vector build exists).
+- Mod-p split form for p ≡ 1 (mod 4) (study 5): convert once, then cheaper products; for multiply-heavy work mod such primes.
 
 **Open questions**
 - Which special values the type wants: ∞, undefined (NaN-like), null (missing, as in q), an overflow pointer. One reserved value with the other half free gives room for all.
@@ -36,3 +37,11 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 8. **The reserved value is the overflow marker,** not infinity, undefined or null (the host system has those). It still gives the symmetric range.
 9. **The gcd may branch:** every practical gcd's length depends on the numbers; branch-free versions cost 4–5 times as much.
 10. **Overflow, leading design:** the author's growing chain (each half carries into the same half of the next word, halves independently) with one shared length per array: when any number overflows, every number in the array gains a word (unused upper halves hold the sign). Uniform width, width always known, no pointers, no count limit. The deferred check (study 7) detects when to grow.
+
+**Decided (Nov 2, night)**
+11. **Overflow: the family of word sizes,** replacing item 10. On overflow the whole array is copied into words twice the size (64 → 128 → …), sign on top, split in halves, same rules at every size; past the largest native size each half becomes a multi-word integer (ordinary arbitrary precision). The user opts into the 64-bit type and never sees the bookkeeping. Arrays shrink back when every element fits in half the width; the shrink rule and its margin are under test (study 12). What becomes of the reserved value is open.
+
+**Research list**
+- Barrett against Montgomery for mod n (build and prove first, then time).
+- Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).
+- A Gaussian version of Bernstein–Yang's fixed-count divsteps: no known bound on the step count; a separate research project.

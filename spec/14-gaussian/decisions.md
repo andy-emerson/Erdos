@@ -90,6 +90,9 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - NEON's saturating instructions and QC flag as the overflow check (item 37).
 - Barrett's high-half forms and the shared-number kernels (study 28 milestone 3), whose x86 rankings are uncertain.
 - Division with remainder by divisors that vary per element (item 32): in NEON shape on the x86 stand-in the per-lane reciprocal is slower than the scalar divide (8.6 against 5.2 ns, study 29), the reverse of the AVX2 result; half its work is in 64-bit lanes. 47 NEON instructions per element.
+- The grown-size multiply without the overflow check, and with a per-array bound, against plain registers (study 29: roughly level, uncertain). The checked form loses in vector lanes on both measures (24 against 46 AArch64 instructions per element); reshaping is still to be studied.
+- The fused shrink test's cost with data in L1 and L2 at 128 bits (11 to 31% of a grown-size add, study 29); free from memory.
+- Ties up and ties down, direct against mask form (study 29: tied by count, x86 favours mask because of an x86-only select cost).
 
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.

@@ -89,6 +89,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - The gcd: count instruction against the branched lookup (item 39; study 28 milestone 4).
 - NEON's saturating instructions and QC flag as the overflow check (item 37).
 - Barrett's high-half forms and the shared-number kernels (study 28 milestone 3), whose x86 rankings are uncertain.
+- Division with remainder by divisors that vary per element (item 32): in NEON shape on the x86 stand-in the per-lane reciprocal is slower than the scalar divide (8.6 against 5.2 ns, study 29), the reverse of the AVX2 result; half its work is in 64-bit lanes. 47 NEON instructions per element.
 
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.

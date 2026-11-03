@@ -937,3 +937,78 @@ The mix is the mean over the six cells: equal numbers of add, subtract and multi
 The earlier finding that the fused test costs about 5–7% from memory over a bare loop was a comparison with a bare loop of 9 instructions. Adding anything to that loop cost the same, even four `nop`s. With the overflow checks always present, as here, that excess is in v1, and v3 adds only 1.3–1.5% to it.
 
 **Summary.** When the loop waits on memory, the refined shrink test is close to free: 0 to 1.5% on an add or subtract at int64, and nothing elsewhere, by construction. A separate pass is not free, because it re-reads the result arrays. It costs 24–31% of every operation from memory, and 28% over the mix. In L1 the fused test costs its instructions: +0.04 ns, or 13–14% of an int64 add or subtract, and 2.5% over the mix. The shrink flag is meaningful only when the overflow flag is clear, so the two checks belong together.
+
+## Study 21: what the shrink test saves over a whole run (shrink21.c)
+
+**What was measured.** Whole runs on an array of Gaussian integers in layout (b), with AVX2. Overflow checks and the sticky flag are always on, and the size changes for real:
+- **The state:** starts at int32 halves. The operands are int32 arrays.
+- **Promotion:** on overflow at int32 the state is copied up to int64 halves and the operation is redone there from the untouched input. At int64 the operand is sign-extended as it is loaded (`vpmovsxdq`), so operands are never copied up.
+- **Demotion:** when the shrink flag allows, the int64 state is copied down to int32 (two `vpermd` and a lane permute per 8 halves).
+- **Kernels:** those of study 20. The int64 multiply is scalar, since AVX2 has no 64-bit lane multiply.
+
+Three variants of the shrink policy:
+- **v1, no shrink test:** once grown, the state stays at int64.
+- **v2, naive:** a separate pass over the result after every operation, at both sizes, and demotion when it allows.
+- **v3, refined:** the test is fused into add and subtract at int64 only, and demotion happens at the end of the sweep when it allows.
+- **v3A:** v3 with rule A (fits in 32 bits, no margin). It is used in the hover workload only.
+
+Workloads, each of 2 + L operations, with L = 0, 1, 2, 4, …, 128:
+- **back:**
+  1. add P, where P is just under 2^31, so the sums overflow int32 and the state is promoted;
+  2. subtract P, which brings every value back under the rule B line (|v| < 2^28);
+  3. L operations cycling add S, subtract T, multiply U. S and T are below 2^10 and U is a unit (±1, ±i), so nothing overflows again. The first multiply is the third of the L.
+- **control:** add P, then subtract S, so the values stay above the line and no variant ever demotes, then the same L operations. This shows the pure cost.
+- **hover:** values just under 2^31, then add D and subtract D alternately (D ≈ 2^11). Every add overflows int32, and every subtract returns the values to between 2^31 − 2^11 and 2^31 − 2^10. Those fit in 32 bits but not in 31.
+
+**Correctness.** For every workload, L and variant, the final array was compared with an exact __int128 replay of the operations: every element at N = 1,024, and every 16th at N = 2^20. **Failures: none.** The size changes were as intended:
+- **back:** v2 and v3 promote once and demote once; v1 promotes once and ends at int64.
+- **control:** one promotion, no demotion, in every variant.
+- **hover:** v1, v2 and v3 promote once and stay at int64 (rule B). v3A promotes and demotes once per add–subtract pair, 65 times each at L = 128.
+
+**Timing.** Same machine (Intel Xeon family 6 model 173, 2-vCPU KVM guest) under the same conditions: load below 1, pinned to one CPU, variants interleaved with the order rotated.
+- **In cache:** N = 1,024 (8 KB per int64 array, about 100 KB in all), 31 repetitions of about 0.3 ms each.
+- **Memory:** N = 2^23 (64 MB per int64 array, about 0.7 GB in all), 7 repetitions.
+
+The figures are the medians of two full runs, in ns per element for the whole run.
+- **Spreads:** quartiles were ±1–3% in cache and ±1–4% in memory.
+- **Between runs:** the in-cache figures agreed within 2%. Memory figures were 5–10% lower in the second run for every variant alike, so the savings agree within about 10%.
+
+**back** (ns per element per run; saved = v1 − v):
+
+| L | in cache v1 / v2 / v3 | saved v2 / v3 | memory v1 / v2 / v3 | saved v2 / v3 |
+|---|---|---|---|---|
+| 0 | 0.96 / 1.27 / 1.22 | −0.31 / −0.25 | 6.4 / 9.0 / 7.5 | −2.5 / −1.1 |
+| 1 | 1.36 / 1.73 / 1.64 | −0.37 / −0.29 | 8.5 / 10.8 / 8.9 | −2.3 / −0.4 |
+| 2 | 1.64 / 1.94 / 1.78 | −0.30 / −0.14 | 11.0 / 12.7 / 10.7 | −1.7 / +0.3 |
+| 4 | 4.03 / 2.55 / 2.26 | +1.5 / +1.8 | 15.8 / 16.0 / 13.0 | −0.2 / +2.9 |
+| 8 | 6.84 / 3.61 / 3.07 | +3.2 / +3.8 | 25.1 / 21.7 / 17.3 | +3.4 / +7.7 |
+| 16 | 14.7 / 5.8 / 4.9 | +8.9 / +9.8 | 43.8 / 34.2 / 27.4 | +9.5 / +16.4 |
+| 32 | 28.3 / 10.0 / 8.1 | +18.3 / +20.2 | 79.9 / 56.2 / 44.0 | +23.8 / +36.0 |
+| 64 | 56.5 / 18.7 / 15.0 | +37.9 / +41.6 | 152 / 105 / 81 | +47 / +71 |
+| 128 | 112 / 35.9 / 28.4 | +76 / +84 | 283 / 178 / 130 | +105 / +153 |
+
+**Break-even.**
+- **In cache:** both v2 and v3 pay off between L = 2 and L = 4. Below that, they lose 0.15–0.37 ns per element: the copy down, plus v2's passes.
+- **Memory:**
+  - v3 breaks even at L = 2. At L = 1 it is 0.3–0.4 ns behind, and at L = 2 it is 0.1–0.4 ahead.
+  - v2 breaks even at L = 4, where it is level within noise, and is clearly ahead from L = 8.
+
+Past break-even, each further operation saves about 0.65 ns in cache and 1.2 ns from memory with v3 (0.6 and 0.8 with v2). At L = 128, v3 takes a quarter of v1's time in cache and under half of it from memory.
+
+The saving has two sources. At int32, add and subtract move half the bytes. And the multiply stays a vector operation (study 20: 0.34 ns in L1, against 2.1 for the scalar int64 multiply), which is why the in-cache saving jumps once the first multiply arrives (L = 3). With add and subtract only, the per-operation saving would be the int64 minus int32 cost: about 0.15 ns in L1 and 1.3 ns from memory (study 20).
+
+**control** (no demotion ever, so pure cost):
+- **In cache:** v3 adds 0.15–0.3 ns per element at small L, and 6–7% of the run at L = 64 to 128. v2 adds 8–13%.
+- **Memory:** v3 is level with v1 at every L (−1.1 to +3.4 ns on runs of 6 to 300 ns, all within the spread). v2 adds 22–36% (1.4 to 102 ns).
+
+**hover** (L = 128; ns per element):
+
+| | v1 | v2 (B) | v3 (B) | v3A (rule A) |
+|---|---|---|---|---|
+| in cache | 38.7 | 52.4 (+35%) | 49.7 (+28%) | 84.4 (2.2 times) |
+| memory | 248 | 336 (+35%) | 239 (−4%) | 469 (1.9 times) |
+
+- **Rule B:** never demotes here, so v3's cost is only its fused test. That is nothing measurable from memory, and +28% in cache, where this workload is pure int64 add and subtract (about 0.085 ns per operation, twice study 20's L1 figure; not pinned down).
+- **Rule A:** demotes after every subtract and promotes again on every add. That is a copy down, a copy up and a redo per pair, about 0.27 ns per operation in cache and 1.8 ns from memory, which makes v3A about twice as slow as never shrinking. Rule B's margin removes all of it.
+
+**Summary.** Once values come back under the line, the refined test pays for itself after about 2 further operations from memory and 3 in cache (the first multiply). From then on it saves about 1.2 ns per operation from memory and 0.65 ns in cache, so a long run takes a quarter (in cache) to a half (memory) of the time it takes when it never shrinks. When values never come back down, it costs nothing measurable from memory and 6–7% in cache (up to 28% in an add-and-subtract-only loop). The naive pass breaks even later (L = 4 to 8 from memory), saves less, and costs 22–36% from memory when shrinking never happens. Rule A loses about half the speed when values hover near the line, and rule B none. Division and mod were not measured.

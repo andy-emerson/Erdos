@@ -195,13 +195,77 @@ AI V ctz_mixn(V o) {
 }
 
 /* ======================= (1+i)-ary in lanes (study 24), ctz pluggable ======================= */
-AI void stripv(V *px, V *py, V e) {
-    V x = _mm256_srav_epi32(*px, e), y = _mm256_srav_epi32(*py, e);
+/* ======================= Study 27, milestone 5: mask tests fitted to the step ======================= */
+/* the step's shift: hx, hy >> ctz(o). For the plain forms, one vpsravd per part by k. */
+#define SHK(n) AI void sh_ctz_##n(V *hx, V *hy, V o) { V e = ctz_##n(o); *hx = _mm256_srav_epi32(*hx, e); *hy = _mm256_srav_epi32(*hy, e); }
+#define FORMS(X) X(flt) X(bs) X(pop) X(pop2) X(db) X(db3) X(dbm) X(dbh) X(mask5) X(mask5c) X(mix) X(mixn)
+FORMS(SHK)
+#define SRAV2(e) { V e_ = (e); *hx = _mm256_srav_epi32(*hx, e_); *hy = _mm256_srav_epi32(*hy, e_); }
+#define TST(M, W) _mm256_min_epu32(AND(x, C32(M)), C32(W))
+/* mst5: the five min results used directly as shift counts, one stage each; k is never assembled */
+#define ctz_mst5 ctz_mask5
+AI void sh_ctz_mst5(V *hx, V *hy, V o) {
+    V x = ISO(o);
+    SRAV2(TST(0xAAAAAAAA, 1)) SRAV2(TST(0xCCCCCCCC, 2)) SRAV2(TST(0xF0F0F0F0, 4)) SRAV2(TST(0xFF00FF00, 8)) SRAV2(TST(0xFFFF0000, 16))
+}
+/* mst2: two stages, the rare large part (16 | 8) first, then 4 | 2 | 1 */
+#define ctz_mst2 ctz_mask5
+AI void sh_ctz_mst2(V *hx, V *hy, V o) {
+    V x = ISO(o);
+    SRAV2(OR(TST(0xFF00FF00, 8), TST(0xFFFF0000, 16))) SRAV2(OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), TST(0xF0F0F0F0, 4)))
+}
+/* mlo: the low tests (1, 2, 4) on the critical path, the high ones (8, 16) ORed last */
+#define ctz_mlo ctz_mask5
+AI void sh_ctz_mlo(V *hx, V *hy, V o) {
+    V x = ISO(o);
+    V hi = OR(TST(0xFF00FF00, 8), TST(0xFFFF0000, 16)), lo = OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), TST(0xF0F0F0F0, 4));
+    SRAV2(OR(lo, hi))
+}
+/* nbr: k < 4 in every lane of the register (95% of register-steps) -> k = T[x] (x's low byte is 1, 2, 4 or 8,
+ * bytes 1..3 zero); otherwise mask5. One vptest and a branch per register-step. */
+#define T4 TBL(0, 0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0)
+#define ctz_nbr ctz_mask5
+AI void sh_ctz_nbr(V *hx, V *hy, V o) {
+    V x = ISO(o), e;
+    if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x);
+    else e = OR(OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), OR(TST(0xF0F0F0F0, 4), TST(0xFF00FF00, 8))), TST(0xFFFF0000, 16));
+    SRAV2(e)
+}
+/* bbr: k < 8 in every lane (99.99%) -> k from x's low byte by two nibble tables; otherwise mask5 */
+#define ctz_bbr ctz_mask5
+AI void sh_ctz_bbr(V *hx, V *hy, V o) {
+    V x = ISO(o), e;
+    const V tl = T4, th = TBL(0, 4, 5, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0);
+    if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFF00)), 1)) e = OR(_mm256_shuffle_epi8(tl, x), _mm256_shuffle_epi8(th, _mm256_srli_epi32(x, 4)));
+    else e = OR(OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), OR(TST(0xF0F0F0F0, 4), TST(0xFF00FF00, 8))), TST(0xFFFF0000, 16));
+    SRAV2(e)
+}
+/* tbr: as nbr but tested on the thermometer t = andn(o, o - 1) = 2^k - 1 (low byte 0, 1, 3 or 7) */
+#define ctz_tbr ctz_mask5
+AI void sh_ctz_tbr(V *hx, V *hy, V o) {
+    V t = ANDN(o, ADD(o, C32(-1))), e;
+    if (__builtin_expect(_mm256_testz_si256(t, C32(0xFFFFFFF8)), 1)) e = _mm256_shuffle_epi8(TBL(0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0), t);
+    else { V x = ISO(o); e = OR(OR(OR(TST(0xAAAAAAAA, 1), TST(0xCCCCCCCC, 2)), OR(TST(0xF0F0F0F0, 4), TST(0xFF00FF00, 8))), TST(0xFFFF0000, 16)); }
+    SRAV2(e)
+}
+/* nbrd: nbr with dbh as the slow path */
+#define ctz_nbrd ctz_dbh
+AI void sh_ctz_nbrd(V *hx, V *hy, V o) {
+    V x = ISO(o), e;
+    if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x); else e = ctz_dbh(o);
+    SRAV2(e)
+}
+#define FITS(X) X(mst5) X(mst2) X(mlo) X(nbr) X(bbr) X(tbr) X(nbrd)
+
+/* the strip: shift by e = ctz, then one division by 1+i where both parts are odd */
+AI void stripodd(V *px, V *py) {
+    V x = *px, y = *py;
     V m = _mm256_slli_epi32(AND(x, y), 31);
     V hx = SRA1(x), hy = SRA1(y);
     *px = SEL(x, SUB(hx, XOR(hy, C32(-1))), m);
     *py = SEL(y, SUB(hy, hx), m);
 }
+AI void stripv(V *px, V *py, V e) { *px = _mm256_srav_epi32(*px, e); *py = _mm256_srav_epi32(*py, e); stripodd(px, py); }
 AI void primv(V *px, V *py) {
     V x = *px, y = *py;
     V m = _mm256_slli_epi32(x, 31);
@@ -231,7 +295,7 @@ AI V sizev(V x, V y) { return ADD(_mm256_abs_epi32(x), _mm256_abs_epi32(y)); }
 #define STEPP(P, CTZ) {                                                                                     \
     V hx = SUB(SRA1(ax##P), SRA1(bx##P)), hy = SUB(SRA1(ay##P), SRA1(by##P));                              \
     V o = OR(hx, hy), z = EQ(o, zero);                                                                       \
-    stripv(&hx, &hy, CTZ(o)); primv(&hx, &hy);                                                               \
+    sh_##CTZ(&hx, &hy, o); stripodd(&hx, &hy); primv(&hx, &hy);                                                               \
     hx = SEL(hx, bx##P, z); hy = SEL(hy, by##P, z);                                                          \
     V s = sizev(hx, hy), mn = _mm256_min_epu32(s, sb##P), ge = EQ(mn, sb##P);                               \
     V nbx = SEL(hx, bx##P, ge), nby = SEL(hy, by##P, ge);                                                    \
@@ -312,19 +376,21 @@ static void gen(int kind, i32 *a1, i32 *a2, i32 *b1, i32 *b2) {
     *a1 = (i32)(g1 * u1 - g2 * u2); *a2 = (i32)(g1 * u2 + g2 * u1);
     *b1 = (i32)(g1 * v1 - g2 * v2); *b2 = (i32)(g1 * v2 + g2 * v1);
 }
-#define FORMS(X) X(flt) X(bs) X(pop) X(pop2) X(db) X(db3) X(dbm) X(dbh) X(mask5) X(mask5c) X(mix) X(mixn)
 #define MK3(n) PI_V3(pi_v3_##n, ctz_##n, 1)
 #define MK1(n) PI_V(pi_v_##n, ctz_##n, 1)
 FORMS(MK3)
 MK1(flt) MK1(pop) MK1(db) MK1(db3) MK1(dbm) MK1(dbh) MK1(mask5) MK1(mixn)
+FITS(MK3) FITS(MK1)
 
 /* ======================= kernel table ======================= */
 typedef u32 (*kf)(ARGS);
 typedef struct { const char *name; kf f; } kern;
 #define ENT3(n) {"pi_v3_" #n, pi_v3_##n},
+#define ENT1(n) {"pi_v_" #n, pi_v_##n},
 static kern KT[] = { FORMS(ENT3)
     {"pi_v_flt", pi_v_flt}, {"pi_v_pop", pi_v_pop}, {"pi_v_db", pi_v_db}, {"pi_v_db3", pi_v_db3}, {"pi_v_dbm", pi_v_dbm},
-    {"pi_v_dbh", pi_v_dbh}, {"pi_v_mask5", pi_v_mask5}, {"pi_v_mixn", pi_v_mixn} };
+    {"pi_v_dbh", pi_v_dbh}, {"pi_v_mask5", pi_v_mask5}, {"pi_v_mixn", pi_v_mixn},
+    FITS(ENT3) FITS(ENT1) };
 #define NKT (int)(sizeof KT / sizeof KT[0])
 
 /* ======================= correctness ======================= */
@@ -391,8 +457,34 @@ static void do_ctz_check(void) {
         printf("ctz_%-7s single-bit inputs wrong %d of 32; all nonzero 32-bit values wrong %ld (with ctz <= 30: %ld)\n", CT[m].name, bad1, bad, bad30);
     }
 }
+/* fitted shifts: hx, hy >> ctz(o) for hx = o, hy = -o: all 32 single-bit o, then every nonzero o
+ * (lanes base..base+7, and a second pass with lane 0 forced to a single bit so the branches mix) */
+typedef void (*sf)(V *, V *, V);
+#define SW(n) static void s_##n(V *a, V *b, V o) { sh_ctz_##n(a, b, o); }
+FITS(SW)
+#define SE(n) {#n, s_##n},
+static struct { const char *name; sf f; } ST_[] = { FITS(SE) };
+static void do_fit_check(void) {
+    for (int m = 0; m < (int)(sizeof ST_ / sizeof ST_[0]); m++) {
+        int bad1 = 0; long bad = 0;
+        for (int k = 0; k < 32; k++) for (int j = 0; j < 8; j++) {     /* single bits, one lane at a time among zeros */
+            u32 o[8] = {0}; o[j] = 1u << k; V ov = LD(o), a = ov, b = SUB(ZERO, ov); ST_[m].f(&a, &b, ov);
+            u32 ra[8], rb[8]; ST(ra, a); ST(rb, b); bad1 += ra[j] != (u32)((i32)o[j] >> k) || rb[j] != (u32)((i32)-o[j] >> k);
+        }
+        for (int pass = 0; pass < 2; pass++)
+        for (u64 base = 0; base < (1ull << 32); base += 8) {
+            V ov = _mm256_add_epi32(C32((u32)base), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+            if (pass) ov = _mm256_blend_epi32(ov, C32(1u << (base >> 3 & 31)), 1);
+            V a = ov, b = SUB(ZERO, ov); ST_[m].f(&a, &b, ov);
+            u32 o[8], ra[8], rb[8]; ST(o, ov); ST(ra, a); ST(rb, b);
+            for (int j = 0; j < 8; j++) { if (!o[j]) continue; int k = __builtin_ctz(o[j]);
+                bad += ra[j] != (u32)((i32)o[j] >> k) || rb[j] != (u32)((i32)-o[j] >> k); }
+        }
+        printf("shift %-5s single-bit inputs wrong %d of 256 lane placements; every nonzero o (two passes) wrong %ld\n", ST_[m].name, bad1, bad);
+    }
+}
 static void do_check(void) {
-    do_ctz_check(); fflush(stdout);
+    do_ctz_check(); do_fit_check(); fflush(stdout);
     for (int K = 3; K <= 6; K++) {
         i64 lo = -(1 << (K - 1)), hi = (1 << (K - 1)) - 1; long cnt = 0; size_t n = 0;
         for (i64 p = lo; p <= hi; p++) for (i64 q = lo; q <= hi; q++) for (i64 r = lo; r <= hi; r++) for (i64 s = lo; s <= hi; s++) {

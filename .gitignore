@@ -4,3 +4,4 @@ __pycache__/
 spec/12-integers/build/
 spec/13-header/build/
 spec/13-header/src/*.s
+spec/14-gaussian/playground/divvec

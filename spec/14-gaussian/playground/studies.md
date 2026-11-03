@@ -531,3 +531,61 @@ Every result was checked against study 6's gcd (its rational reference) and for 
 | for reference, study 13: x^−1 mod a 31-bit n by the norm route, with Euclid or divsteps | ≈ 136, ≈ 3,517 | | |
 
 Keeping both coefficients roughly triples the (1+i)-ary gcd. The divisions by 1 + i, about four per outer step, each carry two coefficient fixes. The extended (1+i)-ary loop is about 4.6 times extended Euclid in instructions, but uses no multiply and no divide. Its branch-free form at the proven step count is far dearer still. The bound (1,172) is 6.4 times the largest count seen (183), because the per-step factor 0.729 in the proof is far from typical. For an inverse modulo a rational n, the norm route of study 13 remains much cheaper than either extended gcd: about 136 instructions with Euclid's integer inverse.
+
+## Study 15: the overflow and shrink checks recounted (checks.py)
+
+**What was checked.** The cheapest correct mask forms of each check, in two models and two variants.
+- **Models:**
+  - **Scalar:** the packed word in a 64-bit register, as in earlier studies.
+  - **Vector:** 32-bit lanes for add, sub, neg, conj and shrink. Mul uses the widening 32 × 32 → 64 lane multiply, counted in its SSE4.1/AVX2 form; NEON (`smull`, `uzp`) and RVV (`vwmul`, `vnsrl`) have the same steps but were not counted instruction by instruction.
+- **Variants:**
+  - **A:** keeps −2^31 reserved, so the range is symmetric.
+  - **B:** drops the reservation and uses the full two's-complement range.
+
+Every check ORs a contribution into a sticky word, and the mask that picks the meaningful bits is applied once per array. That is valid because (OR of tᵢ) AND m = OR of (tᵢ AND m). Checks whose meaningful bits differ keep separate sticky words: the sign bits for add, sub and neg; the high half's sign bit for scalar conj; the high h bits of the double-width parts for mul; and bits g and up for shrink.
+
+**A correction to earlier counts.** Under the book's rules, the packed add used since toy.py, ((x AND NH) + (y AND NH)) XOR ((x XOR y) AND H), is 6 instructions, not 5. The packed subtract, ((x OR H) − (y AND NH)) XOR ((x XOR NOT y) AND H), is 7 (6 with ARM64 `eon` or RISC-V `xnor`), not 5. Both have a 5-instruction form: a full add (or subtract), then a fix for the carry (or borrow) that crossed into the high half.
+
+- **add:** s = x + y, t = x XOR y, r = s − ((t XOR s) AND 2^32).
+- **sub:** s = x − y, t = x XOR y, r = s + ((t XOR s) AND 2^32).
+
+Bit 32 of x XOR y XOR s is the carry (or borrow) into the high half. These forms also leave t = x XOR y in a register for the overflow test. The arithmetic counts in studies 1, 2, 7 and 12 for add and sub should read 5 with these forms (they used 5 for forms that cost 6 and 7).
+
+**The cheapest forms, all verified.**
+- **add overflow:** (x XOR r) AND NOT t, which needs t from the add. That is XOR, ANDN, then OR into the sticky: 2 + 1 with `andn` (x86-64 BMI1 `andn`, ARM64 `bic`, RISC-V Zbb `andn`), or 3 + 1 without. So 3 + 1 can be beaten: 2 + 1, by sharing x XOR y with the arithmetic and deferring the sign-bit mask.
+- **sub overflow:** t AND (x XOR r). That is XOR, AND, OR: 2 + 1 with no `andn` needed.
+- **neg:** s = 0 − x, then add back the borrow, (x XOR s) AND 2^32. Under B, a half overflows exactly when x and −x are both negative, which happens only at −2^31: x AND r, then OR (2).
+- **conj:** r = (x AND ML) − (x AND NOT ML), which is lo − hi·2^32 with no borrow (3). Under B the check is x AND r at the high half's sign bit, kept in its own sticky (2).
+- **The half = −2^31 test (variant A only):** r AND NOT ((r AND NH) + NH), then OR: 3 + 1.
+- **mul, "add form":** a part v fits exactly when (v + 2^31) has nothing in bits 32 and up (B). Under A, both v + (2^31 − 1) and v + 2^31 must have nothing there. The ORs are taken first and the bit mask applied once per array: under B, ADD, ADD, OR, then OR into the sticky (4).
+  - The specified "shift form" ((v shl 32) sar 32 XOR v per part) gives the same answers, but costs 3 per part against 2.
+  - The compare form, (v + HI) > 2HI unsigned (study 2), costs 2 per part. Its compare counts 1 by the book's convention, but takes two instructions on x86-64 and ARM64 (`cmp` and `setcc`/`cset`).
+- **Vector lanes:** add and sub are 1 instruction (lanes never carry into each other), and the overflow test is XOR, XOR, AND (3), then OR. NEON (`sqadd`) and RVV (`vsadd`) have 32-bit saturating adds, which would give a 2-instruction test (saturated ≠ wrapped), but SSE/AVX2 have no 32-bit saturating add, so it is not portable. Variant A's −2^31 test is one compare-equal against −2^31 (`pcmpeqd`, `cmeq`, `vmseq`), then OR. RVV compares give mask registers, so that sticky is kept with `vmor`.
+- **Shrink (packed scalar):** t = ((w AND NH) + C) XOR (w AND H) with C = 2^(g−1) in each half, and the bits g and up are tested once per array (B: 4 + 1). A also needs u, the same with C − 1, ORed in (7 + 1). In vector lanes it is x + 2^(g−1) (B: 1 + 1) and also x + 2^(g−1) − 1 (A: 3 + 1). A wrapped lane sum cannot land below 2^g, because x < 2^31 (verified).
+
+**Verification.** Each check: the flag (contribution AND end mask ≠ 0) is set exactly when the true result does not fit; each result equals the true value mod 2^h; and the sticky over an array of 16 is set exactly when any element does not fit.
+- **h = 4:** every word pair (scalar), every lane pair (vector), every 8-bit part (mul checks).
+- **h = 8:** neg, conj and shrink on every word. Add, sub and mul exhaustive in each half, with the other half from 20 edge and random pairs, about 2.8 million word pairs per variant. Vector add and sub on every lane pair, and the mul checks on every 16-bit part.
+- **h = 32:** 100,000 random pairs per variant.
+- **Arrays:** 20,000 deferred arrays (add and mul) per variant.
+- **Failures: none.** Under B one corner exists, (−2^31)(−2^31) · 2 = 2^63, which overflows the 64-bit part itself. It wraps to −2^63 and is still flagged.
+
+**Table.** Instructions per operation, as arithmetic / check / total. Check counts include the OR into the sticky. Scalar is one packed word, one Gaussian integer. Vector is one vector register, which holds 2 Gaussian integers at 128 bits and 4 at 256 bits.
+
+| operation | scalar, A | scalar, B | vector, A | vector, B |
+|---|---|---|---|---|
+| add | 5 / 7 / 12 (14 without andn) | 5 / 3 / 8 (9 without andn) | 1 / 6 / 7 | 1 / 4 / 5 |
+| sub | 5 / 7 / 12 (13 without andn) | 5 / 3 / 8 | 1 / 6 / 7 | 1 / 4 / 5 |
+| neg | 4 / 0 / 4 | 4 / 2 / 6 | 1 / 0 / 1 | 1 / 2 / 3 |
+| conj | 3 / 0 / 3 | 3 / 2 / 5 | 2 / 0 / 2 | 2 / 2 / 4 |
+| mul, add form | 15 / 8 / 23 | 15 / 4 / 19 | 11 / 8 / 19 | 11 / 4 / 15 |
+| mul, compare form (compare = 1) | 15 / 6 / 21 | 15 / 6 / 21 | (no unsigned 64-bit compare in SSE/AVX2) | |
+| mul, shift form | 15 / 12 / 27 | 15 / 8 / 23 | | |
+| shrink test (32-bit halves into 16) | 8 | 5 | 4 | 2 |
+| once per array, per sticky word (mask, test, branch) | 2 to 3 | 2 to 3 | 2 to 3 | 2 to 3 |
+
+**What the variants need.**
+- **A:** neg and conj need no check. The symmetric range is closed under negation, and −(−2^31) = −2^31 keeps the reserved value in place. Add and sub pay for the "half = −2^31" test: 4 scalar (3 + OR), 2 vector (compare-equal + OR). Mul pays 4 more in the add form, for its second offset.
+- **B:** add, sub and mul are cheaper (no reserved value to catch). neg and conj each need a 2-instruction check, because −(−2^31) overflows. Under B, −2^31 is an ordinary value, so the type has no reserved marker.
+
+Against the earlier counts: study 7's deferred add was 16 in total (a 5 that was really 6, and a check of 4 + 5 + 1 + 1). The cheapest correct forms give 12 under A (8 under B) in scalar, and 7 under A (5 under B) per vector register.

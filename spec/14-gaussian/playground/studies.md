@@ -1567,4 +1567,50 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 - **With one register (latency-bound), mixn ties the float trick:** 58.2 to 58.4 ns against 57.9 to 58.8, and 30.2 to 30.4 against 29.9 to 30.1. The multiply-based forms lose there: dbh 61 ns, db 68.
 - **So the best form depends on the kernel.** dbh (or dbm) for the 3-register gcd, mixn where one chain is latency-bound. No integer form here reaches flt's 5 ops: the converter's priority encoder is worth about 4 instructions per step.
 
-**Summary.** The best integer-only lane ctz for a single set bit is dbh. It multiplies each 16-bit word by the de Bruijn constant 0x09AF (`vpmullw`, 5 cycles), shifts each word right by 12, does one `vpshufb`, then shifts right by s = min_epu32(x AND 0xFFFF0000, 16) and ORs s back in. That is 9 ops including x = o AND −o. Inside study 26's 3-register binary gcd it takes 40.0 to 40.4 ns per random pair, 5.5% (about 2.1 ns) above the float trick's 37.7 to 38.3 ns. Study 26's popcount (43.0 to 43.8) and de Bruijn (43.2 to 43.7) sat 13% above it. dbm (`vpmaddwd` instead of `vpmullw`) ties dbh. The five single-bit tests cost 2 ops each with the min trick (AND, then min_epu32 with 2^j). Alone they are too many instructions (16 ops, 42 ns), but three of them plus one nibble table (mixn, 13 ops) match the float trick's latency and tie it in the latency-bound one-register gcd (58.3 against 58.3 ns). Searches ruled out a 32-entry de Bruijn index from `vpmaddwd`, and any index read straight from the bits `vpshufb` uses. The step needs k explicitly for `vpsravd`.
+**Fitting the mask tests into the step (milestone 5).** Everything above assembles k and then runs one `vpsravd` per part by k. The step only needs hx, hy >> ctz(o), so these forms were fitted to the step instead and timed in the same harness, in a later session. Its three runs (load below 1) repeated the earlier figures within 0.3 ns, except pi_v flt at 57.0 to 57.3.
+- **(c) Distribution of k per step** (65,536 pairs per kind, 1,987,953 live lane-steps on random pairs):
+
+  | k | 0 | 1 | 2 | 3 | 4 | 5 | 6 or more |
+  |---|---|---|---|---|---|---|---|
+  | lanes | 50.6% | 37.5% | 9.1% | 2.2% | 0.53% | 0.13% | 0.04% |
+  | largest k in a register | 9.1% | 36.6% | 36.8% | 12.9% | 3.5% | 0.87% | 0.26% |
+  | largest k over 3 registers | 3.5% | 13.5% | 40.9% | 29.0% | 9.6% | 2.6% | 0.8% |
+
+  So every lane of a register has k < 4 in 95.4% of register-steps (96.3% with a large common factor), and k < 8 in 99.996%. When k < 4 the low byte of x is 1, 2, 4 or 8 and the other bytes are 0, so k = `vpshufb`(T4, x) in one op.
+- **nbr and nbrd:** x = o AND −o, one `vptest` of x against 0xFFFFFFF0 per register-step, and a branch. On the fast path k = `vpshufb`(T4, x): 3 ops, 3 cycles deep, against the float trick's 5 ops and 8 cycles. The rare path is the full mask5 (nbr) or dbh (nbrd). The branch takes the rare path in 4.6% of register-steps.
+- **bbr:** the same with k < 8 (99.996%), using two nibble tables (6 ops on the fast path).
+- **tbr:** nbr tested on the thermometer andn(o, o − 1), whose low byte is 0, 1, 3 or 7 when k < 4. (e) The thermometer gives only comparisons k > j, not the bits of k, so it cannot replace x in the five tests.
+- **(a) Stages:** mst5 uses each min result directly as a shift count (5 `vpsravd` stages per part, k never assembled). mst2 shifts by (8 | 16), then by (1 | 2 | 4).
+- **(b) Depth:** mlo ORs the low-weight tests and the 8 and 16 tests separately, then together. All five tests come from x at the same depth (4 cycles), so no ordering shortens the chain below mask5's 7 plus the shift.
+- **(d) Sharing:** there is one ctz per Gaussian number (o = hx OR hy already covers both parts), the three registers hold independent data, and the masks and weights are shared constants. Nothing else is left to share.
+- **Correctness:** every fitted shift against o >> ctz(o) and −o >> ctz(o): every single-bit o in each of the 8 lane positions (other lanes 0), then every nonzero o in two passes (the second with lane 0 forced to a single bit, so both branches meet in one register). Then the gcd checks above: exhaustive K = 3 to 6, the −2^31 edges, and 2,621,440 random pairs. 0 failures.
+- **A pitfall:** in a first build the fitted forms were macro aliases of ctz_mask5, which the kernel macros expanded before pasting, so all of them silently ran mask5 (or dbh) and timed the same. The fitted forms are now distinct functions, and objdump confirms the `vpshufb` and the branch in each loop.
+
+| ns per gcd | pi_v3 random | pi_v3 large factor | pi_v random | pi_v large factor | dynamic instructions per gcd (pi_v3, random) |
+|---|---|---|---|---|---|
+| flt (float) | 38.0–38.1 | 20.3–20.4 | 57.0–57.3 | 29.0–29.2 | 299 |
+| **nbrd** (k < 4 branch, dbh otherwise) | **36.3–36.4** | **19.4–19.5** | **52.1–52.5** | **26.8–26.9** | 305 |
+| nbr (k < 4 branch, mask5 otherwise) | 36.9–37.1 | 19.8–20.1 | 53.1–53.4 | 27.0–27.2 | 316 |
+| bbr (k < 8 branch) | 37.9–38.1 | 20.5–20.6 | 53.5–53.7 | 28.1–28.2 | 325 |
+| dbh | 40.0–40.2 | 21.4–21.7 | 61.1–61.3 | 31.6–32.0 | 329 |
+| tbr (thermometer, k < 4 branch) | 41.5 | 23.1–23.5 | 56.1 | 28.9–29.1 | 365 |
+| mixn | 41.4–41.5 | 22.2–22.3 | 58.1–58.2 | 29.7–29.9 | 347 |
+| mask5 (k, then `vpsravd`) | 42.0–42.2 | 22.5–22.6 | 59.7–59.9 | 30.9–31.1 | 367 |
+| mlo | 42.3 | 22.6–22.7 | 59.3–59.5 | 30.6–30.7 | 360 |
+| mst2 (2 stages) | 42.5–42.9 | 22.8–22.9 | 59.1–59.3 | 30.7–30.8 | 363 |
+| pop (study 26) | 43.0–43.1 | 23.1–23.2 | 67.8–67.9 | 35.2–35.7 | 332 |
+| mst5 (5 stages) | 44.9–45.0 | 24.0 | 61.7–62.1 | 32.5–32.6 | 375 |
+
+- **Shifting in stages loses.** Each stage costs two `vpsravd` where assembling k costs one OR, and all five counts are ready at once, so nothing overlaps. mst5 is 7% slower than mask5 and mst2 1%.
+- **Reordering for depth gains nothing** (mlo against mask5), as expected when every test starts from x at the same time.
+- **The distribution is what pays.** On the fast path nbrd costs 3 ops, 3 cycles deep, plus a `vptest` and a branch off the dependency chain. It is the only integer form that beats the float trick: 4% faster in the 3-register gcd (36.3 against 38.0 ns), 9% faster in the latency-bound one-register gcd (52.3 against 57.2), and 4 to 8% faster with a large common factor. That is despite a few more instructions (305 against 299 per gcd) and the mispredictions on the 4.6% of register-steps that take the rare path.
+- **The rare path matters little:** dbh beats mask5 there by 0.6 to 1 ns. A k < 8 threshold (bbr) is mispredicted almost never but doubles the fast path, and loses to nbr.
+- **tbr was compiled badly** by gcc (365 instructions per gcd against nbr's 316), so it says little about the thermometer itself.
+- The same branch would also speed up the float version. Its fast path does not use the converter, so the float trick has no remaining advantage.
+
+**Summary.**
+- **Best overall, with a branch:** nbrd. x = o AND −o; if every lane of the register has k < 4 (one `vptest`; 95% of register-steps, since half the lanes have k = 0 and 88% have k ≤ 1), then k = `vpshufb`(T4, x). Otherwise k comes from dbh. It takes 36.3 ns per random 31-bit pair in study 26's 3-register binary gcd, 4% faster than the float trick (38.0), and 52.3 against 57.2 ns with one register.
+- **Best without a branch:** dbh. It multiplies each 16-bit word by the de Bruijn constant 0x09AF (`vpmullw`, 5 cycles), shifts each word right by 12, does one `vpshufb`, then shifts right by s = min_epu32(x AND 0xFFFF0000, 16) and ORs s back in. That is 9 ops, 40.0 to 40.4 ns, 5.5% (about 2 ns) above the float trick. Study 26's popcount and de Bruijn forms were 13% above it. dbm (`vpmaddwd` instead of `vpmullw`) ties.
+- **The five single-bit tests:** 2 ops each with the min trick (AND, then min_epu32 with 2^j), the shortest chain of all but 16 ops, so 42 ns. Three of them plus one nibble table (mixn, 13 ops) tie the float trick in the latency-bound one-register gcd.
+- **Fitting the tests into the step** (shift stages, depth order, the thermometer, sharing) gains nothing over assembling k. What pays is the distribution of k: a branch on the common case k < 4 replaces the whole ctz by one table lookup.
+- **Ruled out by searches and counts:** a 32-entry index from `vpmaddwd`; an index read straight from the bits `vpshufb` uses; `vpermd` tables; byte-level lookups needing a horizontal sum; and leaving k out of the step (`vpsravd` needs the count, and multiplying by 2^−k needs a bit reverse and 4 `vpmuldq`).

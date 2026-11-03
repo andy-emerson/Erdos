@@ -1629,3 +1629,180 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 - **With three registers, nbrf and nbrd tie** (36.3 to 36.9 ns). The rare path runs too seldom for its cost to show.
 - **With one register (latency-bound), nbrf is about 1.3 ns (2.5%) faster than nbrd** on random pairs, and 0.6 ns with a large common factor. That is the float trick's shorter chain (8 cycles against dbh's 11) on the rare path.
 - **So the float converter is worth at most 2.5% once the branch is in place,** against 5.5 to 13% when every step needs a full ctz. nbrd remains the best integer-only form.
+
+## Study 28: NEON-shaped kernels on the x86 stand-in (neon28.c, portable-isa.md)
+
+**What was done.** Decision 34 moves the build to ARM NEON and keeps this x86 machine as a stand-in: 128-bit registers (AVX-512VL), only operations NEON also has, no mask registers, no 64-bit lane multiply, no three-input logic, no floating point. portable-isa.md lists the shared operations (NEON intrinsic, x86 stand-in, op count), the NEON operations with no direct x86 equivalent and the substitute used for each, and the x86 operations ruled out because NEON lacks them. In neon28.c every vector operation is a macro named after its NEON intrinsic. Built with `-DCOUNT`, each macro also counts one NEON instruction, so NEON counts come from the code as written, whatever the stand-in costs on x86. gcc 13.3 -O2 -mavx512f -mavx512vl -mavx512cd -mavx512bw -mavx512dq.
+
+**Build traps found.**
+- With AVX-512VL, gcc fuses two logic ops into `vpternlog` on its own. Every logic op now passes through an empty asm. `vpternlogq $0x55` (a one-input NOT, NEON's `mvn`) is allowed.
+- When values spill into xmm16 to 31, gcc rewrites compares and byte blends into compares into mask registers and masked moves, because the VEX forms reach only xmm0 to 15. Compares and `bsl` are pinned to their VEX forms with inline asm. So on x86 they work on 16 registers, against NEON's 32.
+- A scan of every kernel in the final binary finds no mask registers, ymm or zmm, other `vpternlog`, 64-bit multiplies or min/max, `vpopcntd`, `psignd`, `blendvps`, permutes or floating point.
+- The gcd's selects now use full-lane masks (`vtst`, `bsl`). Studies 24 to 27 relied on `blendvps` reading only the sign bit, and on `psignd`; neither is in NEON.
+
+**Timing harness** (all parts): same machine as studies 19 to 27 (Granite Rapids Xeon, family 6 model 173, 2-vCPU KVM guest). Load below 1 with nothing else running, pinned to one CPU, 31 repetitions, kernels interleaved with order rotated, an untimed call first, three runs. Ranges below are of the medians; quartile spreads were about ±1 to 3%.
+
+### Part 1: add, subtract, multiply with the sticky flag (milestone 2)
+
+Layout (b), int32 halves, study 15's full-range checks ORed into a sticky register and tested once per array.
+- **add_xor, sub_xor:** study 15's test, (x XOR r) AND NOT (x XOR y) (`bic`) and (x XOR r) AND (x XOR y).
+- **mul_w:** `smull`, `smlsl`, `smull2`, `smlsl2` per part pair, study 15's add form (v + 2^31 has nothing in bits 32 to 63), and `uzp1` to narrow.
+- **mul_h:** the same, with the check as the high halves (`uzp2`) XOR the sign of the low halves.
+- **Saturating forms** (NEON only; emulated here for correctness, not timed):
+  - add_sat compares `sqadd` with the wrapped sum.
+  - add_qc and mul_qc use NEON's sticky saturation bit QC in FPSR as the flag. add_qc is `sqadd` alone. mul_qc narrows with `sqxtn`, `sqxtn2` in place of `uzp1` and the check.
+  - On overflow the operation is redone at the next size from the inputs (decision 13), so the saturated values are never used.
+
+**Correctness.** Every kernel against exact arithmetic: the value mod 2^32 (for the saturating forms, only when nothing overflowed), and the flag exactly when some result does not fit.
+- **Edges:** every quadruple of 32 edge values (study 20's set, k = 14, 15, 30, 31), each element alone among 8 with its position rotating: 1,048,576 quadruples.
+- **Exhaustive in the top bits:** values (t << S) | f, with t every 8-bit two's complement pattern and f one of 5 fills (1,280 values). Every pair for the real parts, with the imaginary parts from cycling edge pairs, then the roles swapped; every 4th group of 8 is also run element by element. S = 24 for add and subtract (the carry into bit 31); S = 12 and 16 for multiply (products from 2^24 to 2^46). 3,276,800 pairs per S.
+- **Random:** 200,000 arrays of 8 to 128 elements, four mixes, some with a planted large value.
+- **Failures: none.** Three injected faults (offset 2^30, a check without the AND NOT, a check dropping the imaginary part) were all caught.
+
+**NEON instructions per element** (from the counters; loads and stores 1.5 more in every row):
+
+| | bare | xor check (study 15) | saturating compare | QC flag |
+|---|---|---|---|---|
+| add, subtract | 0.5 | 2.5 | 2.0 | 0.5 |
+| multiply | 1.0 | 4.5 (add form or high-half form) | | 3.0 |
+
+**x86 timing,** ns per element (one Gaussian integer). L1: 512 elements. L2: 16,384. Memory: 2^24 per array (384 MB in all, beyond L2, within the host's reported L3). x86 loop instructions per element: add bare 1.9, checked 3.9; multiply bare 3.5, mul_w 9.5, mul_h 10.
+
+| | L1 | L2 | memory |
+|---|---|---|---|
+| add bare / checked | 0.142–0.144 / 0.235–0.242 | 0.253–0.262 / 0.270–0.273 | 1.336–1.352 / 1.402–1.433 |
+| sub bare / checked | 0.142–0.145 / 0.240–0.246 | 0.250–0.253 / 0.253–0.259 | 1.332–1.350 / 1.397–1.441 |
+| mul bare | 0.268–0.271 | 0.260–0.263 | 1.394–1.419 |
+| mul_w / mul_h | 0.648–0.653 / 0.706–0.711 | 0.644–0.662 / 0.700–0.710 | 1.476–1.486 / 1.483–1.492 |
+
+**What this shows.**
+- **The checks' cost** follows study 20's pattern at half the width:
+  - In L1 the check costs 66 to 70% on add and subtract, and 2.4 times on multiply.
+  - From L2, add and subtract pay 1 to 7%. The multiply still pays 2.5 times, because at 128 bits it is still bound by instructions there.
+  - From memory, every check costs about 5%.
+- **The add-offset multiply check beats the high-half check** by 8% on x86 at the same NEON count; on NEON they tie by count.
+- **NEON's QC bit is a hardware sticky flag.** With it, the checked add costs the same as the bare one (0.5 per element), and the checked multiply 3.0 against 4.5. The flag is read once per array (`mrs` FPSR, clear it at the start). Caveats, not testable here:
+  - QC is shared by every saturating instruction in the sweep.
+  - The FPSR access must not be reordered across the loop (an asm barrier).
+  - Its cost on real cores is unmeasured.
+  - It is the strongest NEON-specific result of this study and needs an ARM machine to confirm.
+
+### Part 2: Montgomery against Barrett mod n (milestone 3)
+
+Residues u32 in [0, n), separate arrays. Four kernels: P (x·y), S (an array times one shared residue), G (the Gaussian product of arrays), K (a Gaussian array times one shared Gaussian).
+- **mon_w:** Montgomery with R = 2^32, widening. t in 64-bit lanes (`smull`, `smlsl`), m = lo(t)·n′ (`uzp1`, `mul`), t − mn (`smlsl`, `smlsl2`), high halves (`uzp2`), then add n where negative (unsigned min). Odd n.
+- **mon_h:** Montgomery with the 32-bit high-half multiply: h = `sqdmulh`(a, b), m = (ab)·n′ (two `mul`, or one when b is shared and b·n′ is precomputed), t = `sqdmulh`(m, n), r = `shsub`(h, t) = (ab − mn)/2^32 in (−n, n). The halving is exact: ab ≡ mn mod 2^32, so 2ab and 2mn agree in their low 33 bits and h − t is even. The Gaussian forms reduce each of the four products separately, because a sum of products needs a carry correction that costs as much as it saves (worked out, not built).
+- **bar_w:** study 19's lane Barrett in NEON shape, any n.
+- **bar_h:** Barrett with the high-half multiply, no Montgomery form, any n parity.
+  - P, for n ≤ 2^30: h = `sqdmulh`(a << (31 − L), b) = ⌊ab/2^L⌋, then q = `sqdmulh`(2h, μ₂) = ⌊h·μ₂/2^30⌋ with μ₂ = ⌊2^(L+30)/n⌋. That gives q_true − 3 ≤ q ≤ q_true, so r = ab − qn (`mul`, `mls`, mod 2^32) lies in [0, 4n), which fits in 32 bits for n ≤ 2^30. Then two unsigned-min steps.
+  - S and K: Barrett multiplication by a shared k (Becker, Hwang, Kannwischer, Yang and Yang, 2021). Precompute k′ = round(k·2^31/n); then q = `sqrdmulh`(a, k′) and r = ak − qn (`mul`, `mls`) lies in (−n, n) for every n < 2^31.
+  - bar_h30, K for n ≤ 2^30: the two quotients of each part are summed before one `mls`, r in (−2n, 2n).
+
+**Correctness.** Every version against exact arithmetic. Montgomery outputs are checked in Montgomery form, and the conversions on their own.
+- **Exhaustive:**
+  - P and S for every n from 2 to 1,023 (odd n only for Montgomery; S over every shared constant). 357 million cases per Barrett kernel, 179 million per Montgomery kernel.
+  - G and K for every n from 2 to 63 (K over every shared Gaussian). 206 and 107 million.
+- **Random:** 4,194,304 cases per kernel at each of 17 n, from 65,536 to 2^31 − 1. Odd and even, prime and composite, on both sides of 2^30, with constants redrawn every 65,536 cases.
+- **Failures: none.** Five injected faults were all caught: one range step dropped in bar_h P, bar_h30 allowed above 2^30, a plain halving in place of `shsub`, a floor in place of round for k′, and μ₂ one too large.
+
+**Counts and timing.** Per 4 elements: NEON instructions (from the counters), of which multiplies (`mul`, `mls`, `smull`, `smlsl`, `sqdmulh`). Then x86 L1 timing, ns per element: 1,024 elements, 2,048 calls per sample, ranges over n = 2^31 − 1, 2,147,483,645, 1,073,741,823 and 1,000,003 and three runs. bar_h P and bar_h30 ran only at the two n ≤ 2^30.
+
+| per 4 elements; ns per element | P | S | G | K |
+|---|---|---|---|---|
+| divide (scalar) | 2.58–2.61 ns | | 5.17–5.20 ns | |
+| mon_w | 9 (5 mul); 0.432–0.442 | 9 (5); 0.408–0.416 | 22 (14); 1.019–1.034 | 22 (14); 0.987–0.998 |
+| mon_h | 7 (4); 0.654–0.666 | 6 (3); 0.563–0.574 | 34 (16); 2.72–2.75 | 30 (12); 2.36–2.38 |
+| bar_w | 19 (6); 0.744–0.755 | 19 (6); 0.733–0.750 | 44 (16); 1.75–1.77 | 44 (16); 1.66–1.68 |
+| bar_h | 10 (4), n ≤ 2^30; 0.644–0.651 | 5 (3); 0.373–0.380 | | 26 (12); 1.57–1.59 |
+| bar_h30 (n ≤ 2^30) | | | | 20 (10); 1.365–1.381 |
+
+Conversions, per 4 residues: into Montgomery form 9 (mon_w) or 6 (mon_h) NEON instructions, 0.406–0.413 and 0.563–0.573 ns; out 7 or 5, 0.260–0.266 and 0.387–0.401 ns. The memory-sized pass (2^22 elements per array) was erratic: the same kernel moved by up to 25% between runs, and S was slower than P with less data. Its figures are not used, as with study 19's scalar large-array figures.
+
+**Uncertain rankings.** On x86 the high-half rows (mon_h, bar_h) pay for the emulation:
+- `sqdmulh` and `sqrdmulh` take about 8 x86 instructions each (two `pmuldq`, shifts, a blend).
+- `shsub` takes 5.
+- `mul` and `mls` are `pmulld`: 2 µops and 10 cycles here, against one NEON instruction.
+So x86 ranks every high-half form lower than its NEON count does. Where the two disagree (P: mon_h 7 against mon_w 9 by count, 0.66 against 0.43 ns here), the NEON count is the better guide, and the ranking is marked uncertain. Where they agree (G and K's mon_w over mon_h, S's bar_h first) the ranking is firm.
+
+**What this shows.**
+- **Array by array (P, G): Montgomery stays.** For G, widening Montgomery is half of every other form by count (22 against 34 and 44) and fastest here (1.02 ns, 5 times the divide). Study 19's ranking holds in NEON shape. For P, high-half Montgomery may be cheapest on NEON (7 against 9, uncertain).
+- **Barrett becomes competitive where one factor is shared.**
+  - Barrett multiplication by `sqrdmulh` with a precomputed k′ is the cheapest S on every measure: 5 NEON instructions against 6 and 9, and 0.375 ns against 0.41 here. It also takes even n and needs no conversion.
+  - For a shared Gaussian (K), bar_h30 is cheapest by count at n ≤ 2^30 (20 against 22). At any n < 2^31, bar_h is 26 against mon_w's 22.
+  - Counting conversions, a single K pass costs mon_w 22 + 18 in + 14 out = 54 against bar_h's 26. Montgomery repays its conversions only after about 8 chained K operations by NEON count (about 2 to 3 by x86 time).
+- **High-half Barrett for array by array (bar_h P)** needs n ≤ 2^30 and costs 10 against 9. Not worth a special case.
+- **Widening Barrett (bar_w) is never competitive:** its error of up to 3 forces a 64-bit correction (19 against 9 for P).
+- **Multiplies:** if a core issues fewer vector multiplies per cycle than other vector instructions, the multiply column matters. There mon_h and bar_h use 3 to 4 per 4 products against mon_w's 5, and K's bar_h30 10 against 14. Not measurable here.
+
+### Part 3: the binary gcd with clz, interleaved (milestone 4)
+
+Study 26 and 27's (1+i)-ary gcd at 128 bits, 4 pairs per register, NEON-shaped:
+- `vtst` and `bsl` with full-lane masks;
+- conditional negation as `bsl`(m, −x, x);
+- right shifts by a lane count (NEON's `sshl` by the negated count, produced at the same cost);
+- the −2^31 guard and the scalar fixup unchanged.
+
+Three trailing-zero forms:
+- **clz:** k = 31 − clz(x), x = o AND −o, by `vclzq_u32` (`vplzcntd` here). 4 instructions, no branch. NEON's count −k = clz − 31 is the same subtraction.
+- **nbrd:** study 27's best. If every lane has k < 4 (one any-lane test), k = `tbl`(T4, x); otherwise dbh, the 16-bit de Bruijn multiply.
+- **nbrc:** nbrd's branch with clz as the rare path.
+
+R = 1, 2, 3, 4, 6 or 8 registers stepped together until all are done; the tail, one register at a time.
+
+**Correctness.**
+- **The fitted shifts:** every nonzero o, in two passes (the second forces lane 0 to a single bit, so that one register mixes small and large k and both branches meet). The setup's ctz values over every nonzero o.
+- **The 18 kernels against study 26's __int128 reference:**
+  - exhaustive K = 3 to 6 (16,777,216 pairs at K = 6);
+  - the 160,000 edge pairs with −2^31, each alone: 29,679 guarded and 87 overflowing gcds, as in study 26;
+  - 200,000 random −2^31 pairs alone;
+  - 2,621,300 random pairs of the five kinds, in batches whose lengths are not multiples of 4R.
+- **Failures: none.**
+- **Injected faults:**
+  - a wrong clz, a broken strip mask and a dropped sticky flag were all caught;
+  - a wrong de Bruijn constant was caught by the shift check, after which the gcd never ends, as in study 27;
+  - removing only the guard's zeroing is not caught, because the fixup overwrites every guarded pair.
+
+**NEON instructions per gcd** (counters; the any-lane test counted as 2), and register-steps per register of 4:
+
+| R | 1 | 2 | 3 | 4 | 6 | 8 |
+|---|---|---|---|---|---|---|
+| clz, random | 438 | 448 | 453 | 457 | 460 | 465 |
+| nbrd, random | 451 | 461 | 466 | 470 | 473 | 477 |
+| nbrc, random | 447 | 457 | 462 | 466 | 469 | 474 |
+| register-steps, random | 33.2 | 34.4 | 34.9 | 35.3 | 35.6 | 36.0 |
+| clz / nbrd / nbrc, large common factor | 231 / 238 / 236 | 238 / 246 / 243 | 242 / 250 / 247 | 245 / 253 / 250 | 250 / 258 / 255 | 252 / 260 / 257 |
+
+**x86 timing,** ns per gcd, 1,056 pairs (25 KB, in L1). Medians of three runs, which agreed within 0.6%:
+
+| ns per gcd | R = 1 | 2 | 3 | 4 | 6 | 8 |
+|---|---|---|---|---|---|---|
+| clz, random | 117.2–117.5 | 87.5–87.9 | 83.1–83.5 | 83.0–83.4 | 83.8–84.5 | 84.6–84.9 |
+| nbrd, random | 109.2–110.1 | 82.1–82.3 | 79.3–79.5 | 80.6–81.1 | 80.8–81.2 | 82.3–82.8 |
+| nbrc, random | 107.9–108.5 | 81.8–82.2 | 78.6–79.3 | 80.0–80.5 | 81.0–81.3 | 81.4–82.0 |
+| clz, large factor | 59.8–59.9 | 46.5–46.7 | 44.7–44.8 | 44.3–44.5 | 45.4–45.6 | 45.9–46.1 |
+| nbrd, large factor | 55.8–56.1 | 43.2–43.7 | 42.7–42.9 | 43.0–43.2 | 43.8–44.1 | 44.6–44.9 |
+| nbrc, large factor | 54.9–55.3 | 43.1–43.4 | 42.2–42.4 | 42.5–42.8 | 44.0–44.1 | 43.9–44.3 |
+
+Stack operands per kernel (spills) grow with R on x86: 2 at R = 1, 33 at R = 3, 51 at R = 4, 97 at R = 6, 157 at R = 8 (clz).
+
+**What this shows.**
+- **clz against the branch: the stand-in and the count disagree.**
+  - Here, clz without a branch is 4 to 5% slower than nbrd and nbrc at their best R: 83.1 against 79.3 and 78.6 to 79.3 ns random; 44.3 against 42.7 and 42.2 with a large factor.
+  - By NEON count, clz is 2.7% leaner (453 against 466 per gcd at R = 3). Its 4 instructions replace a test, a branch and a lookup on most steps, plus dbh on the rest (the share of fast-path steps at 4 lanes was not measured; with 4 lanes per register it should exceed study 27's 95% at 8). NEON's any-lane test (`umaxv`, then a move to a general register, then a compare) is dearer than `ptest`, which this count understates.
+  - So decision 35's choice (clz, no branch) is supported by count and by NEON's costlier branch test, and contradicted by x86 time. Ranking uncertain until timed on ARM.
+  - nbrc (clz on the rare path) is never worse than nbrd and is simpler; if a branch is kept, nbrc is the form.
+- **More registers stop paying at 3 or 4.** Every form is best at R = 3 (clz ties R = 3 and 4); R = 6 and 8 are 1 to 4% slower. Two reasons:
+  - With all R registers stepping until the last one finishes, lanes wait: register-steps per register rise from 33.2 at R = 1 to 34.9 at R = 3 and 36.0 at R = 8.
+  - Past R = 2 the x86 build spills. NEON's 32 registers, all reachable by `cmeq` and `bsl`, would spill less: about 5 live values per register plus 6 or 7 constants and temporaries fits R = 3 or 4 in 32 registers, not 6 or 8.
+  - So 6 and 8 cannot win: the lane waiting alone costs 2 to 3% and the step is already throughput-bound at R = 3. On NEON, 3 or 4.
+- **R = 1 to R = 3** saves 29% (latency-bound to throughput-bound), as at 256 bits.
+- **Against study 27 at 256 bits** (nbrd, R = 3, 36.3 ns), the 128-bit gcd takes 2.2 times as long: twice for half the lanes, plus about 10% not attributed. The NEON-shaped selects are a likely part of it: the stand-in pays 3 instructions for `vtst`, against 1 on NEON.
+
+**Summary.**
+- **Overflow checks:** NEON-shaped, they cost what they did at 256 bits relative to the bare loop: free from memory, about 1.7 times (add) and 2.4 times (multiply) in L1. NEON's QC saturation bit can serve as the sticky flag at no instruction cost (add 0.5, multiply 3.0 per element against 2.5 and 4.5); this needs an ARM machine to confirm.
+- **Mod n:** widening Montgomery stays the choice for array by array (G: 22 NEON instructions per 4, against 44 for Barrett). For a shared multiplier, Barrett multiplication by `sqrdmulh` is competitive and needs no conversions:
+  - S: 5 against 6 and 9.
+  - K: 20 at n ≤ 2^30, 26 otherwise, against 22 plus conversions.
+  - A candidate amendment to decisions 19 and 24: Barrett for array-by-constant products.
+- **gcd:** best at 3 registers (4 ties). clz without a branch is leaner by NEON count but 5% slower on the stand-in; uncertain until timed on ARM. If a branch is kept, nbrc.
+- **Build:** the stand-in needs guarding. gcc reintroduces three-input logic and mask registers on its own; asm barriers and a scan of the binary keep the code inside the portable list.

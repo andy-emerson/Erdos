@@ -22,6 +22,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - **Infinity.** Correct (study 1), but costly as tested: add 5 → 21, multiply 15 → 26 (study 2 with exact overflow marking: 26–32). To try: vector compares; deferring the check (sticky, once per array); one shared path for overflow and infinity. Undefined cases (∞ − ∞, 0·∞): follow prior practice (IEEE NaN; C's complex infinity rules). When one half is −2^31 the other half is free, so one reserved value gives a family of markers (∞, undefined, overflow information) at no extra range.
 
 **Tricks to try later** (after correctness and speed of the textbook version)
+- Montgomery reduction (studies 19 and 28): about twice as fast as Barrett per element when three conditions hold: the modulus n is odd, the multiply is array by array, and the data stays in Montgomery form across several multiplies (conversions in and out repay after about three multiplies per value).
 - A packed multiply: multiply the whole word without splitting it into halves first.
 - Lazy reduction for mod n (shelved, not archived): add 1 instruction, subtract 2, but n < 2^29 (3 bits of headroom per half), which matrix multiplication would feel quickly.
 - Complex multiply with three products instead of four; real and imaginary partial products formed together in one word (from study 3).
@@ -80,6 +81,14 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 36. **Compiled-code check:** each kernel's disassembly is compared automatically with the list of instructions intended (study 28 began this: a scan for forbidden instructions, and empty asm barriers where gcc fused logic into vpternlog). Deviations are noted, not necessarily retested: a deviation may be an improvement, or a regression that forces inline assembly for that kernel.
 37. **ARM build, candidate (study 28, verified by emulation only):** the overflow check uses NEON's saturating add and saturating narrowing, whose hardware sticky QC flag replaces the mask test: checked add costs the same as bare add (0.5 instructions per element against 2.5), checked multiply 3.0 against 4.5; one flag read per array. To confirm on ARM hardware.
+
+38. **Mod n reduction: Barrett everywhere** (replacing item 19, and the Montgomery/Barrett split by parity in item 24). Barrett is the general solution: any n, any shape of call, no conversions. Array by one shared number uses Barrett with a precomputed constant and the high-half multiply (study 28, after Becker et al. 2021). Montgomery moves to the tricks list.
+39. **Gcd bit counting: the count-leading-zeros instruction, no branch, is the general case** (confirming item 35 by NEON instruction count: 453 against 466 per gcd in study 28). On the x86 stand-in it is about 5% slower than the branched lookup, so the ranking is uncertain; see the ARM reopen list.
+
+**Reopen when ARM64 hardware is available**
+- The gcd: count instruction against the branched lookup (item 39; study 28 milestone 4).
+- NEON's saturating instructions and QC flag as the overflow check (item 37).
+- Barrett's high-half forms and the shared-number kernels (study 28 milestone 3), whose x86 rankings are uncertain.
 
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.

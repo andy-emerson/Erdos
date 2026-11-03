@@ -14,6 +14,10 @@
  *   M4  the (1+i)-ary binary gcd with ctz from the lane clz, interleaved 1 to 8 registers, against study 27's
  *       nbrd at 128 bits.
  *
+ * Two gcc habits are blocked: logic ops pass through an empty asm (else gcc fuses them into vpternlog), and
+ * compares and bsl are pinned to their VEX forms by inline asm (else gcc uses mask registers for values in
+ * xmm16..31). After a build, scan the kernels' instructions against portable-isa.md.
+ *
  * Build: gcc -O2 -mavx512f -mavx512vl -mavx512cd -mavx512bw -mavx512dq -o neon28 neon28.c
  *        (add -DCOUNT -o neon28c for the NEON instruction counts)
  * Run:   ./neon28 arith-check | arith-time | mod-check | mod-time | gcd-check | gcd-time | count

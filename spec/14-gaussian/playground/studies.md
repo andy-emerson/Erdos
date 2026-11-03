@@ -355,3 +355,68 @@ The once-per-gcd costs (about 103 at the start and 35 at the end for the (1+i)-a
 - **(d)** is the version suited to one word: no multiply at all in the step, at 4 more instructions than the exact norm (7 against 3). The step count rises by 0.07 on average at K = 32.
 
 None of the variants changes the picture from study 9. In instructions the (1+i)-ary gcd stays at roughly 1.75 to 2 times Euclid at K = 32 (about 1,220 to 1,275 in steps for the best variants, against about 703). It needs at most 2 multiplies and no divide per step, against Euclid's 12 multiplies and 2 divides. The proxies count a divide like an add, so they cannot settle which is faster.
+
+## Study 12: a family of word sizes, growing and shrinking (family.py)
+
+**What was checked.** A word of width 2h holds two h-bit halves, h on the ladder 4, 8, 16, 32, 64, 128, and an array has one width for all its elements. A half fits in h bits when it lies in the symmetric range |v| ≤ 2^(h−1) − 1, so −2^(h−1) does not fit.
+
+- **Promotion.** Each operation runs at the array's width (the wider of the two operands; the narrower is first copied up). It ORs each element's "doesn't fit" test into one accumulator (study 7's deferred check). If the accumulator is set at the end, both arrays are copied to width 2h and the operation is redone.
+- **Shrinking.** After each operation, the array halves its width for as long as every element passes the shrink rule.
+  - **Rule A:** fits in h/2 bits.
+  - **Rule B:** one bit of margin, fits in h/2 − 1 bits.
+- **Fresh operand arrays** get the smallest width that passes the same rule.
+- **Detection:**
+  - add and sub either by study 7's sign test on the packed word (signed overflow, or a half equal to −2^(h−1)), or at double width followed by the fit test;
+  - mul at double width followed by the fit test (ac − bd is checked to fit in 2h bits);
+  - neg, conj, exact division, division with remainder (study 6) and mod n (Barrett, study 4) are checked never to leave the range.
+
+**The fit tests.**
+- **On an extracted half** v (a 2h-bit value): v fits when (v + 2^(h−1) − 1), read unsigned, is ≤ 2·(2^(h−1) − 1). That is ADD and one unsigned compare, the same test as study 2.
+- **The packed shrink test** on a word of width 2h, asking whether both halves fit in g bits (g < h):
+  - u = v + (2^(g−1) − 1) and t = v + 2^(g−1) are formed in each half by one packed add each, (w AND NH) + constant, then XOR with (w AND H). The constants are below 2^(h−1), so nothing carries between halves.
+  - The half fits exactly when neither u nor t has a bit at or above g: (u OR t) AND U = 0, where U holds bits g to h − 1 of each half.
+  - u catches the values below the range (including −2^(g−1)); t catches those above. The cost is 8 instructions per word: AND, AND, ADD, XOR, ADD, XOR, OR, AND.
+
+**Checks.**
+1. **Every result equals the exact Python big-integer result.**
+2. **Promotion happens if and only if some exact result does not fit,** checked at every width tried.
+3. **Shrinking happens if and only if the rule holds,** with the packed test's decision compared with the rule on exact values at every step.
+
+Also checked: a single promotion level always suffices, and the two fit tests match their definitions.
+
+**Cases.**
+- **Exhaustive at the smallest width:**
+  - the packed shrink test on every word of width 8 and 16 (h = 4 and 8) for every target g < h (393,728 cases);
+  - the extracted-half test on every 2h-bit value for h = 4 and 8;
+  - every pair of elements at h = 4 as one-element arrays (225² pairs), under rules A and B, for add and sub by both detections, mul, neg, conj, division with remainder, and exact division (all in-range products);
+  - mod n: all residue quadruples for n = 2 to 7 at h = 4.
+- **Random:** arrays of 8 elements at h = 8, 16, 32 and 64, each against operand arrays of any width up to its own, 1,500 rounds per width and rule. Values mix uniform and near the boundary (±HI, HI − 1, ±(HI/2 + 1)). Mod n used n = 2^(h−1) − 1, 2^(h−1) − 3 and 3 at each h.
+- **Failures: none.** Promotions needing two levels at once: 0. An add needs at most h + 1 bits, and a product of symmetric halves at most 2h − 1.
+
+**Bouncing.** Two kinds of walk, 4,000 operations each, arrays of 16 elements.
+
+- **Mixed walks.** A target bit size changes every 250 operations among 5, 12, 20, 28 and 45 bits. Multiply by small values or divide by small values (each about 1.5 bits) pulls toward the target, and adds and subtracts of quarter-size values, negations and conjugations come in between. The count is the steps the array's width moves on the ladder for any reason, including being copied up to a wider operand's width.
+- **Hovering walks.** One element starts just under a threshold (HI − d/2), and the walk alternately adds and subtracts d at that element. It was run at the h = 8, 16 and 32 thresholds, with d = 10, 100 and 1,000.
+
+| walk | rule A: up / down per 1,000 ops | rule B: up / down per 1,000 ops |
+|---|---|---|
+| mixed, seed 1 | 8.8 / 8.0 | 3.0 / 2.2 |
+| mixed, seed 2 | 2.0 / 1.2 | 1.8 / 1.0 |
+| mixed, seed 3 | 11.2 / 10.5 | 3.2 / 2.5 |
+| hover at h = 8, 16, 32 | 500 / 500 (every operation) | 0 / 0 |
+
+Under rule A a value hovering at a threshold promotes on every add and shrinks on every subtract: one copy of the whole array per operation. Under rule B it never moves, because rule B places the array one width up as soon as a value comes within one bit of the threshold, and only shrinks once every value has a bit of margin. In the mixed walks rule B cuts width moves by about 3 times in two seeds out of three. The third seed spends most of its time far from thresholds, and the two rules are nearly equal there. The time spent at each width barely differs between the rules (rule B spends slightly more at the wider sizes).
+
+**Instruction counts per element** (each "doesn't fit" bit ORed into the accumulator costs 1, included).
+
+| | instructions |
+|---|---|
+| fit test on two extracted halves (2 + 2, OR 1, accumulate 1) | 6 |
+| add or sub with the sign test (plain 5, overflow 4, half = −2^(h−1) 5, OR 1, accumulate 1) | 16 |
+| add or sub at double width (extract 6, 2 add/sub, fit 4, OR 1, pack 3, accumulate 1) | 17 |
+| mul at double width (plain 15, fit 4, OR 1, accumulate 1) | 21 |
+| shrink test, packed (8, accumulate 1); rule B differs only in its constants | 9 |
+| copy to the next width up or down (extract 3, pack 3) | 6 |
+| once per array: test the accumulator (compare, branch) | 2 |
+
+A promotion costs a copy of both arrays (6 per element each) and a full redo of the operation at the wider width. A shrink costs 6 per element per level. Testing for a shrink after every operation costs 9 per element, half as much again as an add. Shrinking is not needed for correctness, so the test could run less often: after operations that can shrink values, or every k operations. Neither was measured here.

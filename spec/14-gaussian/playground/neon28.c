@@ -92,8 +92,10 @@ static u64 nops, nmem;
 #define vmlaq_s32(c, a, b)  C_(_mm_add_epi32(c, _mm_mullo_epi32(a, b)))
 #define vmlsq_s32(c, a, b)  C_(_mm_sub_epi32(c, _mm_mullo_epi32(a, b)))
 /* is any lane nonzero (for a branch): NEON umaxv + fmov + compare; x86 ptest. Counted as 2. */
-#define vany(a)             C_(C_(0) + !_mm_testz_si128(a, a))
-#define vany_and(a, m)      C_(C_(0) + !_mm_testz_si128(a, m))
+AI int vany_(V a) { return !_mm_testz_si128(a, a); }
+AI int vany_and_(V a, V m) { return !_mm_testz_si128(a, m); }
+#define vany(a)             C_(C_(0) + vany_(a))
+#define vany_and(a, m)      C_(C_(0) + vany_and_(a, m))
 /* Widening multiply pairs. NEON: vmull_s32(vget_low) takes lanes 0, 1 and vmull_high_s32 lanes 2, 3, and
  * vuzp1q_s32 of the two products gives the low halves in lane order. x86: pmuldq takes lanes 0, 2; the "high"
  * stand-in shifts each operand right 32 (lanes 1, 3), and the narrowing stand-in re-interleaves even and odd.
@@ -140,8 +142,9 @@ AI V qrdmulh_(V a, V b) {
 #define vqdmulhq_s32(a, b)  C_(qdmulh_(a, b))
 #define vqrdmulhq_s32(a, b) C_(qrdmulh_(a, b))
 /* vhsubq_s32: (a - b) >> 1 without overflow: (a >> 1) - (b >> 1) - (b AND NOT a AND 1) */
-#define vhsubq_s32(a, b)    C_(_mm_sub_epi32(_mm_sub_epi32(_mm_srai_epi32(a, 1), _mm_srai_epi32(b, 1)), \
-                               _mm_and_si128(_mm_andnot_si128(a, b), _mm_set1_epi32(1))))
+AI V hsub_(V a, V b) { return _mm_sub_epi32(_mm_sub_epi32(_mm_srai_epi32(a, 1), _mm_srai_epi32(b, 1)),
+                                            BAR_(_mm_and_si128(BAR_(_mm_andnot_si128(a, b)), _mm_set1_epi32(1)))); }
+#define vhsubq_s32(a, b)    C_(hsub_(a, b))
 
 /* ======================= common: random numbers, clock ======================= */
 static u64 rs = 0x9E3779B97F4A7C15ULL;
@@ -419,9 +422,344 @@ static void do_arith_time(size_t big) {
     }
 }
 
+/* ======================= M3: Montgomery against Barrett mod n, NEON-shaped ======================= */
+/* Residues u32 in [0, n), separate arrays. Kernels:
+ *   P  x y mod n (arrays a, c)                    S  a k mod n, k one shared residue
+ *   G  Gaussian product of arrays (a + bi)(c + di) K  Gaussian array times one shared Gaussian (kc + kd i)
+ * Versions:
+ *   div    scalar t % n (reference)
+ *   mon_w  Montgomery, R = 2^32, widening: t in 64-bit lanes (smull/smlsl), m = lo(t) n' (mul), t - m n (smlsl),
+ *          high halves (uzp2), + n where negative. Odd n < 2^31. Inputs and outputs in Montgomery form.
+ *   mon_h  Montgomery with the 32-bit high-half multiply: h = sqdmulh(a, b), m = (a b) n' (two mul, or one when b
+ *          is shared: b n' precomputed), t = sqdmulh(m, n), r = hsub(h, t) = (a b - m n) / 2^32 in (-n, n).
+ *          2ab and 2mn agree in their low 33 bits, so h - t is even and the halving is exact.
+ *   bar_w  study 19's lane Barrett (q = ((t >> s) mu) >> 32 or >> 31, r < 3n or 4n, 64-bit correction). Any n.
+ *   bar_h  Barrett with the high-half multiply, no conversions, any n:
+ *          P (n <= 2^30): h = sqdmulh(a << (31 - L), b) = floor(ab / 2^L), q = sqdmulh(2h, mu2) = floor(h mu2 / 2^30),
+ *            mu2 = floor(2^(L+30) / n); q_true - 3 <= q <= q_true, so r = ab - q n (mul, mls, mod 2^32) is in [0, 4n).
+ *          S, K: Barrett multiplication by a shared k (Becker et al. 2021): k' = round(k 2^31 / n),
+ *            q = sqrdmulh(a, k'), r = a k - q n (mul, mls) in (-n, n).
+ *   bar_h30  K for n <= 2^30: the two quotients of a part added before one mls, r in (-2n, 2n).
+ * Conversions: to Montgomery form (REDC(x (R^2 mod n))) and back (REDC(x)), widening and high-half. */
+typedef struct {
+    u32 n, L, mu, mu2, ninv, r2, r2n; u64 n2;
+    u32 k, kc, kd;                    /* shared constants, standard form */
+    u32 km, kcm, kdm;                 /* Montgomery form */
+    u32 kmn, kcmn, kdmn;              /* Montgomery form times n' mod 2^32 (for mon_h) */
+    u32 kb, kcb, kdb;                 /* Barrett: round(x 2^31 / n) */
+} mod_t;
+static u32 mont_of(u32 x, u32 n) { return (u32)(((u64)x << 32) % n); }
+static u32 bconst(u32 x, u32 n) { return (u32)((((u64)x << 32) / n + 1) >> 1); }     /* round(x 2^31 / n) */
+static void mod_set_consts(mod_t *M, u32 k, u32 kc, u32 kd) {
+    u32 n = M->n; M->k = k; M->kc = kc; M->kd = kd;
+    if (n & 1) { M->km = mont_of(k, n); M->kcm = mont_of(kc, n); M->kdm = mont_of(kd, n);
+                 M->kmn = M->km * M->ninv; M->kcmn = M->kcm * M->ninv; M->kdmn = M->kdm * M->ninv; }
+    M->kb = bconst(k, n); M->kcb = bconst(kc, n); M->kdb = bconst(kd, n);
+}
+static mod_t mod_make(u32 n) {
+    mod_t M; memset(&M, 0, sizeof M); M.n = n; M.n2 = (u64)n * n;
+    u32 L = 0; while ((1ull << L) < n) L++;
+    M.L = L; M.mu = (u32)((1ull << (L + 31)) / n); M.mu2 = (u32)((1ull << (L + 30)) / n);
+    if (n & 1) { u32 inv = n; for (int i = 0; i < 5; i++) inv *= 2 - n * inv; M.ninv = inv;
+                 M.r2 = (u32)(((u128)1 << 64) % n); M.r2n = M.r2 * inv; }
+    mod_set_consts(&M, 1 % n, 1 % n, 0);
+    return M;
+}
+#define MARGS const u32 *restrict a, const u32 *restrict b, const u32 *restrict c, const u32 *restrict d, \
+              u32 *restrict re, u32 *restrict im, size_t N, const mod_t *M
+typedef void (*mkf)(MARGS);
+/* range fixes (unsigned min): (-n, n) -> [0, n) and [0, 2n) -> [0, n) */
+AI V FIXNEG(V r, V nv) { return vminq_u32(r, vaddq_s32(r, nv)); }
+AI V FIXGE(V r, V nv) { return vminq_u32(r, vsubq_s32(r, nv)); }
+/* shift-narrow by 31 of a widening pair (NEON: shrn, shrn2) */
+#define vshrn31_w(lo, hi) (C_(0), C_(_mm_blend_epi32(_mm_srli_epi64(lo, 31), _mm_slli_epi64(hi, 1), 0xA)))
+
+/* ---------- div (scalar reference) ---------- */
+NOINL void P_div(MARGS) { u64 n = M->n; (void)b; (void)d; (void)im; for (size_t i = 0; i < N; i++) re[i] = (u32)((u64)a[i] * c[i] % n); }
+NOINL void G_div(MARGS) { u64 n = M->n, n2 = M->n2;
+    for (size_t i = 0; i < N; i++) { u64 A = a[i], B = b[i], C = c[i], D = d[i];
+        re[i] = (u32)((A * C + (n2 - B * D)) % n); im[i] = (u32)((A * D + B * C) % n); } }
+
+/* ---------- mon_w ---------- */
+AI V monw_red_s(V tl, V th, V nv, V ni) {         /* signed t, |t| < n^2 (or < n 2^31) */
+    V m = vmulq_s32(vuzp1q_w(tl, th), ni);
+    return FIXNEG(vuzp2q_w(vmlsl_lo_s32(tl, m, nv), vmlsl_high_s32(th, m, nv)), nv);
+}
+AI V monw_red_u(V tl, V th, V nv, V ni) {         /* unsigned t < n 2^32 */
+    V m = vmulq_s32(vuzp1q_w(tl, th), ni);
+    return FIXNEG(vuzp2q_w(vmlsl_lo_u32(tl, m, nv), vmlsl_high_u32(th, m, nv)), nv);
+}
+AI V monw_p_(V x, V y, V nv, V ni) { return monw_red_u(vmull_lo_u32(x, y), vmull_high_u32(x, y), nv, ni); }
+#define MONW_P(x, y) monw_p_(x, y, nv, ni)
+#define MONW_G(A_, B_, C_x, D_, pr, pi) { V A = A_, B = B_, C = C_x, D = D_;                         \
+    vst1q(pr, monw_red_s(vmlsl_lo_s32(vmull_lo_s32(A, C), B, D), vmlsl_high_s32(vmull_high_s32(A, C), B, D), nv, ni)); \
+    vst1q(pi, monw_red_u(vmlal_lo_u32(vmull_lo_u32(A, D), B, C), vmlal_high_u32(vmull_high_u32(A, D), B, C), nv, ni)); }
+NOINL void P_mon_w(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, MONW_P(vld1q(a + i), vld1q(c + i))); }
+NOINL void S_mon_w(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv), k = vdupq_n_s32(M->km);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, MONW_P(vld1q(a + i), k)); }
+NOINL void G_mon_w(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv);
+    for (size_t i = 0; i < N; i += 4) MONW_G(vld1q(a + i), vld1q(b + i), vld1q(c + i), vld1q(d + i), re + i, im + i) }
+NOINL void K_mon_w(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv), kc = vdupq_n_s32(M->kcm), kd = vdupq_n_s32(M->kdm);
+    for (size_t i = 0; i < N; i += 4) MONW_G(vld1q(a + i), vld1q(b + i), kc, kd, re + i, im + i) }
+NOINL void to_mon_w(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv), r2 = vdupq_n_s32(M->r2);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, MONW_P(vld1q(a + i), r2)); }
+NOINL void from_mon_w(MARGS) {                     /* t = x < 2^32: r = 0 - hi(m n) */
+    V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv);
+    for (size_t i = 0; i < N; i += 4) { V x = vld1q(a + i), m = vmulq_s32(x, ni);
+        vst1q(re + i, FIXNEG(vnegq_s32(vuzp2q_w(vmull_lo_u32(m, nv), vmull_high_u32(m, nv))), nv)); } }
+
+/* ---------- mon_h ---------- */
+AI V monh_(V x, V y, V ni, V nv) { return vhsubq_s32(vqdmulhq_s32(x, y), vqdmulhq_s32(vmulq_s32(vmulq_s32(x, y), ni), nv)); }   /* (-n, n) */
+AI V monhk_(V x, V k, V kn, V nv) { return vhsubq_s32(vqdmulhq_s32(x, k), vqdmulhq_s32(vmulq_s32(x, kn), nv)); }               /* k n' given */
+#define MONH(x, y)      monh_(x, y, ni, nv)
+#define MONHK(x, k, kn) monhk_(x, k, kn, nv)
+NOINL void P_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv);
+    for (size_t i = 0; i < N; i += 4) { V x = vld1q(a + i), y = vld1q(c + i); vst1q(re + i, FIXNEG(MONH(x, y), nv)); } }
+NOINL void S_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), k = vdupq_n_s32(M->km), kn = vdupq_n_s32(M->kmn);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, FIXNEG(MONHK(vld1q(a + i), k, kn), nv)); }
+NOINL void G_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv);
+    for (size_t i = 0; i < N; i += 4) {
+        V A = vld1q(a + i), B = vld1q(b + i), C = vld1q(c + i), D = vld1q(d + i);
+        V ac = FIXNEG(MONH(A, C), nv), bd = FIXNEG(MONH(B, D), nv), ad = FIXNEG(MONH(A, D), nv), bc = FIXNEG(MONH(B, C), nv);
+        vst1q(re + i, FIXNEG(vsubq_s32(ac, bd), nv)); vst1q(im + i, FIXGE(vaddq_s32(ad, bc), nv));
+    } }
+NOINL void K_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), kc = vdupq_n_s32(M->kcm), kd = vdupq_n_s32(M->kdm);
+    V kcn = vdupq_n_s32(M->kcmn), kdn = vdupq_n_s32(M->kdmn);
+    for (size_t i = 0; i < N; i += 4) {
+        V A = vld1q(a + i), B = vld1q(b + i);
+        V ac = FIXNEG(MONHK(A, kc, kcn), nv), bd = FIXNEG(MONHK(B, kd, kdn), nv), ad = FIXNEG(MONHK(A, kd, kdn), nv), bc = FIXNEG(MONHK(B, kc, kcn), nv);
+        vst1q(re + i, FIXNEG(vsubq_s32(ac, bd), nv)); vst1q(im + i, FIXGE(vaddq_s32(ad, bc), nv));
+    } }
+NOINL void to_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), r2 = vdupq_n_s32(M->r2), r2n = vdupq_n_s32(M->r2n);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, FIXNEG(MONHK(vld1q(a + i), r2, r2n), nv)); }
+NOINL void from_mon_h(MARGS) { V nv = vdupq_n_s32(M->n), ni = vdupq_n_s32(M->ninv), z = vzero();   /* h = sqdmulh(x, 1) = 0 */
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, FIXNEG(vhsubq_s32(z, vqdmulhq_s32(vmulq_s32(vld1q(a + i), ni), nv)), nv)); }
+
+/* ---------- bar_w (study 19 in NEON shape) ---------- */
+/* t in a widening pair -> r in [0, n). sh: L - 1 (P) or L (G); the product form takes q = high half, the
+ * Gaussian form q = (x mu) >> 31. Then subtract 2n where r >= 2n (64-bit), narrow, subtract n where r >= n. */
+AI V barw_red_(V tl, V th, int Q31, V sh, V mu, V nv, V tn, V tnm1) {
+    V x_ = vuzp1q_w(vshrq_u64_v(tl, sh), vshrq_u64_v(th, sh));
+    V q_ = Q31 ? vshrn31_w(vmull_lo_u32(x_, mu), vmull_high_u32(x_, mu)) : vuzp2q_w(vmull_lo_u32(x_, mu), vmull_high_u32(x_, mu));
+    V rl_ = vmlsl_lo_u32(tl, q_, nv), rh_ = vmlsl_high_u32(th, q_, nv);
+    rl_ = vsubq_s64(rl_, vandq(vcgtq_s64(rl_, tnm1), tn)); rh_ = vsubq_s64(rh_, vandq(vcgtq_s64(rh_, tnm1), tn));
+    return FIXGE(vuzp1q_w(rl_, rh_), nv);
+}
+#define BARW_RED(tl, th, Q31) barw_red_(tl, th, Q31, sh, mu, nv, tn, tnm1)
+#define BARW_SETUP(shift) V nv = vdupq_n_s32(M->n), mu = vdupq_n_s32(M->mu), sh = vdupq_n_s64(shift);     \
+    V tn = vdupq_n_s64(2 * (u64)M->n), tnm1 = vdupq_n_s64(2 * (u64)M->n - 1); (void)tn;
+#define BARW_G(A_, B_, C_x, D_, pr, pi) { V A = A_, B = B_, C = C_x, D = D_;                         \
+    vst1q(pr, BARW_RED(vmlsl_lo_u32(vmlal_lo_u32(n2, A, C), B, D), vmlsl_high_u32(vmlal_high_u32(n2, A, C), B, D), 1)); \
+    vst1q(pi, BARW_RED(vmlal_lo_u32(vmull_lo_u32(A, D), B, C), vmlal_high_u32(vmull_high_u32(A, D), B, C), 1)); }
+NOINL void P_bar_w(MARGS) { BARW_SETUP(M->L - 1)
+    for (size_t i = 0; i < N; i += 4) { V x = vld1q(a + i), y = vld1q(c + i); vst1q(re + i, BARW_RED(vmull_lo_u32(x, y), vmull_high_u32(x, y), 0)); } }
+NOINL void S_bar_w(MARGS) { BARW_SETUP(M->L - 1) V k = vdupq_n_s32(M->k);
+    for (size_t i = 0; i < N; i += 4) { V x = vld1q(a + i); vst1q(re + i, BARW_RED(vmull_lo_u32(x, k), vmull_high_u32(x, k), 0)); } }
+NOINL void G_bar_w(MARGS) { BARW_SETUP(M->L) V n2 = vdupq_n_s64(M->n2);
+    for (size_t i = 0; i < N; i += 4) BARW_G(vld1q(a + i), vld1q(b + i), vld1q(c + i), vld1q(d + i), re + i, im + i) }
+NOINL void K_bar_w(MARGS) { BARW_SETUP(M->L) V n2 = vdupq_n_s64(M->n2), kc = vdupq_n_s32(M->kc), kd = vdupq_n_s32(M->kd);
+    for (size_t i = 0; i < N; i += 4) BARW_G(vld1q(a + i), vld1q(b + i), kc, kd, re + i, im + i) }
+
+/* ---------- bar_h ---------- */
+NOINL void P_bar_h(MARGS) {          /* n <= 2^30 */
+    V nv = vdupq_n_s32(M->n), tnv = vdupq_n_s32(2 * M->n), s = vdupq_n_s32(31 - M->L), mu2 = vdupq_n_s32(M->mu2);
+    for (size_t i = 0; i < N; i += 4) {
+        V x = vld1q(a + i), y = vld1q(c + i);
+        V h = vqdmulhq_s32(vshlq_s32(x, s), y);
+        V q = vqdmulhq_s32(vaddq_s32(h, h), mu2);
+        V r = vmlsq_s32(vmulq_s32(x, y), q, nv);                 /* [0, 4n) */
+        vst1q(re + i, FIXGE(FIXGE(r, tnv), nv));
+    } }
+AI V barh_(V x, V k, V kb, V nv) { return vmlsq_s32(vmulq_s32(x, k), vqrdmulhq_s32(x, kb), nv); }   /* (-n, n) */
+#define BARH(x, k, kb) barh_(x, k, kb, nv)
+NOINL void S_bar_h(MARGS) { V nv = vdupq_n_s32(M->n), k = vdupq_n_s32(M->k), kb = vdupq_n_s32(M->kb);
+    for (size_t i = 0; i < N; i += 4) vst1q(re + i, FIXNEG(BARH(vld1q(a + i), k, kb), nv)); }
+NOINL void K_bar_h(MARGS) { V nv = vdupq_n_s32(M->n), kc = vdupq_n_s32(M->kc), kd = vdupq_n_s32(M->kd), kcb = vdupq_n_s32(M->kcb), kdb = vdupq_n_s32(M->kdb);
+    for (size_t i = 0; i < N; i += 4) {
+        V A = vld1q(a + i), B = vld1q(b + i);
+        V ac = FIXNEG(BARH(A, kc, kcb), nv), bd = FIXNEG(BARH(B, kd, kdb), nv), ad = FIXNEG(BARH(A, kd, kdb), nv), bc = FIXNEG(BARH(B, kc, kcb), nv);
+        vst1q(re + i, FIXNEG(vsubq_s32(ac, bd), nv)); vst1q(im + i, FIXGE(vaddq_s32(ad, bc), nv));
+    } }
+NOINL void K_bar_h30(MARGS) {        /* n <= 2^30: one mls per part, r in (-2n, 2n) */
+    V nv = vdupq_n_s32(M->n), tnv = vdupq_n_s32(2 * M->n), kc = vdupq_n_s32(M->kc), kd = vdupq_n_s32(M->kd), kcb = vdupq_n_s32(M->kcb), kdb = vdupq_n_s32(M->kdb);
+    for (size_t i = 0; i < N; i += 4) {
+        V A = vld1q(a + i), B = vld1q(b + i);
+        V qr = vsubq_s32(vqrdmulhq_s32(A, kcb), vqrdmulhq_s32(B, kdb)), qi = vaddq_s32(vqrdmulhq_s32(A, kdb), vqrdmulhq_s32(B, kcb));
+        V rr_ = vmlsq_s32(vmlsq_s32(vmulq_s32(A, kc), B, kd), qr, nv), ri = vmlsq_s32(vmlaq_s32(vmulq_s32(A, kd), B, kc), qi, nv);
+        vst1q(re + i, FIXGE(vminq_u32(rr_, vaddq_s32(rr_, tnv)), nv)); vst1q(im + i, FIXGE(vminq_u32(ri, vaddq_s32(ri, tnv)), nv));
+    } }
+
+/* ---------- table ---------- */
+/* kind: 0 P, 1 S, 2 G, 3 K, 4 to, 5 from. mont: inputs/outputs in Montgomery form. lim30: n <= 2^30 only. */
+typedef struct { const char *name; mkf f; int kind, mont, oddonly, lim30; } mkern;
+static mkern MK[] = {
+    {"P div", P_div, 0, 0, 0, 0}, {"P mon_w", P_mon_w, 0, 1, 1, 0}, {"P mon_h", P_mon_h, 0, 1, 1, 0},
+    {"P bar_w", P_bar_w, 0, 0, 0, 0}, {"P bar_h", P_bar_h, 0, 0, 0, 1},
+    {"S mon_w", S_mon_w, 1, 1, 1, 0}, {"S mon_h", S_mon_h, 1, 1, 1, 0}, {"S bar_w", S_bar_w, 1, 0, 0, 0}, {"S bar_h", S_bar_h, 1, 0, 0, 0},
+    {"G div", G_div, 2, 0, 0, 0}, {"G mon_w", G_mon_w, 2, 1, 1, 0}, {"G mon_h", G_mon_h, 2, 1, 1, 0}, {"G bar_w", G_bar_w, 2, 0, 0, 0},
+    {"K mon_w", K_mon_w, 3, 1, 1, 0}, {"K mon_h", K_mon_h, 3, 1, 1, 0}, {"K bar_w", K_bar_w, 3, 0, 0, 0},
+    {"K bar_h", K_bar_h, 3, 0, 0, 0}, {"K bar_h30", K_bar_h30, 3, 0, 0, 1},
+    {"to mon_w", to_mon_w, 4, 0, 1, 0}, {"from mon_w", from_mon_w, 5, 0, 1, 0}, {"to mon_h", to_mon_h, 4, 0, 1, 0}, {"from mon_h", from_mon_h, 5, 0, 1, 0},
+};
+#define NMK (int)(sizeof MK / sizeof MK[0])
+static int mk_valid(int k, u32 n) { return (!MK[k].oddonly || (n & 1)) && (!MK[k].lim30 || n <= (1u << 30)); }
+
+/* ---------- correctness ---------- */
+#define MCH (1u << 16)
+static u32 *QA, *QB, *QC, *QD, *QAm, *QBm, *QCm, *QDm, *QR, *QI;
+static long mcases[NMK], mfails[NMK];
+static size_t qfill; static int qkinds;           /* bit mask of the kinds checked by the current pass */
+static u32 mtab[1024]; static u32 mtab_n;
+static inline u32 MT(u32 x, u32 n) { return n == mtab_n ? mtab[x] : mont_of(x, n); }
+static u32 *WR, *WI;
+static void mcheck(size_t n0, const mod_t *M) {
+    size_t Np = (n0 + 3) / 4 * 4; u32 n = M->n;
+    if (n < 1024 && mtab_n != n && (n & 1)) { for (u32 x = 0; x < n; x++) mtab[x] = mont_of(x, n); mtab_n = n; }
+    for (size_t j = n0; j < Np; j++) QA[j] = QB[j] = QC[j] = QD[j] = 0;
+    if (n & 1) for (size_t j = 0; j < Np; j++) { QAm[j] = MT(QA[j], n); QBm[j] = MT(QB[j], n); QCm[j] = MT(QC[j], n); QDm[j] = MT(QD[j], n); }
+    for (int kind = 0; kind < 6; kind++) {
+        if (!(qkinds >> kind & 1)) continue;
+        int any = 0; for (int k = 0; k < NMK; k++) any |= MK[k].kind == kind && mk_valid(k, n);
+        if (!any) continue;
+        for (size_t j = 0; j < n0; j++) {            /* expected, standard form */
+            u64 A = QA[j], B = QB[j], C = QC[j], D = QD[j]; u32 wr, wi = 0;
+            if (kind == 1) C = M->k;
+            if (kind == 3) { C = M->kc; D = M->kd; }
+            if (kind <= 1) wr = (u32)(A * C % n);
+            else if (kind <= 3) { u64 t = A * C + (M->n2 - B * D); wr = (u32)(t % n); wi = (u32)((A * D + B * C) % n); }
+            else if (kind == 4) wr = MT((u32)A, n);
+            else wr = (u32)A;
+            WR[j] = wr; WI[j] = wi;
+        }
+        for (int k = 0; k < NMK; k++) {
+            if (MK[k].kind != kind || !mk_valid(k, n)) continue;
+            int mt = MK[k].mont;
+            const u32 *a = mt || kind == 5 ? QAm : QA, *b = mt ? QBm : QB, *c = mt ? QCm : QC, *d = mt ? QDm : QD;
+            MK[k].f(a, b, c, d, QR, QI, Np, M);
+            long bad = 0;
+            for (size_t j = 0; j < n0; j++) {
+                u32 wr = WR[j], wi = WI[j];
+                if (mt) { wr = MT(wr, n); wi = MT(wi, n); }
+                bad += QR[j] != wr || (kind >= 2 && kind <= 3 && QI[j] != wi);
+            }
+            mcases[k] += n0; mfails[k] += bad;
+            if (bad && mfails[k] == bad) printf("FAIL %s n = %u: %ld of %zu\n", MK[k].name, n, bad, n0);
+        }
+    }
+}
+static void mpush(u32 A, u32 B, u32 C, u32 D, const mod_t *M) { QA[qfill] = A; QB[qfill] = B; QC[qfill] = C; QD[qfill] = D; if (++qfill == MCH) { mcheck(qfill, M); qfill = 0; } }
+static void mflush(const mod_t *M) { if (qfill) mcheck(qfill, M); qfill = 0; }
+static u32 mpick(u32 n) {                         /* 1/4 edge residues, 1/4 near the top, else uniform */
+    u64 r = next();
+    if ((r & 3) == 0) { u32 e[6] = {0, 1, 2, n - 1, n - 2, n / 2}; return e[(r >> 2) % 6] % n; }
+    if ((r & 3) == 1) return n - 1 - (u32)((r >> 2) % (n < 1024 ? n : 1024));
+    return (u32)((r >> 2) % n);
+}
+static void mreport(const char *title) {
+    long f = 0; for (int k = 0; k < NMK; k++) f += mfails[k];
+    printf("%s: failures %ld\n", title, f);
+    for (int k = 0; k < NMK; k++) printf("  %-11s cases %11ld  failures %ld\n", MK[k].name, mcases[k], mfails[k]);
+    memset(mcases, 0, sizeof mcases); memset(mfails, 0, sizeof mfails);
+}
+static void do_mod_check(void) {
+    size_t sz = (MCH + 8) * 4;
+    WR = malloc(sz); WI = malloc(sz); QA = malloc(sz); QB = malloc(sz); QC = malloc(sz); QD = malloc(sz); QAm = malloc(sz); QBm = malloc(sz); QCm = malloc(sz); QDm = malloc(sz); QR = malloc(sz); QI = malloc(sz);
+    /* exhaustive: P (all a, c) and S (all a for every k), every n from 2 to 1023 (odd only for Montgomery);
+     * G (all a, b, c, d) and K (all a, b for every (kc, kd)), every n from 2 to 63 */
+    qkinds = 1 | 16 | 32;
+    for (u32 n = 2; n <= 1023; n++) {
+        mod_t M = mod_make(n);
+        for (u32 x = 0; x < n; x++) for (u32 y = 0; y < n; y++) mpush(x, 0, y, 0, &M);
+        mflush(&M);
+    }
+    qkinds = 2;
+    for (u32 n = 2; n <= 1023; n++) {
+        mod_t M = mod_make(n);
+        for (u32 k = 0; k < n; k++) { mod_set_consts(&M, k, k, (k * 7 + 3) % n); for (u32 x = 0; x < n; x++) mpush(x, 0, 0, 0, &M); mflush(&M); }
+    }
+    for (u32 n = 2; n <= 63; n++) {
+        mod_t M = mod_make(n); qkinds = 4;
+        for (u32 A = 0; A < n; A++) for (u32 B = 0; B < n; B++) for (u32 C = 0; C < n; C++) for (u32 D = 0; D < n; D++) mpush(A, B, C, D, &M);
+        mflush(&M);
+        qkinds = 8;
+        for (u32 kc = 0; kc < n; kc++) for (u32 kd = 0; kd < n; kd++) {
+            mod_set_consts(&M, kc, kc, kd);
+            for (u32 A = 0; A < n; A++) for (u32 B = 0; B < n; B++) mpush(A, B, 0, 0, &M);
+            mflush(&M);
+        }
+    }
+    mreport("exhaustive: P and S for every n in [2, 1023], G and K for every n in [2, 63] (S and K over every shared constant; conversions on every residue of the P pass)");
+    /* random at large n; constants change every chunk */
+    const u32 ns[] = {2147483647u, 2147483629u, 2147483645u, 2147483646u, 2147483648u - 2, 1431655767u, 1073741827u, 1073741825u,
+                      1073741824u, 1073741823u, 1073741789u, 805306457u, 536870913u, 111546435u, 1000003u, 65537u, 65536u};
+    qkinds = 63;
+    for (unsigned t = 0; t < sizeof ns / sizeof *ns; t++) {
+        u32 n = ns[t]; mod_t M = mod_make(n);
+        for (int ch = 0; ch < 64; ch++) {
+            mod_set_consts(&M, mpick(n), mpick(n), mpick(n));
+            for (u32 j = 0; j < MCH; j++) mpush(mpick(n), mpick(n), mpick(n), mpick(n), &M);
+            mflush(&M);
+        }
+    }
+    mreport("random: 17 n from 65,536 to 2^31 - 1 (odd and even, prime and composite, both sides of 2^30), 4,194,304 cases per kernel per n");
+}
+
+/* ---------- timing ---------- */
+static void do_mod_time(void) {
+    const u32 ns[] = {2147483647u, 2147483645u, 1073741823u, 1000003u};
+    size_t sizes[2] = {1024, 1u << 22}, inner[2] = {2048, 1};
+    u32 *buf[10], *p[10];
+    for (int j = 0; j < 10; j++) { buf[j] = aligned_alloc(4096, ((1u << 22) + 4096) * 4); p[j] = buf[j] + 144 * j; }
+    printf("ns per element (a Gaussian element writes two residues); median [q1, q3] over %d reps; '-' not valid for this n\n", REPS);
+    for (int s = 0; s < 2; s++) {
+        size_t N = sizes[s];
+        printf("\n%s, N = %zu\n%-11s", s ? "memory" : "L1", N, "kernel"); for (int t = 0; t < 4; t++) printf("  %26u", ns[t]); printf("\n");
+        static double res[NMK][4][3];
+        for (int t = 0; t < 4; t++) {
+            u32 n = ns[t]; mod_t M = mod_make(n); mod_set_consts(&M, (u32)(next() % n), (u32)(next() % n), (u32)(next() % n));
+            for (size_t j = 0; j < N; j++) for (int q = 0; q < 4; q++) { p[q][j] = (u32)(next() % n); p[q + 4][j] = mont_of(p[q][j], n); }
+            static double tt[NMK][REPS];
+            int vk[NMK], nv = 0; for (int k = 0; k < NMK; k++) if (mk_valid(k, n)) vk[nv++] = k;
+#define RUNK(k) do { int mt_ = MK[k].mont || MK[k].kind == 5; MK[k].f(p[mt_ ? 4 : 0], p[mt_ ? 5 : 1], p[mt_ ? 6 : 2], p[mt_ ? 7 : 3], p[8], p[9], N, &M); } while (0)
+            for (int j = 0; j < nv; j++) RUNK(vk[j]);
+            for (int r = 0; r < REPS; r++)
+                for (int j = 0; j < nv; j++) {
+                    int k = vk[(j + r) % nv];
+                    RUNK(k);
+                    u64 t0 = now_ns();
+                    for (size_t it = 0; it < inner[s]; it++) RUNK(k);
+                    tt[k][r] = (double)(now_ns() - t0) / (double)(N * inner[s]);
+                }
+            for (int k = 0; k < NMK; k++) {
+                if (!mk_valid(k, n)) { res[k][t][0] = -1; continue; }
+                qsort(tt[k], REPS, sizeof(double), cmpd);
+                res[k][t][0] = tt[k][REPS / 2]; res[k][t][1] = tt[k][REPS / 4]; res[k][t][2] = tt[k][3 * REPS / 4];
+            }
+        }
+        for (int k = 0; k < NMK; k++) {
+            printf("%-11s", MK[k].name);
+            for (int t = 0; t < 4; t++) { char bb[64];
+                if (res[k][t][0] < 0) snprintf(bb, sizeof bb, "-"); else snprintf(bb, sizeof bb, "%.3f [%.3f, %.3f]", res[k][t][0], res[k][t][1], res[k][t][2]);
+                printf("  %26s", bb); }
+            printf("\n");
+        }
+        fflush(stdout);
+    }
+}
+static void mod_count(void) {
+#ifdef COUNT
+    enum { N = 1024 }; static u32 b[10][N]; u32 n = 1073741823u; mod_t M = mod_make(n); mod_set_consts(&M, 5, 7, 11);
+    for (int j = 0; j < N; j++) for (int q = 0; q < 4; q++) { b[q][j] = (u32)(next() % n); b[q + 4][j] = mont_of(b[q][j], n); }
+    printf("mod n kernels: NEON instructions per element (arithmetic / loads+stores)\n");
+    for (int k = 0; k < NMK; k++) { if (!strncmp(MK[k].name + 2, "div", 3)) continue; nops = nmem = 0;
+        int mt = MK[k].mont || MK[k].kind == 5; MK[k].f(b[mt ? 4 : 0], b[mt ? 5 : 1], b[mt ? 6 : 2], b[mt ? 7 : 3], b[8], b[9], N, &M);
+        printf("  %-11s %6.3f / %5.3f\n", MK[k].name, (double)nops / N, (double)nmem / N); }
+#endif
+}
+
 /* ======================= main ======================= */
 static void do_count(void);
-static void do_mod_check(void); static void do_mod_time(void);
 static void do_gcd_check(void); static void do_gcd_time(void);
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "arith-check";
@@ -443,9 +781,9 @@ static void do_count(void) {
     printf("NEON instructions per element (arithmetic / loads+stores), from the macro counters\n");
     for (int k = 0; k < NAK; k++) { nops = nmem = 0; AK[k].f(b[0], b[1], b[2], b[3], b[4], b[5], N);
         printf("  %-9s %6.3f / %5.3f\n", AK[k].name, (double)nops / N, (double)nmem / N); }
+    mod_count();
 #else
     printf("build with -DCOUNT\n");
 #endif
 }
-static void do_mod_check(void) {} static void do_mod_time(void) {}
 static void do_gcd_check(void) {} static void do_gcd_time(void) {}

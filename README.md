@@ -1,11 +1,16 @@
 # Erdos
 
-Making exact rational arithmetic fast. Arithmetic here is always exact; the work is about doing it with less time and memory.
+Exact arithmetic on Gaussian integers, fast, at the machine level: a number system, an elementary number theory library and a cryptology library, in three levels.
 
-The repository holds two things being worked on, and the rules they follow:
+At the root:
 
-- [`spec`](spec/): the current specifications and their tests. A specification defines one or more models of exact arithmetic (how numbers are stored and how operations work), and each round of tests measures the models against a control: time and memory, on fixed workloads. Each spec has its own folder.
-- [`book`](book/): the book, in two parts. Part 1, the machine: the mathematics of words and the routines a machine runs, costed in cycles. Part 2, the library: integers, rationals, decimals and matrices built from the ground up in pseudocode. The scripts in `book/verify-part1/` and `book/verify-part2/` check each part.
-- [`RULES.md`](RULES.md): the rules for algorithm design, optimization, reviews and prose.
+- [`SPEC.md`](SPEC.md): the spec of the build. Section 1 is the architecture; sections 2 to 4 are the three levels.
+- [`RULES.md`](RULES.md): the rules the work follows.
+- [`book`](book/): the book, being merged from `v0.1.md` and `notes.md`.
 
-[`tools`](tools/) holds small helper scripts, and [`archive`](archive/) holds earlier specifications and the paper, which became the book.
+Folders:
+
+- [`research`](research/): surveys and working analyses that support the spec.
+- [`studies`](studies/): the decisions (`decisions.md`), the studies (`studies.md`) and their code (`playground/`).
+- [`tools`](tools/): small helper scripts.
+- [`archive`](archive/): earlier specifications and drafts, including specs 11 to 13.

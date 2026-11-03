@@ -73,6 +73,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 32. **Division with remainder by divisors that vary per element: the per-lane reciprocal** (study 25: a steady 4.45 ns with two registers interleaved). Shift-and-subtract is dropped: fastest for short quotients, but its time varies with the data and it loses past about 8 quotient bits. The shared and per-lane reciprocals stay separate cases (the shared one is 2.5 times faster), chosen by the shape of the call (array by number, array by array), once per operation, never per element.
 
+33. **Bit counting in the gcd (trailing zeros in vector lanes): branch to a table lookup, falling back to the multiply** (study 27, nbrd). One test per register per step: when every lane has k < 4 (about 95% of steps), k is one vpshufb lookup; otherwise the 16-bit de Bruijn multiply (vpmullw by 0x09AF, shift, lookup, moved down by 16 or 0). Integer only, no floating point. 36.3 to 36.9 ns per gcd with 3 registers, tying the same branch with a float fallback; 2.5% behind it with 1 register. The branch's outcome follows the data; the gcd's arithmetic makes small k common in every application, so the predictor is right about 95% of the time.
+
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

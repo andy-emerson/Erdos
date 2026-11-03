@@ -52,6 +52,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 16. **Documentation stays chip-agnostic; the build targets x86-64** (the largest audience, and the only machine available for timing). AVX2 (256-bit) as the baseline, AVX-512 optional.
 17. **The sticky flag is checked once per array,** not per chunk: the copy to wider words is needed anyway, so chunks would save only arithmetic, at the cost of a branch per chunk.
 
+18. **Shrinking:** the shrink test is fused into the sweep of operations that can make values smaller (add, subtract, divide, mod), never multiply, and only for arrays above the base size (a 64-bit-word array has nothing smaller to shrink to). Rule B's one-bit margin. At the end of the sweep, if every element fits, the result is written at the smaller size.
+
 **Research list**
 - Barrett against Montgomery for mod n (build and prove first, then time).
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

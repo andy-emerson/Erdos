@@ -660,3 +660,62 @@ In vector lanes the RNS keeps 32-bit lanes and grows linearly (6m per element), 
 - **Order and sign** need magnitude, which the residues do not show: a mixed-radix conversion of the difference (Garner, about 12m(m − 1)/2 per part) and a centred test on the top digits. That is O(m²), much like a conversion out.
 - **Exact division** by z is a multiply by z's inverse residues when z is a unit mod every prime (both u and v nonzero for each p). The inverses cost 2m modular inverses (study 13: about 100 instructions each by Euclid), once per divisor, then 16m per element. It fails when z shares a factor with some p, which needs a different prime set.
 - **Division with remainder** (nearest Gaussian quotient) needs the magnitude: convert out, divide (study 6), and convert back in.
+
+## Study 17: three memory layouts at the vector level (layout.py)
+
+**What was checked.** The same type in three layouts, with study 15's full-range checks (decision 12) ORed into sticky words (decision 13):
+
+- **(a) Interleaved:** 32-bit lanes re, im, re, im, ... This is the packed word seen as lanes, as now.
+- **(b) Structure of arrays:** one array of real parts and one of imaginary parts. A register holds four real parts or four imaginary parts.
+- **(c) Whole-word:** the packed word in 64-bit lanes, using 64-bit instructions only: study 15's scalar forms applied per lane, with the carry-fix add and subtract.
+
+The operations are built from a small simulated vector machine. A register is 4h bits (128 at h = 32), viewed as 4 h-bit lanes or 2 2h-bit lanes. Each primitive counts one instruction, so the counts below are exact for the instruction sequences written:
+- lane add, sub, xor, and, andn, or, and shifts;
+- `mul_even` (x86 `pmuldq`: signed low halves of 64-bit lanes);
+- `wmul_lo`/`wmul_hi` (NEON `smull`/`smull2`; RVV `vwmul` does both in one register group);
+- `narrow2` (NEON `uzp1`, RVV `vnsrl`);
+- `swap_pairs` (x86 `pshufd`, NEON `rev64`) and an even/odd blend.
+
+**Verification.** For each layout and operation: the results equal the true values mod 2^h; the sticky flag (contribution AND the end mask ≠ 0) is set exactly when some element in the register does not fit; and the shrink flag exactly when some half does not fit in h/2 bits.
+- Each element was tested alone in a register (other slots zero), which gives exact per-element flags, and in full registers (flag iff any element is bad).
+- **h = 4:** every element pair.
+- **h = 8:** real parts exhaustive, with imaginary parts from 10 edge and random pairs, and the reverse (sampled every 7th pair alone and every 5th group in full registers).
+- **h = 32:** 60,000 random pairs with edges.
+- In all, 431,193 cases per operation for (a) and (c), and 346,273 for (b), with both multiply forms for (b). **Failures: none.**
+
+**Instruction count per register,** including one OR into the sticky word where there is a check. A 128-bit register holds 2 Gaussian integers in (a) and (c); in (b) a pair of registers (one real, one imaginary) holds 4. The table is per element, and a 256-bit register halves every figure.
+
+| operation | (a) interleaved | (b) structure of arrays | (c) whole-word, 64-bit |
+|---|---|---|---|
+| add (arithmetic + check) | 2.5 (1 + 4 per register) | 2.5 (2 + 8 per 4) | 4 (5 + 3 per register; RVV base without `vandn`: 4.5) |
+| sub | 2.5 | 2.5 | 4 |
+| neg | 1.5 | 1.5 | 3 |
+| conj | 2 | 0.75 (only the imaginary array is touched) | 2.5 |
+| mul (arithmetic + check) | 7.5 (11 + 4 per register; x86 form) | 5.5 generic (14 + 8 per 4), 7 with x86 `pmuldq` (20 + 8 per 4) | 7.5 (the same instructions as (a)) |
+| of which lane rearrangement in mul | 2.5 (2 input shifts, a pair swap, a shift and a blend for the pack) | 0.5 generic (2 narrows), 2 on x86 (4 odd-lane shifts, 2 shifts and 2 blends to narrow) | 2.5 |
+| shrink test (32-bit halves into 16) | 1 (1 + 1 per register) | 1 (3 + 1 per 4) | 2.5 (4 + 1 per register) |
+| loads / stores per element: add, sub, mul | 1 / 0.5 | 1 / 0.5 | 1 / 0.5 |
+| loads / stores: neg | 0.5 / 0.5 | 0.5 / 0.5 | 0.5 / 0.5 |
+| loads / stores: conj | 0.5 / 0.5 | 0.25 / 0.25 in place (+ 0.25 / 0.25 to copy the real array) | 0.5 / 0.5 |
+| loads / stores: shrink test | 0.5 / 0 | 0.5 / 0 | 0.5 / 0 |
+
+The sticky words' end test (mask, test, branch) is once per array, about 2 to 3 per sticky word.
+
+**What each layout does.**
+- **(a) and (b)** cost the same for add, sub and neg. Lanes are independent and the checks are lane-wise, so the layout does not matter.
+- **(b) removes most of the multiply's rearrangement.**
+  - In (a) the real and imaginary parts share a register, so each product needs its operands lined up first: a shift to bring the imaginary parts down, a pair swap so a meets d and b meets c, and a shift and blend to repack.
+  - In (b), a, b, c and d are already in separate registers, so the four products are straight widening multiplies of whole registers. Only the narrowing of the 64-bit results back to 32-bit lanes is left.
+  - With NEON or RVV's low/high widening multiply that is 5.5 per element against 7.5. With x86's `pmuldq`, which only takes even lanes, (b) needs shifts for the odd lanes and blends to narrow, and comes to 7 against 7.5.
+- **(b) makes conj (and multiply by i) cheap.**
+  - Conj touches only the imaginary array: 0.75 per element and a quarter of the memory traffic, against 2.
+  - Multiply by i is a swap of the two array pointers plus a negation of one array.
+- **(c) is dearer for add, sub, neg and the shrink test.** In 64-bit lanes the two halves can carry into each other, so it pays study 15's carry fix (5 instructions for add against 1) and the per-half isolation in the shrink test. Its multiply is the same instruction stream as (a), since `pmuldq` reads each 64-bit lane's low half. One more gap: SSE/AVX2 have no 64-bit arithmetic right shift (AVX-512 has `vpsraq`), so (c) cannot sign-extend a low half with shifts. The forms here avoid it.
+- **What (b) costs when one number is needed whole.**
+  - **Reading one number:** two loads from two arrays (usually two cache lines), then a combine (shift and OR, or one insert or zip), against one load in (a) and (c).
+  - **Writing one number:** a split and two stores.
+  - **Streams:** every loop runs two address streams per array, against one.
+  - **Converting a whole array** between (a) and (b) is one zip or unzip per register (NEON `zip`/`uzp`; x86 needs 2 to 3 shuffles). NEON `ld2`/`st2` and RVV segment loads and stores (`vlseg2`/`vsseg2`) do it during the load or store itself.
+- **Memory traffic** per element is the same in all three layouts for add, sub and mul: the same bytes are moved. (b) moves fewer only where it can skip an array (conj, multiply by i, operations on one part).
+
+The counts for (a) and (c) match study 15's vector and scalar-per-lane figures (add 5 and 8 per register, mul 15). Study 15's "mul 11 + 4" for the vector model is (a) here.

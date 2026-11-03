@@ -11,6 +11,8 @@
  *            12 vpmuludq per 4 elements
  *   v_uns    AVX2, unsigned 32-bit pieces (vpmuludq only), 16 multiplies
  *   v_sgn    AVX2, signed 32-bit pieces (vpmuldq only), 16 multiplies
+ *   v_bnd    v_bare plus a per-array magnitude bound; when the bound cannot rule out
+ *            overflow, the array is redone by v_sgn (exact flag either way)
  *
  * The overflow test in both checked vector kernels: let k = floor((re + 2^63) / 2^64).
  * The result fits iff k = 0. |re| <= 2^127, so |k| <= 2^63, and k may be computed
@@ -182,11 +184,41 @@ NOINL int v_uns(ARGS) {
     return !_mm256_testz_si256(o, o);
 }
 
+/* ======================= AVX2, wrapping + per-array bound, exact fallback =======================
+ * The bare product, plus |x| - [x < 0] = x XOR (x < 0 mask) ORed over each operand array: if every
+ * x in the first operand has x XOR s(x) < 2^p and every y in the second < 2^q, then |re|, |im| <= 2^(p+q+1),
+ * which fits when p + q <= 61. Once per array: if the bound holds the flag is 0 (exact); otherwise the
+ * array is redone by v_sgn, which writes the same results and gives the exact flag. */
+static long bnd_fast;   /* arrays settled by the bound (counted for the check only) */
+static int bitlen(V s) {
+    u64 x = (u64)_mm256_extract_epi64(s, 0) | (u64)_mm256_extract_epi64(s, 1) |
+            (u64)_mm256_extract_epi64(s, 2) | (u64)_mm256_extract_epi64(s, 3);
+    return x ? 64 - __builtin_clzll(x) : 0;
+}
+NOINL int v_bnd(ARGS) {
+    const V zero = _mm256_setzero_si256();
+    V sx = zero, sy = zero;
+    for (size_t i = 0; i < N; i += 4) {
+        V a = LD(ar + i), b = LD(ai + i), c = LD(br + i), d = LD(bi + i);
+        V ah = SRL(a), bh = SRL(b), ch = SRL(c), dh = SRL(d);
+        V re = SUB(MULU(a, c), MULU(b, d));
+        V rm = SUB(ADD(MULU(ah, c), MULU(a, ch)), ADD(MULU(bh, d), MULU(b, dh)));
+        V im = ADD(MULU(a, d), MULU(b, c));
+        V imm = ADD(ADD(MULU(ah, d), MULU(a, dh)), ADD(MULU(bh, c), MULU(b, ch)));
+        ST(cr + i, ADD(re, SLL(rm)));
+        ST(ci + i, ADD(im, SLL(imm)));
+        sx = OR(sx, OR(XOR(a, _mm256_cmpgt_epi64(zero, a)), XOR(b, _mm256_cmpgt_epi64(zero, b))));
+        sy = OR(sy, OR(XOR(c, _mm256_cmpgt_epi64(zero, c)), XOR(d, _mm256_cmpgt_epi64(zero, d))));
+    }
+    if (bitlen(sx) + bitlen(sy) <= 61) { bnd_fast++; return 0; }
+    return v_sgn(ar, ai, br, bi, cr, ci, N);
+}
+
 /* ======================= kernel table ======================= */
 typedef int (*kf)(ARGS);
 typedef struct { const char *name; int chk; kf f; } kern;
 static kern KT[] = {
-    {"s_bare", 0, s_bare}, {"s_chk", 1, s_chk}, {"v_bare", 0, v_bare}, {"v_uns", 1, v_uns}, {"v_sgn", 1, v_sgn},
+    {"s_bare", 0, s_bare}, {"s_chk", 1, s_chk}, {"v_bare", 0, v_bare}, {"v_uns", 1, v_uns}, {"v_sgn", 1, v_sgn}, {"v_bnd", 1, v_bnd},
 };
 #define NKT (int)(sizeof KT / sizeof KT[0])
 
@@ -325,6 +357,7 @@ static void do_check(void) {
     printf("random arrays: %ld (length 4..128)\n", arr);
     printf("elements whose re or im is within 4 of the boundary: %ld fit, %ld overflow\n", nnear[1], nnear[0]);
     printf("kernel calls %ld, failures %ld\n", cases, fails);
+    printf("v_bnd settled by the bound: %ld calls (the rest fell back to v_sgn)\n", bnd_fast);
     for (int k = 0; k < NKT; k++) if (KT[k].chk) printf("  %-7s flag clear %ld, set %ld\n", KT[k].name, nflag[k][0], nflag[k][1]);
 }
 

@@ -320,3 +320,38 @@ The paper does not mention Weilert. For Z[i] it notes only the ingredients: prim
 - **Approximate norm.** It replaces the element with the larger approximate norm, which is cheaper than the exact norm. In the Eisenstein case the approximation can be off by a factor up to 9/8. Study 9 compares exact norms, 2 multiplies per step.
 
 **Agarwal and Frandsen, "Binary GCD like algorithms for some complex quadratic rings"** (ANTS 2004, Lecture Notes in Computer Science, 57–71): its metadata and reference list were read, but the text was not reachable.
+
+## Study 11: Damgård and Frandsen's ideas applied to study 9's gcd (gcd1i_v2.py)
+
+**What was checked.** Study 9's (1+i)-ary gcd, with each idea from Damgård and Frandsen's Eisenstein algorithm (BRICS RS-03-8) as a separate variant. Strip, primary, the gcd's power of (1 + i) and normalise are study 9's, unchanged.
+
+- **(a) Stop when equal.** Stop when the two numbers are equal, not when one becomes 0. Both are primary, so equal means a − b = 0. Study 9's last step is always the one that turns a = b into 0, so (a) saves exactly one step per gcd.
+- **(b) Their approximate norm.** Each coordinate's absolute value keeps only its 6 most significant bits, and the results are squared and summed (their Lemma 2). For Z[ζ] they show (8/9)N ≤ Ñ ≤ N; for Z[i] the same truncation gives (31/32)² N ≤ Ñ ≤ N. They use it because on long numbers it takes linear time where the exact norm needs a multiplication.
+- **(c)** (a) and (b) together.
+- **(d) |x| + |y| (not from the paper).** A word-friendly size, with no multiply. N ≤ (|x| + |y|)² ≤ 2N, so replacing a when it is the larger by this measure gives N(b) ≤ 2N(a). Then N(new a) ≤ (|a| + |b|)²/8 ≤ (1 + √2)²/8 · N(a) < 0.73 N(a), and the product of the norms still falls by a factor above 1.37 per step.
+- **(e)** (d) and (a) together.
+
+The rest of their algorithm is already in study 9: the primary associate (≡ 1 mod 2 + 2i = −i(1 + i)³), the difference of two primaries being divisible by (1 + i)³, replacing the larger of the two, and the gcd = (1 + i)^min · (the final value). Their unit-exponent bookkeeping, (−ζ)^i, is needed for residue symbols, not for the gcd. Their linear-time division by the prime matters for long numbers; within one word, study 9's ctz and shifts already do it.
+
+**Cases.** Exhaustive over all pairs of in-range values: K = 3 (2,401), K = 4 (50,625), K = 5 (923,521). K = 32: the same 100,008 pairs as study 9. Each variant was compared with study 6's Euclid. **Failures: none**, in every variant.
+
+**Steps (mean / max) and cost per step.** The instructions per step are 49 for the core (a − b 2, strip 16, primary 17, compare and mask 2, conditional swap 12), plus the size, plus the loop test (2 to test for zero, 4 to test for equality).
+
+| variant | K = 4 | K = 5 | K = 32 | per step | MUL / DIV per step | ≈ instructions in steps, K = 32 |
+|---|---|---|---|---|---|---|
+| Euclid (study 6) | 2.58 / 4 | 3.24 / 6 | 14.05 / 28 | 50 | 12 / 2 | 703 |
+| study 9 (exact norm, stop at 0) | 3.17 / 6 | 4.20 / 8 | 23.58 / 44 | 54 | 2 / 0 | 1,274 |
+| (a) stop when equal | 2.18 / 5 | 3.20 / 7 | 22.58 / 43 | 56 | 2 / 0 | 1,265 |
+| (b) their approximate norm (size 23: per coordinate abs 3, clz 1, sub 1, max 3, shift 1, and 1; then 2 MUL, ADD) | 3.17 / 6 | 4.20 / 8 | 23.59 / 42 | 74 | 2 / 0 | 1,745 |
+| (c) (a) + (b) | 2.18 / 5 | 3.20 / 7 | 22.59 / 41 | 76 | 2 / 0 | 1,717 |
+| (d) \|x\| + \|y\| (size 7) | 3.17 / 6 | 4.21 / 9 | 23.65 / 43 | 58 | 0 / 0 | 1,372 |
+| (e) (d) + (a) | 2.18 / 5 | 3.21 / 8 | 22.65 / 42 | 60 | 0 / 0 | 1,359 |
+
+The once-per-gcd costs (about 103 at the start and 35 at the end for the (1+i)-ary gcd, 22 for Euclid) come on top of the in-loop totals.
+
+**What each idea does in one word.**
+- **(a)** saves one step (54 instructions) but costs 2 more per loop test, so at K = 32 it comes out about even (1,265 against 1,274). Folding the test into the step removes that cost. Compute d = a − b first and leave the loop when d = 0 (OR, compare: 2, the same as study 9's test). Then (a) costs 54 per step plus one final subtraction and test (4), about 1,223 at K = 32. Not coded separately; the steps are (a)'s.
+- **(b)** does not pay inside one word. The exact norm is 2 multiplies and an add (3), while the approximation needs an absolute value, a leading-zero count and a mask per coordinate before the same 2 multiplies (23). It adds 20 instructions per step and changes the step count by almost nothing (23.59 against 23.58). Its advantage is for long numbers, where the exact norm needs a multiplication of long numbers and the approximation does not.
+- **(d)** is the version suited to one word: no multiply at all in the step, at 4 more instructions than the exact norm (7 against 3). The step count rises by 0.07 on average at K = 32.
+
+None of the variants changes the picture from study 9. In instructions the (1+i)-ary gcd stays at roughly 1.75 to 2 times Euclid at K = 32 (about 1,220 to 1,275 in steps for the best variants, against about 703). It needs at most 2 multiplies and no divide per step, against Euclid's 12 multiplies and 2 divides. The proxies count a divide like an add, so they cannot settle which is faster.

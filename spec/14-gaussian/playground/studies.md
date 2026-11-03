@@ -719,3 +719,68 @@ The sticky words' end test (mask, test, branch) is once per array, about 2 to 3 
 - **Memory traffic** per element is the same in all three layouts for add, sub and mul: the same bytes are moved. (b) moves fewer only where it can skip an array (conj, multiply by i, operations on one part).
 
 The counts for (a) and (c) match study 15's vector and scalar-per-lane figures (add 5 and 8 per register, mul 15). Study 15's "mul 11 + 4" for the vector model is (a) here.
+
+## Study 18: Gaussian matrix products, direct against residue (matmul.py)
+
+**What was compared.** C = A·B, A n × k, B k × m, entries with b-bit halves in the full range. The result needs R = 2b + ⌈log₂ k⌉ + 1 bits, since |re C|, |im C| ≤ k·2^(2b−1). The widths and prime counts are chosen in advance from b and k, so there is no runtime overflow check.
+
+- **Direct** (vector, study 17's layout (b) with separate re/im arrays; (a) as a variant). Per term (one complex multiply-add C_ij += A_it·B_tj), the cheapest chip-agnostic forms (NEON `smlal`, RVV `vwmacc`). x86 has no general widening multiply-add: its 16-bit `pmaddwd` multiplies and adds pairs (with interleaved inputs, one `pmaddwd` gives ac − bd), and at 32 bits `pmuldq` plus an add takes about twice the counts below:
+  - **b = 8:** 16-bit inputs, 16 → 32 widening multiply-accumulate into 32-bit sums. Four per register of four sums, so 1 per term. B keeps a negated copy of its imaginary part for the −bd term.
+  - **b = 16:** 32-bit inputs, 32 → 64 widening multiply-accumulate: 2 per term.
+  - **b = 32:** four 32 → 64 products. ac − bd is exact in 64 bits, but ad + bc reaches 2^63 at the full-range corner (all halves −2^31), so ad and bc are taken separately. Each 64-bit part is split into its low 32 bits (AND) and high 32 bits (arithmetic shift), and added into two 64-bit sums. That is lazy accumulation with no carries, combined once per result entry (8). 8.5 per term.
+  - **b = 64:** scalar, since there is no portable vector 64 × 64 → 128: four MUL and MULHI pairs, two-word sub and add, and two three-word accumulates. 32 per term.
+- **Residue** (study 16). The primes p ≡ 1 (mod 4) of 31 bits needed, m_p = ⌈R/31⌉, come from a table. Every input entry is converted in, there are two lane multiply-adds per prime per term (split form), and every result entry is converted out.
+  - **Lazy accumulation:** raw 62-bit products are summed in 64-bit lanes and reduced by Montgomery REDC (R = 2^32) every 2 terms. REDC needs t < p·2^32, and 2(p − 1)² < p·2^32.
+  - **Cost:** per register of four residue lanes, a widening multiply 2 and a 64-bit add 2 per term, plus REDC 10 and an add mod p 3 every 2 terms. That is 2.625 per lane-term, and 5.25·m_p per Gaussian term. Reducing after every term costs 7.5·m_p.
+  - **The R^−1 factors** are folded into the conversion-out constants.
+
+**Cost formulas** (instructions; 128-bit registers; loads and stores not counted):
+
+- Direct: n·k·m·T_d(b) + (n·k + k·m)·P_d(b) + n·m·Q_d(b).
+  - T_d = 1, 2, 8.5, 32 for b = 8, 16, 32, 64.
+  - P_d (input widening) = 0.25, 0.5, 0, 0.
+  - Q_d (combining split sums) = 0, 0, 8, 0.
+  - Layout (a) adds lane rearrangement per term: 0.75, 1.5, 1.5, 0. Preparing shifted and pair-swapped copies of each entry once removes it, for about 2 per entry.
+- Residue: n·k·m·5.25·m_p + (n·k + k·m)·I(b, m_p) + n·m·O(m_p).
+  - m_p = 1, 2, 3, 5 for b = 8, 16, 32, 64. These hold for k up to 2^13, 2^28, 2^27 and 2^25.
+  - Conversion in, per entry: I = 7m_p + 0.5 for b ≤ 32, and 14m_p + 1 for b = 64 (64-bit halves are reduced in two 32-bit pieces).
+  - Conversion out, per entry (study 16): O = 17.5, 37, 80.5, 201.5 for m_p = 1, 2, 3, 5.
+
+**Per term,** the residue form costs 5.25, 10.5, 15.75, 26.25 against direct 1, 2, 8.5, 32. Only at b = 64 is a residue multiply-add cheaper than a direct one, because only there does the direct product leave the vector unit (64 × 64 → 128). Below that, a widening multiply-add does a term in 1 to 8.5 instructions, while every residue term pays two lanes per prime plus the reductions.
+
+**Square matrices** (k = m = n), totals for direct (b) / direct (a) / residue lazy / residue reducing every term:
+
+| n | b = 8 (m_p = 1) | b = 16 (2) | b = 32 (3) | b = 64 (5) |
+|---|---|---|---|---|
+| 2 | 10 / 16 / 172 / 190 | 20 / 32 / 348 / 384 | 100 / 112 / 620 / 674 | 256 / 256 / 1,584 / 1,674 |
+| 4 | 72 / 120 / 856 / 1,000 | 144 / 240 / 1,728 / 2,016 | 672 / 768 / 2,984 / 3,416 | 2,048 / 2,048 / 7,176 / 7,896 |
+| 8 | 544 / 928 / 4,768 / 5,920 | 1,088 / 1,856 / 9,600 / 11,904 | 4,864 / 5,632 / 15,968 / 19,424 | 16,384 / 16,384 / 35,424 / 41,184 |
+| 16 | 4,224 / 7,296 / 29,824 / 39,040 | 8,448 / 14,592 / 59,904 / 78,336 | 36,864 / 43,008 / 96,128 / 123,776 | 131,072 / 131,072 / 195,456 / 241,536 |
+| 32 | 33,280 / 57,856 / 205,312 / 279,040 | 66,560 / 115,712 / 411,648 / 559,104 | 286,720 / 335,872 / 642,560 / 863,744 | 1,048,576 / 1,048,576 / 1,211,904 / 1,580,544 |
+
+**Crossovers** (the smallest square n from which the residue form is cheaper; searched up to n = 4,096):
+
+| b | 31-bit primes, reduce every 2 terms | reduce every term | 27-bit primes, reduce every 32 terms |
+|---|---|---|---|
+| 8 | never | never | never |
+| 16 | never | never | never |
+| 32 | never (15.75 per term against 8.5) | never | n = 62 (3 primes, 6.6 per term) |
+| 64 | n = 60 | never (37.5 against 32) | n = 17 (5 primes, 11 per term) |
+
+The crossovers against layout (a) are the same: at b = 64 the direct method is scalar either way, and elsewhere the residue form does not win.
+
+**The 27-bit-prime variant.** Smaller primes let 2^(32−27) = 32 products accumulate before a REDC (REDC needs t < p·2^32). That brings the per-lane cost to (4 + 13/32)/4 ≈ 1.1 and the per-term cost to 2.2 per prime, at the price of more primes for the same R: ⌈R/27⌉, which is 3 for b = 32 when k ≤ 2^15, and 5 for b = 64 when k ≤ 32. This is the one change that makes the residue form pay at b = 32. Checked functionally with k = 40 and 70, so that several reduction blocks occur.
+
+**Verification.** Both methods were compared with exact big-integer matrix products. The direct method was run with its chosen widths, wrapping like the machine, which shows the widths suffice.
+- **Exhaustive, tiny,** with toy primes 5 and 13 in 8-bit Montgomery lanes:
+  - b = 1, every pair of 2 × 2 matrices (65,536 products);
+  - b = 2, every 1 × 2 times 2 × 1 pair (65,536).
+- **Random,** at b = 8, 16, 32 and 64 with the real choices (31-bit primes, R = 2^32): n = 2, 3, 4 and 8 (3 pairs each) and n = 16 (1). The first pair of each set has the corner entry (−2^(b−1), −2^(b−1)) in both matrices.
+- **Also:** an 8 × 8 matrix times a vector at each b, and the 27-bit variant at b = 32 and 64 with k = 40 and 70.
+- **Failures: none** in the final run. A first run failed 9 of 13 direct b = 32 cases: ad + bc overflowed int64 at the corner. The b = 32 direct form now splits ad and bc separately, and its cost went from 7 to 8.5 per term.
+
+**Matrix times vector** (k × 1, so m = 1). Each entry of A is used once, so its conversion in is not shared. The residue form then pays I + 5.25·m_p per term against T_d, and loses at every b, by a margin growing with n² (at b = 64 and n = 1,024, about 69 million instructions). It pays only when the same A multiplies many vectors and is converted once. Then each vector costs n²·5.25·m_p + n·(I + O) against n²·T_d, and at b = 64 the residue form wins from about n = 48.
+
+**Repeated products (powers A^e).** A is converted in once, the e − 1 products stay in residue form, and the result is converted out once. The conversions are spread over (e − 1)·n³ terms, so the crossover falls roughly as 1/(e − 1). The primes are sized for the final power, about e·b + (e − 1)·⌈log₂ n⌉ + 1 bits. In the direct method the intermediate products outgrow 64-bit halves after the first product, and from then on every term is a multiword multiply whose cost grows with the square of the width (study 3: 10L² + 24L − 2). The residue term cost grows only linearly with m_p. So powers move the crossover far down, to small n even at b = 8 or 16, once the entries outgrow one word. This was not counted in the sweep.
+
+**Memory** (not counted above): a residue entry holds 2·m_p 32-bit lanes against 2 parts of the direct input width. At b = 32 that is 6 lanes against 2 per entry, so the residue form moves about 3 times the data per term. Register blocking reduces loads per term in both methods, but the ratio stays.

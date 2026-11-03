@@ -71,6 +71,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 30. **Division with remainder by one divisor shared across an array: the precomputed reciprocal** (study 25: 1.74 ns, three times faster than the divide, pays from 4 elements).
 31. **Gcd: the (1+i)-ary binary gcd in vector lanes, at machine level** (studies 24 and 26: 42.7 ns per gcd against 109 for Euclid in lanes and 270 in plain registers). Pairs with a −2^31 half are set aside and recomputed exactly once per array.
 
+32. **Division with remainder by divisors that vary per element: the per-lane reciprocal** (study 25: a steady 4.45 ns with two registers interleaved). Shift-and-subtract is dropped: fastest for short quotients, but its time varies with the data and it loses past about 8 quotient bits. The shared and per-lane reciprocals stay separate cases (the shared one is 2.5 times faster), chosen by the shape of the call (array by number, array by array), once per operation, never per element.
+
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

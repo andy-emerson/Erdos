@@ -1614,3 +1614,18 @@ The pi_v3 step loop (3 registers) is 238, 212 and 208 instructions with bs, pop 
 - **The five single-bit tests:** 2 ops each with the min trick (AND, then min_epu32 with 2^j), the shortest chain of all but 16 ops, so 42 ns. Three of them plus one nibble table (mixn, 13 ops) tie the float trick in the latency-bound one-register gcd.
 - **Fitting the tests into the step** (shift stages, depth order, the thermometer, sharing) gains nothing over assembling k. What pays is the distribution of k: a branch on the common case k < 4 replaces the whole ctz by one table lookup.
 - **Ruled out by searches and counts:** a 32-entry index from `vpmaddwd`; an index read straight from the bits `vpshufb` uses; `vpermd` tables; byte-level lookups needing a horizontal sum; and leaving k out of the step (`vpsravd` needs the count, and multiplying by 2^−k needs a bit reverse and 4 `vpmuldq`).
+
+**Addendum: nbrf, the float trick as the rare path.** This is nbr's `vptest` branch and `vpshufb`(T4, x) fast path, with flt in place of dbh on the 4.6% of register-steps where some lane has k ≥ 4. It is not integer-only.
+- **Correctness:** checked as nbrd. Every single-bit o in all 8 lane positions and every nonzero o in two passes. For o = 2^31 alone, flt's count is 287, which `vpsravd` treats as 31, so the shift is still right. Then the gcd checks (exhaustive K = 3 to 6, the −2^31 edges, 2,621,440 random pairs): 0 failures.
+- **Timing:** same harness, three runs, load below 1. Ranges of the medians, ns per gcd. Half the interquartile range was within 3% for the one-register runs and up to 7% for some three-register runs in this session.
+
+| ns per gcd | pi_v3 random | pi_v3 large factor | pi_v random | pi_v large factor |
+|---|---|---|---|---|
+| flt | 38.1 | 20.4–20.8 | 57.2–57.7 | 29.1–29.4 |
+| nbr (mask5 rare path) | 37.0–37.3 | 20.0–20.3 | 52.0–52.5 | 26.8–27.4 |
+| nbrd (dbh rare path) | 36.3–36.9 | 19.5–19.6 | 52.0–52.6 | 26.8–27.1 |
+| nbrf (flt rare path) | 36.3–36.5 | 19.4–19.7 | 50.7–51.1 | 26.1–26.5 |
+
+- **With three registers, nbrf and nbrd tie** (36.3 to 36.9 ns). The rare path runs too seldom for its cost to show.
+- **With one register (latency-bound), nbrf is about 1.3 ns (2.5%) faster than nbrd** on random pairs, and 0.6 ns with a large common factor. That is the float trick's shorter chain (8 cycles against dbh's 11) on the rare path.
+- **So the float converter is worth at most 2.5% once the branch is in place,** against 5.5 to 13% when every step needs a full ctz. nbrd remains the best integer-only form.

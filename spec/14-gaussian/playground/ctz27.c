@@ -24,6 +24,7 @@
  *   nbr    one vptest per register-step: if k < 4 in every lane (95% of register-steps), k = vpshufb(T4, x);
  *          else mask5
  *   nbrd   nbr with dbh as the rare path (the best form)
+ *   nbrf   nbr with the float exponent as the rare path (not integer-only)
  *   bbr    k < 8 in every lane (99.99%): k from two nibble tables; else mask5
  *   tbr    nbr tested on the thermometer andn(o, o - 1)
  *
@@ -264,7 +265,14 @@ AI void sh_ctz_nbrd(V *hx, V *hy, V o) {
     if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x); else e = ctz_dbh(o);
     SRAV2(e)
 }
-#define FITS(X) X(mst5) X(mst2) X(mlo) X(nbr) X(bbr) X(tbr) X(nbrd)
+/* nbrf: nbr with the float exponent (flt) as the rare path */
+AI V ctz_nbrf(V o) { return ctz_flt(o); }      /* setup only */
+AI void sh_ctz_nbrf(V *hx, V *hy, V o) {
+    V x = ISO(o), e;
+    if (__builtin_expect(_mm256_testz_si256(x, C32(0xFFFFFFF0)), 1)) e = _mm256_shuffle_epi8(T4, x); else e = ctz_flt(o);
+    SRAV2(e)
+}
+#define FITS(X) X(mst5) X(mst2) X(mlo) X(nbr) X(bbr) X(tbr) X(nbrd) X(nbrf)
 
 /* the strip: shift by e = ctz, then one division by 1+i where both parts are odd */
 AI void stripodd(V *px, V *py) {

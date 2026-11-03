@@ -62,7 +62,7 @@ AI u32 s_div(i32 a, i32 b, i32 c, i32 d, u64 N, i32 *qr, i32 *qi, i32 *rr, i32 *
         rx = (rx ^ sx) + (N & sx); ry = (ry ^ sy) + (N & sy);
         u64 hx = (N - 1) >> 1, hy = hx;
         if (mode == NB) { hx = (N - 1 - sx) >> 1; hy = (N - 1 - sy) >> 1; }
-        q1 += rx > hx; q2 += ry > hy;
+        q1 += (u32)((hx - rx) >> 63); q2 += (u32)((hy - ry) >> 63);   /* rho > h; both below 2^63 */
     }
     *qr = (i32)q1; *qi = (i32)q2;
     u32 f = (q1 == 0x80000000u) | (q2 == 0x80000000u);
@@ -127,7 +127,7 @@ AI void front(V a, V b, V c, V d, int shared, V Nsh, V N[2], V U[4], V S[4], V *
 /* nearest rules from the core's Q (q_u) and R (U mod N): returns the round-up masks packed in 32-bit lanes */
 AI void nearest(int mode, V N[2], V R[4], V S[4], V *mre, V *mim) {
     V M[4];
-    for (int j = 0; j < 4; j++) {
+    _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
         V Nj = N[j & 1];
         V rho = ADD64(XOR(R[j], S[j]), AND(Nj, S[j]));                   /* floor remainder */
         V H = mode == NA ? _mm256_srli_epi64(SUB64(Nj, C64(1)), 1)        /* 2 rho >= N  <=>  rho > (N - 1) >> 1 */
@@ -164,7 +164,7 @@ AI void m3_core(V U[4], V N[2], V Q[4], V R[4], int wmode, int count) {
     V Nm0 = SUB64(N[0], C64(1)), Nm1 = SUB64(N[1], C64(1));
     int W = 32;
     if (wmode == 0) {                                  /* smallest W in wseq with every U >> W < N */
-        for (int k = 0; k < 9; k++) {
+        _Pragma("GCC unroll 9") for (int k = 0; k < 9; k++) {
             __m128i cw = _mm_cvtsi32_si128(wseq[k]);
             V f = OR(OR(GT64(_mm256_srl_epi64(U[0], cw), Nm0), GT64(_mm256_srl_epi64(U[1], cw), Nm1)),
                      OR(GT64(_mm256_srl_epi64(U[2], cw), Nm0), GT64(_mm256_srl_epi64(U[3], cw), Nm1)));
@@ -179,7 +179,7 @@ AI void m3_core(V U[4], V N[2], V Q[4], V R[4], int wmode, int count) {
     for (int j = 0; j < W; j++) { NR_STEP(R0, L0, nN0) NR_STEP(R1, L1, nN1) NR_STEP(R2, L2, nN0) NR_STEP(R3, L3, nN1) }
     V mask = C64((1ull << W) - 1);
     V Rr[4] = {R0, R1, R2, R3}, Lr[4] = {L0, L1, L2, L3};
-    for (int j = 0; j < 4; j++) {
+    _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
         V m = GT64(zero, Rr[j]);
         Q[j] = ANDN(SUB64(ADD64(Lr[j], Lr[j]), m), mask);          /* quotient bits are the complemented signs */
         R[j] = ADD64(Rr[j], AND(N[j & 1], m));
@@ -223,7 +223,7 @@ AI u32 m4_body(ARGS, int mode) {
         V a = LD(pa + i), b = LD(pb + i);
         V N[2], U[4], S[4], Q[4], R[4];
         front(a, b, cb, db, 1, Nv, N, U, S, &zf);
-        for (int j = 0; j < 4; j++) {
+        _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
             V u = _mm256_srl_epi64(U[j], cs);
             V Sm = ADD64(ADD64(u, MULU(HI32(u), mp)), HI32(MULU(u, mp)));
             Q[j] = _mm256_srl_epi64(Sm, cL);
@@ -244,7 +244,7 @@ AI V recip_newton(V dh) {
     const V zero = _mm256_setzero_si256();
     const V A = C64(5726623061ull), B = C64(3817748708ull), T63 = C64(1ull << 63);
     V Y = SUB64(SUB64(A, HI32(ADD64(MULU(dh, B), B))), C64(1));
-    for (int it = 0; it < 3; it++) {
+    _Pragma("GCC unroll 9") for (int it = 0; it < 3; it++) {
         V e = SUB64(T63, ADD64(MULU(dh, Y), Y));
         Y = ADD64(Y, HI32(MULU(Y, _mm256_srli_epi64(e, 31))));
     }
@@ -259,7 +259,7 @@ AI V recip_newton(V dh) {
 AI V recip_fix(V dh, V v, int nfix) {
     V dhs = _mm256_slli_epi64(dh, 32), D = ADD64(dh, C64(1));
     V R = SUB64(SUB64(SUB64(C64(-(1ll << 32)), dhs), MULU(dh, v)), v);   /* 2^64 - D (2^32 + v') */
-    for (int k = 0; k < nfix; k++) { V ge = GT64(R, dh); R = SUB64(R, AND(ge, D)); v = SUB64(v, ge); }
+    _Pragma("GCC unroll 9") for (int k = 0; k < nfix; k++) { V ge = GT64(R, dh); R = SUB64(R, AND(ge, D)); v = SUB64(v, ge); }
     return v;
 }
 AI u32 m5_body(ARGS, int mode) {
@@ -269,9 +269,9 @@ AI u32 m5_body(ARGS, int mode) {
         V a = LD(pa + i), b = LD(pb + i), c = LD(pc + i), d = LD(pd + i);
         V N[2], U[4], S[4], Q[4], R[4], vp[2], cl[2], cr[2], Nhi[2], Nm1b[2];
         front(a, b, c, d, 0, zero, N, U, S, &zf);
-        for (int h = 0; h < 2; h++) {
+        _Pragma("GCC unroll 9") for (int h = 0; h < 2; h++) {
             V Nn = N[h], sh = zero;                             /* normalise: Nn = N << sh, top bit set */
-            for (int k = 32; k >= 1; k >>= 1) {
+            _Pragma("GCC unroll 9") for (int k = 32; k >= 1; k >>= 1) {
                 V ks = AND(_mm256_cmpeq_epi64(_mm256_srli_epi64(Nn, 64 - k), zero), C64(k));
                 Nn = _mm256_sllv_epi64(Nn, ks); sh = ADD64(sh, ks);
             }
@@ -280,7 +280,7 @@ AI u32 m5_body(ARGS, int mode) {
             cl[h] = SUB64(sh, C64(32)); cr[h] = SUB64(C64(32), sh);   /* out-of-range counts shift to 0 */
             Nhi[h] = HI32(N[h]); Nm1b[h] = XOR(SUB64(N[h], C64(1)), bias);
         }
-        for (int j = 0; j < 4; j++) {
+        _Pragma("GCC unroll 9") for (int j = 0; j < 4; j++) {
             int h = j & 1;
             V th = OR(_mm256_sllv_epi64(U[j], cl[h]), _mm256_srlv_epi64(U[j], cr[h]));   /* floor(U 2^sh / 2^32) */
             V Sm = ADD64(ADD64(th, MULU(HI32(th), vp[h])), HI32(MULU(th, vp[h])));
@@ -309,7 +309,7 @@ AI void div1i(V *a, V *b, V t, V m) {
 }
 AI V inv32(V N) {                                   /* N odd: N^-1 mod 2^32, seed (3N) xor 2 (5 bits), three steps */
     V i = XOR(ADD32(ADD32(N, N), N), C32(2));
-    for (int k = 0; k < 3; k++) i = MULLO(i, SUB32(C32(2), MULLO(N, i)));
+    _Pragma("GCC unroll 9") for (int k = 0; k < 3; k++) i = MULLO(i, SUB32(C32(2), MULLO(N, i)));
     return i;
 }
 AI u32 m2_body(ARGS) {
@@ -613,6 +613,85 @@ static void do_check(void) {
     printf("TOTAL failures %ld (%ld element results checked)\n", fails + prop_fail, nchecked);
 }
 
+/* sign and unit changes. Transforms 0..6 are symmetries of z = x/y: x by -1, i, -i (q and r times the unit), y by -1,
+ * i, -i (q times the inverse unit, r unchanged), conjugating both (q and r conjugated). For these the predicted
+ * q', r' are checked exactly. Transforms 7..12 (conjugate x alone or y alone, negate one part of x or of y) are not
+ * symmetries of z: z' is not a unit or conjugate image of z, so nothing is predicted; we count how often N(r) changes. */
+static const char *TRN[13] = {"x*-1", "x*i", "x*-i", "y*-1", "y*i", "y*-i", "conj both", "conj x", "conj y",
+                              "-re x", "-im x", "-re y", "-im y"};
+static void xf(int t, i64 *a, i64 *b, i64 *c, i64 *d) {
+    i64 x = *a, y = *b, u = *c, v = *d;
+    switch (t) {
+    case 0: x = -x; y = -y; break;              case 1: { i64 s = x; x = -y; y = s; } break;
+    case 2: { i64 s = x; x = y; y = -s; } break; case 3: u = -u; v = -v; break;
+    case 4: { i64 s = u; u = -v; v = s; } break; case 5: { i64 s = u; u = v; v = -s; } break;
+    case 6: y = -y; v = -v; break;               case 7: y = -y; break;  case 8: v = -v; break;
+    case 9: x = -x; break; case 10: y = -y; break; case 11: u = -u; break; case 12: v = -v; break;
+    }
+    *a = x; *b = y; *c = u; *d = v;
+}
+static void predict(int t, i64 q1, i64 q2, i64 r1, i64 r2, i64 *p) {   /* p = q1', q2', r1', r2' */
+    i64 P[7][4] = {{-q1, -q2, -r1, -r2}, {-q2, q1, -r2, r1}, {q2, -q1, r2, -r1}, {-q1, -q2, r1, r2},
+                   {q2, -q1, r1, r2}, {-q2, q1, r1, r2}, {q1, -q2, r1, -r2}};
+    memcpy(p, P[t], sizeof P[t]);
+}
+static void do_signs(void) {
+    enum { M = 4096 };
+    static i32 a0[M], b0[M], c0[M], d0[M], a1[M], b1[M], c1[M], d1[M], o0[4][M], o1[4][M];
+    kf ks[2][3] = {{m1_na, m3_na, m5_na}, {m1_nb, m3_nb, m5_nb}};
+    const char *kn[2] = {"A (ties up)", "B (ties away from zero)"};
+    long bad[2][13] = {{0}}, badtie[2][13] = {{0}}, normchg[2][13] = {{0}}, tot[2][13] = {{0}}, kfail = 0, nties = 0;
+    for (int it = 0; it < 600; it++) {
+        int nn = 0;
+        while (nn < M) {      /* inputs: no -2^31 half (so every transform stays in range); half of them at ties */
+            i64 a, b, c, d, kind = (i64)(it % 3);
+            int e = (int)(next() % 31);
+            c = rr(-(1ll << e), (1ll << e)); d = rr(-(1ll << e), (1ll << e));
+            if (kind == 0) { a = rr(-IMAX, IMAX); b = rr(-IMAX, IMAX); }
+            else if (kind == 1) { c = rr(-8, 8); d = rr(-8, 8); a = rr(-40, 40); b = rr(-40, 40); }
+            else {   /* exact half and corner points: x = q y + (s y + t i y)/2 with (1+i) | y */
+                c = rr(-30000, 30000); d = rr(-30000, 30000); if ((c ^ d) & 1) d++;
+                i64 q1 = rr(-30000, 30000), q2 = rr(-30000, 30000), s = rr(-1, 1), t = rr(-1, 1);
+                a = q1 * c - q2 * d + (s * c - t * d) / 2; b = q1 * d + q2 * c + (s * d + t * c) / 2;
+            }
+            if (!(c | d) || !fits(a) || !fits(b) || a == IMIN || b == IMIN || c == IMIN || d == IMIN || !fits(c) || !fits(d)) continue;
+            a0[nn] = (i32)a; b0[nn] = (i32)b; c0[nn] = (i32)c; d0[nn] = (i32)d; nn++;
+        }
+        for (int rule = 0; rule < 2; rule++) for (int k = 0; k < 3; k++) {
+            ks[rule][k](a0, b0, c0, d0, o0[0], o0[1], o0[2], o0[3], M);
+            for (int t = 0; t < 13; t++) {
+                for (int j = 0; j < M; j++) { i64 a = a0[j], b = b0[j], c = c0[j], d = d0[j]; xf(t, &a, &b, &c, &d);
+                    a1[j] = (i32)a; b1[j] = (i32)b; c1[j] = (i32)c; d1[j] = (i32)d; }
+                ks[rule][k](a1, b1, c1, d1, o1[0], o1[1], o1[2], o1[3], M);
+                for (int j = 0; j < M; j++) {
+                    ref_t R0 = ref(a0[j], b0[j], c0[j], d0[j], rule ? NB : NA), R1 = ref(a1[j], b1[j], c1[j], d1[j], rule ? NB : NA);
+                    if (R0.ov || R1.ov) continue;
+                    if (o0[0][j] != R0.q1 || o0[1][j] != R0.q2 || o1[0][j] != R1.q1 || o1[1][j] != R1.q2) kfail++;
+                    i128 N = (i128)c0[j] * c0[j] + (i128)d0[j] * d0[j];
+                    i128 X = (i128)a0[j] * c0[j] + (i128)b0[j] * d0[j], Y = (i128)b0[j] * c0[j] - (i128)a0[j] * d0[j];
+                    int tie = ((2 * X) % (2 * N) + 2 * N) % (2 * N) == N || ((2 * Y) % (2 * N) + 2 * N) % (2 * N) == N;
+                    if (k == 0 && t == 0 && rule == 0) nties += tie;
+                    i64 n0 = (i64)o0[2][j] * o0[2][j] + (i64)o0[3][j] * o0[3][j], n1 = (i64)o1[2][j] * o1[2][j] + (i64)o1[3][j] * o1[3][j];
+                    tot[rule][t]++;
+                    if (n0 != n1) normchg[rule][t]++;
+                    if (t < 7) {
+                        i64 p[4]; predict(t, o0[0][j], o0[1][j], o0[2][j], o0[3][j], p);
+                        if (p[0] != o1[0][j] || p[1] != o1[1][j] || p[2] != o1[2][j] || p[3] != o1[3][j]) { bad[rule][t]++; badtie[rule][t] += tie; }
+                    }
+                }
+            }
+        }
+    }
+    printf("sign and unit changes, m1/m3/m5, %ld base pairs at a tie (of %d); kernel/reference mismatches %ld\n", nties, 600 * M, kfail);
+    for (int rule = 0; rule < 2; rule++) {
+        printf("rule %s\n  %-10s %10s %12s %10s %12s\n", kn[rule], "transform", "cases", "not as pred.", "at a tie", "N(r) changed");
+        for (int t = 0; t < 13; t++) {
+            if (t < 7) printf("  %-10s %10ld %12ld %10ld %12ld\n", TRN[t], tot[rule][t], bad[rule][t], badtie[rule][t], normchg[rule][t]);
+            else printf("  %-10s %10ld %12s %10s %12ld\n", TRN[t], tot[rule][t], "-", "-", normchg[rule][t]);
+        }
+    }
+}
+
 /* exhaustive check of the per-lane reciprocal over every dh in [2^31, 2^32) */
 static void do_recip(void) {
     long hist[8] = {0}; long bad = 0;
@@ -731,13 +810,28 @@ static void do_thresh(void) {
     }
 }
 
+/* one call of every kernel on 4,096 elements of one input kind, for a dynamic instruction count under valgrind */
+static void do_icount(int kind) {
+    size_t n = 4096; alloc_bufs(n);
+    for (int shared = 0; shared < 2; shared++) {
+        fill(n, kind, shared);
+        for (int k = 0; k < NKT; k++) if (KT[k].shared == shared && ((KT[k].mode == EX) == (kind == 2)))
+            KT[k].f(P[0], P[1], P[2], P[3], P[4], P[5], P[6], P[7], n);
+    }
+}
+
 int main(int argc, char **argv) {
     const char *mode = argc > 1 ? argv[1] : "check";
     if (!strcmp(mode, "check")) do_check();
     else if (!strcmp(mode, "recip")) do_recip();
+    else if (!strcmp(mode, "signs")) do_signs();
     else if (!strcmp(mode, "time")) do_time(0);
     else if (!strcmp(mode, "mem")) do_time(1);
     else if (!strcmp(mode, "width")) do_width();
     else if (!strcmp(mode, "thresh")) do_thresh();
+    else if (!strcmp(mode, "one") && argc > 3) {     /* one kernel alone: ./divvec one NAME KIND */
+        alloc_bufs(1024); const char *nm[1] = {argv[2]}; int kind = atoi(argv[3]);
+        run_group("alone", nm, 1, kind, KT[kidx(argv[2])].shared, 1024, 512); }
+    else if (!strcmp(mode, "icount")) do_icount(argc > 2 ? atoi(argv[2]) : 0);
     return 0;
 }

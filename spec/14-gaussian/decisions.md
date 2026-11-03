@@ -54,7 +54,9 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 18. **Shrinking:** the shrink test is fused into the sweep of operations that can make values smaller (add, subtract, divide, mod), never multiply, and only for arrays above the base size (a 64-bit-word array has nothing smaller to shrink to). Rule B's one-bit margin. At the end of the sweep, if every element fits, the result is written at the smaller size.
 
+19. **Mod n reduction: Montgomery in vector lanes** (study 19: 11.4 times faster than the hardware divide for the Gaussian product mod n, in cache; conversions repaid after about three multiplies). Reopen trigger: if a plain-register version of the build is ever needed, Barrett is the choice there (it ties Montgomery, needs no conversions, accepts even n).
+
 **Research list**
-- Barrett against Montgomery for mod n (build and prove first, then time).
+- Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).
 - A Gaussian version of Bernstein–Yang's fixed-count divsteps: no known bound on the step count; a separate research project.

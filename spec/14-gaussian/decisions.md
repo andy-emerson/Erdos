@@ -56,6 +56,11 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 
 19. **Mod n reduction: Montgomery in vector lanes** (study 19: 11.4 times faster than the hardware divide for the Gaussian product mod n, in cache; conversions repaid after about three multiplies). Reopen trigger: if a plain-register version of the build is ever needed, Barrett is the choice there (it ties Montgomery, needs no conversions, accepts even n).
 
+20. **The sticky flag is final** (replacing the "survey running" note in item 13). The overflow survey found nothing better, and among the variants in use (Gubner–Boncz, CedarDB, Materialize) ours is at least as good: test inside the loop, check once per array.
+21. **Bound tracking is dropped** (a stored structure; pays only for chains of adds).
+22. **Inverses mod n: the norm route with Euclid** (x⁻¹ = conj(x) · N(x)⁻¹ mod n, study 13), with batch inversion when an array shares n.
+23. **Equality only.** Gaussian integers have no order; the operation is called equality.
+
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

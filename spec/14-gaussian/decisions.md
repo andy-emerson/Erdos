@@ -66,6 +66,11 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 26. **Shrinking: the refined test is confirmed** by study 21 (pays for itself within 2 to 4 later operations; costs nothing measurable from memory when it never fires). Rule B for now, pending data on how often values hover near the line.
 27. **Language: Nim, calling C's vector instructions (intrinsics) directly.** Vector instructions are written explicitly, not left to the compiler.
 
+28. **Division with remainder rounds to nearest, ties toward zero** (study 25): q = sign(u)·((2|u| + N − 1) div 2N) per part, u a part of x·conj(y), N = N(y), computed on the magnitude with one sign mask. It satisfies the author's magnitude rule (sign changes, rotation by i and conjugation change only the direction of the answer), keeps N(r) ≤ N(y)/2, and was among the cheapest rules measured. Rationale: add, subtract and multiply never choose and favour no axis; division is the only basic operation that must choose, so its choice should keep the same symmetries; what the fixed-box convention offers can be had by other means.
+29. **Exact division: multiply by the inverse mod 2^32** (study 25: 1.6 ns per element against 5.2 for the hardware divide; 0.21 ns with a shared divisor in cache).
+30. **Division with remainder by one divisor shared across an array: the precomputed reciprocal** (study 25: 1.74 ns, three times faster than the divide, pays from 4 elements).
+31. **Gcd: the (1+i)-ary binary gcd in vector lanes, at machine level** (studies 24 and 26: 42.7 ns per gcd against 109 for Euclid in lanes and 270 in plain registers). Pairs with a −2^31 half are set aside and recomputed exactly once per array.
+
 **Research list**
 - Barrett and Montgomery: Lean proofs still to do.
 - Gcd: Weilert's (1+i)-ary algorithm (paper pending), the extended gcd by the norm route and by the extended binary gcd (studies 13–14).

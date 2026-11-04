@@ -2661,3 +2661,101 @@ Small sizes, exhaustive over |a|, |b| ≤ 7: the ε loop takes 3.20 steps on ave
   This is a pair technique once found.
 - **Choice rules** (better of ± ε, best of four units) cut steps by 8 to 10% but cost more than they save. The digit rule always picks ε.
 - **Hensel-quotient steps** come close to Euclid's step count (15.5 against about 14) with no divides. They pay with 18 multiplies per step, counted as 1 op each. On real cores the 3-round Newton inverse is a dependent multiply chain, so its latency matters more than this model shows. Not timed.
+
+## Study 34: B at its best, operation by operation (pb34.py)
+
+**What was done.** Study 32 ran most operations on B the ordinary way, and B lost every arithmetic row. Here each operation of study 32's table, plus nine more (extended gcd, lcm, coprimality, divisibility by a general divisor, standard associate, unit test, associate test, powers, and gcd with an early exit), gets a method built on B's own algebra. Every trick that also helps A is counted for A. Same op model as study 32; Python only, no timing; all counts are model estimates. `python3 pb34.py all` runs everything in about 40 s.
+
+Verification is against Python big integers:
+- Table operations: exhaustive over |a|, |b| ≤ 8 with B at 8 digits (83,521 pairs for the binary operations), and 3000 random cases per operation at full width (study 32's operands).
+- gcd family, tests and powers: exhaustive over |a|, |b| ≤ 7 (50,625 pairs), and 3000 random 31-bit pairs (15% with a common factor, 10% with a common power of 1+i). The extended gcd is checked as s x + t y = g exactly; the standard associate is checked to give one representative per class.
+- **Failures: none.**
+
+### B's words are a pair in half coordinates
+- The digit words and the half coordinates p, q of study 33 differ by two XORs each way: q = A ^ c, p = B ^ q, and back A = q ^ c, B = p ^ q, with c = 2^(n−1) − 1 (sign-extending loads, as for A's int32). So B can be stored as (k, p, q) at no cost in bits.
+  - Every pair (p, q) of n-bit signed words is a valid code, since (1+i)w = (2p+1, 2q+1) fills the box exactly when w fills the odd diamond.
+  - Two columns are reported: B digits (study 32's words) and B half (the same bits, XOR-free). Digits cost 2 more per B operand read and per B result written, except for the unit operations, which act on the digit words directly.
+- With z = p + iq, the odd part is w = 1 + (1−i)z. The operations become:
+  - product: z(w1 w2) = z1 + w1 z2. Odd times odd stays odd, so there is no strip and the result never leaves the form;
+  - difference: w1 − w2 = (1−i)(z1 − z2), two subtractions;
+  - sum: w1 + w2 = (1−i)(z1 + z2 + 1 + i);
+  - quotient: z(w1/w2) = (z1 − z2)/w2. z is n-bit, so the Hensel division mod 2^n is exact, and N(w2) is odd, so there is no ctz or shift;
+  - norm: N(w) = 2(p(p+1) + q(q+1)) + 1;
+  - units: i is (~q, p), −1 is (~p, ~q), conjugation swaps p and q. Each is 0 to 2 ops, with a 1-op fix for odd k (split form).
+- **Encoding a pair into B** is the gcd's strip, 16 ops: k = 2m + f and w = δ, the odd part itself (the split form needs no rotation). Decoding takes 9.5 ops.
+
+### Methods per operation
+- **Add, subtract.**
+  - Equal k (1/3 of random pairs): the sum or difference formula, then a strip of D. The result has w = δ, or −iδ when both k and the strip's f are even.
+  - Unequal k: no strip. z' = z_small ± i^r (1+i)^(d−1) w_large, with r = 1 exactly when k_small is even and d is odd.
+- **Exact division.** k1 − k2, then the quotient formula (24 ops), with a −i fix when k1 is even and k2 is odd.
+  - A also improves, from 30 to 23. Its quotient fits int32, so mod 2^32 suffices: a byte-table inverse with 2 Newton rounds instead of 5.
+- **Division with remainder** is top-down rounding. B decodes both operands, runs A's division, and encodes q and r: no B-native method was found. Hensel division with remainder (the gcd step) is a different operation, with a different remainder.
+- **gcd.** Study 33's Hensel loop with a unit exit (stop when N(b) = 2), counted for both. B stores the valuation and odd part and starts from Z = (2p+1, 2q+1) in 4 ops.
+- **Extended gcd** (shared core):
+  - The loop value v and its cofactor c satisfy v ≡ c·u_l mod u_s. Here u_s is the odd part with the smaller valuation and u_l the other.
+  - Each step's strip divides v by 2^m exactly. The cofactor follows by a Montgomery step: r = −c·u_s^−1 mod 2^m (centred), c' = (c + r u_s)/2^m, then times (1+i) when the step's e is 0. There are no divides and no other reductions.
+  - At the end, one Montgomery division by (1+i)^(d+1), d = k_l − k_s, gives T_l. Then T_s = (g' − T_l (1+i)^d u_l)/u_s is exact mod 2^64.
+  - Both cofactors are rotated by i^(k>>1), because x = (−i)^(k>>1) (1+i)^k w.
+  - The quotient precision is capped at 26 bits, so q·c stays within 64 bits. The loop cofactors stayed within 1 bit of the modulus, and the output cofactors within 31 bits.
+- **lcm** is gcd, exact division y/g, and multiply. In B, k = max(kx, ky) falls out of the adds.
+- **Coprimality.** Both even means "no": B tests k (2 ops), A tests parities (6). Otherwise run the gcd loop with the unit exit, with no output conversion.
+- **Divisibility y | x.**
+  - B rejects k_y > k_x (1/3 of random pairs) in 2 ops. A rejects "1+i divides y but not x" (1/4) in 6.
+  - Then each forms the Hensel quotient and checks it by multiplying back in wrapping 64-bit, which is exact. B checks z_q·w_y = z_x − z_y; the true quotient always lies in B's range, since a non-unit odd w_y has |w_y| ≥ √5.
+- **Standard associate.**
+  - B: rotate w into the class with p and q even. The low bits of p and q index a 4-way jump. Z's coordinates are odd, so there are no axis cases.
+  - A: rotate into re > 0, im ≥ 0. The sign of (b << 32) + a and of a − 1 + t pick the quadrant, axes included.
+- **Unit test.** A: N = 1. B: ((p+1) | (q+1) | (k << 1)) ≤ 1; on the digit words, ((A − c) | (B + 1) | (k << 1)) ≤ 1.
+- **Associate test.**
+  - A: N(x) = N(y), and x·conj(y) has a zero coordinate.
+  - B: k equal (an early "no" for 2/3 of random pairs), then the standard associate of both and equality.
+- **Powers x^e.** B uses K = k e and powers w as a pair (square 5, multiply 6, as A), with one conversion each way and a rotation i^(e>>1) when k is odd. Powering natively in H (z(w²) = z(1 + w), z(w w_x) = z_x + w_x z) costs more (42).
+
+### The table (ops per operation; A best against B best)
+
+| operation | A study 32 | A best | B study 32 | B digits | B half | winner, margin | source of the win |
+|---|---|---|---|---|---|---|---|
+| add | 2 | 2 | 30 | 27.2 | 21.2 | A, 10.6× | A's storage (B aligns and strips) |
+| subtract | 2 | 2 | 31 | 27.4 | 21.4 | A, 10.7× | same |
+| negate | 2 | 2 | 1 | 1 | 2 | B digits, −1 | B's storage |
+| conjugate | 1 | 1 | 3.7 | 3.7 | 2.3 | A, +1.3 | A |
+| times i | 1 | 1 | 2 | 2 | 1 | tie | |
+| times 1+i | 2 | 2 | 3.7 | 3.7 | 3.3 | A, +1.3 | A |
+| multiply | 6 | 6 | 27 | 23.1 | 17.1 | A, 2.9× | A; B's method cut 10 |
+| norm | 3 | 3 | 9 | 9 | 9 | A, 3× | A |
+| valuation | 7 | 7 | 0 | 0 | 0 | B, −7 | B's storage |
+| equality | 3 | 3 | 5 | 5 | 5 | A, +2 | A |
+| is zero, divisible by 1+i, by 2 | 2 | 2 | 1 | 1 | 1 | B, −1 | B's storage |
+| exact / (1+i)^j | 8.1 | 8.1 | 5.3 | 5.3 | 5.2 | B, −36% | B's storage |
+| exact / general | 30 | 23 | 47 | 35.1 | 29.1 | A, +27% | A; B gained 18 (storage 6, z method 5, table inverse 7, which A also gets) |
+| division with remainder | 35 | 35 | 94 | 90 | 83.4 | A, 2.4× | A (top-down) |
+| gcd (unit exit) | 1148 | 1144 | 1134 | 1134 (1126 est.) | 1118 | B, −2.3% | B's storage (prologue and output) |
+| extended gcd | | 1838 | | 1858 (est.) | 1848 | A, +0.5% | A (B encodes two arbitrary cofactors) |
+| lcm | | 1181 | | 1179 (est.) | 1173 | B, −0.7% | B's storage, via the gcd |
+| coprimality | | 854 | | 845 (est.) | 841 | B, −1.6% | B's storage (k test, prologue) |
+| y divides x, random pairs | | 30.7 | | 28.6 (est.) | 25.9 | B, −16% | B's storage (k reject) |
+| y divides x, true pairs | | 39 | | 41 (est.) | 37 | B half, −5% | B's method (no strip) |
+| standard associate | | 10 | | 10 (est.) | 6 | B half, −40% | B's form (odd Z: no axis cases, class in low bits) |
+| unit test | | 4 | | 6 | 6 | A, +2 | A |
+| associate test, random pairs | | 8 | | 9.1 (est.) | 7.8 | tie | |
+| associate test, associates | | 17 | | 23 (est.) | 19 | A, +2 | A |
+| powers, e = 2..16 | | 21.9 | | 37.9 (est.) | 33.9 | A, +12 fixed | A (B converts w once each way) |
+
+"est." marks B digits computed as B half plus the 2-op conversions; the gcd's 1134 is measured (study 33's BZ, no unit exit). gcd rows are per gcd on 3000 random 31-bit pairs, 15.55 Hensel steps on average.
+
+### Summary
+- **B's algebra recovered a third to a half of each arithmetic loss but did not reverse any.**
+  - Multiply: 27 to 17. Odd times odd stays odd: z = z1 + w1 z2.
+  - Exact division: 47 to 29. No strip of the norm, and z is exact mod 2^n.
+  - Add: 30 to 21.
+  - A still wins all three (2, 6, 23), and wins norm (3 against 9) and division with remainder (35 against 83, inherently top-down).
+- **For add and multiply most of the recovery is storage, not method.** Storing B's bits as half coordinates instead of digit words saves 6 ops on each add, multiply and exact division; the two encodings differ by two XORs each way. Exact division gains another 12 from the method: 7 of them come from the table inverse mod 2^32, which A gets too, and 5 from working on z without a decode and re-encode. Only the unit operations prefer the digit words (negation 1 against 2).
+- **Where B wins**, the win comes from storing k and the odd part:
+  - valuation, (1+i)-divisibility and zero tests, and division by (1+i)^j;
+  - a 2-op rejection in divisibility;
+  - the gcd prologue (gcd −2.3%, coprimality −1.6%, lcm −0.7%).
+  The extended gcd gives that edge back, because its cofactors are arbitrary values that B must strip to store.
+- **One win comes from the form itself:** the standard associate (6 against 10). Z = (2p+1, 2q+1) has odd coordinates, so the quadrant or unit class is two clean bits with no axis cases.
+- **Tricks that carried to A:** the table inverse mod 2^32 for exact division (30 to 23), the gcd's unit exit, and the Montgomery cofactor loop (shared, so the extended gcd differs only at its ends).
+- **Not counted here:** B's range advantages. Powers and products of values with large (1+i)-valuations do not consume digits in B, and the unit operations never overflow.

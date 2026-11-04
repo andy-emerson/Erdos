@@ -2581,3 +2581,83 @@ The mixed workload, per item: 3 add, 1 subtract, 2 multiply, 1 norm, 1 valuation
   - C's gains are 1-op equality, zero and divisibility tests and ctz valuation. Its strip is free, which suits the gcd, but the gcd's subtraction is not.
 - **B keeps what study 31 found.** It has cheap units, symmetry and a stored valuation, and loses 15 to 30 ops on every add and multiply.
 - **A is the right working format.** Its wins: 2-op add, 6-op multiply, and the cheapest gcd (B's in-loop strip is not free, and C's free strip costs conversions). If a valuation is queried more than about 3 times per value, store k beside the pair (A plus a cached ctz-based k); B's normal form is not needed for that.
+
+## Study 33: gcd algorithms native to B (gcd33.py)
+
+**What was done.** Study 32 ran the ordinary (1+i)-ary gcd loop on B, so B paid an encode on every step. Here the loop is redesigned around what B is good at, and each design is counted in study 32's op model against the control A (study 9's loop on pairs). Every idea that carries back to A is counted for A as well. Python only, no timing; all counts are model estimates. `python3 gcd33.py all` runs everything in about 20 s.
+
+Verification: every variant is compared with the big-integer Euclid gcd, normalised to the associate with re > 0 and im ≥ 0. Exhaustive over all 50,625 pairs with |a|, |b| ≤ 7 (B with 8 digits), and 4000 random 31-bit pairs (15% with a built-in common factor, 10% with a common power of 1+i). **Failures: none.** Counts use 3000 random 31-bit pairs, the same pairs for every variant.
+
+### The key observation: B's words are a pair in rotated coordinates
+- Study 31: unit digits are the offset binary of (R, S) = (1+i)u. In the half coordinates p = (R − 1)/2, q = (S − 1)/2, the two digit words are p and q with the top bit flipped (Sp = ~A, Rp = B ^ Sp). Getting from B to (p, q) takes 4 ops, and getting back takes 4.
+- In these coordinates:
+  - The unit class of u mod (1+i)^3 is the low bit of p and the low bit of q, separately. In pair coordinates the two are entangled (which coordinate is odd, then x + y mod 4).
+  - Times i is (p, q) → (~q, p), and negation is (~p, ~q).
+  - a − b is two subtractions, and the result is the pair i(a − b)/(1+i): it comes out already divided once.
+- So the "rotated P, Q loop" (idea 3) is the (1+i)-ary loop run on (1+i)u instead of u. It never re-encodes: it converts once at the start and once at the end.
+
+### Idea 1: choosing among the unit combinations
+- For odd a, b exactly one unit ε has a ≡ εb mod (1+i)^3. Then a − εb sheds t ≥ 3, a + εb sheds exactly 2, and a ± iεb shed exactly 1 (checked on every combination). So "shed the most", whether read from study 31's digit rule or computed, always picks study 32's ε.
+- Conjugate combinations are not allowed, because gcd(a, b) and gcd(a, conj b) differ in general.
+- Choosing by the resulting norm instead of by the shed count does cut steps (table below). It needs the second candidate's difference, norm and a select, about 18 ops per step (estimated, not coded), so it loses in both A and B.
+
+### Idea 2: steps per rule (odd parts, 2000 random 31-bit pairs; L = bit length of N(a) minus that of N(b))
+
+| rule | steps mean | max |
+|---|---|---|
+| ε (study 9, 32) | 30.19 | 40 |
+| better of a − εb, a + εb by result norm | 27.92 | 34 |
+| best of all four units (oracle) | 27.18 | 33 |
+| Hensel quotient mod (1+i)^m, m = max(3, L + 2) | 20.68 | 32 |
+| Hensel quotient, best m (oracle) | 15.45 | 22 |
+| counted Hensel variant below (m = 2j, j = max(2, (L + 6) >> 1)) | 15.55 | 22 (25 in 20,000 pairs) |
+
+### Idea 4: the Hensel quotient (a π-adic Lehmer-like step)
+- Low digits cannot batch the ε loop on their own, because each step's choice (replace the larger) needs the high bits. One size number per step is enough, though: L from two leading-zero counts.
+- **Step.** With N(a) ≥ N(b), take q = a/b mod 2^j with centred coordinates in [−2^(j−1), 2^(j−1)) and j = max(2, (L + 6) >> 1). Then a − qb sheds at least 2j, strip, and replace a.
+  - q comes from wrapping 64-bit arithmetic: (a·conj b) · N(b)^−1 mod 2^j. The inverse is a 128-entry byte table plus 3 Newton rounds, and the centring is a shift pair per coordinate.
+  - No primary step is needed, since q absorbs the unit.
+- **Descent is proven.** |new| ≤ |a|/2^j + |b|/√2, so N(new) ≤ 0.916 N(a) once j ≥ 2. With j = 1 it can cycle; that was seen, so the floor is needed.
+  - That bound only gives about 960 steps, so it is no use for a branch-free fixed count.
+  - Observed: 15.55 mean, 25 at most in 20,000 pairs.
+- **Sizes.** Intermediate coordinates need about 36 bits for 31-bit inputs (checked by assertion), so they fit 64-bit registers.
+- **The offset 6** was chosen by a sweep, in ops per gcd: c = 4: 1256, c = 5: 1174, c = 6: 1146, c = 8: 1122, c = 10: 1117. c = 8 saves 2% for one more bit of headroom.
+- **Other choices.** Mixing cheap ε steps for small L with Hensel steps for large L gave about the same total.
+
+### Step costs
+
+| loop | parts | ops per step |
+|---|---|---|
+| A, study 9 | test 2, a − b 2, strip 17, primary 17, norm 3, compare and swap 14 | 55 |
+| B, study 32 | ε from digit 0 8, rotate 6, negate 1, P, Q 6, test 2, strip 16, norm 3, encode 8, compare and swap 14 | 64 |
+| H (ε loop in half coordinates) | a − b 2, test 2, strip to H 13 + norm 3, primary 11, compare and swap 14 | 45 |
+| Z (Hensel, on (R, S)) | L 3, j 4, N(b)^−1 13, a·conj b 6, times inverse 4, centre 5, qb 6, subtract 2, test 2, strip 11 + norm 3, compare and swap 14 | 73 (18 mul) |
+
+Strip to H: with x, y shifted by m = ctz(x | y) and nm = (x & y & 1) − 1, (R, S) = (x − (y & nm), y + (x & nm)), then halve. It replaces the pair strip's conditional division by 1+i and the re-encode.
+
+### Totals (3000 random 31-bit pairs, ops per gcd)
+
+| loop | input and output in A | input and output in B | steps mean / max | mul |
+|---|---|---|---|---|
+| ε loop, as in study 9 / 32 | 1777 | 1955 | 30.20 / 40 | 64 |
+| ε loop in H coordinates | 1408 | 1385 | 30.20 / 40 | 62 |
+| Hensel quotient in Z coordinates | 1148 | 1134 | 15.55 / 22 | 282 |
+
+Small sizes, exhaustive over |a|, |b| ≤ 7: the ε loop takes 3.20 steps on average (6 at most), Hensel 1.87 (4 at most). For |a|, |b| ≤ 15 (200,000 random pairs): 4.20 / 8 against 2.37 / 6.
+
+### Summary
+- **Where B-native gcds beat the control.**
+  - The H loop costs 1385 against A's 1777 (−22%), with the same steps and 45 ops per step against 55.
+  - The Hensel loop costs 1134 (−36%), with half the steps at 73 ops per step.
+- **Where they lose, and why the win is not B's.** Both loops carry back to A at the price of the conversion, which A's prologue strip absorbs.
+  - A gets 1408 in H and 1148 in Z, so B's remaining edge is 14 to 23 ops per gcd: its stored valuation and odd part.
+  - Against the fair control (A running the same loop), B wins by about 1 to 2%.
+  - Study 32's B loop (1955) lost because it re-encoded every step. Its in-loop gain (ε from digit 0) is the H-coordinate fact that the unit class splits by coordinate.
+- **What B's algebra taught.** Run the binary gcd on (1+i)u, not on u. Then:
+  - the unit class is two independent low bits;
+  - primary costs 11 ops instead of 17;
+  - the strip ends without a division by 1+i;
+  - the subtraction comes out pre-divided.
+  This is a pair technique once found.
+- **Choice rules** (better of ± ε, best of four units) cut steps by 8 to 10% but cost more than they save. The digit rule always picks ε.
+- **Hensel-quotient steps** come close to Euclid's step count (15.5 against about 14) with no divides. They pay with 18 multiplies per step, counted as 1 op each. On real cores the 3-round Newton inverse is a dependent multiply chain, so its latency matters more than this model shows. Not timed.

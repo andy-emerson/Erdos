@@ -2,7 +2,7 @@
 # Key fact used: B's digit words are offset binary of (R, S) = (1+i)u (study 31), so the loop can run in
 # "half coordinates" H: p = (R-1)/2, q = (S-1)/2 (signed). In H the unit class of u mod (1+i)^3 is the low bit of p and q
 # separately, times i is (p, q) -> (~q, p), negation is (~p, ~q), and a - b is two subtractions that come out pre-divided.
-# Usage: python3 gcd33.py [verify|count|choice|hensel|all]
+# Usage: python3 gcd33.py [verify|count|choice|worst|all]   (all: about 40 s)
 import sys, random
 from collections import Counter
 sys.path.insert(0, __file__.rsplit('/', 1)[0] if '/' in __file__ else '.')
@@ -157,10 +157,6 @@ def loop_breakdown():
     print("H loop step: " + ", ".join("%s %d" % (nm, sum(c.values())) for nm, c in parts) +
           "; total %d" % sum(sum(c.values()) for _, c in parts))
 
-if __name__ == "__main__":
-    what = sys.argv[1] if len(sys.argv) > 1 else "all"
-    if what in ("verify", "all"): verify()
-    if what in ("count", "all"): loop_breakdown(); count()
 
 # ---------------- choice rules: exact simulation of step counts (uncounted) ----------------
 UNITS = [(1, 0), (0, 1), (-1, 0), (0, -1)]
@@ -332,9 +328,33 @@ def run_variant(name, x, y, n, o, check=False):
     return _rv(name, x, y, n, o, check)
 VARS += ['BZ', 'AZ']
 
+def z_breakdown():
+    print("Hensel step parts: L 3, j 4, N(b)^-1 13, Za conj(Zb) 6, times inverse 4, centre 5, q Zb 6, subtract 2, "
+          "zero test 2, strip to Z with norm 14, compare and swap 14; total 73 (18 mul)")
+
+def worst_small():
+    print("steps at small sizes, exhaustive over the box |a|,|b| <= R (pairs with a zero excluded)")
+    print("| R | pairs | eps loop (A, B32, BH, AH) mean / max | Hensel (BZ, AZ) mean / max |")
+    print("|---|---|---|---|")
+    for R in (7, 15):
+        box = [(a, b) for a in range(-R, R + 1) for b in range(-R, R + 1) if (a, b) != (0, 0)]
+        if R > 7: rnd = random.Random(1); pairs = [(rnd.choice(box), rnd.choice(box)) for _ in range(200000)]
+        else: pairs = [(x, y) for x in box for y in box]
+        sh = []; sz = []
+        for x, y in pairs:
+            sh.append(gcd_AH(x, y, Ops())[1]); sz.append(gcd_AZ(x, y, Ops())[1])
+        print("| %d | %s | %.2f / %d | %.2f / %d |" % (R, "%d%s" % (len(pairs), "" if R == 7 else " (random)"),
+              sum(sh) / len(sh), max(sh), sum(sz) / len(sz), max(sz)))
+    # the bit-length of the steps at 31 bits: distribution of Hensel steps
+    rnd = random.Random(5); h = 1 << 30; S = Counter()
+    for _ in range(20000):
+        x = (rnd.randrange(-h, h), rnd.randrange(-h, h)); y = (rnd.randrange(-h, h), rnd.randrange(-h, h))
+        S[gcd_AZ(x, y, Ops())[1]] += 1
+    print("Hensel steps, 20,000 random 31-bit pairs: " + ", ".join("%d: %d" % (k, S[k]) for k in sorted(S)))
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
+    if what in ("verify", "all"): verify(VARS)
     if what in ("choice", "all"): choice()
-    if what in ("hensel", "all"):
-        verify(['BZ', 'AZ'])
-        count(['A', 'BH', 'BZ', 'AZ'])
+    if what in ("count", "all"): loop_breakdown(); z_breakdown(); count(VARS)
+    if what in ("worst", "all"): worst_small()

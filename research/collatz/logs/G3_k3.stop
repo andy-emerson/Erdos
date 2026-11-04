@@ -1,0 +1,11 @@
+range (1000000,10000000] starts 3534327 fails 0 cycles 0 maxstop 196 at 555 1566 meanstop 9.17 maxexc_log2 7.59 at 1683 1686
+range (10000000,110000000] starts 39269895 fails 0 cycles 0 maxstop 171 at 2334 7553 meanstop 9.17 maxexc_log2 7.59 at 4746 4749
+range (110000000,210000000] starts 39269954 fails 0 cycles 0 maxstop 188 at 7053 7850 meanstop 9.17 maxexc_log2 7.25 at 5994 10547
+range (210000000,310000000] starts 39269871 fails 0 cycles 0 maxstop 184 at 1929 16262 meanstop 9.17 maxexc_log2 7.93 at 1929 16262
+range (310000000,410000000] starts 39269947 fails 0 cycles 0 maxstop 171 at 2170 18295 meanstop 9.17 maxexc_log2 7.59 at 2170 18295
+range (410000000,510000000] starts 39269902 fails 0 cycles 0 maxstop 167 at 6465 20574 meanstop 9.17 maxexc_log2 7.25 at 2441 20582
+range (510000000,610000000] starts 39269797 fails 0 cycles 0 maxstop 196 at 8563 22518 meanstop 9.17 maxexc_log2 7.25 at 16962 16965
+range (610000000,710000000] starts 39269896 fails 0 cycles 0 maxstop 192 at 10466 23311 meanstop 9.17 maxexc_log2 7.42 at 16557 19082
+range (710000000,810000000] starts 39270045 fails 0 cycles 0 maxstop 188 at 9634 25333 meanstop 9.17 maxexc_log2 7.25 at 1894 26729
+range (810000000,910000000] starts 39269917 fails 0 cycles 0 maxstop 180 at 8713 27830 meanstop 9.17 maxexc_log2 7.29 at 390 28979
+range (910000000,1000000000] starts 35342838 fails 0 cycles 0 maxstop 176 at 14338 27407 meanstop 9.17 maxexc_log2 7.42 at 16262 26007

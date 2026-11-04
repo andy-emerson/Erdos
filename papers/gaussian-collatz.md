@@ -127,7 +127,7 @@ The table lists each rule with $k \le 5$ up to conjugation, with cycles given by
 | 3 | $3+2i$ | 4 | $1$ (1), $3$ (4) |
 | 4 | $4+i$ | 2 | $1$ (1), $2+i$ (1) |
 | 4 | $4-i$ | 2 | $1$ (1), $2+i$ (1) |
-| 4 | $5$ | 33 or more, and divergent orbits | $1$ (1), $2+i$ (1) |
+| 4 | $5$ | 34 or more, and divergent orbits | $1$ (1), $2+i$ (1) |
 | 4 | $4+3i$ | 3 | $1$ (1), $6+3i$ (11) |
 | 4 | $4-3i$ | 6 | $1$ (1), $4+i$ (12) |
 | 4 | $5+2i$ | 1 | $1$ (1) only |
@@ -135,11 +135,11 @@ The table lists each rule with $k \le 5$ up to conjugation, with cycles given by
 | 5 | $6+i$ | 2 | $1$ (1), $5$ (4) |
 | 5 | $5+4i$ | 4 | $1$ (1), $2+i$ (1) |
 | 5 | $6+3i$ | 3 | $1$ (1), $2+i$ (2) |
-| 5 | $7$ | 15 | $1$ (1), $2+i$ (1) |
+| 5 | $7$ | 18 | $1$ (1), $2+i$ (1) |
 | 5 | $7+2i$ | 4 | $1$ (1), $2+i$ (3) |
-| 5 | $6+5i$ | 2 | $1$ (1), $2+i$ (7) |
+| 5 | $6+5i$ | 3 | $1$ (1), $2+i$ (7) |
 
-The rules at $k = 5$ with $\alpha = 6-i$, $5-4i$, $6-3i$, $7-2i$ and $6-5i$ are the mirror images of those listed. The counts in the third column are for starts with $N(z) \le 3000$ at $k = 4$ and $5$, and for $N(z) \le 10^6$ at $k = 3$; with $N(z) \le 10^6$ the working notes record $36$ or more classes for $\alpha = 5$ and $18$ for $\alpha = 7$ [unverified: from the earlier sweep, not re-run for this draft]. Two of the cycles are long: $5-2i$ at $k = 4$ has a cycle of $70$ odd steps through $15+16i$, and $6+5i$ at $k = 5$ has one of $130$ odd steps through $199+164i$ [unverified: the second is from the earlier sweep].
+The rules at $k = 5$ with $\alpha = 6-i$, $5-4i$, $6-3i$, $7-2i$ and $6-5i$ are the mirror images of those listed. The counts in the third column are for all starts with $N(z) \le 10^6$, and each is the same at $N(z) \le 10^5$. For $\alpha = 5$ the count covers only the starts that reached a cycle within $50000$ steps; the other $10.5\%$ did not. Two of the cycles are long: $5-2i$ at $k = 4$ has a cycle of $70$ odd steps through $15+16i$, and $6+5i$ at $k = 5$ has one of $130$ odd steps through $164+199i$ (for $6-5i$, through its mirror image $199+164i$).
 
 What is proven, by exhibiting the cycles, is the following.
 
@@ -167,7 +167,7 @@ where $u(z)$ is the unit with $(1+i)^3 \mid 3z + u(z)$. Since $9$ lies in the wi
 | the mirror image of the last, through $6+19i$ | 5 | $1.0\%$ |
 | $1$ | 1 | $0.2\%$ |
 
-The working notes record that the stopping-time check of Section 12 extends this to all $N(z) \le 10^9$ with no new cycle, and that the rule with $\alpha = 3+2i$ has exactly the four cycles of Section 5 over the same range [unverified: the logs of these two runs were not kept]. In this sense $G_3$ resembles $3x+1$ on all of $\mathbb{Z}$, which has the cycles through $1$, $-1$, $-5$ and $-17$, more than $3x+1$ on the positive integers.
+The stopping-time check of Section 12 extends this to all $N(z) \le 10^9$ with no new cycle, and the rule with $\alpha = 3+2i$ has exactly the four cycles of Section 5 over the same range. In this sense $G_3$ resembles $3x+1$ on all of $\mathbb{Z}$, which has the cycles through $1$, $-1$, $-5$ and $-17$, more than $3x+1$ on the positive integers.
 
 On the real line $G_3$ is ordinary $3x+1$ in disguise. Let $x$ be an odd integer. The digit must make $3x+u$ divisible by $(1+i)^3$. For an integer this means divisible by $4$, since the exponent of $1+i$ in an integer is even. A non-real unit gives $v(3x \pm i) = 1$, so $u = \pm 1$, and $3x + u = 3y+1$ up to sign, where $y$ is whichever of $x$ and $-x$ is $1 \bmod 4$. Dividing an integer $m$ by $(1+i)^{v(m)}$ gives $\pm m/2^{v_2(m)}$ or $\pm i\, m/2^{v_2(m)}$, so up to units $S(x) = |3y+1|/2^{v_2(3y+1)}$. The two axes, taken up to units, are invariant, and on them $G_3$ is the accelerated $3x+1$ map applied to the representative of $\pm x$ that is $1 \bmod 4$.
 

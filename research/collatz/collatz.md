@@ -45,6 +45,71 @@ is equivariant under units (G(eps z) = eps G(z)), so it descends to associate cl
 
 Joseph's map (divide by 2, three non-zero classes mod 2, multiplier alpha): drift per step (3/4) ln N(alpha) - ln 4, contracting iff N(alpha) < 4^(4/3) = 6.35, so alpha = 3 diverges on average (drift +0.26) and only N(alpha) = 5 contracts.
 
+Worst case versus average. With (1+i)^k forced, each odd step multiplies |z| by at most about |alpha|/2^(k/2), so N(alpha) < 2^k gives a provable contraction (all orbits fall into a finite set; G_{2+i} is of this kind). The Collatz-like window, expanding in the worst case but contracting on average, as 3x+1 is (3 > 2 but 3 < 4), is
+
+  2^k < N(alpha) < 2^(k+1).
+
+| k | window | odd norms in window | alpha up to units |
+|---|---|---|---|
+| 1 | (2, 4) | none | none: no single-rule Gaussian 3x+1 exists |
+| 2 | (4, 8) | 5 | 2+i, 2-i (two classes mod 2, digit choice not unit-equivariant) |
+| 3 | (8, 16) | 9, 13 | 3, 3+2i, 3-2i |
+| 4 | (16, 32) | 17, 25, 29 | 4+-i, 5, 4+-3i, 5+-2i |
+| 5 | (32, 64) | 37, 41, 45, 49, 53, 61 | 11 classes |
+| 6 | (64, 128) | 65, ..., 125 | 28 classes |
+
+Random-walk model. Per odd step, log2 N changes by log2 N(alpha) - v with v - k geometric (mean 1, variance 2). For alpha = 5+2i, k = 4 this is drift -0.142 bits, variance 2, so P(max excursion > h bits) is about e^(-0.142 h); over 4*10^7 starts the model predicts a record excursion of ln(4*10^7)/0.142 = 123 bits, and the computation (below) found 122.9 (including the 4.86-bit pre-division peak). The model is accurate.
+
+Divergent cones. If lambda = alpha/(1+i)^k is real up to a unit, the map with exactly k divisions is a scalar map and behaves like Kionke's lattice maps: there are positive-density sets of orbits that diverge, locked onto fixed directions. This happens for alpha = 5 at k = 4 (lambda = -5/4) and alpha = 9, 11 at k = 6 (lambda in iR), and every digit set tried for these alpha has divergent orbits. When lambda is not real up to a unit the direction keeps rotating and nothing diverged in any test. (alpha = 3 at k = 3 and alpha = 7 at k = 5 have lambda^2 real up to a unit and still converge, so the condition is on lambda itself.)
+
 ## 3. Search
 
-(in progress)
+Code: gcz.c (full classification of all z with N(z) <= B: memoised orbits, 128-bit coordinates, Brent cycle detection, rule given as a table over residues mod 4 or mod 8), gstop.c (stopping-time induction over one associate per class, for unit-equivariant rules), rules.py (rule tables, digit rules), exact.py (independent big-integer iteration; also re-derives every reported cycle), sweep_gen.py (non-equivariant digit sweeps), sweep_eq.py / sweep_eq2.py (unit-equivariant sweeps), joseph.py (divide-by-2 maps). Cycles are reported modulo units for equivariant rules ("classes"), with conjugate pairs counted separately; "odd" is the cycle length in odd steps.
+
+### 3.1 Canonical unit-digit maps (k = 3)
+
+G_alpha(z) = z/(1+i) if even, else alpha z + u, u the unit with alpha z + u = 0 mod (1+i)^3. All 3.14M starts with N(z) <= 10^6:
+
+| alpha | drift | cycle classes (min element, odd length, share of starts) | max steps | max excursion (log2 N) |
+|---|---|---|---|---|
+| 2+i | provable contraction | 1 (fixed point 1) | 59 (at 10^4) | 3 |
+| 3 | ln(9/16) | 2+i (2, 92.3%), 5+2i (2, 5.6%), 19+6i and conjugate (5, 1.0% each), 1 (1, 0.2%) | 269 | 7.2 |
+| 3+2i | ln(13/16) | 1 (1, 63.4%), 3 (4, 22.9%), 7 (4, 12.8%), 8+7i (4, 0.8%) | 1474 | 28.6 |
+
+So the most natural analogue, "3z + unit", converges on every start tested but has five cycle classes; it is the Gaussian analogue of 3x+1 on all of Z (which has the cycles 1, -1, -5, -17), not of 3x+1 on N. On the real axis G_3 is ordinary accelerated 3x+1 applied to whichever of +-x is 1 mod 4, and there the only cycle is 1.
+
+Other unit-closed digit sets at k = 3 (units times 2+i, 2-i or 3): 5 to 14 cycle classes; none has one.
+
+### 3.2 Non-equivariant digit rules, B = 10^5
+
+Digit per class chosen freely from odd elements of norm <= 5.
+
+| family | rules | all starts converge | exactly one nonzero cycle |
+|---|---|---|---|
+| k = 2, alpha in associates of 2+-i | 288 | 288 | 68 |
+| k = 3, alpha associates of 3, 3+-2i | 972 | 972 | 108 |
+| k = 4, N(alpha) in {17, 25, 29} | 448 | 384 (all failures are alpha = +-5, +-5i) | 76 |
+
+A single cycle is common once the digits may break the unit symmetry, so on its own it does not single out a rule.
+
+### 3.3 Unit-equivariant digit rules, k = 4, 5, 6 (B = 10^5, then 10^6)
+
+k = 4, digits units together with units times (2+i) [D_A] or units times (1+2i) [D_B]; up to symmetry 7 maps:
+
+| alpha (with D_A) | cycle classes |
+|---|---|
+| 4+i | 2 |
+| 4-i | 2 |
+| 5 | 36+ and divergent orbits (10.5% unresolved at 10^6) |
+| 4+3i | 3 |
+| 4-3i | 6 |
+| 5+2i | 1 |
+| 5-2i | 3 (incl. a cycle of 70 odd steps through 16+15i) |
+
+k = 5 (unique minimal digit set: units, 3, 1+2i, 1-2i times units), 11 alpha: 2 to 18 classes, no divergence (alpha = 7 has 18 classes, no single-cycle map). alpha = 6+5i (drift ln(61/64)) has a cycle of 130 odd steps through 199+164i, and excursions of 2^112.
+
+k = 6 (8 unit orbits of digits, 2 choices in two of them, 4 digit sets), 28 alpha, 112 maps (56 up to conjugation): 22 maps have a single class (alpha = 7+-4i, 8+-3i, 9+-2i, 10+-i, 10+-3i, and 11+-2i, the last with a few unresolved starts at the step cap since its drift is only ln(125/128)); alpha = 9 and 11 diverge. So single-cycle equivariant rules become common as k grows; the smallest k with one is 4, and there it is unique.
+
+### 3.4 Joseph-type maps (divide by 2), B = 10^6
+
+z/2 on 2Z[i], (alpha z + beta_c)/2 on the classes 1, i, 1+i mod 2. Joseph's own map (alpha = 3, beta = 1, i, 1+i) has 98% of starts unresolved at 10^5 (diverging, as the drift +0.26 predicts). With alpha = 1+2i (drift -0.18) all 16 small-beta choices converge and 8 have a single cycle (e.g. beta = 1, i, -1+i: one cycle, through 1, of 6 steps); with alpha = 2+i none does (3 or 4 cycles).

@@ -1,0 +1,7 @@
+range (10000000,110000000] starts 39269895 fails 0 cycles 0 maxstop 11271 at 6827 4464 meanstop 53.83 maxexc_log2 97.67 at 6827 4464
+range (110000000,210000000] starts 39269954 fails 0 cycles 0 maxstop 12103 at 12508 4649 meanstop 53.87 maxexc_log2 96.81 at 6302 8993
+range (210000000,310000000] starts 39269871 fails 0 cycles 0 maxstop 12056 at 1194 16237 meanstop 53.82 maxexc_log2 95.96 at 3381 14392
+range (310000000,410000000] starts 39269947 fails 0 cycles 0 maxstop 12027 at 17403 4600 meanstop 53.87 maxexc_log2 122.85 at 17467 5226
+range (410000000,510000000] starts 39269902 fails 0 cycles 0 maxstop 11113 at 10098 19655 meanstop 53.88 maxexc_log2 95.67 at 21538 2637
+range (510000000,610000000] starts 39269797 fails 0 cycles 0 maxstop 12021 at 19454 14451 meanstop 53.83 maxexc_log2 122.13 at 22543 6150
+range (610000000,710000000] starts 39269896 fails 0 cycles 0 maxstop 11945 at 25463 2238 meanstop 53.87 maxexc_log2 121.88 at 2026 25381

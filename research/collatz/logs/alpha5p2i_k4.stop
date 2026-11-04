@@ -22,3 +22,9 @@ range (2000000000,2100000000] starts 39269934 fails 0 cycles 0 maxstop 11476 at 
 range (2100000000,2200000000] starts 39269859 fails 0 cycles 0 maxstop 10644 at 11634 44637 meanstop 53.93 maxexc_log2 92.49 at 20406 42163
 range (2200000000,2300000000] starts 39269945 fails 0 cycles 0 maxstop 10316 at 45092 15319 meanstop 53.84 maxexc_log2 120.11 at 3534 46985
 range (2300000000,2400000000] starts 39269948 fails 0 cycles 0 maxstop 11301 at 48047 1614 meanstop 53.89 maxexc_log2 92.51 at 6957 48368
+range (2400000000,2500000000] starts 39269739 fails 0 cycles 0 maxstop 10814 at 19191 45886 meanstop 53.87 maxexc_log2 90.27 at 3182 49001
+range (2500000000,2600000000] starts 39269979 fails 0 cycles 0 maxstop 12583 at 2013 50478 meanstop 53.87 maxexc_log2 104.39 at 16549 47454
+range (2600000000,2700000000] starts 39269802 fails 0 cycles 0 maxstop 13878 at 44880 25491 meanstop 53.89 maxexc_log2 100.01 at 4684 50895
+range (2700000000,2800000000] starts 39269989 fails 0 cycles 0 maxstop 10972 at 45704 25469 meanstop 53.91 maxexc_log2 95.72 at 10393 51410
+range (2800000000,2900000000] starts 39269944 fails 0 cycles 0 maxstop 11230 at 5992 52925 meanstop 53.88 maxexc_log2 95.95 at 45789 27702
+range (2900000000,3000000000] starts 39269968 fails 0 cycles 0 maxstop 12214 at 52045 15214 meanstop 53.90 maxexc_log2 119.68 at 22827 49616

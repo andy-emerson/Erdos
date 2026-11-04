@@ -130,11 +130,11 @@ Method: gcz classifies every z with N(z) <= 10^7 completely (orbit to its cycle)
 
 | map | bound on N(z) | starts (one per associate class) | new cycles | max stopping time (T-steps) | mean | max excursion log2(N_max/N(z)) |
 |---|---|---|---|---|---|---|
-| H (5+2i) | 10^9 | 3.93*10^8 | none | 12226 (13725+26582i) | 53.9 | 122.9 (17467+5226i) |
+| H (5+2i) | 3*10^9 | 1.18*10^9 | none | 13913 (6742+34011i) | 53.9 | 122.9 (17467+5226i) |
 | G_3 | 10^9 | 3.93*10^8 | none (5 classes) | 196 | 9.2 | 7.9 |
 | G_{3+2i} | 10^9 | 3.93*10^8 | none (4 classes) | 2426 | 22.5 | 43.4 |
 
-(H is being extended to 3*10^9; see logs/alpha5p2i_k4.stop.)
+(Per-chunk results are in logs/alpha5p2i_k4.stop. The run to 3*10^9 took about 15 minutes on one core.)
 
 H's record excursion matches the random-walk prediction (drift -0.142 bits per odd step, variance 2, so the expected record over n starts is about ln(n)/0.142 bits). H's orbits are also long: the full orbit of 6827+4464i takes 2042 odd steps to reach 1.
 
@@ -148,7 +148,7 @@ Known: no prior computation of any integral Collatz-type map on Z[i] with (1+i)-
 
 Most Collatz-like rules found:
 
-1. H: z -> z/(1+i) if (1+i) | z; else (5+2i)z + d with d in {+-1, +-i, +-(2+i), +-(1-2i)} the unique digit making the result divisible by (1+i)^4. It is unit-equivariant, one cycle (the fixed class of 1), and verified for all N(z) <= 10^9 (3*10^9 pending). It sits in the Collatz window (29/32 per odd step on average, expanding 29/16 in the worst case), with long orbits and huge excursions, so it is non-trivially Collatz-like. Among unit-equivariant rules with minimal-norm digit sets and k <= 5, it is the only single-cycle one (up to units and conjugation). At k = 3 the extra digit sets units*(2+-i) and units*3 were also tried, and none of them has a single cycle either.
+1. H: z -> z/(1+i) if (1+i) | z; else (5+2i)z + d with d in {+-1, +-i, +-(2+i), +-(1-2i)} the unique digit making the result divisible by (1+i)^4. It is unit-equivariant, one cycle (the fixed class of 1), and verified for all N(z) <= 3*10^9. It sits in the Collatz window (29/32 per odd step on average, expanding 29/16 in the worst case), with long orbits and huge excursions, so it is non-trivially Collatz-like. Among unit-equivariant rules with minimal-norm digit sets and k <= 5, it is the only single-cycle one (up to units and conjugation). At k = 3 the extra digit sets units*(2+-i) and units*3 were also tried, and none of them has a single cycle either.
 2. G_3 (3z + unit, k = 3): the most natural analogue. It converges on everything to 10^9, with exactly five cycle classes (counting the mirror pair separately) and fast stopping times. It plays the role of 3x+1 on all of Z.
 3. Divide-by-2 maps with alpha = 1+2i (Joseph form, beta = 1, i, -1+i): one cycle at 10^6, also unit-free and less canonical.
 

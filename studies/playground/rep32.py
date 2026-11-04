@@ -500,8 +500,127 @@ def check_conv():
     print("  |---|---|")
     for name, *_ in CONV: print("  | %s | %s |" % (name, fmt(st[name], NR)))
 
+
+# ---------------- binary (1+i)-ary gcd in each representation ----------------
+# A: study 9 (gcd1i.py): strip 16, primary 17, step 54. B and C: replace the larger of a, b by a - eps b, eps the unit
+# with a = eps b mod (1+i)^3, read from the low digits (B: digit 0 codes; C: digits 1, 2, since odd w = i^((w>>1)&3) mod beta^3).
+# Both give the same norms as study 9 (a - eps b is a unit times primary(a) - primary(b)), so the same step count.
+def A_strip(x, y, o):
+    o('alu'); o('ctz'); oo = x | y; e = (oo & -oo).bit_length() - 1 if oo else 0   # ctz(0) = 64, shift count mod 64
+    o('sh', 2); x >>= e; y >>= e
+    o('alu', 3); m = -(x & y & 1)
+    o('alu', 2); o('sh', 2); px, py = (x + y) >> 1, (y - x) >> 1
+    o('alu', 6); return x ^ ((x ^ px) & m), y ^ ((y ^ py) & m)
+def A_primary(x, y, o):
+    o('alu', 2); m = (x & 1) - 1
+    o('alu', 7); nx, ny = x ^ ((x ^ y) & m), y ^ ((y ^ -x) & m)
+    o('alu', 3); o('sh'); m = -(((nx - ny) >> 1) & 1)
+    o('alu', 4); return (nx ^ m) - m, (ny ^ m) - m
+def A_val(x, o):
+    o('alu'); o('ctz'); oo = x[0] | x[1]; e = (oo & -oo).bit_length() - 1
+    o('sh', 2); o('alu', 3); return 2*e + ((x[0] >> e) & (x[1] >> e) & 1)
+def cswap_ops(o, words): o('alu', 4 * words)
+def gcd_A(x, y, o):
+    o('alu', 2); o('br')
+    if x == (0, 0) or y == (0, 0): return x if y == (0, 0) else y, 0
+    k = min(A_val(x, o), A_val(y, o)); o('alu', 3)
+    a = A_primary(*A_strip(*x, o), o); b = A_primary(*A_strip(*y, o), o)
+    na, nb = A_norm(a, o), A_norm(b, o)
+    o('alu', 2); cswap_ops(o, 3)
+    if na < nb: a, b, na, nb = b, a, nb, na
+    steps = 0
+    while True:
+        o('alu'); o('br')
+        if b == (0, 0): break
+        o('alu', 2); a = A_primary(*A_strip(a[0] - b[0], a[1] - b[1], o), o)
+        na = A_norm(a, o)
+        o('alu', 2); cswap_ops(o, 3)
+        if na < nb: a, b, na, nb = b, a, nb, na
+        steps += 1
+    o('sh', 3); o('alu'); o('br'); g = (a[0] << (k >> 1), a[1] << (k >> 1))
+    if k & 1: o('alu', 2); g = (g[0] - g[1], g[0] + g[1])
+    return g, steps
+def gcd_B(x, y, n, o):
+    Mo = (1 << n) - 1
+    o('alu'); o('br')
+    if x[0] >= INF or y[0] >= INF: return (x if y[0] >= INF else y), 0
+    o('alu', 3); k = min(x[0], y[0])                     # valuation: free; odd parts: free (split w is a unit times u)
+    a, b = (x[1], x[2]), (y[1], y[2])
+    o('alu', 8); na = A_norm(S31.ud_decode(*a, n), o); nb = A_norm(S31.ud_decode(*b, n), o)
+    o('alu', 2); cswap_ops(o, 3)
+    if na < nb: a, b, na, nb = b, a, nb, na
+    steps = 0
+    while True:
+        (A1, B1), (A2, B2) = a, b
+        o('sh', 2); o('alu', 6); r = (((A1 << 1) + (B1 & 1)) - ((A2 << 1) + (B2 & 1))) & 3   # digit-0 codes: eps = i^r
+        o('alu', 6); A2, B2 = S31.digit_rot(A2, B2, r, Mo, Ops())                      # masked digit rotation
+        o('alu'); A2 ^= Mo                                                           # negate eps b
+        o('alu', 6); P = Mo - ((A1 ^ B1) + (A2 ^ B2)); Q = Mo - (A1 + A2)            # a - eps b = -i(1+i)(P + iQ)
+        o('alu'); o('br'); steps += 1
+        if P | Q == 0: break                                                          # a = eps b: gcd is b
+        z = A_strip(P, Q, o); nz = A_norm(z, o)
+        o('alu', 6); o('sh', 2); a = S31.ud_encode(z, n); na = nz
+        o('alu', 2); cswap_ops(o, 3)
+        if na < nb: a, b, na, nb = b, a, nb, na
+    o('alu'); return (k, b[0], b[1]), steps
+def gcd_C(x, y, cm, o):
+    o('alu'); o('br')
+    if x == 0 or y == 0: return (x if y == 0 else y), 0
+    o('ctz', 2); o('alu', 3); kx = (x & -x).bit_length() - 1; ky = (y & -y).bit_length() - 1; k = min(kx, ky)
+    o('sh', 2); a, b = x >> kx, y >> ky                                                  # strip: free
+    na = A_norm(c2a(a, cm, o), o); nb = A_norm(c2a(b, cm, o), o)
+    o('alu', 2); cswap_ops(o, 2)
+    if na < nb: a, b, na, nb = b, a, nb, na
+    steps = 0
+    while True:
+        xa = c2a(a, cm, o); xb = c2a(b, cm, o)
+        o('sh', 2); o('alu', 2); r = ((a >> 1) - (b >> 1)) & 3
+        xb = rotA(*xb, r, o)
+        o('alu', 2); d = (xa[0] - xb[0], xa[1] - xb[1])
+        o('alu'); o('br'); steps += 1
+        if d == (0, 0): break
+        nd = A_norm(d, o)
+        w = a2c(*d, cm, o)
+        o('ctz'); o('sh', 2); v = (w & -w).bit_length() - 1; a = w >> v; na = nd >> v      # strip: free
+        o('alu', 2); cswap_ops(o, 2)
+        if na < nb: a, b, na, nb = b, a, nb, na
+    o('sh'); return (b << k) & cm.N, steps
+
+def ref_gcd(x, y):
+    while y != (0, 0): x, y = y, ref_divrem(x, y)[1]
+    return x
+def assoc(x, y): return any(gmul(x, u) == y for u in ((1, 0), (0, 1), (-1, 0), (0, -1)))
+
+def check_gcd():
+    print("gcd: verification")
+    n, cm = 8, CM(8); R = 6; box = [(a, b) for a in range(-R, R+1) for b in range(-R, R+1)]
+    for x in box:
+        for y in box:
+            g = ref_gcd(x, y)
+            gA, sA = gcd_A(x, y, Ops()); assert assoc(gA, g), (x, y, gA, g)
+            gB, sB = gcd_B(mkB(x, n), mkB(y, n), n, Ops()); assert assoc(valB(gB, n), g)
+            gC, sC = gcd_C(mkC(x, cm), mkC(y, cm), cm, Ops()); assert assoc(valC(gC, cm), g)
+            assert sB == sC and (sA == sB or x == (0, 0) or y == (0, 0) or sA == sB - 1 or sA == sB)
+    print("  exhaustive, box |a|,|b| <= %d (%d pairs): A, B, C all give an associate of the reference gcd" % (R, len(box)**2))
+    n, cm = 32, CM(32); rnd = random.Random(9)
+    for bits, reps in ((31, (0, 1)), (28, (0, 1, 2))):
+        tot = [Ops() for _ in range(3)]; steps = [0, 0, 0]; NR = 1500; mx = 0
+        for _ in range(NR):
+            h = 1 << (bits - 1)
+            x = (rnd.randrange(-h, h), rnd.randrange(-h, h)); y = (rnd.randrange(-h, h), rnd.randrange(-h, h))
+            g = ref_gcd(x, y)
+            o = Ops(); gA, s = gcd_A(x, y, o); assert assoc(gA, g); tot[0].update(o); steps[0] += s
+            o = Ops(); gB, s = gcd_B(mkB(x, n), mkB(y, n), n, o); assert assoc(valB(gB, n), g); tot[1].update(o); steps[1] += s
+            if 2 in reps:
+                o = Ops(); gC, s = gcd_C(mkC(x, cm), mkC(y, cm), cm, o); assert assoc(valC(gC, cm), g); tot[2].update(o); steps[2] += s
+        print("  random %d-bit pairs, %d cases: exact (up to a unit)" % (bits, NR))
+        for r in reps:
+            print("    %s: %.2f steps, %.0f ops per gcd, %.1f ops per step overall (%s)" % ("ABC"[r], steps[r] / NR,
+                  tot[r].tot() / NR, tot[r].tot() / steps[r], fmt(tot[r], NR)))
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     if what in ("c", "all"): check_c()
     if what in ("conv", "all"): check_conv()
+    if what in ("gcd", "all"): check_gcd()
     if what in ("table", "all"): print_table(check_table())

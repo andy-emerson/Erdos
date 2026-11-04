@@ -56,7 +56,7 @@ The quotient is computed as $q = (x \bar y)\cdot N(y)^{-1} \bmod 2^j$, coordinat
 
 ### 3.2 Correctness
 
-**Lemma 1.** In step H, $t \ge 2j$, and $\gcd(x', y) = \gcd(x, y)$ up to a unit.
+*Lemma 1.* In step H, $t \ge 2j$, and $\gcd(x', y) = \gcd(x, y)$ up to a unit.
 
 *Proof.* By the choice of $q$, $x - qy \equiv 0 \pmod{2^j}$, and $v(2^j) = 2j$, so $t \ge 2j$. Any common divisor of $x$ and $y$ divides $x - qy$, and conversely any common divisor of $x - qy$ and $y$ divides $x$. So $\gcd(x - qy, y) = \gcd(x, y)$. Since $y$ is odd, $\gcd(\pi, y) = 1$, and removing $i^s\pi^t$ does not change the gcd with $y$. $\square$
 
@@ -70,14 +70,14 @@ From the definition of $L$, $N(x) < 2^{L+1} N(y)$, so $|x| < 2^{(L+1)/2}|y|$. Fr
 $$2^{-j}|x| < 2^{1 - c/2}|y|, \qquad |x'| < \left(2^{1-c/2} + 2^{-1/2}\right)|y|.$$
 For $c = 6$ the factor is $0.25 + 0.707 < 0.96$. So $x'$ is always strictly smaller than $y$, the new pair $(y, x')$ is again ordered by norm, and no comparison is needed after the first step.
 
-**Theorem 2.** Step H, repeated, ends after finitely many steps with the gcd. Let $x_k$ denote $|x'|$ after step $k$, with $x_{-1} = |x|$ and $x_0 = |y|$ at the start, and let $j_{\min} = c/2$. Then
+*Theorem 2.* Step H, repeated, ends after finitely many steps with the gcd. Let $x_k$ denote $|x'|$ after step $k$, with $x_{-1} = |x|$ and $x_0 = |y|$ at the start, and let $j_{\min} = c/2$. Then
 $$x_{k+1} \le \min\!\left(2^{-j_{\min}}\,x_{k-1},\; 2^{1-c/2}\,x_k\right) + \frac{x_k}{\sqrt2}. \tag{2}$$
 
 *Proof.* After step $k$ the pair is $(x_{k-1}, x_k)$ in magnitudes. Apply (1) to step $k+1$: the first term $2^{-j}x_{k-1}$ is at most $2^{-j_{\min}} x_{k-1}$ because $j \ge c/2$ when $L \ge 0$, and at most $2^{1-c/2}x_k$ by the estimate above. The sequence $x_k$ is strictly decreasing, and the norms are positive integers, so the loop stops, either with $x - qy = 0$ or with $y = 1$. In both cases Lemma 1 shows that the last $y$ is the gcd. $\square$
 
 The right side of (2) is increasing in both $x_{k-1}$ and $x_k$. So iterating (2) as an equality from the largest possible start gives an upper bound on the number of steps. For inputs with coordinates below $2^{31}$ in absolute value, start from $x_{-1} = x_0 = 2^{31.5}$ and stop when the bound falls below $\sqrt5$, since a primary element of norm less than 5 is 1. The results are in table 1. The iteration was done in floating point; redoing it in interval or exact arithmetic would make the bounds fully rigorous, and has not been done.
 
-**Table 1.** Step H for inputs with 31-bit coordinates.
+*Table 1.* Step H for inputs with 31-bit coordinates.
 
 | offset $c$ | proved bound on steps | observed mean / max steps, 3,000 random pairs |
 |---|---|---|
@@ -106,7 +106,7 @@ In unnormalised form the step is $r_{k+1} = r_{k-1} - q_k\, r_k/\pi^{g_k}$ with 
 $$x_{k+1} \le 2^{-g_{k+1}/2}\left(2^{-g_k/2}\,x_{k-1} + \frac{\rho(g_k + \delta)}{2^{g_k/2}}\,x_k\right), \qquad g_{k+1} \ge \delta. \tag{3}$$
 The gaps are not under our control, so a bound must hold for every gap sequence. We bound this by a dynamic programme over the current gap: for each gap value it keeps the componentwise maximum of $(x_{k-1}, x_k)$ over all histories, which is valid because the maps in (3) are increasing in both arguments. Table 2 gives the resulting growth factor per step and the step bound for 31-bit inputs, again stopping below $\sqrt5$.
 
-**Table 2.** Step S for inputs with 31-bit coordinates.
+*Table 2.* Step S for inputs with 31-bit coordinates.
 
 | $\delta$ | growth factor per step | bound on steps | observed mean / max, 3,000 random pairs |
 |---|---|---|---|
@@ -129,11 +129,11 @@ Whether step S terminates for $\delta = 1$ is open. It terminated on every pair 
 
 ### 4.4 Dependence on low digits
 
-For a recursive algorithm the quotients must depend only on low digits of the input, in the sense of [SZ04, lemma on truncation]: the quotients that bring the valuation up to $v$ are determined by the inputs mod $\pi^{2v + O(1)}$. We tested this by perturbation. For random 40-bit primary $A, B$ and random $M$ between 10 and 60, we replaced $A$ and $B$ by $A + \pi^M X$ and $B + \pi^M Y$ with small random $X, Y$, ran both sequences, and found the first step whose $(q, t, s)$ differed. In 1,500 trials for each of $\delta = 1, 2, 4$, that step always came when $2v(B) \ge M - 15$ (the worst cases were $M - 10$, $M - 11$ and $M - 15$). This is consistent with the truncation property, but it is a test and not a proof [unproven].
+For a recursive algorithm the quotients must depend only on low digits of the input, in the sense of the truncation lemma of [SZ04]: the quotients that bring the valuation up to $v$ are determined by the inputs mod $\pi^{2v + O(1)}$. We tested this by perturbation. For random 40-bit primary $A, B$ and random $M$ between 10 and 60, we replaced $A$ and $B$ by $A + \pi^M X$ and $B + \pi^M Y$ with small random $X, Y$, ran both sequences, and found the first step whose $(q, t, s)$ differed. In 1,500 trials for each of $\delta = 1, 2, 4$, that step always came when $2v(B) \ge M - 15$ (the worst cases were $M - 10$, $M - 11$ and $M - 15$). This is consistent with the truncation property, but it is a test and not a proof [unproven].
 
 ## 5. The symbol rides on the loop
 
-**Lemma 3.** Let $y$ be primary, $y \ne 1$, let $x, q \in \mathbb{Z}[i]$, and suppose $x - qy = i^s\pi^t x' \ne 0$ with $x'$ primary. Then
+*Lemma 3.* Let $y$ be primary, $y \ne 1$, let $x, q \in \mathbb{Z}[i]$, and suppose $x - qy = i^s\pi^t x' \ne 0$ with $x'$ primary. Then
 $$\left[\tfrac{x}{y}\right] = i^{\,t\,k_1(y) + s\,k_i(y)}\left[\tfrac{x'}{y}\right].$$
 
 *Proof.* The symbol depends only on the numerator mod $y$, and $x \equiv x - qy \pmod y$. It is multiplicative in the numerator, so $\left[\frac{x - qy}{y}\right] = \left[\frac{i}{y}\right]^s\left[\frac{1+i}{y}\right]^t\left[\frac{x'}{y}\right]$. $\square$
@@ -162,7 +162,7 @@ The reference is Euler's criterion applied to each prime factor of the modulus, 
 
 The step counts of the symbol algorithms are those of the underlying gcd loops, since the symbol adds no steps.
 
-**Table 3.** Steps per symbol (equivalently per gcd), 3,000 random pairs with 31-bit coordinates.
+*Table 3.* Steps per symbol (equivalently per gcd), 3,000 random pairs with 31-bit coordinates.
 
 | algorithm | mean | max | proved bound |
 |---|---|---|---|
@@ -174,7 +174,7 @@ The step counts of the symbol algorithms are those of the underlying gcd loops, 
 | S, $\delta = 4$ | 16.17 | 23 | 73 |
 | E (Euclid, nearest rounding) | 14.71 | 22 | 63 (naive) |
 
-The scripts are in `research/weilert-adic/`; `t1.py`, `t7.py`, `t2.py`, `t3.py` and `t5.py` are checks 1 to 4 and table 3, `t5.py` and `t6.py` the bounds, `t4.py` the exhaustive termination test of section 4.3, and `t8.py` the perturbation test of section 4.4. All were rerun for this draft. Nothing was timed. Steps H and S take about half the steps of W, at the cost of an inverse mod $2^j$ per step; study 33 estimated the trade at a 36% saving in its operation model for 31-bit inputs.
+The scripts are in `research/weilert-adic/`: check 1 is `t1.py`, check 2 is `t7.py`, check 3 is `t2.py` and `t3.py`, check 4 and table 3 are `t5.py`, the bounds are `t5.py` and `t6.py`, `t4.py` the exhaustive termination test of section 4.3, and `t8.py` the perturbation test of section 4.4. All were rerun for this draft. Nothing was timed. Steps H and S take about half the steps of W, at the cost of an inverse mod $2^j$ per step; study 33 estimated the trade at a 36% saving in its operation model for 31-bit inputs.
 
 ## 7. Related work
 

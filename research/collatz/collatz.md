@@ -113,3 +113,58 @@ k = 6 (8 unit orbits of digits, 2 choices in two of them, 4 digit sets), 28 alph
 ### 3.4 Joseph-type maps (divide by 2), B = 10^6
 
 z/2 on 2Z[i], (alpha z + beta_c)/2 on the classes 1, i, 1+i mod 2. Joseph's own map (alpha = 3, beta = 1, i, 1+i) has 98% of starts unresolved at 10^5 (diverging, as the drift +0.26 predicts). With alpha = 1+2i (drift -0.18) all 16 small-beta choices converge and 8 have a single cycle (e.g. beta = 1, i, -1+i: one cycle, through 1, of 6 steps); with alpha = 2+i none does (3 or 4 cycles).
+
+### 3.5 Explicit cycles (first-quadrant associates, accelerated map, (1+i)-valuation of each step)
+
+| map | cycles |
+|---|---|
+| G_3 | 1 (v = 4); 2+i, 1+2i (3, 3); 5+2i, 2+5i (3, 3); 19+6i, 10+19i, 22+7i, 11+22i, 25+8i (3, 3, 3, 3, 4) and its mirror image 6+19i, ... |
+| G_{3+2i} | 1 (3); 3, 1+4i, 2+5i, 2+3i (3, 3, 5, 4); 7, 2+9i, 8+3i, 11+2i (3, 4, 3, 5); 8+7i, 12+7i, 17+6i, 10+13i (3, 3, 4, 5) |
+| H = (5+2i, units U units(2+i), k = 4) | 1 only: (5+2i) + (-1+2i) = 4+4i = -(1+i)^5, so H(1) = -1 |
+
+G_3 on the real axis has only the cycle 1, and its basin share falls with B (0.2% at 10^6, 0.07% at 10^7), as expected for a basin that is essentially a lower-dimensional set.
+
+### 3.6 Large-bound verification
+
+Method: gcz classifies every z with N(z) <= 10^7 completely (orbit to its cycle). gstop then checks, for one associate of every odd z in (10^7, B], that the orbit reaches a norm below N(z) and records any orbit that returns to an associate of its start. Since the maps are unit-equivariant, this inductively proves that every orbit with N(z) <= B ends in one of the listed cycles. Arithmetic: 128-bit coordinates with escape at 2^110; the largest coordinates seen were about 2^80. Extreme orbits were re-run in exact Python big-integer arithmetic with an independent digit selection, and they agree.
+
+| map | bound on N(z) | starts (one per associate class) | new cycles | max stopping time (T-steps) | mean | max excursion log2(N_max/N(z)) |
+|---|---|---|---|---|---|---|
+| H (5+2i) | 10^9 | 3.93*10^8 | none | 12226 (13725+26582i) | 53.9 | 122.9 (17467+5226i) |
+| G_3 | 10^9 | 3.93*10^8 | none (5 classes) | 196 | 9.2 | 7.9 |
+| G_{3+2i} | 10^9 | 3.93*10^8 | none (4 classes) | 2426 | 22.5 | 43.4 |
+
+(H is being extended to 3*10^9; see logs/alpha5p2i_k4.stop.)
+
+H's record excursion matches the random-walk prediction (drift -0.142 bits per odd step, variance 2, so the expected record over n starts is about ln(n)/0.142 bits). H's orbits are also long: the full orbit of 6827+4464i takes 2042 odd steps to reach 1.
+
+### 3.7 Why alpha = 5 diverges
+
+Every divergent alpha = 5 orbit sampled (176 of about 1500 random starts of norm up to 1.8*10^7) lands on the lines x - y = +-1 or x + y = +-1. These lines are nearly invariant (876 of 1000 sample points map back onto them). On them the map acts like a one-dimensional "5x + c" map, whose drift ln 5 - 2 ln 2 > 0 is positive, and the orbits leave along the 45-degree directions with ratio exactly -5/4 per step. This is the integer-line version of Kionke's divergent cones. It needs lambda = alpha/(1+i)^k to be real up to a unit, which is why only 5 (k = 4) and 9, 11 (k = 6) show it.
+
+## 4. Assessment
+
+Known: no prior computation of any integral Collatz-type map on Z[i] with (1+i)-division. Joseph's Z_2[i] map (multiplier 3, divide by 2) is theory only, and on Z[i] it diverges for most starts. Kionke treats scalar-multiplier lattice maps and proves positive-density divergence for some of them. Leigh and Matthews work on O_K but give no Gaussian cases. Garg's 2026 Zenodo note is non-integral.
+
+Most Collatz-like rules found:
+
+1. H: z -> z/(1+i) if (1+i) | z; else (5+2i)z + d with d in {+-1, +-i, +-(2+i), +-(1-2i)} the unique digit making the result divisible by (1+i)^4. It is unit-equivariant, one cycle (the fixed class of 1), and verified for all N(z) <= 10^9 (3*10^9 pending). It sits in the Collatz window (29/32 per odd step on average, expanding 29/16 in the worst case), with long orbits and huge excursions, so it is non-trivially Collatz-like. Among unit-equivariant rules with minimal-norm digit sets and k <= 5, it is the only single-cycle one (up to units and conjugation). At k = 3 the extra digit sets units*(2+-i) and units*3 were also tried, and none of them has a single cycle either.
+2. G_3 (3z + unit, k = 3): the most natural analogue. It converges on everything to 10^9, with exactly five cycle classes (counting the mirror pair separately) and fast stopping times. It plays the role of 3x+1 on all of Z.
+3. Divide-by-2 maps with alpha = 1+2i (Joseph form, beta = 1, i, -1+i): one cycle at 10^6, also unit-free and less canonical.
+
+What would be publishable:
+
+(a) A short paper: "Collatz maps on the Gaussian integers". It would contain the window theorem (2^k < N(alpha) < 2^(k+1), and no single-rule analogue exists), the classification of unit-equivariant digit maps for k <= 5 (finite lists, done here), complete cycle lists verified to 10^9 (G_3: 5 classes; G_{3+2i}: 4; H: 1), the conjecture that H has a single cycle, the divergence criterion (lambda real up to a unit) with the invariant-line mechanism, and the random-walk fit for excursions and stopping times. The territory is empty, so the computation itself is new.
+(b) To strengthen it: push H to 10^11 or 10^12 (gstop runs at about 1.2*10^6 starts per second per core, so 10^11 is about 9 core-hours); prove the divergence for alpha = 5 rigorously (the invariant-line argument looks tractable); prove a Terras/Everett-type density-one finite stopping time for these maps (the 2-adic argument should carry over to (1+i)-adics, since the parity vector of the first n steps depends only on z mod (1+i)^(n+k) or so); and check for cycles of H by the Steiner/Simons-de Weger method (a cycle with n odd steps and total valuation V needs 2^V close to 29^n with a unit-phase condition; these bounds might rule out cycles with few odd steps).
+(c) Caveats: a single cycle at k = 6 is common (22 of 112 maps), so the claim "H is special" rests on minimality (smallest k) and uniqueness at that k, not on single-cycleness itself. Non-equivariant rules with a single cycle are also common (about 10% of small rules at k = 2..4).
+
+## Sources
+
+- Joseph, Fibonacci Quarterly 36(4) (1998): https://www.mathstat.dal.ca/FQ/Scanned/36-4/joseph.pdf
+- Kionke, A geometric approach to divergent points of higher dimensional Collatz mappings: https://arxiv.org/abs/1511.05893
+- Lagarias, annotated bibliographies: https://arxiv.org/abs/math/0309224 , https://arxiv.org/abs/math/0608208 ; overview https://arxiv.org/abs/2111.02635
+- Siegel, (p,q)-adic analysis and the Collatz conjecture: https://arxiv.org/abs/2412.02902 ; withdrawn https://arxiv.org/abs/2111.07882
+- Garg (2026), Zenodo 10.5281/zenodo.19078383 (summary via https://synapsesocial.com/papers/W7139080527)
+- Behajaina and Paran: https://arxiv.org/abs/2312.00390
+- Aliyev, NNTDM 31(3) (2025): https://nntdm.net/papers/nntdm-31/NNTDM-31-3-658-666.pdf
+- Matthews, generalized 3x+1 mappings: https://arxiv.org/abs/1907.13302 , https://arxiv.org/abs/1910.11798

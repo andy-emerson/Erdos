@@ -37,6 +37,7 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 - **Infinity.** Correct (study 1), but costly as tested: add 5 → 21, multiply 15 → 26 (study 2 with exact overflow marking: 26–32). To try: vector compares; deferring the check (sticky, once per array); one shared path for overflow and infinity. Undefined cases (∞ − ∞, 0·∞): follow prior practice (IEEE NaN; C's complex infinity rules). When one half is −2^31 the other half is free, so one reserved value gives a family of markers (∞, undefined, overflow information) at no extra range.
 
 **Tricks to try later** (after correctness and speed of the textbook version)
+- The valuation form x = (1+i)^k · u, u odd (the author's paired-bit idea; studies 31 to 34), stored as half coordinates (p, q) with u = 1 + (1−i)(p + iq). Wins: standard associate 40% (6 against 10 operations), exact division by a power of 1+i 36%, divisibility of random pairs 16% (rejects in 2 operations when y has more factors of 1+i than x), valuation, divisibility by 1+i and is zero nearly free; gcd, lcm and coprimality 1 to 2%. Loses: add (about 10 times), multiply (about 3 times), norm, general exact division, division with remainder, powers. Unit operations never overflow. Variants studied: digit words (bit pairs pick units), half coordinates (the same bits without two XORs), the odd part as an ordinary pair, the lazy 2^m · w form.
 - Montgomery reduction (studies 19 and 28): about twice as fast as Barrett per element when three conditions hold: the modulus n is odd, the multiply is array by array, and the data stays in Montgomery form across several multiplies (conversions in and out repay after about three multiplies per value).
 - A packed multiply: multiply the whole word without splitting it into halves first.
 - Lazy reduction for mod n (shelved, not archived): add 1 instruction, subtract 2, but n < 2^29 (3 bits of headroom per half), which matrix multiplication would feel quickly.
@@ -119,6 +120,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 53. **Inverses in constant time are on the main path,** and Bernstein–Yang returns from the research list to it. Idea to test for every n: Bernstein–Yang for the odd part of n, the Newton inverse mod 2^k (already used in exact division) for the power of 2, combined by the Chinese remainder theorem. Powers mod n for prime n is likely a special case.
 
 54. **Binary complex (base −1+i) is dropped** (study 32): every arithmetic step must pass through the pair (add about 179 operations against 2), and its range is a twindragon. Kept for the book as an example: a 64-digit word with carries dropped is the same ring as a wrapping int32 pair.
+
+55. **The paired-bit (valuation) form is studied, not adopted as storage** (studies 31 to 34). The ordinary pair stays the storage format: it wins every frequent operation. Adopted from the work: the half-coordinate view for the gcd loop (study 33, 22% below the earlier loop), the Hensel-quotient gcd as the candidate textbook gcd (to be built in NEON shape), the table inverse mod 2^32 for exact division (study 34: 30 to 23 operations), and the early exit for units in the gcd. The form itself goes to the tricks list for the problems where it wins.
 
 **Library-level ideas (later)**
 - The suppressible refusal and the canonical mod (item 40).

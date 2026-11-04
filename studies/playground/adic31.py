@@ -3,7 +3,7 @@
 #   u = sum u_j 2^j, n positions; covers exactly the odd values with |re| + |im| <= 2^n - 1.
 #   or (b) as an ordinary pair (a, b), a + b odd.
 # Zero: k = ZK (reserved code).
-# Usage: python3 adic31.py [conv|pat|carry|alg|all]
+# Usage: python3 adic31.py [conv|pat|carry|alg|lazy|mod|all]   (all: about 2 minutes)
 import sys, random
 from collections import Counter, defaultdict
 
@@ -135,11 +135,18 @@ def patterns():
             t = to_k(s)[0]
             A1, B1 = ud_encode(u1, n); A2, B2 = ud_encode(u2, n)
             if (t == 1) != (((B1 ^ B2) & 1) == 1): bad['t=1 rule'] += 1
-            if t >= 2:   # digit0 equal up to sign; t = 2 iff ... look at digit 1
-                same0 = (A1 & 1) == (A2 & 1)    # u2_0 == u1_0 (else u2_0 = -u1_0)
-                # if same: s = 2(u_0 + ...) ; if opposite: s = 2(u1_1 + u2_1) + ...
-                pass
     print("  rule t = 1 iff B1_0 xor B2_0 = 1: violations", bad['t=1 rule'])
+    # digit rule: j0 = first position with u2_j != -u1_j; t = 2 j0 + 1 if u2_j0 = +-i u1_j0, 2 j0 + 2 if equal
+    viol = 0
+    for u1 in odds:
+        for u2 in odds[::3]:
+            s = gadd(u1, u2)
+            if s == (0, 0): continue
+            A1, B1 = ud_encode(u1, n); A2, B2 = ud_encode(u2, n)
+            negd = (A1 ^ A2) & ~(B1 ^ B2)                     # digits with u2_j = -u1_j
+            j0 = ctz(~negd); eq = ((~(A1 ^ A2) & ~(B1 ^ B2)) >> j0) & 1
+            if to_k(s)[0] != 2*j0 + 1 + eq: viol += 1
+    print("  rule t = 2 j0 + 1 + [u2_j0 = u1_j0], j0 = ctz(~((A1^A2) & ~(B1^B2))): violations", viol)
     # full closed form: t = 1 + 2 ctz(P|Q) + bit, P = M - (X1 + X2), Q = M - (A1 + A2), X = A ^ B
     viol = 0
     for u1 in odds:

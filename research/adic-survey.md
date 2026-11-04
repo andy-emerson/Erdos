@@ -69,6 +69,46 @@ Reported costs in all of these are VLSI area and delay; the carry-free versions 
 - Lazy normalization. p-adic libraries (capped-absolute, fixed-modulus types) and Hensel-code systems simply do not normalize after each operation; they keep a common valuation and an unnormalized unit and normalize at output or before division ([Caruso](https://arxiv.org/pdf/1701.06794)). For sums of many terms, align everything to the minimum valuation once, accumulate in a wide rectangular register, normalize once.
 - Redundant forms make every addition carry-free (Section 1, 3), but only matter when carry propagation is the bottleneck, which it is not with native word adds.
 
+## 5. "Gaussian scientific notation": the form x = (1+i)^k · u itself
+
+### 5.1 Conventional names
+
+No source I found uses "Gaussian scientific notation" or any established name for this exact form over Z[i]. The pattern itself is standard, under several names:
+
+- Valuation theory and p-adics: x = π^v · u with v = v_π(x) the valuation (order, ord_π) and u a unit of the completion. Sage calls u the unit part and returns the pair from `val_unit()`; its capped-relative p-adic elements are stored as (unit, ordp, relprec), that is "π^v u" ([Sage capped relative elements](https://doc.sagemath.org/html/en/reference/padics/sage/rings/padics/padic_capped_relative_element.html); [Sage p-adic tutorial](https://doc.sagemath.org/html/en/reference/padics/sage/rings/padics/tutorial.html)). Caruso calls the same layout floating-point arithmetic for p-adics, in contrast to fixed-point (capped-absolute) ([arXiv:1701.06794](https://arxiv.org/pdf/1701.06794)). Model theorists call the leading residue digit of u the angular component ac(x) ([Model theory of valued fields](https://arxiv.org/pdf/math/0311433)).
+- Rational integers: n = 2^ν₂(n) · (odd part of n), with ν₂ the 2-adic valuation ([OEIS A007814](https://oeis.org/A007814)) and the odd part ([OEIS A000265](https://oeis.org/A000265)). Dyadic rationals with an odd mantissa, m · 2^e with m odd, are exactly Arb's old exact `fmpr_t` type ([fmpr docs](https://arblib.org/fmpr.html)).
+- Hensel codes are the truncated version: a valuation plus N digits of the unit, for rationals ([Krishnamurthy et al.](https://repository.ias.ac.in/28162)).
+- For Z[i], "odd" is the usual word for "not divisible by 1+i", and a canonical unit choice already exists: an odd Gaussian integer is primary when u ≡ 1 mod (1+i)^3, and every odd element has exactly one primary associate (Ireland and Rosen, ch. 9; [Gaussian integer](https://en.wikipedia.org/wiki/Gaussian_integer)). So the fully canonical form is x = i^m · (1+i)^k · u with u primary, m in {0..3}.
+
+A name that follows from these terms is "(1+i)-adic floating point" (Caruso's usage), or "exact (1+i)-adic floating point" because nothing is truncated. "Valuation-unit form" and "(1+i)-adic normal form" are also accurate. One caution about "scientific notation": decimal scientific notation normalizes the leading (archimedean, high-end) digit, while this form normalizes the trailing (non-archimedean, low-end) digit. It is the 2-adic or p-adic counterpart, not the ordinary one, and that difference is why addition behaves ultrametrically (Section 4).
+
+A fact about our code (checked by script for n = 1..4): in the unit-digit form, u is primary exactly when the lowest digit u_0 is -1 (or u_0 = 1 when n = 1), because u ≡ u_0 + 2 mod (1+i)^3. So the primary normalization means fixing digit 0 and moving the unit into the i^m factor. Two bits per number are spent on the unit either way.
+
+### 5.2 Worked-out arithmetic in such forms
+
+| Operation | How it works in valuation-unit form | Sources |
+|---|---|---|
+| Multiply | Valuations add, units multiply; the product of odd elements is odd, so no renormalization. With primary units, the product of primaries is primary. | Sage p-adics; GMP factorial (below) |
+| Exact division | Defined iff v(x) ≥ v(y) and the unit parts divide. An odd divisor is exactly what 2-adic (Hensel/Jebelean) exact division needs: it computes the quotient from the low end using an inverse modulo 2^N. GMP's `mpz_divexact` uses this. | [GMP exact division](https://gmplib.org/manual/Exact-Division) |
+| Add | Unequal valuations: the result valuation is the minimum, with no renormalization. Equal valuations: cancellation, found with trailing-zero counts. | Section 4; Caruso |
+| Equality | Canonical with the primary normalization: compare (m, k, u) wordwise. | |
+| Magnitude compare | Not natural: N(x) = 2^k N(u). A cheap bound from k plus the bit length of u, with an exact fallback. | |
+| Divisibility by (1+i)^j | O(1): compare j with k. | |
+| GCD | gcd(x, y) = (1+i)^min(k,l) · gcd(u, w). The odd parts are exactly the inputs binary-style GCDs want: Stein's binary GCD for Z, Weilert's (1+i)-ary GCD for Z[i] (FLINT `fmpzi_gcd_binary`), and the subquadratic, low-end-first recursive binary GCD of Stehlé and Zimmermann. | [Binary GCD](https://en.wikipedia.org/wiki/Binary_GCD_algorithm); [Weilert](https://www.bohrium.com/paper-details/1-i-ary-gcd-computation-inz-i-as-an-analogue-to-the-binary-gcd-algorithm/812456148325105666-885); [FLINT fmpzi](https://arblib.org/fmpzi.html); [Stehlé and Zimmermann](https://perso.ens-lyon.fr/damien.stehle/BINARY.html); [Brent and Zimmermann, Jacobi symbol](https://arxiv.org/pdf/1004.2091) |
+| Convert to a + bi | (1+i)^(2j) = (2i)^j: a shift and a rotation; an odd k needs one (a - b, a + b) step. | |
+| Convert from a + bi | v = 2·min(ctz a, ctz b) + [ctz a = ctz b]; FLINT `fmpzi_remove_one_plus_i`. For Z, GMP `mpz_scan1` / `mpz_remove`. | [FLINT](https://arblib.org/fmpzi.html); [GMP remove.c](https://ftp.riken.jp/NetBSD/NetBSD-current/src/external/lgpl3/gmp/dist/mpz/remove.c) |
+
+I found no hardware that stores numbers in valuation-unit form. Hardware floating point normalizes at the high end, and the complex-base hardware in Section 3 is positional.
+
+### 5.3 Uses for very large numbers
+
+- GMP computes n! by building only the odd part and shifting by the power of 2 at the end, using n! = ⌊n/2⌋!² · (odd swing part) · 2^k ([GMP factorial algorithm](https://gmplib.org/manual/Factorial-Algorithm); [oddfac_1.c](https://third-party-mirror.googlesource.com/gmp/+/refs/heads/master/mpz/oddfac_1.c); Luschny's swing numbers, [OEIS A163590](https://oeis.org/A163590)). Binomial coefficients in GMP use the same split. This is the clearest big-number use of "power times odd" as a working representation.
+- Arb's `fmpr_t` stored exact dyadics as an odd big mantissa times a big exponent, so 2^(10^6) costs two small words. Exact addition of numbers with distant exponents was flagged as the danger case, since the result may not fit in memory ([fmpr docs](https://arblib.org/fmpr.html)). It was replaced by `arf_t`, which trims trailing zero limbs rather than bits.
+- Sage, Magma and PARI p-adic types use this form as their main representation for elements of p-adic fields and their extensions, including ramified extensions, where π plays the role that 1+i plays over Q₂ (Sage docs above; Caruso).
+- More general "factored" representations store whole prime factorizations, of which ours keeps one prime. I did not chase specific systems.
+
+Takeaway for us: the form saves space and work only when valuations are large (powers of 2 or 1+i, factorial-like products, repeated doubling). For generic Gaussian integers, k is small on average (geometric, mean about 1), so the gain is that multiplication, exact division and GCD get the odd operands they want, not compactness.
+
 ## Ideas for our addition
 
 1. Treat the unit-digit code as rectangular coordinates. Use the affine map of Section 0 (pick the bit-pair assignment that makes it affine) so that adding or converting is a few integer adds per lane, never digit logic. Equivalently, store the rectangular pair and keep the unit-digit code only as an interchange or packing format.

@@ -347,6 +347,11 @@ def c2b(w, n, cm, o):                 # strip is free: k = ctz(w); x = beta^k w'
     o('alu', 6); o('sh', 2); A, B = S31.ud_encode((a, b), n)
     return (k, A, B)
 
+def A_val0(x, o):
+    o('alu'); o('ctz'); oo = x[0] | x[1]; e = (oo & -oo).bit_length() - 1 if oo else 64
+    o('sh', 2); o('alu', 3); return 2*e + ((x[0] >> e) & (x[1] >> e) & 1) if oo else INF
+def B_val(x, n, o): return x[0]                              # stored: 0 ops
+def C_val(x, cm, o): o('ctz'); return (x & -x).bit_length() - 1 if x else INF
 # ---------------- reference operations on values ----------------
 def ref_round(n, N):                  # nearest integer to n/N, ties toward zero
     q, r = divmod(abs(n), N)
@@ -370,6 +375,7 @@ OPS = [
     ("times 1+i", 'un', lambda x: (x[0]-x[1], x[0]+x[1]), A_mul1i, B_mul1i, C_mul1i),
     ("multiply", 'mul', gmul, A_mul, B_mul, C_mul),
     ("norm", 'val', norm, A_norm, B_norm, C_norm),
+    ("valuation", 'valk', None, A_val0, B_val, C_val),
     ("equality", 'pred2', lambda x, y: x == y, A_eq, B_eq, C_eq),
     ("is zero", 'pred1', lambda x: x == (0, 0), A_iszero, B_iszero, C_iszero),
     ("divisible by 1+i", 'pred1', lambda x: (x[0] - x[1]) % 2 == 0, A_div1i, B_div1i, C_div1i),
@@ -402,6 +408,9 @@ def run_case(op, x, y, n, cm, stats=None, j=None):
             got = vval(rep, call(rep, f, (sx,), n, cm, o), n, cm); exp = ref(x)
         elif kind == 'val':
             got = call(rep, f, (sx,), n, cm, o); exp = ref(x)
+        elif kind == 'valk':
+            got = call(rep, f, (sx,), n, cm, o); exp = pij_val(x) if x != (0, 0) else INF
+            if exp == INF: got = INF if got >= 64 else got
         elif kind == 'pred1':
             got = call(rep, f, (sx,), n, cm, o); exp = ref(x)
         elif kind == 'pred2':
@@ -453,6 +462,14 @@ def check_table():
                 run_case(op, x, y, n, cm, stats, j=rnd.randint(0, j)); continue
             run_case(op, x, y, n, cm, stats)
     print("  full width (A int32, B 32 digits, C 64 digits), %d random cases per op: exact" % NR)
+    # C exact division by (1+i)^j split by j mod 4
+    for jm in (0, 1):
+        o = Ops(); cnt = 0
+        for _ in range(300):
+            x = (rnd.randrange(-2**20, 2**20) << 4, rnd.randrange(-2**20, 2**20) << 4); j = 4 if jm == 0 else rnd.choice((1, 2, 3, 5))
+            run_case(OPS[[op[0] for op in OPS].index("exact / (1+i)^j")], x, (0, 0), n, cm, None, j=j)
+            C_exdiv_pij(mkC(x, cm), j, cm, o); cnt += 1
+        print("  C exact / (1+i)^j with j %s: %.1f ops" % ("= 0 mod 4" if jm == 0 else "!= 0 mod 4", o.tot() / cnt))
     return stats
 
 def fmt(c, cnt):
@@ -499,6 +516,7 @@ def check_conv():
     print("  | conversion | ops avg |")
     print("  |---|---|")
     for name, *_ in CONV: print("  | %s | %s |" % (name, fmt(st[name], NR)))
+    return {name: st[name].tot() / NR for name, *_ in CONV}
 
 
 # ---------------- binary (1+i)-ary gcd in each representation ----------------
@@ -591,6 +609,7 @@ def ref_gcd(x, y):
     return x
 def assoc(x, y): return any(gmul(x, u) == y for u in ((1, 0), (0, 1), (-1, 0), (0, -1)))
 
+GCD = {}
 def check_gcd():
     print("gcd: verification")
     n, cm = 8, CM(8); R = 6; box = [(a, b) for a in range(-R, R+1) for b in range(-R, R+1)]
@@ -614,13 +633,62 @@ def check_gcd():
             if 2 in reps:
                 o = Ops(); gC, s = gcd_C(mkC(x, cm), mkC(y, cm), cm, o); assert assoc(valC(gC, cm), g); tot[2].update(o); steps[2] += s
         print("  random %d-bit pairs, %d cases: exact (up to a unit)" % (bits, NR))
+        GCD[bits] = [tot[r].tot() / NR for r in range(3)]
         for r in reps:
             print("    %s: %.2f steps, %.0f ops per gcd, %.1f ops per step overall (%s)" % ("ABC"[r], steps[r] / NR,
                   tot[r].tot() / NR, tot[r].tot() / steps[r], fmt(tot[r], NR)))
 
+
+# ---------------- hybrid analysis ----------------
+def hybrid(stats, conv):
+    names = [op[0] for op in OPS]
+    cost = {(nm, r): sum(stats[(nm, r)].values()) / stats[(nm, r, 'cnt')]['n'] for nm in names for r in range(3)}
+    for r in range(3): cost[('gcd', r)] = GCD[28][r] if r == 2 else GCD[31][r]
+    cost[('gcd', 2)] = GCD[28][2] * GCD[31][0] / GCD[28][0]          # scale C's 28-bit gcd to 31-bit step counts
+    to = {(0, 1): conv["A -> B"], (1, 0): conv["B -> A"], (0, 2): conv["A -> C (fixpoint)"], (2, 0): conv["C -> A"],
+          (1, 2): conv["B -> C"], (2, 1): conv["C -> B"], (0, 0): 0, (1, 1): 0, (2, 2): 0}
+    arity = {nm: (2 if op[1] in ('bin', 'mul', 'pred2', 'exdiv', 'divrem') else 1) for op in OPS for nm in [op[0]]}
+    outs = {nm: (0 if op[1] in ('pred1', 'pred2', 'val', 'valk') else 2 if op[1] == 'divrem' else 1) for op in OPS for nm in [op[0]]}
+    arity['gcd'] = 2; outs['gcd'] = 1
+    def via_a(nm, S):                 # operands S -> A, compute in A, results A -> S
+        return arity[nm] * to[(S, 0)] + cost[(nm, 0)] + outs[nm] * to[(0, S)]
+    loads = {"sum of 1000 terms": ({"add": 999}, 1000, 1),
+             "product chain of 100 terms": ({"multiply": 99}, 100, 1),
+             "gcd batch, 100 pairs": ({"gcd": 100}, 200, 100),
+             "mixed, 100 items": ({"add": 300, "subtract": 100, "multiply": 200, "norm": 100, "valuation": 100,
+                                    "divisible by 1+i": 200, "exact / (1+i)^j": 100, "equality": 100, "is zero": 100,
+                                    "div with remainder": 50, "gcd": 10}, 200, 100)}
+    print("\nhybrid analysis (ops in the model; inputs and outputs in the storage format)")
+    print("  | workload | A native | B native | B per-op best | B convert once | C native | C convert once |")
+    print("  |---|---|---|---|---|---|---|")
+    for wl, (mix, nin, nout) in loads.items():
+        row = []
+        for S in range(3):
+            nat = sum(c * cost[(nm, S)] for nm, c in mix.items())
+            best = sum(c * min(cost[(nm, S)], via_a(nm, S)) for nm, c in mix.items())
+            once = nin * to[(S, 0)] + sum(c * cost[(nm, 0)] for nm, c in mix.items()) + nout * to[(0, S)]
+            row.append((nat, best, once))
+        print("  | %s | %.0f | %.0f | %.0f | %.0f | %.0f | %.0f |" % (wl, row[0][0], row[1][0], row[1][1], row[1][2], row[2][0], row[2][2]))
+    print("\n  break-even: data in A, converted to F and back, to run k ops of one kind (k = round trip / saving per op)")
+    print("  | op | A | B | k for B | C | k for C |")
+    print("  |---|---|---|---|---|---|")
+    rtB = to[(0, 1)] + to[(1, 0)]; rtC = to[(0, 2)] + to[(2, 0)]
+    for nm in names:
+        a, b, c = cost[(nm, 0)], cost[(nm, 1)], cost[(nm, 2)]
+        kb = "%.0f" % (rtB / (a - b)) if a > b else "never"
+        kc = "%.0f" % (rtC / (a - c)) if a > c else "never"
+        print("  | %s | %.1f | %.1f | %s | %.1f | %s |" % (nm, a, b, kb, c, kc))
+    print("  round trips: A->B->A %.1f, A->C->A %.1f; for tests (no result to convert back) only the forward conversion counts:"
+          % (rtB, rtC))
+    for nm in ("valuation", "is zero", "divisible by 1+i", "divisible by 2", "equality"):
+        a, b, c = cost[(nm, 0)], cost[(nm, 1)], cost[(nm, 2)]
+        print("    %s: B after %.1f, C after %.1f uses" % (nm, to[(0, 1)] / (a - b) if a > b else float('inf'),
+                                                        to[(0, 2)] / (a - c) if a > c else float('inf')))
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     if what in ("c", "all"): check_c()
-    if what in ("conv", "all"): check_conv()
-    if what in ("gcd", "all"): check_gcd()
-    if what in ("table", "all"): print_table(check_table())
+    if what in ("table", "all", "hyb"): st = check_table(); print_table(st)
+    if what in ("conv", "all", "hyb"): cv = check_conv()
+    if what in ("gcd", "all", "hyb"): check_gcd()
+    if what in ("all", "hyb"): hybrid(st, cv)

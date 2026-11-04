@@ -2437,3 +2437,147 @@ Checked exhaustively on 42 moduli, 1,142,378 (x, y) pairs: rational 3..19 includ
   - It gains free (1+i)-power multiplication and division, a free valuation (gcd and the (1+i)-ary gcd keep values stripped anyway), and multiplication at the cost of the odd parts plus one add of exponents.
   - Unit digits gain cheap unit multiplications (1 to 2 ops) and a reserved-free code space (every code is a value). They lose on every add, because they cannot hold even intermediates.
   - Modulo an odd nu, keeping odd representatives is canonical and closed under the ring operations. It costs one bit of range in pair form and a forced correction on each add, and gains nothing over plain residues for rational p (it is a twist of them).
+
+## Study 32: three representations compared: pair, unit digits, base −1+i (rep32.py)
+
+**What was done.** Three exact representations of a Gaussian integer at 32 bits per coordinate or the equivalent:
+- **A**, the library's pair (a, b) of int32.
+- **B**, study 31's x = (1+i)^k u with u odd in unit digits: two 32-bit digit words plus k. It uses the split convention x = 2^(k>>1) (1+i)^(k&1) w, which is just as canonical and saves rotations.
+- **C**, base β = −1+i with digits 0 and 1 in one 64-bit word.
+
+Python only, no timing. The op model is study 31's: alu (add, sub, and, or, xor, not, neg, mask compare), sh, mul, ctz, br (compare and branch; a jump table counts 1), ld (table load), and div kept apart. Constants live in registers, and every op counts 1. **All counts are estimates in this model, not timings.**
+
+Verification is against Python big integers:
+- C converters: every word at m = 2, 4, 8 bits per coordinate (n = 2m digits).
+- Every table operation: exhaustively on the box |a|, |b| ≤ 8 (B with 8 digits, C with 16), and on 3000 random cases per operation at full width.
+- Converters: the whole inscribed box of 16-digit C, and 20,000 random full-width values.
+- gcd: all 28,561 pairs with |a|, |b| ≤ 6, plus 1500 random pairs each at 31 bits (A, B) and 28 bits (A, B, C).
+
+Random operands are |a|, |b| < 2^28 (2^13 for multiply and exact division), so that results stay in every representation's range. `python3 rep32.py all` runs everything in about 30 s.
+
+### C: base −1+i
+- **A 64-digit word is Z[i]/2^32.** β^64 = (−4)^16 = 2^32, so dropping carries off the top is exactly reduction mod 2^32, the same ring as a wrapping int32 pair.
+  - A ↔ C are ring isomorphisms mod 2^32 (verified: the 2^n words hit every residue mod 2^m once). Only the lift (the "range") differs.
+  - Overflow wraps silently, as in A.
+- **Range.** The 2^64 words form a twindragon, not a box.
+  - Bounding box, from the digit weights β^j, whose real and imaginary parts are 1, −1, 0, 2, −4, 4, 0, −8 and 0, 1, −2, 2, 0, −4, 8, −8 per 8 positions, times 16 per 8 positions:
+    - Re in [−13/15, 7/15]·(2^32 − 1).
+    - Im in [−14/15, 11/15]·(2^32 − 1).
+    - So the coordinates need 33 bits signed.
+  - Largest centred box contained: |a|, |b| ≤ 0.133·2^(n/2) for even n (546 at n = 24, 1092 at n = 26, computed exactly up to n = 26). That is about 5.7e8 ≈ 2^29.1 at n = 64.
+  - Holding the whole int32 box needs 68 digits.
+  - The range is very asymmetric. At n = 8 and n = 16, the negation of 60% of words is out of range, conjugation 52%, times i 55%, times β 50% (the top digit falls off).
+- **C → A, 44 ops.** An outer unshuffle (5 delta swaps, 30 ops) puts even digits in E and odd digits in O (2 ops to split). Then β^(2t) = (−2i)^t makes position t of E and O a signed power 2^t, with the sign set by t mod 4 ("twisted base 2"):
+  - Re = (E & m0) − (E & m2) − (O & m0) + (O & m1) + (O & m2) − (O & m3).
+  - Im = (E & m3) − (E & m1) + (O & m0) + (O & m1) − (O & m2) − (O & m3).
+  - Each is read with the negabinary offset trick (x ^ neg) − neg, 12 ops for both.
+  - With BMI2 pext the unshuffle is 2 ops, so about 14 (estimate, not run).
+- **A → C: no negabinary-style 2-op trick.** No linear coordinates split the 64 digits into two independent binary words:
+  - A linear form vanishes on β^j for at most one class of j mod 4 (the directions of β^j repeat every 4 steps).
+  - Equivalently, the 4-digit block set T = {Σ d_r β^r} is a Minkowski sum of segments in 4 directions, so it is not a box in any basis.
+- **The fixpoint (best found).** In twisted base 2 each coordinate is a signed-digit binary word whose negative positions depend on the other coordinate's bits:
+  - a: t ≡ 3 always; t ≡ 0 when b's bit is set; t ≡ 2 when it is clear.
+  - b: t ≡ 2 always; t ≡ 1 when a's bit is clear; t ≡ 3 when it is set.
+  - Given the sign masks, Aabs = (a + Na) ^ Na exactly as in negabinary. Gauss-Seidel on (Na, Nb), at 14 ops per round, converges in 3.4 rounds on average (distribution 2: 18%, 3: 43%, 4: 25%, 5: 9%, at most 11 seen). The exhaustive worst case is m/2 rounds (2, 3, 4 at m = 4, 6, 8), so 16 at m = 32.
+  - Digits: E = Aabs ^ Babs, and O takes Babs at even t and Aabs at odd t. Then a shuffle (32 ops).
+  - Total about 85 to 93 ops on average (on 28-bit values: 93, branchy).
+  - The overflow flag is nearly free: the value is in range iff (a + Na) >> 32 = (b + Nb) >> 32 = 0, 5 ops.
+  - A byte table on base 16 = β^8 (256 entries, 8 rounds) costs 104 ops fixed (24 of them loads) and needs no shuffle.
+- **Addition.**
+  - Convert, add, convert back: 179 ops.
+  - The direct carry rule 1 + 1 = 1100, done with three words (sum = xor, carry = majority, then carry << 2 and << 3), needs about 24 iterations at n = 64 (200 ops). That holds even for in-range sums of 28-bit values, because the carries always ripple off the top of the word (cancellations like 1 + 11101 = 0 only finish there).
+- **Negation, times i, conjugation, times 1+i.** None is a bit trick. Each goes through A, about 133 ops.
+  - Only multiplication by β^k is a shift, and only exact division by β^k is a right shift.
+  - 1+i = −iβ, so dividing by (1+i)^j is a shift plus a unit: 3 ops when j ≡ 0 mod 4, 132 otherwise, 1 op up to a unit.
+- **Multiplication** goes through A: 181 ops.
+
+### The table (ops per operation, averages)
+Divisions use the Hensel form for exact division (x·conj(y), then the 2-adic inverse of the odd part of N(y), Newton in 5 steps) and two integer divides for nearest rounding (ties toward zero). B and C do both through A.
+
+| operation | A pair | B unit digits | C base −1+i |
+|---|---|---|---|
+| add | 2 | 30 | 179 |
+| subtract | 2 | 31 | 178 |
+| negate | 2 | 1 | 134 |
+| conjugate | 1 | 3.7 | 133 |
+| times i | 1 | 2 | 133 |
+| times 1+i | 2 | 3.7 | 134 |
+| multiply | 6 (4 mul) | 27 | 181 |
+| norm | 3 (2 mul) | 9 | 47 |
+| valuation | 7 | 0 (stored) | 1 (ctz) |
+| equality | 3 | 5 | 1 |
+| is zero | 2 | 1 | 1 |
+| divisible by 1+i | 2 | 1 | 1 |
+| divisible by 2 | 2 | 1 | 1 |
+| exact / (1+i)^j | 8 | 5.3 | 3 or 132 (j mod 4) |
+| exact / general | 30 (18 mul) | 47 | 196 |
+| division with remainder | 35 (10 mul, 2 div) | 94 | 267 |
+
+**gcd** (binary (1+i)-ary: study 9 in A; in B and C the larger value is replaced by a − εb, with ε the unit making a ≡ εb mod (1+i)³):
+
+| | steps (31-bit) | per step | per gcd, 31-bit | per gcd, 28-bit |
+|---|---|---|---|---|
+| A | 30.2 | 54 | 1775 | 1619 |
+| B | 30.2 | 64 | 1954 | 1768 |
+| C | same | about 190 | (needs headroom) | 5226 |
+
+- The three give the same norms each step: a − εb is a unit times primary(a) − primary(b). So the step counts are equal.
+- **Free in B:**
+  - The valuation and the initial strip (k is stored, w is odd).
+  - The choice of ε. An odd u ≡ u_0 + 2 mod (1+i)³, so ε = i^(code a_0 − code b_0): 8 ops against primary's 17.
+  - The final (1+i)^k.
+- **Not free in B:** each step's a − εb leaves the form. It is formed as P, Q pair words (study 31's formula), stripped on the pair (16 ops) and re-encoded (8). So B's step costs 10 more than A's.
+- **Free in C:** the strip (ctz and a shift, against 16) and ε (odd w ≡ i^((w>>1)&3) mod β³: 4 ops).
+- **Not free in C:** the subtraction and the norm, which need about 135 ops of conversion per step. C at 64 digits also cannot run 31-bit gcds, since a − εb must fit before the strip. That needs about 70 digits.
+
+**Conversions** (ops, average):
+
+| from \ to | A | B | C |
+|---|---|---|---|
+| A | | 20 | 85 to 93 (table 104) |
+| B | 11 | | 95 (decode, rotate, A → C, shift by k) |
+| C | 44 | 59 (k = ctz, shift, C → A of the odd part, rotate, encode) | |
+
+### Hybrids
+Totals in the model, with inputs and outputs stored in the named format. "Convert once" loads every input into A, computes in A, and stores the outputs back.
+
+| workload | A | B native | B convert once | C native | C convert once |
+|---|---|---|---|---|---|
+| sum of 1000 terms | 1998 | 29721 | 12702 | 178406 | 46083 |
+| product chain, 100 terms | 594 | 2684 | 1683 | 17874 | 5079 |
+| gcd batch, 100 pairs | 177539 | 195379 | 181713 | 573198 | 194805 |
+| mixed, 100 items | 24211 | 43880 | 28384 | 187760 | 41477 |
+
+The mixed workload, per item: 3 add, 1 subtract, 2 multiply, 1 norm, 1 valuation, 2 divisibility tests, 1 exact /(1+i)^j, 1 equality, 1 zero test, 0.5 division with remainder, 0.1 gcd.
+
+- **A wins every workload.** For data that arrives in B or C, convert once to A and work there. Per-op routing through A ("B per-op best") is barely better than native B, because the conversions repeat.
+- **Break-even** for taking A data into another format and back, counted as the round trip divided by the saving per op:
+  - B: round trip 31. It pays only for valuation queries (after 4 uses, or 3 if no result goes back), exact division by (1+i)^j (11), and negation or the 1-op tests (31; 20 if no result goes back).
+  - C: round trip 129. It pays only for valuation (21; 14 forward only) and equality (64; 42).
+  - Every arithmetic op is cheaper in A, so no workload containing arithmetic reaches break-even.
+
+### Symmetry, overflow, uniqueness
+- **A.**
+  - Add, subtract and times 1+i overflow at the box edge, and multiply overflows anywhere beyond 16-bit operands.
+  - Negate, conjugate and times i overflow only at −2^31 (the asymmetric two's complement range).
+  - The norm of (−2^31, −2^31) is 2^63, which does not fit int64. Exact and nearest division form x·conj(y), which can also reach 2^63.
+  - Unique: every value has one code, and every code is a value.
+- **B.**
+  - The odd diamond |a| + |b| ≤ 2^32 − 1 is closed under all 8 symmetries (checked at n = 8). So negate, conjugate, times i, times 1+i (k + 1) and exact division by (1+i)^j never overflow, except for the k field.
+  - Add and subtract can need one more digit, and multiply doubles the digits.
+  - The range holds all of the int32 box and much more along powers of 1+i, at the cost of about 70 bits (64 digit bits and a k field).
+  - Unique, with zero reserved (it needs canonical zero digits for a 5-op equality).
+- **C.**
+  - Every op can overflow, including negate, conjugate, times i and times β (50% to 64% of words go out of range). Only the inscribed box |a|, |b| ≤ 2^29.1 is safe under the symmetries.
+  - Overflow wraps mod 2^32 silently, but A → C reports it for 5 ops.
+  - Unique: every word is a value, there is no reserved code, and zero is the zero word.
+  - Equality and zero tests are 1 op, and the valuation is ctz.
+
+### Summary
+- **C is the pair in disguise.** A 64-digit base −1+i word is Z[i]/2^32, the same ring as a wrapping int32 pair, with a twindragon as its range.
+  - C → A is a bit permutation plus 12 ops (44).
+  - A → C needs a coupled two-coordinate carry chain (about 90 ops, or 104 by table), so every C operation except shifts by β costs 130 to 180 ops, against 1 to 6 in A.
+  - The direct 1 + 1 = 1100 adder is worse still (about 24 rounds), because carries run off the top of the word.
+  - C's gains are 1-op equality, zero and divisibility tests and ctz valuation. Its strip is free, which suits the gcd, but the gcd's subtraction is not.
+- **B keeps what study 31 found.** It has cheap units, symmetry and a stored valuation, and loses 15 to 30 ops on every add and multiply.
+- **A is the right working format.** Its wins: 2-op add, 6-op multiply, and the cheapest gcd (B's in-loop strip is not free, and C's free strip costs conversions). If a valuation is queried more than about 3 times per value, store k beside the pair (A plus a cached ctz-based k); B's normal form is not needed for that.

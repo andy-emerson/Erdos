@@ -44,3 +44,42 @@ Also a ternary quadrant version (every a+bi with a > 2, b > 2 is a sum of three 
 ### Computational verification already done
 
 None found with a stated bound. Holben and Jordan checked E and F in the box |Re|, |Im| <= 50 (norm up to 5000, complete only for N <= 2500). Knill shows pictures. No OEIS sequence counts Goldbach representations of Gaussian integers that I could find (searched OEIS via web search; A062711 etc. are unrelated). No MathOverflow / Math.SE thread with a computation turned up. The valuation-problems survey's finding stands.
+
+### Knill's odd-target remark, rechecked
+
+An odd z = p1+p2 needs one summand an associate of 1+i, so z is a sum iff some z - (1+i)e is prime. odd_check.py (sympy) confirms: the odd Gaussian integers of smallest norm that are not sums of two Gaussian primes are 4+13i and its 7 images (norm 185), next 12+17i (433); the smallest positive odd real one is 29 (then 31, 33). So Knill's statement is about unrestricted sums of odd targets.
+
+## 2. Variants to verify and method
+
+| variant | targets | condition on z = p1 + p2 | symmetry used |
+|---|---|---|---|
+| D (H-J, Mitsui) | all even z | none | follows from E-nonstrict for N(z) > 2; 0 = (2+i)+(-2-i), 1+i = (3+2i)+(-2-i) |
+| E (H-J) | even, N(z) > 2 | angle(pj, z) < 45 deg, j = 1, 2 | 8 symmetries (units, conjugation): 0 <= b <= a |
+| F (H-J) | even, N(z) > 10 | angle(pj, z) < 30 deg | same |
+| Q (Knill) | even a+bi, a, b > 1 | p1, p2 in open first quadrant | a <-> b: 2 <= b <= a |
+
+Exact tests. With dot = Re(p1 conj z), cr = Im(p1 conj z), and p2 = z - p1 one has cross(p2, z) = -cr and dot(p2, z) = N(z) - dot. So E strict is dot > |cr| and N(z) - dot > |cr|; F is dot, N(z)-dot > 0 and 3 cr^2 < dot^2, (N(z)-dot)^2 (128-bit). Primality: x+yi with xy != 0 is prime iff x^2+y^2 is a rational prime; on the axes iff |coordinate| is a prime 3 mod 4. So a table of rational primes up to about max N(p2) is the whole Gaussian prime table; no splitting of p = 1 mod 4 is needed.
+
+Search order. E, F: p1 runs over all Gaussian primes (all associates) sorted by norm, so the first hit is the minimal N(p1) over all representations (= min over reps of min(N(p1), N(p2)) by symmetry). The cone test filters most candidates before any table lookup. Q: p1 = x+yi over diagonals x+y = k = 2, 3, ..., so the first hit is the minimal L1 size; this handles the thin rows b = 2, 3 well (for b = 2 only p1 = x+i, p2 = (a-x)+i are possible, a Goldbach problem for primes n^2+1).
+
+Implementation (gg.c). Targets are processed in norm shells [S, S+W) with W = 2^27. A segmented odd-only Eratosthenes sieve covers the shell plus a margin 2|z|max|p1| + max N(p1); any norm outside the segment goes to a small table or to deterministic Miller-Rabin (12 prime bases, exact for 64-bit), so correctness never depends on the margin. Memory is O(W) plus the prime list, independent of N: about 30 MB for every bound up to 10^12. Shell ranges can be run independently ([NMIN, NMAX] arguments), which is how a larger run would be split across cores or machines.
+
+Measured cost (one core, all three variants together, niced, with other jobs running): 4.5 s to 10^8, 54 s to 10^9, about 70 s per further 10^9 window near 10^10. Per variant near 10^9: E about 2.5 s, F 3.5 s, Q 2 s per 10^8 window of norms, roughly 130 ns per target, dominated by table lookups. Targets in the fundamental domain number about pi N / 16.
+
+| bound N | targets per variant (domain) | even z in the whole plane | est. one-core time, E+F+Q | memory |
+|---|---|---|---|---|
+| 10^8 | 2.0e7 | 1.6e8 | 4.5 s (measured) | 30 MB |
+| 10^10 | 2.0e9 | 1.6e10 | about 12 min (measured, see below) | 30 MB |
+| 10^12 | 2.0e11 | 1.6e12 | about 25 to 30 h (extrapolated; growth slightly above linear) | 30 MB |
+
+10^12 corresponds to |z| <= 10^6, so all arithmetic fits in 64 bits (norms < 2^41, dot products < 2^31 times 2^20) with 128-bit only for the F squares. Obvious speedups if 10^12 or beyond is wanted: run shells in parallel (trivially independent), smaller shells that fit in L2, a wheel/bucket sieve, and testing the best few p1 candidates for a whole row of z at once.
+
+## 3. Checks
+
+| check | result |
+|---|---|
+| ref.py: independent numpy full-box brute force (no early exit, cos^2 form of the angle tests) vs gg.c per-target minimal values, all 4013 even z in the domain with N <= 20000 | identical |
+| sieve vs pure Miller-Rabin (GGNOSIEVE=1) and three different shell/margin settings, 196335 targets with 9.99e8 < N <= 1e9 | identical per-target output |
+| split ranges [0, 1e6) + [1e6, 2e6] vs one run | identical |
+| target counts reported by gg.c vs closed-form count in check_top.py | equal for every run and chunk |
+| the 12 hardest z per variant in every run: representation re-verified with sympy and minimality proved by exhaustive search over all smaller p1 | all valid and minimal |

@@ -1,6 +1,6 @@
 # Gaussian Goldbach: literature and a first verification
 
-Working notes. Code in this directory. Status: in progress.
+Working notes. Code in this directory. Status: first verification done (all even z with N(z) <= 10^10).
 
 ## 1. Literature
 
@@ -69,7 +69,7 @@ Measured cost (one core, all three variants together, niced, with other jobs run
 | bound N | targets per variant (domain) | even z in the whole plane | est. one-core time, E+F+Q | memory |
 |---|---|---|---|---|
 | 10^8 | 2.0e7 | 1.6e8 | 4.5 s (measured) | 30 MB |
-| 10^10 | 2.0e9 | 1.6e10 | about 12 min (measured, see below) | 30 MB |
+| 10^10 | 2.0e9 | 1.6e10 | 10.3 min (measured) | 30 MB |
 | 10^12 | 2.0e11 | 1.6e12 | about 25 to 30 h (extrapolated; growth slightly above linear) | 30 MB |
 
 10^12 corresponds to |z| <= 10^6, so all arithmetic fits in 64 bits (norms < 2^41, dot products < 2^31 times 2^20) with 128-bit only for the F squares. Obvious speedups if 10^12 or beyond is wanted: run shells in parallel (trivially independent), smaller shells that fit in L2, a wheel/bucket sieve, and testing the best few p1 candidates for a whole row of z at once.
@@ -83,3 +83,66 @@ Measured cost (one core, all three variants together, niced, with other jobs run
 | split ranges [0, 1e6) + [1e6, 2e6] vs one run | identical |
 | target counts reported by gg.c vs closed-form count in check_top.py | equal for every run and chunk |
 | the 12 hardest z per variant in every run: representation re-verified with sympy and minimality proved by exhaustive search over all smaller p1 | all valid and minimal |
+
+## 4. Results: first bound N(z) <= 10^10
+
+Runs: run_1e8.txt, run_1e9.txt (norms [0, 1e9]) and chunks/run_ke9.txt (norms (k e9, (k+1) e9], k = 1..9), merged in merged_1e10.txt. 1,963,555,659 targets for E in the fundamental domain, i.e. all 15,707,962,441 even Gaussian integers of norm <= 10^10 in the plane. 619 s CPU in total.
+
+| variant | targets checked (domain) | exceptions | hardest z (N) | its smallest summand |
+|---|---|---|---|---|
+| E, angles <= 45 | 1,963,555,659 | none | 28708+28708i (1.65e9) | N(p1) = 1301, p1 = 25+26i |
+| E, angles < 45 (literal) | same | exactly 2 and 3+i (with all their unit multiples and conjugates); both work with exactly 45 | | |
+| F, angles < 30 (= <= 30) | 1,963,555,656 | none | 57874 (3.35e9) | N(p1) = 1949, p1 = 43-10i |
+| Q, open quadrant | 1,963,455,660 | none | 90232+2i (8.14e9) | p1 = 1106+i (L1 1107) |
+| D, unrestricted | all even z | none | follows from E | |
+
+So, for every even Gaussian integer z with N(z) <= 10^10: Holben-Jordan D holds; E holds with "<= 45 degrees" for N(z) > 2 (and with "< 45" for N(z) > 10); F holds for N(z) > 10; Knill's quadrant form holds for a, b > 1. The E strict exceptions match Holben and Jordan's own remark that 2 and 3+i "require 45 degrees", so their E is best read with <=, or with threshold N > 10.
+
+Growth of the hardest case (max over z in a dyadic norm bin of the minimal summand; bins_1e9.txt to 1e9, merged run beyond):
+
+| N(z) up to | E: max min N(p1) | F: max min N(p1) | Q: max min L1 |
+|---|---|---|---|
+| 2^12 | 97 | 113 | 25 |
+| 2^16 | 157 | 397 | 85 |
+| 2^20 | 281 | 421 | 265 |
+| 2^24 | 701 | 797 | 265 |
+| 2^30 (1.07e9) | 941 | 1549 | 785 |
+| 10^10 | 1301 | 1949 | 1107 |
+
+E and F grow roughly like (log N)^2 (E: 1301 / (ln 1e10)^2 = 2.5). All the hardest Q cases are on the row b = 2, where the only representations are (x+i) + (a-x+i) with x^2+1 and (a-x)^2+1 both prime: Q at b = 2 is the binary Goldbach problem for the primes n^2+1, which is why Knill notes Q implies Landau's problem. Rows b >= 3 are much easier.
+
+Representation counts (ordered pairs (p1, p2), from ref.py, counts_small.txt has N <= 400):
+
+| z | N | E (< 45) | E (<= 45) | F (< 30) | Q |
+|---|---|---|---|---|---|
+| 1+i | 2 | 0 | 0 | 0 | n/a |
+| 2 | 4 | 0 | 2 | 0 | n/a |
+| 2+2i | 8 | 1 | 1 | 1 | 1 |
+| 3+i | 10 | 0 | 2 | 0 | n/a |
+| 4 | 16 | 2 | 2 | 2 | n/a |
+| 3+3i | 18 | 2 | 4 | 2 | 2 |
+| 4+2i | 20 | 3 | 3 | 1 | 1 |
+| 6 | 36 | 7 | 7 | 5 | n/a |
+| 10+10i | 200 | 20 | 28 | 16 | 20 |
+
+(2+2i = (1+i)+(1+i) is the only target with a single ordered pair; F at 4+2i has the one pair (2+i)+(2+i).)
+
+## 5. What a publishable verification would need
+
+1. Bound. 10^10 is already far beyond Holben and Jordan's box (norm about 2500) and is, as far as the literature search shows, the first stated bound. A paper would want 10^12 (|z| <= 10^6, 1.6e12 even targets): about 25 to 30 core-hours with gg.c as is, so an overnight run on a modest multicore machine, or less after the easy speedups in section 2. 10^14 would need a few thousand core-hours and the optimised sieve.
+2. Two independent implementations, as in Oliveira e Silva, Herzog and Pardi (Math. Comp. 2014): here gg.c plus a second program with a different primality source (for example primesieve, or a Gaussian sieve that splits p = 1 mod 4 via Cornacchia and marks multiples in Z[i]) and a different search order, compared on per-shell checksums of the minimal-summand values.
+3. Certificates: for each shell, store a hash of the per-target minimal summand and the full records (hardest z per dyadic bin), so anyone can recheck a shell; the record z and summands are tiny to publish.
+4. Exact statements: say which reading of E (strict or not) and which thresholds; report the strict-45 exceptions 2, 3+i; state Q separately because of its Landau-type row b = 2 (worth its own table: the n^2+1 Goldbach records for a up to 10^6).
+5. Optional extras that make it more than a number: minimal angle needed as a function of N (how far below 30 degrees one can go, Holben and Jordan ask for the threshold angle), comparison of representation counts with the Hardy-Littlewood type singular series for Z[i] (the S1 of Banerjee and Rahaman), and the sector version of Giannitsi et al. for narrow fixed arcs.
+
+## Files
+
+| file | purpose |
+|---|---|
+| gg.c / gg | verifier (E, F, Q; shells; GGDUMP=1 dumps per-target values; GGNOSIEVE=1 uses Miller-Rabin only) |
+| gg_bins.c / gg_bins | same plus dyadic-bin maxima |
+| ref.py | independent numpy brute force and representation counts |
+| check_top.py | target counts by formula; hardest reps re-verified and proved minimal (sympy) |
+| merge.py | merges runs over disjoint norm ranges |
+| odd_check.py | Knill's odd-target remark (4+13i, 29) |
+| run10.sh | the 1e9..1e10 chunked run |

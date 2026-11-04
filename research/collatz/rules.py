@@ -64,20 +64,31 @@ def norm(z): return z[0]*z[0]+z[1]*z[1]
 def key(z): return (norm(z), z[0], z[1])
 def assoc_min(z): return min((mul(u, z) for u in UNITS), key=key)
 
-def group_mod_units(cyc):
+def group_mod_units(cyc, S=None):
     """For a unit-equivariant map: group raw cycles into unit orbits.
-    Returns list of dicts with canonical min, reduced length/odd steps, total basin count."""
+    If S (exact accelerated map, see exact.py) is given, the grouping is done by iterating the
+    projective cycle exactly from each raw cycle's min (this also re-verifies every cycle);
+    the canonical name is the least associate-normalised element of the projective cycle.
+    Returns dicts: min, odd (projective length in odd steps), len (T-steps per projective period),
+    count (basin size over all raw copies), ncopies."""
     g = {}
     for c in cyc:
-        m = assoc_min(c['min'])
-        g.setdefault(m, []).append(c)
-    out = []
-    for m, cs in g.items():
-        n = len(cs)          # number of distinct cycles in the unit orbit (1, 2 or 4)
-        stab = 4 // n
-        out.append(dict(min=m, len=cs[0]['len'] // stab, odd=cs[0]['odd'] // stab,
-                        count=sum(c['count'] for c in cs), maxnorm=cs[0]['maxnorm'], ncopies=n))
-    out.sort(key=lambda d: -d['count'])
+        if c['min'] == (0, 0):
+            g.setdefault((0, 0), dict(min=(0, 0), odd=0, len=1, count=0, maxnorm=0, ncopies=0))
+            g[(0, 0)]['count'] += c['count']; g[(0, 0)]['ncopies'] += 1
+            continue
+        if S is None:
+            m = assoc_min(c['min']); odd = c['odd']; ln = c['len']
+        else:
+            z = assoc_min(c['min']); seq = []; ln = 0
+            while True:
+                seq.append(z); w, v = S(z); ln += 1 + v; z = assoc_min(w)
+                if z == seq[0]: break
+                assert len(seq) < 10**6
+            m = min(seq, key=key); odd = len(seq)
+        d = g.setdefault(m, dict(min=m, odd=odd, len=ln, count=0, maxnorm=c['maxnorm'], ncopies=0))
+        d['count'] += c['count']; d['ncopies'] += 1
+    out = sorted(g.values(), key=lambda d: -d['count'])
     return out
 
 D_A = UNITS + [mul(u, (2, 1)) for u in UNITS]

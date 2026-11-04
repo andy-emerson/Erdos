@@ -2,18 +2,13 @@
 import rules as R
 
 def make_S(alpha, D, k):
-    """Accelerated map on odd z: (alpha z + d)/(1+i)^v, d in D the digit with (1+i)^k | alpha z + d."""
-    tab = {}
-    for a in range(4):
-        for b in range(4):
-            if (a + b) % 2:
-                az = R.mul(alpha, (a, b))
-                c = [d for d in D if R.val(*R.add(az, d)) >= k]
-                assert len(c) == 1
-                tab[(a, b)] = c[0]
+    """Accelerated map on odd z: (alpha z + d)/(1+i)^v, d the unique digit in D with (1+i)^k | alpha z + d.
+    The digit is found directly for each z (no residue table), as an independent check of gcz."""
     def S(z):
-        d = tab[(z[0] % 4, z[1] % 4)]
-        x, y = R.add(R.mul(alpha, z), d)
+        az = R.mul(alpha, z)
+        c = [d for d in D if R.val(*R.add(az, d)) >= k]
+        assert len(c) == 1, (z, c)
+        x, y = R.add(az, c[0])
         v = 0
         while (x + y) % 2 == 0:
             x, y = (x + y) // 2, (y - x) // 2
@@ -21,9 +16,10 @@ def make_S(alpha, D, k):
         return (x, y), v
     return S
 
-def T_steps(alpha, D, k, z):
-    """raw T: z/(1+i) if even, else alpha z + d."""
-    pass
+def proj_cycle(S, z, nmax=10**5):
+    """cycle reached from z for the map on associate classes; returns (preperiod, cycle) or None."""
+    f = lambda w: (R.assoc_min(S(w)[0]), 0)
+    return orbit(f, R.assoc_min(z), nmax)
 
 def orbit(S, z, nmax=10**6):
     """iterate accelerated map from odd z until a repeat; return (preperiod, cycle list, maxnorm)."""

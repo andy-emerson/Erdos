@@ -523,6 +523,96 @@ def run_algs():
     for name, avg, cells, worst, mix in rows:
         print("  %-44s %6.1f  %6s %6s %6s %6d  %s" % (name, avg, *cells, worst, mix))
 
+# ---------- lazy forms: no stripping on add (normalise on demand) ----------
+# LS: x = 2^(k>>1) (1+i)^(k&1) w, w any Gaussian integer (not nec. odd). LB: x = 2^m w, w any.
+def ls_branchy(x, y, o):
+    (k1, a1, b1), (k2, a2, b2) = x, y
+    o('alu'); o('br'); d = k2 - k1
+    if d < 0: (k1, a1, b1), (k2, a2, b2) = (k2, a2, b2), (k1, a1, b1); o('alu'); d = -d
+    o('br')
+    if d == 0: o('alu', 2); return (k1, a1 + a2, b1 + b2)
+    o('sh'); h = d >> 1
+    o('alu'); o('br')
+    if d & 1:
+        o('alu', 2); p, q = a2 - b2, a2 + b2
+        o('alu'); o('br')
+        if k1 & 1: o('alu'); p, q = q, -p
+        a2, b2 = p, q
+    o('sh', 2); o('alu', 2)
+    return (k1, a1 + (a2 << h), b1 + (b2 << h))
+def ls_bf(x, y, o):
+    (k1, a1, b1), (k2, a2, b2) = x, y
+    o('alu', 6); o('sh'); d = k2 - k1; s = -1 if d < 0 else 0; k1 = k1 + (d & s); d = (d ^ s) - s
+    o('alu', 8)
+    if s: a1, b1, a2, b2 = a2, b2, a1, b1
+    o('sh'); o('alu', 2); h = d >> 1; om = -(d & 1)
+    o('alu', 4); a2, b2 = a2 - (b2 & om), b2 + (a2 & om)                  # times (1+i) when d odd
+    o('alu', 3); rm = om & -(k1 & 1)                                      # then times -i when also e1 = 1
+    o('alu', 6)
+    if rm: a2, b2 = b2, -a2
+    o('sh', 2); o('alu', 2)
+    return (k1, a1 + (a2 << h), b1 + (b2 << h))
+def lb_branchy(x, y, o):
+    (m1, a1, b1), (m2, a2, b2) = x, y
+    o('alu'); o('br'); d = m2 - m1
+    if d < 0: (m1, a1, b1), (m2, a2, b2) = (m2, a2, b2), (m1, a1, b1); o('alu'); d = -d
+    o('sh', 2); o('alu', 2)
+    return (m1, a1 + (a2 << d), b1 + (b2 << d))
+def lb_bf(x, y, o):
+    (m1, a1, b1), (m2, a2, b2) = x, y
+    o('alu', 6); o('sh'); d = m2 - m1; s = -1 if d < 0 else 0; m1 = m1 + (d & s); d = (d ^ s) - s
+    o('alu', 8)
+    if s: a1, b1, a2, b2 = a2, b2, a1, b1
+    o('sh', 2); o('alu', 2)
+    return (m1, a1 + (a2 << d), b1 + (b2 << d))
+def ls_normalise(z, o):                 # LS -> split canonical (the strip of pk_branchy, split form)
+    k1, a, b = z
+    o('alu'); o('br'); oo = a | b
+    if oo == 0: return ZERO
+    o('ctz'); m = ctz(oo)
+    o('alu', 2); o('sh'); e = ((a & b) >> m) & 1
+    o('sh', 2); a >>= m; b >>= m
+    o('br')
+    if e: o('alu', 2); o('sh', 2); a, b = (a + b) >> 1, (b - a) >> 1
+    o('alu'); o('br')
+    if k1 & e: o('alu'); a, b = -b, a
+    o('alu', 2); o('sh')
+    return (k1 + (m << 1) + e, a, b)
+
+def run_lazy():
+    print("lazy forms")
+    random.seed(35)
+    def val_ls(s): k, a, b = s; return from_k(k, ipow((a, b), -(k >> 1)))
+    def val_lb(s): m, a, b = s; return (a << m, b << m)
+    cnt = 0
+    for trial in range(60000):
+        R = 1 << random.choice((3, 8, 31))
+        x = (random.randrange(10), random.randrange(-R, R), random.randrange(-R, R))
+        y = (random.randrange(10), random.randrange(-R, R), random.randrange(-R, R))
+        for f, v in ((ls_branchy, val_ls), (ls_bf, val_ls), (lb_branchy, val_lb), (lb_bf, val_lb)):
+            assert v(f(x, y, Ops())) == gadd(v(x), v(y))
+        z = ls_branchy(x, y, Ops()); nz = ls_normalise(z, Ops())
+        assert from_split(nz) == val_ls(z) and (nz[0] >= INF or odd((nz[1], nz[2])))
+        cnt += 1
+    print("  %d random sums (any w, k 0..9): LS, LB both forms exact; LS normalise gives the split canonical form" % cnt)
+    random.seed(36)
+    rows = []
+    for name, f, kind in (("LS lazy split, branchy", ls_branchy, 'ls'), ("LS lazy split, branch-free", ls_bf, 'ls'),
+                          ("LB lazy 2^m, branchy", lb_branchy, 'lb'), ("LB lazy 2^m, branch-free", lb_bf, 'lb')):
+        tot = Ops(); N = 20000; eq = 0
+        for _ in range(N):
+            k1 = k2 = 0
+            while random.random() < 0.5: k1 += 1
+            while random.random() < 0.5: k2 += 1
+            if kind == 'lb': k1 >>= 1; k2 >>= 1
+            f((k1, 1, 2), (k2, 3, 4), tot)
+        rows.append((name, sum(tot.values()) / N))
+    tot = Ops(); N = 20000
+    for _ in range(N):
+        a, b = random.randrange(-2**31, 2**31), random.randrange(-2**31, 2**31); ls_normalise((0, a, b), tot)
+    rows.append(("LS normalise (random w)", sum(tot.values()) / N))
+    for name, c in rows: print("  %-36s %5.1f ops avg (k geometric)" % (name, c))
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     random.seed(31)
@@ -530,3 +620,4 @@ if __name__ == "__main__":
     if what in ("pat", "all"): patterns()
     if what in ("carry", "all"): carry_structure()
     if what in ("alg", "all"): run_algs()
+    if what in ("lazy", "all"): run_lazy()

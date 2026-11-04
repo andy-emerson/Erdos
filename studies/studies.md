@@ -2325,3 +2325,115 @@ An array that holds a unit, a (1 + i) times unit or a zero divisor costs l1's sw
   - s1 against s2.
   - l1 against the scalar divide, and l1 against l2.
   - Whether l1 needs its safe test form.
+
+## Study 31: the (1+i)-adic form x = (1+i)^k u and cheaper addition (adic31.py)
+
+**What was done.** The representation: every nonzero x is (1+i)^k u with u odd (a + b odd), and zero has a reserved code. u is stored either in unit digits (words A, B; bit pair 00, 01, 10, 11 picks 1, i, -1, -i; u = sum u_j 2^j over n positions) or as an ordinary pair. Python only, no timing. Costs are counted in a simple model: alu (add, sub, logic, mask), shift, ctz (tzcnt, ctz(0) = 64), branch (a jump table counts 1). `python3 adic31.py all` runs everything in about 2 minutes.
+
+### Converters
+- **Unit digits.** With M = 2^n - 1 and X = A ^ B:
+  - Decode, 4 ops: re = M - X - A, im = X - A.
+  - Encode, 8 ops: R = a - b, S = a + b, R' = (R + M) >> 1, S' = (S + M) >> 1, A = ~S', B = R' ^ S'.
+  - So unit digits are the offset binary of (1+i)u, with the bits mixed by one XOR.
+- **Valuation.** k = 2 ctz(a|b) + bit m of (a & b), with m = ctz(a|b).
+- **Digit-wise unit operations.** Negation: A = ~A. Conjugation: A ^= B. Times i: A ^= B, B = ~B. Times i^r with masks: 6 ops.
+- **Checks.** n = 1..8 exhaustive: 4^n codes, all distinct, exactly the odd diamond |a| + |b| <= M. A box of side 81 and random 41-bit values: exact.
+
+### Patterns (sums from the box |a|, |b| <= 31; digit rules exhaustive at n = 6)
+- **Result k.** If k1 != k2, the result has k = min(k1, k2), and its odd part u1 + (1+i)^d u2 needs no stripping. Only k1 = k2 strips. For random values that is 1/3 of sums (input k is geometric, P(k) = 2^-(k+1)).
+- **Stripped count t (k1 = k2).** Geometric:
+
+| t | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| share | 0.499 | 0.252 | 0.125 | 0.062 | 0.031 |
+
+  Subtraction and adding a unit give the same distribution.
+- **t from the digits, exact.** Let j0 be the first position where u2_j != -u1_j, i.e. j0 = ctz(~((A1^A2) & ~(B1^B2))).
+  - t = 2 j0 + 1 if u2_j0 = +-i u1_j0.
+  - t = 2 j0 + 2 if u2_j0 = u1_j0.
+  - From digit 0 alone: t = 1 iff B1_0 != B2_0 (half the cases), t = 2 iff the codes are equal, t >= 3 iff the digits are opposite.
+  - t >= m depends only on the lowest ceil(m/2) digits.
+- **Word-level sum of two unit-digit numbers.** u1 + u2 = -i(1+i)(P + iQ), with P = M - (X1 + X2) and Q = M - (A1 + A2). It takes two ordinary adds, and t = 1 + v(P + iQ).
+  - When t = 2 the result digits come almost directly: S' = (X1 + X2) >> 1, R' = M - ((A1 + A2) >> 1).
+- **Large gaps.** For d = 2m, the result's digits below m - 1 equal u1's, and digit m - 1 is u1's negated (one carry of u1_{m-1} into position m). For d = 2m + 1, the digits below m equal u1's.
+- **Growth.** With k1 = k2, the stripped result needs from 5 digits fewer to 1 digit more than the larger input (+0: 35%, -1: 35%, +1: 4%).
+- **Carries.** Digit-serial unit-digit addition with one position of parity lookahead is exact (n = 4, d = 1..5, 327,680 cases).
+  - Even gap: the carries stay units.
+  - Odd gap: there are 9 carries, with (1+i)c in 2{-1, 0, 1}^2.
+  - Carry maps: equal digits generate, opposite digits propagate, and adjacent digits (u2_j = +-i u1_j) generate one coordinate and propagate the other. The semigroup has 9 elements, {generate 0, generate 1, propagate}^2.
+  - So the carries are two independent ordinary binary carries, on the real and imaginary sign bits of (1+i)·carry. Propagation is exactly as in binary: unbounded in the worst case, short on average, and lookahead works. Nothing beats doing it as the two word adds P, Q.
+
+### A rotation-free variant
+**Split form.** x = 2^(k>>1) (1+i)^(k&1) w, with w = i^(k>>1) u. It has the same k, and w is still unique, so the form is still canonical.
+- Aligning is then a plain shift, plus at most one multiply by (1+i) or (1-i) when d is odd: (1-i) if the smaller k is odd.
+- Stripping needs a times-i only when both the input k and the strip are odd ((1+i)^2 = 2i).
+- The canonical form needs a data-dependent rotation by i^h on alignment and by (-i)^m on stripping.
+
+### Addition algorithms (verified exhaustively at n = 3 with k1, k2 in 0..8 and zero; n = 4 with k1 in {0, 1}; sampled at n = 5, 6 with cancelling pairs; random at n = 32)
+Zero is coded k = INF with u = 0. INF exceeds every k, so zero always lands on the aligned side and needs no special case except a zero sum. Ops per add at n = 32 with geometric k:
+
+| algorithm | avg | d = 0 | d odd | d even | worst |
+|---|---|---|---|---|---|
+| ordinary pair | 2 | | | | 2 |
+| canonical pair, branchy | 16.4 | 22.2 | 13.8 | 12.7 | 25 |
+| split pair, branchy | 16.1 | 21.8 | 14.7 | 10.5 | 24 |
+| canonical pair, branch-free | 81 | | | | 81 |
+| split pair, branch-free | 67 | | | | 67 |
+| unit digits: decode, split branchy, encode | 32.1 | 37.8 | 30.7 | 26.5 | 40 |
+| unit digits, direct d = 0 (P, Q) | 29.7 | 30.6 | 30.7 | 26.5 | 33 |
+| unit digits, branch-free | 83 | | | | 83 |
+| lazy split (w any), branchy | 10.6 | | | | |
+| lazy 2^m w, branchy | 6.2 | | | | |
+| lazy split, branch-free | 35 | | | | |
+| lazy 2^m w, branch-free | 19 | | | | |
+| normalise a lazy value | 15.3 | | | | |
+
+- **Branch-free costs.** The branch-free forms pay for a conditional swap of the operands (8), the odd-gap multiply (about 13), the strip select (9) and, in canonical form, two masked rotations (15 each). In the branch-free form the strip runs unconditionally: when d != 0 the sum is odd and the strip finds m = e = 0.
+- **Branchy costs.** The branchy forms branch on d = 0 (taken 1/3 of the time) and on e (50/50), so on real hardware both mispredict often.
+- **Unit digits** add their conversions (8 + 8) to every add. They cannot hold an even value, so they force a full normalisation each time. The direct P, Q formula saves about 7 ops on d = 0 only.
+- **Lazy normalisation is the real saving.** Keep (k, w) with w allowed to be even, and multiply, add and align without stripping. Normalise (15 ops) only for equality, zero tests, valuation or gcd steps.
+  - In the 2^m w form, adding with equal m is just the 2 pair adds, and with unequal m it is a shift and 2 adds. It is a binary floating-point Gaussian integer.
+
+### Odd representatives modulo an odd modulus nu (coordinator's addition)
+Checked exhaustively on 42 moduli, 1,142,378 (x, y) pairs: rational 3..19 including 9 and 15, Gaussian primes of norm <= 300, and products such as (2+i)(3+2i) and 3+6i. Also random nu with parts below 2^30 (3000 cases).
+- **(1) Multiplication.** Odd times odd is odd, and reducing the product mod (1+i)nu keeps it odd, so no parity fix is needed. The only cost is a modulus of norm 2N, one bit wider.
+- **(2) Range.** Two odd representatives of one class differ by a multiple of (1+i)nu, never by nu itself, since odd minus odd is even.
+  - The right range is a half-open cell of (1+i)nu. It has 2N points, exactly N of them odd, one per class.
+  - The plain cell of nu holds an odd representative for only 31% to 80% of classes (about half for rational p). So "odd and inside the plain range" fails. The odd range is √2 larger in magnitude: 1 bit more per coordinate in pair form (for rational p, the diamond |a| + |b| <= p against the box |a|, |b| <= p/2).
+  - Canonical form: if x is even add nu (a masked add), then reduce mod (1+i)nu.
+- **Addition and subtraction.** The sum or difference of two odd representatives is even, and exactly one correction from {+-nu, +-i nu} always applies. It is chosen by the signs of the two cell coordinates (verified).
+  - Plain residues instead need 0 or 1 of 8 corrections, chosen by 4 threshold compares.
+  - For a Gaussian nu both need the two linear forms s·conj(g) (4 multiplies) unless the residues are kept in lattice coordinates.
+- **(3)/(4) Equality, negation, canonical form.** The representative is canonical in the half-open cell, so equality is a word compare.
+  - The (1+i)nu cell has boundary ties (its norm is even), while the plain cell of an odd nu has none.
+  - So negation needs a fix on the tied classes: 2p - 1 of p^2 for rational p, 1 for the Gaussian primes tried. Plain symmetric residues negate for free.
+- **Rational p, add kernels** (verified exhaustively for p = 3..23, and randomly for p < 2^61):
+
+| residues | ops per add |
+|---|---|
+| plain [0, p) | 10 |
+| plain symmetric | 18 |
+| odd, stored as (R, S) = (1+i)x | 11 |
+| odd, stored as the pair x | 17 |
+
+- **Why odd representatives give nothing for rational p.** With (R, S) = (1+i)x, where R is odd in (-p, p] and S is odd in [-p, p), the values ((R+p)/2, (S+p)/2) are exactly the plain residues of x(1+i)/2. This is verified for p = 3, 7, 11, 13 and 101.
+  - So odd representatives mod p are plain residues twisted by the unit (1+i)/2, with range [1, p] x [0, p-1]. Products pick up one factor (1-i) (2 adds).
+  - This is the same offset map as unit digits. n unit digits are the odd representatives for the modulus 2^n - 1, with the 2M + 1 boundary ties of the closed diamond counted twice ((M+1)^2 = M^2 + 2M + 1).
+
+### Summary
+- **Patterns.**
+  - The result's k is min(k1, k2) unless k1 = k2.
+  - With k1 = k2 the stripped count t is geometric (mean 2) and exactly predictable from the digits: t = 2 j0 + 1 + [u2_j0 = u1_j0]. Half the time t = 1, decided by one bit pair.
+  - Unit-digit carries are two independent binary carry chains in rotated coordinates.
+- **Best strict algorithm.** The split form x = 2^(k>>1) (1+i)^(k&1) w, branchy: about 16 ops per add against 2 for a pair add (22 when k1 = k2, 10.5 to 15 otherwise). Branch-free it takes 67. Unit digits roughly double the cost (30 to 32 branchy, 83 branch-free).
+- **Best overall.** Do not normalise on add. The lazy 2^m w form costs 2 ops when the exponents match, 6.2 on average, and 19 branch-free. Normalise (15) only where the canonical form is needed.
+- **Where addition is cheap.**
+  - Equal exponents in the lazy form.
+  - Any k1 != k2 (no strip).
+  - t = 1 (half of the equal-k cases), recognised from one bit pair.
+  - Large gaps, where the low digits are u1's unchanged.
+- **Costs and gains overall.**
+  - The form costs an exponent per value and an alignment on every add. Strict normal form costs 8 times a pair add (branchy) to 30+ times (branch-free).
+  - It gains free (1+i)-power multiplication and division, a free valuation (gcd and the (1+i)-ary gcd keep values stripped anyway), and multiplication at the cost of the odd parts plus one add of exponents.
+  - Unit digits gain cheap unit multiplications (1 to 2 ops) and a reserved-free code space (every code is a value). They lose on every add, because they cannot hold even intermediates.
+  - Modulo an odd nu, keeping odd representatives is canonical and closed under the ring operations. It costs one bit of range in pair form and a forced correction on each add, and gains nothing over plain residues for rational p (it is a twist of them).

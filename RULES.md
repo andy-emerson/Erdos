@@ -45,6 +45,8 @@ Toy versions of an idea, to see whether it is worth building.
 
 Each kind has three phases: the brief, the work, and the report. The kinds follow the five rounds of spec v0.2 §8. *(Placeholders: rules to be filled in.)*
 
+1. **A fair comparison.** A comparison runs each candidate at its best, built around its own strengths, and states honestly where each is weak. A trick found for one candidate that would also help another is applied to both.
+
 ### Correctness by testing
 
 ### Proof

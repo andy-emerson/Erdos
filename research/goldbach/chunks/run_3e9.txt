@@ -1,0 +1,47 @@
+NMIN 3000000001 NMAX 4000000000
+variant E: targets 196354634 (fundamental domain), fails 0, nonstrict_only 0
+  measure: min N(p1)
+  top 1: z=59573+17473i N=3854248058  value 977  p1=31+-4i
+  top 2: z=61851+10219i N=3929974162  value 977  p1=31+-4i
+  top 3: z=58528+23522i N=3978811268  value 877  p1=29+6i
+  top 4: z=55778+3490i N=3123365384  value 857  p1=29+-4i
+  top 5: z=58894+8770i N=3545416136  value 857  p1=29+-4i
+  top 6: z=40121+40121i N=3219389282  value 853  p1=18+23i
+  top 7: z=56507+13843i N=3384669698  value 853  p1=18+23i
+  top 8: z=45659+41869i N=3837757442  value 853  p1=18+23i
+  top 9: z=59059+18385i N=3825973706  value 829  p1=27+-10i
+  top 10: z=61280+9232i N=3840468224  value 821  p1=25+14i
+  top 11: z=48485+35657i N=3622216874  value 809  p1=28+5i
+  top 12: z=38833+38833i N=3016003778  value 773  p1=17+22i
+  hist log2(value): [2]43300928 [3]49210963 [4]42068210 [5]42526578 [6]15491167 [7]3423857 [8]330918 [9]2013
+variant F: targets 196354634 (fundamental domain), fails 0, nonstrict_only 0
+  measure: min N(p1)
+  top 1: z=57874+0i N=3349399876  value 1949  p1=43+-10i
+  top 2: z=59660+17554i N=3867458516  value 1861  p1=30+31i
+  top 3: z=46405+32311i N=3197424746  value 1381  p1=34+15i
+  top 4: z=48450+31276i N=3325590676  value 1381  p1=34+15i
+  top 5: z=42181+40505i N=3419891786  value 1381  p1=15+34i
+  top 6: z=54218+17028i N=3229544308  value 1321  p1=36+5i
+  top 7: z=44454+32890i N=3057910216  value 1301  p1=25+26i
+  top 8: z=41273+41273i N=3406921058  value 1301  p1=25+26i
+  top 9: z=51901+21339i N=3149066722  value 1297  p1=36+1i
+  top 10: z=46535+36261i N=3480366346  value 1289  p1=35+8i
+  top 11: z=57788+10188i N=3443248288  value 1289  p1=35+8i
+  top 12: z=61317+6073i N=3796655818  value 1289  p1=35+8i
+  hist log2(value): [2]29603996 [3]37665792 [4]37363178 [5]49621743 [6]28021578 [7]11346183 [8]2646043 [9]85913 [10]208
+variant Q: targets 196346161 (fundamental domain), fails 0, nonstrict_only 0
+  measure: min L1 = x+y of p1
+  top 1: z=57258+2i N=3278478568  value 765  p1=764+1i
+  top 2: z=60582+2i N=3670178728  value 717  p1=716+1i
+  top 3: z=55238+2i N=3051236648  value 705  p1=704+1i
+  top 4: z=60812+2i N=3698099348  value 687  p1=686+1i
+  top 5: z=57978+2i N=3361448488  value 655  p1=654+1i
+  top 6: z=57518+2i N=3308320328  value 635  p1=634+1i
+  top 7: z=60928+2i N=3712221188  value 635  p1=634+1i
+  top 8: z=55382+2i N=3067165928  value 577  p1=576+1i
+  top 9: z=55328+2i N=3061187588  value 545  p1=544+1i
+  top 10: z=55988+2i N=3134656148  value 545  p1=544+1i
+  top 11: z=58188+2i N=3385843348  value 545  p1=544+1i
+  top 12: z=58228+2i N=3390499988  value 545  p1=544+1i
+  hist log2(value): [1]43298394 [2]98430501 [3]52005892 [4]2608924 [5]1488 [6]704 [7]174 [8]70 [9]14
+MR calls 0, cpu 60.4s

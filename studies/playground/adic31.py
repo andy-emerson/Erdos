@@ -613,6 +613,176 @@ def run_lazy():
     rows.append(("LS normalise (random w)", sum(tot.values()) / N))
     for name, c in rows: print("  %-36s %5.1f ops avg (k geometric)" % (name, c))
 
+# ---------- odd representatives modulo an odd modulus nu ----------
+# Cell(g): r with coordinates z = r conj(g) / N(g) in [-1/2, 1/2)^2 (half-open). Plain residues: Cell(nu).
+# Odd representatives: the odd points of Cell((1+i) nu); every class mod nu has exactly one (checked below).
+def conj(z): return (z[0], -z[1])
+def norm(z): return z[0]*z[0] + z[1]*z[1]
+def reduce_cell(x, g):
+    n1, n2 = gmul(x, conj(g)); N = norm(g)
+    q = ((2*n1 + N) // (2*N), (2*n2 + N) // (2*N))
+    return gadd(x, gmul(g, (-q[0], -q[1])))
+def in_cell(r, g):
+    n1, n2 = gmul(r, conj(g)); N = norm(g)
+    return -N <= 2*n1 < N and -N <= 2*n2 < N
+def same_class(x, y, nu):
+    n1, n2 = gmul((x[0]-y[0], x[1]-y[1]), conj(nu)); N = norm(nu)
+    return n1 % N == 0 and n2 % N == 0
+def odd_canon(x, nu):              # parity fix (masked add of nu), then reduce mod (1+i) nu
+    if not odd(x): x = gadd(x, nu)
+    return reduce_cell(x, pimul(nu))
+def odd_add(x, y, nu):             # x, y odd reps: s even; subtract exactly one of +-nu, +-i nu, by two sign tests
+    g = pimul(nu); s = gadd(x, y); n1, n2 = gmul(s, conj(g))
+    s1 = 1 if n1 >= 0 else -1; s2 = 1 if n2 >= 0 else -1
+    c = gmul(g, (s1, s2)); c = (c[0] // 2, c[1] // 2)          # g (s1 + i s2) / 2, one of +-nu, +-i nu
+    return (s[0] - c[0], s[1] - c[1])
+def odd_sub(x, y, nu): return odd_add(x, (-y[0], -y[1]), nu)  # same rule: coordinates of x - y lie in (-1, 1)
+def plain_add(x, y, nu):           # plain: coordinates in [-1, 1), subtract nu (q1 + i q2), q_j in {-1, 0, 1}
+    s = gadd(x, y); n1, n2 = gmul(s, conj(nu)); N = norm(nu)
+    q1 = 1 if 2*n1 >= N else (-1 if 2*n1 < -N else 0); q2 = 1 if 2*n2 >= N else (-1 if 2*n2 < -N else 0)
+    return gadd(s, gmul(nu, (-q1, -q2)))
+
+def gaussian_primes(maxnorm):
+    out = []
+    for q in range(5, maxnorm + 1, 4):
+        if all(q % d for d in range(2, int(q**0.5) + 1)):
+            for a in range(1, 30):
+                b2 = q - a*a
+                if b2 > 0 and int(round(b2**0.5))**2 == b2: out.append((a, int(round(b2**0.5)))); break
+    return out
+
+def run_mod():
+    print("odd representatives modulo odd nu")
+    mods = [(p, 0) for p in (3, 7, 11, 19)] + [(p, 0) for p in (5, 13, 17)] + [(9, 0), (15, 0)]
+    mods += gaussian_primes(300) + [gmul((2, 1), (3, 2)), gmul((2, 1), (2, -1)), gmul((1, 2), (1, 2)), (3, 6)]
+    mods = [m for m in mods if odd(m)]
+    stats = []; total = 0
+    for nu in mods:
+        N = norm(nu); g = pimul(nu)
+        R = int(norm(g) ** 0.5) + 2
+        cellg = [(a, b) for a in range(-R, R+1) for b in range(-R, R+1) if in_cell((a, b), g)]
+        celln = [(a, b) for a in range(-R, R+1) for b in range(-R, R+1) if in_cell((a, b), nu)]
+        assert len(cellg) == 2*N and len(celln) == N
+        reps = [r for r in cellg if odd(r)]
+        assert len(reps) == N
+        for i_ in range(len(reps)):                     # distinct classes: one odd rep per class
+            for j_ in range(i_):
+                assert not same_class(reps[i_], reps[j_], nu)
+        odd_in_plain = sum(odd(r) for r in celln)
+        ties = sum(1 for r in cellg if gmul(r, conj(g))[0] * 2 in (-norm(g),) or gmul(r, conj(g))[1] * 2 in (-norm(g),))
+        nplain_ties = sum(1 for (a, b) in [(a, b) for a in range(-R, R+1) for b in range(-R, R+1)]
+                          if any(abs(2*c) == N for c in gmul((a, b), conj(nu))))
+        S = set(reps)
+        for x in reps:
+            assert odd_canon(x, nu) == x
+            nx = (-x[0], -x[1])
+            if nx not in S: assert odd_canon(nx, nu) in S
+            for y in reps:
+                s = odd_add(x, y, nu); assert s in S and s == odd_canon(gadd(x, y), nu)
+                d = odd_sub(x, y, nu); assert d in S and d == odd_canon((x[0]-y[0], x[1]-y[1]), nu)
+                pr = gmul(x, y); assert odd(pr)
+                m = reduce_cell(pr, g); assert m in S and m == odd_canon(pr, nu)
+                total += 1
+        for x in celln:
+            for y in celln[::3]:
+                assert plain_add(x, y, nu) == reduce_cell(gadd(x, y), nu)
+        negfix = sum(1 for x in reps if (-x[0], -x[1]) not in S)
+        stats.append((nu, N, odd_in_plain, ties, negfix, nplain_ties))
+    print("  %d moduli (rational 3..19 incl. 9, 15; Gaussian primes of norm <= 300; products), %d (x, y) pairs each way" % (len(mods), total))
+    print("  checked: one odd rep per class in Cell((1+i)nu); odd_add/odd_sub (one forced +-nu/+-i nu by two signs) land in it;")
+    print("  odd * odd is odd and reducing it mod (1+i)nu keeps it odd (no parity fix); plain_add exact")
+    print("  %-10s %5s %18s %18s %8s" % ("nu", "N", "odd in plain cell", "boundary pts (odd)", "neg fix"))
+    for nu, N, oip, ties, nf, npt in stats[:6] + stats[9:12] + stats[-3:]:
+        print("  %-10s %5d %18s %18d %8d" % ("%d%+di" % nu, N, "%d (%.2f)" % (oip, oip / N), ties, nf))
+    print("  plain cells of odd nu have no boundary points (ties): %s" % all(s[5] == 0 for s in stats))
+    # rational p: odd reps in rotated offset coordinates are plain residues of x (1+i)/2 in [1, p]
+    for p in (3, 7, 11, 13, 101):
+        nu = (p, 0); reps = [] ; R = p
+        for a in range(-R, R+1):
+            for b in range(-R, R+1):
+                if odd((a, b)) and in_cell((a, b), pimul(nu)): reps.append((a, b))
+        inv2 = pow(2, -1, p)
+        for x in reps:
+            Rr, Ss = x[0] - x[1], x[0] + x[1]
+            assert -p < Rr <= p and -p <= Ss < p          # the cell's half-open convention
+            R2, S2 = (Rr + p) // 2, (Ss + p) // 2
+            assert 1 <= R2 <= p and 0 <= S2 < p
+            tw = gmul(x, (1, 1)); tw = (tw[0] * inv2 % p, tw[1] * inv2 % p)
+            assert (R2 % p, S2 % p) == tw
+    print("  rational p (3, 7, 11, 13, 101): odd rep x <-> (R, S) = (1+i)x, R odd in (-p, p], S odd in [-p, p)")
+    print("    <-> ((R+p)/2, (S+p)/2) in [1, p] x [0, p-1],")
+    print("    which is the plain residue of x (1+i)/2: the odd form is a relabelling (twist by the unit (1+i)/2)")
+    # random large
+    random.seed(37); cnt = 0
+    for _ in range(3000):
+        while True:
+            nu = (random.randrange(-2**30, 2**30), random.randrange(-2**30, 2**30))
+            if odd(nu): break
+        g = pimul(nu)
+        x = odd_canon((random.randrange(-2**62, 2**62), random.randrange(-2**62, 2**62)), nu)
+        y = odd_canon((random.randrange(-2**62, 2**62), random.randrange(-2**62, 2**62)), nu)
+        for v in (x, y): assert odd(v) and in_cell(v, g)
+        s = odd_add(x, y, nu); assert s == odd_canon(gadd(x, y), nu) and same_class(s, gadd(x, y), nu)
+        d = odd_sub(x, y, nu); assert d == odd_canon((x[0]-y[0], x[1]-y[1]), nu)
+        m = reduce_cell(gmul(x, y), g); assert odd(m) and same_class(m, gmul(x, y), nu)
+        assert odd_canon(gadd(x, nu), nu) == x            # x and x + nu (even) map to the same rep
+        assert odd_canon(gadd(x, g), nu) == x
+        cnt += 1
+    print("  random nu with |re|, |im| < 2^30: %d cases exact (add, sub, mul, canonical form)" % cnt)
+
+# counted add kernels for a rational odd p (word ops; sar = arithmetic shift by 63, giving 0 or -1)
+def sar(x): return -1 if x < 0 else 0
+def k_plain01(x, y, p, o):         # plain residues in [0, p) per part: add, sub, sar, and, add
+    o('alu', 8); o('sh', 2)
+    out = []
+    for a, b in zip(x, y):
+        s = a + b - p; out.append(s + (p & sar(s)))
+    return tuple(out)
+def k_plainsym(x, y, p, o):        # plain symmetric residues in [-(p-1)/2, (p-1)/2] per part
+    h = (p - 1) // 2; out = []
+    o('alu', 14); o('sh', 4)
+    for a, b in zip(x, y):
+        s = a + b; s -= p & sar(h - s); s += p & sar(s + h); out.append(s)
+    return tuple(out)
+def k_odd_rot(x, y, p, o):         # odd reps kept as (R, S) = (1+i)x; R odd in (-p, p], S odd in [-p, p)
+    p2 = 2 * p
+    o('alu', 5); o('sh'); R = x[0] + y[0]; R += (p2 & sar(R - 1)) - p     # R <= 0: +p, else -p
+    o('alu', 4); o('sh'); S = x[1] + y[1]; S += (p2 & sar(S)) - p         # S < 0: +p, else -p
+    return (R, S)
+def k_odd_pair(x, y, p, o):        # odd reps kept as the pair x itself
+    p2 = 2 * p
+    o('alu', 4); sa, sb = x[0] + y[0], x[1] + y[1]; R, S = sa - sb, sa + sb
+    o('alu', 5); o('sh', 2); dR = (p2 & sar(R - 1)) - p; dS = (p2 & sar(S)) - p
+    o('alu', 4); o('sh', 2)
+    return (sa + ((dR + dS) >> 1), sb + ((dS - dR) >> 1))                   # (dR + i dS) / (1+i)
+
+def run_modcost():
+    print("add kernels, rational p: verification and counts")
+    def reps_odd(p):
+        return [(a, b) for a in range(-p, p+1) for b in range(-p, p+1) if odd((a, b)) and in_cell((a, b), pimul((p, 0)))]
+    for p in (3, 5, 7, 11, 13, 17, 19, 23):
+        ro = reps_odd(p); rot = [(x[0]-x[1], x[0]+x[1]) for x in ro]
+        for x in ro:
+            for y in ro:
+                w = odd_add(x, y, (p, 0)); o = Ops()
+                assert k_odd_pair(x, y, p, o) == w
+                assert k_odd_rot((x[0]-x[1], x[0]+x[1]), (y[0]-y[1], y[0]+y[1]), p, o) == (w[0]-w[1], w[0]+w[1])
+        r01 = [(a, b) for a in range(p) for b in range(p)]
+        for x in r01[::3]:
+            for y in r01:
+                assert k_plain01(x, y, p, Ops()) == ((x[0]+y[0]) % p, (x[1]+y[1]) % p)
+                xs = tuple(((v + p//2) % p) - p//2 for v in x); ys = tuple(((v + p//2) % p) - p//2 for v in y)
+                assert k_plainsym(xs, ys, p, Ops()) == tuple(((xs[j]+ys[j] + p//2) % p) - p//2 for j in (0, 1))
+    random.seed(38)
+    for _ in range(20000):
+        p = random.randrange(3, 2**61, 2)
+        x = odd_canon((random.randrange(-2**62, 2**62), random.randrange(-2**62, 2**62)), (p, 0))
+        y = odd_canon((random.randrange(-2**62, 2**62), random.randrange(-2**62, 2**62)), (p, 0))
+        assert k_odd_pair(x, y, p, Ops()) == odd_add(x, y, (p, 0))
+    print("  exhaustive p = 3..23 and random p < 2^61: all four kernels exact")
+    for name, f in (("plain [0, p)", k_plain01), ("plain symmetric", k_plainsym), ("odd, rotated (R, S)", k_odd_rot), ("odd, pair x", k_odd_pair)):
+        o = Ops(); f((1, 1), (1, 1), 7, o); print("  %-22s %2d ops (%s)" % (name, sum(o.values()), ", ".join("%s %d" % kv for kv in sorted(o.items()))))
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     random.seed(31)
@@ -621,3 +791,4 @@ if __name__ == "__main__":
     if what in ("carry", "all"): carry_structure()
     if what in ("alg", "all"): run_algs()
     if what in ("lazy", "all"): run_lazy()
+    if what in ("mod", "all"): run_mod(); run_modcost()

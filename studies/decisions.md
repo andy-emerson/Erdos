@@ -118,6 +118,8 @@ Nov 2, 2026, from the author's conversation. Not a specification yet.
 52. **The norm stays in our type:** it returns a Gaussian integer N + 0i, growing as needed, rather than leaving the type for an ordinary integer.
 53. **Inverses in constant time are on the main path,** and Bernstein–Yang returns from the research list to it. Idea to test for every n: Bernstein–Yang for the odd part of n, the Newton inverse mod 2^k (already used in exact division) for the power of 2, combined by the Chinese remainder theorem. Powers mod n for prime n is likely a special case.
 
+54. **Binary complex (base −1+i) is dropped** (study 32): every arithmetic step must pass through the pair (add about 179 operations against 2), and its range is a twindragon. Kept for the book as an example: a 64-digit word with carries dropped is the same ring as a wrapping int32 pair.
+
 **Library-level ideas (later)**
 - The suppressible refusal and the canonical mod (item 40).
 - Absolute value: an exact absolute value exists when a² + b² is a perfect square (one part zero, or a Pythagorean triple such as 3 + 4i, |·| = 5); refuse otherwise. A companion in the shape of division with remainder: the integer square root of the norm with a remainder, q = the largest integer with q² ≤ N and r = N − q², both exact; the exact absolute value is the case r = 0.

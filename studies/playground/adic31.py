@@ -448,6 +448,7 @@ def run_algs():
         cache = {}
         for x, y in it:
             want = gadd(x, y)
+            nout = n + 2 + abs(to_k(x)[0] - to_k(y)[0]) // 2 if x != (0, 0) and y != (0, 0) else n + 2
             for name, kind, f in AL:
                 key = (kind, x)
                 sx = cache.get(key) or cache.setdefault(key, state(kind, x, n))
@@ -491,7 +492,8 @@ def run_algs():
         for _ in range(30000):
             pairs.append((pipow(rnd_u(), rnd_k(geo)), pipow(rnd_u(), rnd_k(geo))))
     for _ in range(3000):
-        u = rnd_u(); k = rnd_k(True); pairs.append((pipow(u, k), pipow(gadd(gmul(u, (-1, 0)), (1 << random.randrange(40), 0)), k)))
+        u = rnd_u(); k = rnd_k(True); v = gadd(gmul(u, (-1, 0)), (1 << random.randrange(31), 0))
+        if l1(v) <= 2**32 - 1: pairs.append((pipow(u, k), pipow(v, k)))
     verify(n, None, None, "n=32 random (geometric and uniform k, near-cancelling pairs)", pairs)
     # operation counts
     print("operation counts, n=32, k geometric (P(k) = 2^-(k+1), as for random ordinary values)")

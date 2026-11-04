@@ -19,7 +19,7 @@
 #include <math.h>
 
 typedef __int128 ll;  /* coordinates are 128-bit; escape at 2^100 */
-static ll AL[16][2], BE[16][2], DE[16][2], DN[16];
+static ll AL[64][2], BE[64][2], DE[64][2], DN[64]; static int MOD=4;
 static ll R; static ll B; static ll W;
 static uint32_t *tot;      /* total steps to reach cycle; UNSET = not done */
 static uint16_t *cyc;      /* cycle id */
@@ -28,7 +28,7 @@ static float *mx;          /* log2 of max norm along the rest of the orbit */
 #define UNRES 0xFFFFFFFEu
 #define ESC (((__int128)1)<<100)
 
-static inline int res(ll a, ll b){ return (int)(((a&3))*4 + (b&3)); }
+static inline int res(ll a, ll b){ return (int)((a&(MOD-1))*MOD + (b&(MOD-1))); }
 static inline int intab(ll a, ll b){ return a>=-R && a<=R && b>=-R && b<=R && a*a+b*b<=B; }
 static inline ll idx(ll a, ll b){ return (a+R)*W + (b+R); }
 static inline double nrm(ll a, ll b){ return (double)a*(double)a+(double)b*(double)b; }
@@ -57,9 +57,10 @@ static int ncyc=0;
 int main(int argc,char**argv){
   if(argc<3){fprintf(stderr,"usage\n");return 1;}
   FILE*f=fopen(argv[1],"r"); if(!f){perror("rule");return 1;}
-  for(int k=0;k<16;k++){int ra,rb; long long a1,a2,b1,b2,d1,d2;
+  int nrows=0; { int c; if(fscanf(f,"MOD %d",&MOD)!=1) MOD=4; (void)c; } nrows=MOD*MOD;
+  for(int k=0;k<nrows;k++){int ra,rb; long long a1,a2,b1,b2,d1,d2;
     if(fscanf(f,"%d %d %lld %lld %lld %lld %lld %lld",&ra,&rb,&a1,&a2,&b1,&b2,&d1,&d2)!=8){fprintf(stderr,"rule parse\n");return 1;}
-    int r=ra*4+rb; AL[r][0]=a1;AL[r][1]=a2;BE[r][0]=b1;BE[r][1]=b2;DE[r][0]=d1;DE[r][1]=d2;DN[r]=d1*d1+d2*d2;}
+    int r=ra*MOD+rb; AL[r][0]=a1;AL[r][1]=a2;BE[r][0]=b1;BE[r][1]=b2;DE[r][0]=d1;DE[r][1]=d2;DN[r]=d1*d1+d2*d2;}
   fclose(f);
   B=atoll(argv[2]); long long cap = argc>3? atoll(argv[3]) : 100000; int quiet = argc>4;
   R=(ll)floor(sqrt((double)B)); W=2*R+1;

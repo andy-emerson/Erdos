@@ -14,11 +14,11 @@ def mul(a, b): return (a[0]*b[0]-a[1]*b[1], a[0]*b[1]+a[1]*b[0])
 def add(a, b): return (a[0]+b[0], a[1]+b[1])
 UNITS = [(1,0),(0,1),(-1,0),(0,-1)]
 
-def table(odd_rule, even=None):
-    """odd_rule(r) -> (alpha, beta, delta) for odd residue r=(a,b); even residues divide by 1+i."""
+def table(odd_rule, even=None, M=4):
+    """odd_rule(r) -> (alpha, beta, delta) for odd residue r=(a,b) mod M; even residues divide by 1+i."""
     rows = []
-    for a in range(4):
-        for b in range(4):
+    for a in range(M):
+        for b in range(M):
             if (a + b) % 2 == 0:
                 rows.append((a, b, (1,0), (0,0), (1,1)) if even is None else (a, b) + even((a,b)))
             else:
@@ -26,7 +26,9 @@ def table(odd_rule, even=None):
     return rows
 
 def write(rows, path):
+    M = int(round(len(rows) ** 0.5))
     with open(path, 'w') as f:
+        f.write(f"MOD {M}\n")
         for (a, b, al, be, de) in rows:
             f.write(f"{a} {b} {al[0]} {al[1]} {be[0]} {be[1]} {de[0]} {de[1]}\n")
 
@@ -35,7 +37,7 @@ def digit_rule(alpha, digits, k):
     def f(r):
         az = mul(alpha, r)
         c = [d for d in digits if val(*add(az, d)) >= k]
-        # residue r is mod 4 = (1+i)^4, so the class mod (1+i)^k (k<=4) is determined
+        # residue r is mod M = (1+i)^4 or (1+i)^6, which determines the class mod (1+i)^k
         assert len(c) == 1, (alpha, r, c)
         return (alpha, c[0], (1, 0))
     return f

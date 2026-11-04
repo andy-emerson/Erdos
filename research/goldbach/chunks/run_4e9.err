@@ -1,1 +1,9 @@
 small table 16777216, base primes 9937, gaussian primes 595780 (norm<=2000000)
+  shell to 4134217729 done, 8.6s
+  shell to 4268435457 done, 16.9s
+  shell to 4402653185 done, 25.0s
+  shell to 4536870913 done, 33.4s
+  shell to 4671088641 done, 41.6s
+  shell to 4805306369 done, 49.6s
+  shell to 4939524097 done, 57.7s
+  shell to 5000000001 done, 61.5s

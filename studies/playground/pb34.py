@@ -12,7 +12,7 @@
 #   quotient  z(w1 / w2) = (z1 - z2) / w2    (exact; mod 2^n is enough, since z is n-bit)
 #   norm      N(w) = 2(p(p+1) + q(q+1)) + 1
 # Op model: study 32 (rep32.Ops): alu, sh, mul, ctz, br, ld, div; every op counts 1. Estimates, not timings.
-# Usage: python3 pb34.py [verify|count|all]
+# Usage: python3 pb34.py [table|part2|all]   (all: about 40 s)
 import sys, random
 from collections import Counter, defaultdict
 sys.path.insert(0, __file__.rsplit('/', 1)[0] if '/' in __file__ else '.')
@@ -316,7 +316,7 @@ def print_table(stats):
     for op in TABLE:
         print("| %s | %s |" % (op[0], " | ".join(R32.fmt(stats[(op[0], r)], stats[(op[0], r, 'n')]['n']) for r in REPS)))
 
-if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "table":
+def _main_table():
     verify_table(); print_table(count_table())
 
 # =============== gcd family: the Hensel-quotient loop of study 33 (on Z = (1+i) * odd part) ===============
@@ -731,5 +731,7 @@ def count2(NR=3000, seed=9):
         print("| %s | %.1f | %.1f | %.1f | %.1f |" % (k, v.tot() / d, v['mul'] / d, v['ld'] / d, v['br'] / d))
     return res
 
-if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "part2":
-    verify2(); count2()
+if __name__ == "__main__":
+    what = sys.argv[1] if len(sys.argv) > 1 else "all"
+    if what in ("table", "all"): _main_table()
+    if what in ("part2", "all"): verify2(); count2()

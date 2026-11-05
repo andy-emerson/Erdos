@@ -1,0 +1,8 @@
+alpha=0,-3 D=(2,-3),(1,0),(0,1),(-1,0) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 142 at -2131 -638 meanstop 9.17 maxexc_log2 7.08 at -1414 831
+alpha=0,3 D=(2,-1),(-1,0),(0,-1),(1,0) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 155 at -207 2716 meanstop 9.17 maxexc_log2 7.10 at -1039 -264
+alpha=-3,-2 D=(-1,2),(2,-1),(-1,0),(0,-1) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1556 at 1931 544 meanstop 22.49 maxexc_log2 37.95 at -1305 -1142
+alpha=-2,-3 D=(2,-1),(-1,0),(0,-1),(1,0) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1857 at 1487 -938 meanstop 22.48 maxexc_log2 34.77 at -2440 -993
+alpha=2,-3 D=(2,-1),(1,2),(0,-1),(1,0) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1476 at -180 -2781 meanstop 22.47 maxexc_log2 37.45 at 1798 -1917
+alpha=2,3 D=(2,1),(1,0),(0,1),(-1,0) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1932 at 123 -2598 meanstop 22.50 maxexc_log2 40.56 at 1416 -1109
+alpha=3,-2 D=(1,-2),(0,-1),(1,0),(0,1) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1514 at -2244 -1159 meanstop 22.48 maxexc_log2 37.36 at 467 1190
+alpha=3,2 D=(1,-2),(2,1),(-1,-2),(0,1) :: range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 1575 at 240 -2909 meanstop 22.48 maxexc_log2 38.89 at 2048 1683

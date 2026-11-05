@@ -175,9 +175,26 @@ def integer(mode, m, B, nmax):
 def found_sort(cyc):
     return [(mn, nv) for mn, nv in sorted(cyc.items(), key=lambda t: (abs(t[0]), t[0]))]
 
+def modonly(k, alpha, nmax):
+    """records of the modulus condition alone, min over V of |n log2 N(alpha) - V| (convergents of
+    log2 N(alpha)), against the records of the full condition, with the angle error at each."""
+    l2N = math.log2(alpha[0]**2 + alpha[1]**2); a4 = math.atan2(alpha[1], alpha[0]) / (math.pi / 4)
+    best = best_table(alpha, k, nmax); full = records(best)
+    m, mod = float('inf'), []
+    for n in range(1, nmax + 1):
+        e = abs(n * l2N - round(n * l2N))
+        if e < m: mod.append(n); m = e
+    print(f"## k={k} alpha={alpha}: log2N = {l2N:.6f} = {cf(l2N)[0]}, arg/(pi/4) = {a4:.6f}")
+    print("  n | modulus error |n log2N - V| | angle error (in units of pi/4, mod 2) | best rel | E(best) | full record?")
+    for n in sorted(set(mod) | set(full)):
+        V = round(n * l2N); ang = (n * a4 - V) % 2; ang = min(ang, 2 - ang)
+        print(f"  {n} | {abs(n*l2N - V):.4f} | {ang:.4f} | {best[n][0]:.3g} | {best[n][3]:.3g} | "
+              f"{'Y' if n in full else 'n'}{' (modulus record)' if n in mod else ''}")
+
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if a[0] == 'gauss': gauss(int(a[1]), a[2:])
+    if a[0] == 'modonly': modonly(int(a[1]), tuple(map(int, a[2].split(','))), int(a[3]))
+    elif a[0] == 'gauss': gauss(int(a[1]), a[2:])
     elif a[0] == 'int': integer(a[1], int(a[2]), int(a[3]), int(a[4]))
     elif a[0] == 'cf':
         x = eval(a[1], {'log2': math.log2, 'math': math})

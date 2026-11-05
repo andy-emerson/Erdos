@@ -43,3 +43,60 @@
   records with 2^V < m^n (x < 0 side for plus): [1, 2, 3, 10, 237]
   n=3 V=11 rel=0.0728 side=dn cycles=2 mins=[-1, 1] rec rec_dn
   n=10 V=37 rel=0.00305 side=dn cycles=4 mins=[-49, -25, 25, 49] rec rec_dn
+
+## sym m=15 B=200000: log2 m = 3.906891 = [3; 1, 9, 1, 2, 1, 5, 1, 1, 6, 1, 10]
+  convergents: 1/3 1/4 10/39 11/43 32/125 43/168 247/965 290/1133 537/2098
+  records two-sided: [1, 10, 11, 32, 43, 247, 290]
+  records with 2^V > m^n (x > 0 side for plus): [1, 11, 43, 290]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 21, 32, 75, 118, 161, 204, 247]
+  n=1 V=4 rel=0.0625 side=up cycles=2 mins=[-1, 1] rec rec_up rec_dn
+
+## sym m=17 B=200000: log2 m = 4.087463 = [4; 11, 2, 3, 3, 1, 11, 8, 1, 215, 4, 9]
+  convergents: 1/4 11/45 23/94 80/327 263/1075 343/1402
+  records two-sided: [1, 11, 23, 80, 263]
+  records with 2^V > m^n (x > 0 side for plus): [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 34, 57, 80]
+  records with 2^V < m^n (x < 0 side for plus): [1, 12, 23, 103, 183, 263]
+  n=1 V=4 rel=0.0625 side=dn cycles=2 mins=[-1, 1] rec rec_up rec_dn
+
+## sym m=19 B=200000: log2 m = 4.247928 = [4; 4, 29, 1, 9, 1, 3, 15, 1, 1, 45, 1]
+  convergents: 1/4 4/17 117/497 121/514
+  records two-sided: [1, 3, 4, 117, 121]
+  records with 2^V > m^n (x > 0 side for plus): [1, 2, 3, 4, 121]
+  records with 2^V < m^n (x < 0 side for plus): [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 238]
+
+## sym m=21 B=200000: log2 m = 4.392317 = [4; 2, 1, 1, 4, 1, 1, 1, 1, 5, 2, 8]
+  convergents: 1/4 2/9 3/13 5/22 23/101 28/123 51/224 79/347 130/571
+  records two-sided: [1, 2, 3, 5, 23, 28, 51, 79, 130]
+  records with 2^V > m^n (x > 0 side for plus): [1, 2, 5, 28, 79, 209]
+  records with 2^V < m^n (x < 0 side for plus): [1, 3, 8, 13, 18, 23, 51, 130]
+
+## sym m=23 B=200000: log2 m = 4.523562 = [4; 1, 1, 10, 9, 15, 1, 1, 2, 2, 10, 2]
+  convergents: 1/4 1/5 2/9 21/95 191/864
+  records two-sided: [1, 2, 21, 191]
+  records with 2^V > m^n (x > 0 side for plus): [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 212]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 23, 44, 65, 86, 107, 128, 149, 170, 191]
+
+## sym m=25 B=200000: log2 m = 4.643856 = [4; 1, 1, 1, 4, 4, 1, 8, 3, 5, 8, 1]
+  convergents: 1/4 1/5 2/9 3/14 14/65 59/274 73/339 643/2986
+  records two-sided: [1, 3, 14, 59, 73]
+  records with 2^V > m^n (x > 0 side for plus): [1, 3, 17, 31, 45, 59, 132, 205, 278]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 5, 8, 11, 14, 73]
+
+## sym m=27 B=200000: log2 m = 4.754888 = [4; 1, 3, 12, 1, 1, 6, 7, 1, 4, 6, 1]
+  convergents: 1/4 1/5 4/19 49/233 53/252 102/485
+  records two-sided: [1, 4, 49, 53, 102]
+  records with 2^V > m^n (x > 0 side for plus): [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 102]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 3, 4, 53, 155, 257]
+
+## sym m=29 B=200000: log2 m = 4.857981 = [4; 1, 6, 24, 4, 1, 5, 3, 3, 1, 4, 1]
+  convergents: 1/4 1/5 7/34 169/821
+  records two-sided: [1, 7, 169]
+  records with 2^V > m^n (x > 0 side for plus): [1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106, 113, 120, 127, 134, 141, 148, 155, 162, 169]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 3, 4, 5, 6, 7, 176]
+
+## sym m=31 B=200000: log2 m = 4.954196 = [4; 1, 20, 1, 4, 1, 26, 9, 7, 3, 2, 1]
+  convergents: 1/4 1/5 21/104 22/109 109/540 131/649
+  records two-sided: [1, 21, 22, 109, 131]
+  records with 2^V > m^n (x > 0 side for plus): [1, 22, 131]
+  records with 2^V < m^n (x < 0 side for plus): [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 43, 65, 87, 109, 240]
+  n=1 V=5 rel=0.0313 side=up cycles=2 mins=[-1, 1] rec rec_up rec_dn

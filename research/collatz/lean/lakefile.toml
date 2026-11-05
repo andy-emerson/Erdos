@@ -1,0 +1,5 @@
+name = "GaussianCollatz"
+defaultTargets = ["GaussianCollatz"]
+
+[[lean_lib]]
+name = "GaussianCollatz"

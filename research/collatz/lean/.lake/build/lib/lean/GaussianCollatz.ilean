@@ -1,0 +1,1 @@
+{"decls":{},"directImports":[["GaussianCollatz.Basic",false,false,false],["GaussianCollatz.Props",false,false,false],["GaussianCollatz.Soundness",false,false,false]],"module":"GaussianCollatz","references":{},"version":5}

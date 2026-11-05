@@ -64,7 +64,7 @@ so $1 \to -i \to -1 \to 1$ is a unit cycle of length $3$, which is not the order
 
 *Proof.* For odd $z$, $u\alpha z + d^u(z) = \alpha(uz) + d(uz)$, and $uz$ is odd. For even $z$ both sides are $0$. $\square$
 
-*Lemma 4.3 (transfer).* Let $f$ and $g$ satisfy $f(uz) = uf(z)$ and $g(uz) = ug(z)$ for all units $u$ and all $z$, and suppose that for every $z$ there is a unit $\varepsilon$ with $g(z) = \varepsilon f(z)$. If $f$ is trivial, so is $g$.
+*Lemma 4.3 (transfer).* Let $f$ and $g$ be maps with $g(uz) = ug(z)$ for all units $u$ and all $z$ (nothing is assumed of $f$), and suppose that for every $z$ there is a unit $\varepsilon$ with $g(z) = \varepsilon f(z)$. If $f$ is trivial, so is $g$.
 
 *Proof.* By induction, $g^n(z) = \delta_n f^n(z)$ with $\delta_n$ a unit: $g^{n+1}(z) = g(\delta_n f^n(z)) = \delta_n g(f^n(z)) = \delta_n \varepsilon f^{n+1}(z)$. Let $z$ be odd, and let $y = f^n(z)$ be periodic, $f^p(y) = y$ with $p \ge 1$, with $f^j(y)$ a unit. Put $x = g^n(z) = \delta y$. Then $g^p(x) = \delta g^p(y) = \delta\delta' f^p(y) = \delta' x$ for a unit $\delta'$, and since $g^p$ commutes with units, $g^{mp}(x) = \delta'^m x$; with $m = 4$, $g^{4p}(x) = x$. So $x$ is periodic for $g$, and $g^j(x) = \delta g^j(y) = \delta\delta'' f^j(y)$ is a unit. $\square$
 

@@ -1,0 +1,1 @@
+k=2 alpha=(5, 0): 59 of 139 starts passed norm 2^400; final points: {'b = 1': 33, 'a - b = 1': 26}

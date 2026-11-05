@@ -1,0 +1,90 @@
+# per rule: classes (n, V, eps) with count, rel, E, record?; then records n <= 300 with best rel, E and count
+
+## families_k7_a13_1.3e7 k=7 alpha=(-13, 0) cycles=166  log2N=7.400879 arg/(pi/4)=4.000000
+  class n=10 V=74 eps=(0, -1) count=160 rel=0.00305 E=117 record=Y bestV=Y rel/prior_best=0.047
+  class n=3 V=22 eps=(0, -1) count=2 rel=0.0728 E=2.95 record=Y bestV=Y rel/prior_best=0.388
+  class n=20 V=148 eps=(-1, 0) count=2 rel=0.00611 E=2.77 record=n bestV=Y rel/prior_best=2
+  class n=1 V=8 eps=(-1, 0) count=1 rel=0.187 E=1.78 record=Y bestV=Y rel/prior_best=0
+  class n=2 V=14 eps=(0, 1) count=1 rel=0.32 E=0.305 record=n bestV=Y rel/prior_best=1.71
+  records: 1(0.19,E=2.6,obs=1) 3(0.073,E=3.2,obs=2) 7(0.065,E=0.76,obs=0) 10(0.0031,E=1.2e+02,obs=160) 227(0.00013,E=2.1e-10,obs=0)
+
+## families_k7_a15_1.65e7 k=7 alpha=(-15, 0) cycles=74  log2N=7.813781 arg/(pi/4)=4.000000
+  class n=43 V=336 eps=(-1, 0) count=32 rel=0.00256 E=29.3 record=Y bestV=Y rel/prior_best=0.179
+  class n=1 V=8 eps=(-1, 0) count=16 rel=0.0625 E=16 record=Y bestV=Y rel/prior_best=0
+  class n=32 V=250 eps=(0, -1) count=7 rel=0.0143 E=1.62 record=Y bestV=Y rel/prior_best=0.86
+  class n=75 V=586 eps=(0, 1) count=6 rel=0.0117 E=0.447 record=n bestV=Y rel/prior_best=4.57
+  class n=247 V=1930 eps=(0, 1) count=4 rel=0.00137 E=1.06 record=Y bestV=Y rel/prior_best=0.535
+  class n=8 V=62 eps=(0, 1) count=2 rel=0.193 E=0.0875 record=n bestV=Y rel/prior_best=3.1
+  class n=107 V=836 eps=(1, 0) count=2 rel=0.0262 E=0.0385 record=n bestV=Y rel/prior_best=10.2
+  class n=11 V=86 eps=(0, -1) count=2 rel=0.0166 E=7.23 record=Y bestV=Y rel/prior_best=0.34
+  class n=537 V=4196 eps=(1, 0) count=2 rel=0.000173 E=1.28 record=Y bestV=Y rel/prior_best=0.145
+  class n=10 V=78 eps=(0, 1) count=1 rel=0.0489 E=0.969 record=Y bestV=Y rel/prior_best=0.783
+  records: 1(0.062,E=17,obs=16) 10(0.049,E=1,obs=1) 11(0.017,E=7.3,obs=2) 32(0.014,E=1.6,obs=7) 43(0.0026,E=29,obs=32) 247(0.0014,E=1.1,obs=4) 290(0.0012,E=0.72,obs=0)
+
+## families_k7_a11p10i_1e7 k=7 alpha=(-11, -10) cycles=766  log2N=7.787903 arg/(pi/4)=-3.060585
+  class n=33 V=257 eps=(0, 1) count=728 rel=0.000617 E=764 record=Y bestV=Y rel/prior_best=0.00521
+  class n=66 V=514 eps=(-1, 0) count=29 rel=0.00123 E=44.6 record=n bestV=Y rel/prior_best=2
+  class n=132 V=1028 eps=(1, 0) count=3 rel=0.00247 E=1.72 record=n bestV=Y rel/prior_best=4
+  class n=99 V=771 eps=(0, -1) count=2 rel=0.00185 E=7.13 record=n bestV=Y rel/prior_best=3
+  class n=1 V=7 eps=(0, -1) count=1 rel=0.319 E=1.23 record=Y bestV=Y rel/prior_best=0
+  class n=2 V=16 eps=(0, 1) count=1 rel=0.163 E=0.884 record=Y bestV=Y rel/prior_best=0.511
+  class n=198 V=1542 eps=(-1, 0) count=1 rel=0.00371 E=0.181 record=n bestV=Y rel/prior_best=6
+  class n=264 V=2056 eps=(1, 0) count=1 rel=0.00494 E=0.0287 record=n bestV=Y rel/prior_best=8.01
+  records: 1(0.32,E=2,obs=1) 2(0.16,E=1.2,obs=1) 14(0.12,E=0.12,obs=0) 19(0.12,E=0.074,obs=0) 33(0.00062,E=7.6e+02,obs=728)
+
+## families_k7_a15p2i_2.85e7 k=7 alpha=(-15, -2) cycles=33  log2N=7.839204 arg/(pi/4)=-3.831230
+  class n=6 V=47 eps=(0, 1) count=28 rel=0.0158 E=20.5 record=Y bestV=Y rel/prior_best=0.113
+  class n=1 V=8 eps=(-1, 0) count=3 rel=0.14 E=3.2 record=Y bestV=Y rel/prior_best=0
+  class n=5 V=39 eps=(0, -1) count=1 rel=0.145 E=0.325 record=n bestV=Y rel/prior_best=1.04
+  class n=12 V=94 eps=(-1, 0) count=1 rel=0.0318 E=1.73 record=n bestV=Y rel/prior_best=2.01
+  records: 1(0.14,E=3.9,obs=3) 6(0.016,E=21,obs=28)
+
+## families_k6_a9_A_1e6 k=6 alpha=(-9, 0) cycles=23  log2N=6.339850 arg/(pi/4)=4.000000
+  class n=6 V=38 eps=(0, 1) count=15 rel=0.0136 E=18.4 record=Y bestV=Y rel/prior_best=0.138
+  class n=1 V=6 eps=(0, -1) count=8 rel=0.125 E=8 record=Y bestV=Y rel/prior_best=0
+  records: 1(0.13,E=8.8,obs=8) 5(0.099,E=0.72,obs=0) 6(0.014,E=18,obs=15) 47(0.0093,E=0.0018,obs=0) 53(0.0042,E=0.0027,obs=0) 153(0.001,E=3.8e-10,obs=0)
+
+## families_k6_a9_B_1e6 k=6 alpha=(-9, 0) cycles=25  log2N=6.339850 arg/(pi/4)=4.000000
+  class n=6 V=38 eps=(0, 1) count=17 rel=0.0136 E=18.4 record=Y bestV=Y rel/prior_best=0.138
+  class n=1 V=6 eps=(0, -1) count=8 rel=0.125 E=8 record=Y bestV=Y rel/prior_best=0
+  records: 1(0.13,E=8.8,obs=8) 5(0.099,E=0.72,obs=0) 6(0.014,E=18,obs=17) 47(0.0093,E=0.0018,obs=0) 53(0.0042,E=0.0027,obs=0) 153(0.001,E=3.8e-10,obs=0)
+
+## families_k6_a11_A_1e6 k=6 alpha=(-11, 0) cycles=568  log2N=6.918863 arg/(pi/4)=4.000000
+  class n=37 V=256 eps=(-1, 0) count=498 rel=0.000714 E=613 record=Y bestV=Y rel/prior_best=0.0387
+  class n=74 V=512 eps=(1, 0) count=46 rel=0.00143 E=50.9 record=n bestV=Y rel/prior_best=2
+  class n=2 V=14 eps=(0, 1) count=7 rel=0.0547 E=7.84 record=Y bestV=Y rel/prior_best=0.175
+  class n=111 V=768 eps=(-1, 0) count=5 rel=0.00214 E=11.6 record=n bestV=Y rel/prior_best=3
+  class n=13 V=90 eps=(0, 1) count=3 rel=0.0188 E=4.38 record=Y bestV=Y rel/prior_best=0.495
+  class n=148 V=1024 eps=(1, 0) count=3 rel=0.00285 E=3.98 record=n bestV=Y rel/prior_best=4
+  class n=222 V=1536 eps=(1, 0) count=2 rel=0.00427 E=0.849 record=n bestV=Y rel/prior_best=5.99
+  class n=1 V=6 eps=(0, -1) count=1 rel=0.375 E=0.889 record=Y bestV=n rel/prior_best=0
+  class n=11 V=76 eps=(1, 0) count=1 rel=0.038 E=1.39 record=Y bestV=Y rel/prior_best=0.694
+  class n=24 V=166 eps=(0, 1) count=1 rel=0.0184 E=1.79 record=Y bestV=Y rel/prior_best=0.98
+  class n=185 V=1280 eps=(-1, 0) count=1 rel=0.00356 E=1.71 record=n bestV=Y rel/prior_best=4.99
+  records: 1(0.31,E=1.7,obs=1) 2(0.055,E=8.2,obs=7) 11(0.038,E=1.4,obs=1) 13(0.019,E=4.4,obs=3) 24(0.018,E=1.8,obs=1) 37(0.00071,E=6.1e+02,obs=498)
+
+## families_k6_a11_B_1e6 k=6 alpha=(-11, 0) cycles=560  log2N=6.918863 arg/(pi/4)=4.000000
+  class n=37 V=256 eps=(-1, 0) count=481 rel=0.000714 E=613 record=Y bestV=Y rel/prior_best=0.0387
+  class n=74 V=512 eps=(1, 0) count=51 rel=0.00143 E=50.9 record=n bestV=Y rel/prior_best=2
+  class n=2 V=14 eps=(0, 1) count=7 rel=0.0547 E=7.84 record=Y bestV=Y rel/prior_best=0.175
+  class n=13 V=90 eps=(0, 1) count=6 rel=0.0188 E=4.38 record=Y bestV=Y rel/prior_best=0.495
+  class n=111 V=768 eps=(-1, 0) count=5 rel=0.00214 E=11.6 record=n bestV=Y rel/prior_best=3
+  class n=11 V=76 eps=(1, 0) count=2 rel=0.038 E=1.39 record=Y bestV=Y rel/prior_best=0.694
+  class n=185 V=1280 eps=(-1, 0) count=2 rel=0.00356 E=1.71 record=n bestV=Y rel/prior_best=4.99
+  class n=1 V=6 eps=(0, -1) count=1 rel=0.375 E=0.889 record=Y bestV=n rel/prior_best=0
+  class n=63 V=436 eps=(1, 0) count=1 rel=0.0379 E=0.0938 record=n bestV=Y rel/prior_best=53.2
+  class n=24 V=166 eps=(0, 1) count=1 rel=0.0184 E=1.79 record=Y bestV=Y rel/prior_best=0.98
+  class n=209 V=1446 eps=(0, -1) count=1 rel=0.0148 E=0.079 record=n bestV=Y rel/prior_best=20.7
+  class n=222 V=1536 eps=(1, 0) count=1 rel=0.00427 E=0.849 record=n bestV=Y rel/prior_best=5.99
+  class n=148 V=1024 eps=(1, 0) count=1 rel=0.00285 E=3.98 record=n bestV=Y rel/prior_best=4
+  records: 1(0.31,E=1.7,obs=1) 2(0.055,E=8.2,obs=7) 11(0.038,E=1.4,obs=2) 13(0.019,E=4.4,obs=6) 24(0.018,E=1.8,obs=1) 37(0.00071,E=6.1e+02,obs=481)
+
+# summary: tag k alpha cycles | dominant class (n,V,eps,count) record? | cycles (n>=2) at record n / all | n maximising total E, record? | records n<=300 with E>=1 and no cycle
+families_k7_a13_1.3e7 k=7 (-13, 0) 166 | (10,74,0,-1) x160 Y | 162/165 | 10 Y | []
+families_k7_a15_1.65e7 k=7 (-15, 0) 74 | (43,336,-1,0) x32 Y | 48/58 | 43 Y | []
+families_k7_a11p10i_1e7 k=7 (-11, -10) 766 | (33,257,0,1) x728 Y | 729/765 | 33 Y | []
+families_k7_a15p2i_2.85e7 k=7 (-15, -2) 33 | (6,47,0,1) x28 Y | 28/30 | 6 Y | []
+families_k6_a9_A_1e6 k=6 (-9, 0) 23 | (6,38,0,1) x15 Y | 15/15 | 6 Y | []
+families_k6_a9_B_1e6 k=6 (-9, 0) 25 | (6,38,0,1) x17 Y | 17/17 | 6 Y | []
+families_k6_a11_A_1e6 k=6 (-11, 0) 568 | (37,256,-1,0) x498 Y | 510/567 | 37 Y | []
+families_k6_a11_B_1e6 k=6 (-11, 0) 560 | (37,256,-1,0) x481 Y | 497/559 | 37 Y | []

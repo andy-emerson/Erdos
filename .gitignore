@@ -9,3 +9,5 @@ studies/playground/divvec_t
 studies/playground/gcdfair
 studies/playground/*
 !studies/playground/*.*
+research/collatz/gcz
+research/collatz/gstop

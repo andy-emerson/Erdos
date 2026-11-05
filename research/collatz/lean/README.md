@@ -1,4 +1,4 @@
-# Lean 4 proofs for `papers/gaussian-collatz.md`
+# Lean 4 proofs for `papers/gaussian-collatz.md` and `theorems.md`
 
 Core Lean 4 only (toolchain `leanprover/lean4:v4.35.0`). No Mathlib or other dependencies,
 no `sorry`/`admit`, no `native_decide`/`bv_decide`, no new axioms. Tactics used: `omega`,
@@ -12,7 +12,8 @@ lake build                       # builds the library, a few seconds to ~20 s
 lake env lean CheckAxioms.lean   # prints the axioms of every main theorem
 ```
 
-Expected axioms: at most `propext`, `Classical.choice`, `Quot.sound`.
+Expected axioms: at most `propext`, `Classical.choice`, `Quot.sound`. A clean build of all
+files takes about 12 s.
 Build output goes to `.lake/` (ignored by `.gitignore`).
 
 ## Files
@@ -47,4 +48,46 @@ Build output goes to `.lake/` (ignored by `.gitignore`).
   `drop_below_start_sound` with `T := H`: if every odd `z` with `re > 0`, `im ≥ 0`,
   `N0 < N z ≤ B` has `n` with `N (H^n z) < N z`, then every `z` with `N z ≤ B` has `n` with
   `N (H^n z) ≤ N0`.
+- `GaussianCollatz/Dynamics.lean` (`theorems.md`, Sections 1 to 4, for any map `f`): `Periodic`,
+  `Reaches` (forward orbit; for periodic points, the same cycle), `OnTrivialCycle`, `Trivial`
+  (every odd `z` has an iterate on a cycle containing a unit), `Commutes` (`f (u z) = u f z`),
+  `conj`, `ord`.
+  - Theorem 2.1: `trivial_cycles_le_four` (any map: a list of points on trivial cycles, pairwise on
+    different cycles, has length at most 4); `trivial_cycle_has_unit`; under `Commutes`:
+    `unit_periodic_iff`, `unit_cycle_eq` (the cycle of a unit `u` is `u C₁`), `stab_iff`
+    (`u C₁ = C₁ ↔ u ∈ C₁`), `stab_mul`, and `trivial_cycle_count` (exactly the three cases
+    `U ∩ C₁ = {1}`, `{±1}`, `U`, with 4, 2, 1 trivial cycles).
+  - Theorem 3.1: `unit_cycles` (if `w = f 1` is a unit: `f u = u w`, `f^n u = u w^n`, units stay
+    units, `f^n u = u ↔ w^n = 1`, least period `ord w`), `no_unit_cycle`.
+  - Lemma 4.3: `trivial_transfer`; and `not_trivial_of_invariant` (an `f`-invariant set of
+    non-units containing an odd element rules out triviality).
+- `GaussianCollatz/Expr.lean`: `oddPart`/`val` (odd part and exponent of `π`, by fuel `N w`),
+  `structure Expr` (`α` odd, `k`, digit table `d` depending only on the class mod `π^k`, with
+  `π^k ∣ α z + d z` for odd `z`), `Expr.T`, `Expr.S` (`0` on even inputs and when
+  `α z + d z = 0`), `Expr.Symmetric`, `Expr.IsRule := Trivial E.S`. Lemmas: `N_mul`,
+  `pi_dvd_mul` (`π` is prime), `pow_dvd_of_odd_mul` (Lemma 1.2(b)), `pow_odd_unique`,
+  `oddPart_spec`, `oddPart_pow_mul`, `Expr.S_spec`, `Expr.S_eq` (one-step certificate),
+  `Expr.S_commutes` (Lemma 1.4(c)), `Expr.d_odd`, `Expr.d_inj` (Lemma 1.2(c)), and the
+  expression forms `Expr.trivial_cycles_le_four`, `Expr.trivial_cycle_count`, `Expr.unit_cycles`.
+- `GaussianCollatz/Variants.lean` (Section 4): `Expr.rotate E u` (`α ↦ uα`, table `z ↦ d (u z)`,
+  same digit set) and `Expr.mirror E` (`α ↦ ᾱ`, table `z ↦ conj (d (conj z))`).
+  Without symmetry: `rotate_S` (`S_{uα} z = S_α (u z)`), `mirror_S`
+  (`S_ᾱ z = (-i)^v conj (S_α z̄)`, `v = vstep (conj z)`), `mirror_norm`. With symmetry:
+  `rotate_symmetric`, `rotate_S_mul`, `rotate_iter` (`u^n S_α^n`), `rotate_norm`, `rotate_rule`,
+  `rotate_S_one`; `mirror_symmetric`, `mirror_iter` (`(-i)^{V_n(z̄)} conj (S_α^n z̄)`),
+  `mirror_norm_iter`, `mirror_rule`.
+- `GaussianCollatz/Window.lean` (Section 5): `Expr.fixed_point` (Lemma 5.1),
+  `Expr.fixed_point_not_rule`, `Expr.digits_units` (Corollary 5.2), `alpha_k3`, `alpha_k4`
+  (Lemma 5.3), `units_mod_pi3`, the certificate lemmas `Expr.no_rule_of_cycle3` and
+  `Expr.no_rule_k4`, and Theorem 5.4 `Expr.no_symmetric_rule_below_29`: a symmetric expression
+  with `2^k < N α < 2^(k+1)` and `N α < 29` is not a rule, for any digit table. The explicit
+  cycles at modulus `π^3` (for `α = 3, 3 ± 2i`) are checked by `decide`.
+- `GaussianCollatz/TwoMinusI.lean` (Section 6, Remark 3.2): `drop_below_start_sound_all`
+  (soundness of the all-quadrant check of `gstopall.c`, no condition on units), the expression
+  `E2` (`α = 2 - i`, modulus `π²`, digit `i` for `a` odd, `b` even, `1` for `a` even, `b` odd),
+  `digit2_class`, `digit2_correct`, `E2_T_div`, `E2_cycle` (`S 1 = -i`, `S (-i) = -1`,
+  `S (-1) = 1`, `S i = -i`), `E2_I_not_periodic`, `E2_not_symmetric`, `E2_T_ne_zero`, and the
+  corollary `E2_sound`: if every odd `z` with `1 < N z ≤ B` has a `T`-iterate of smaller norm
+  (the `gstopall` check with `B1 = 1`, `B2 = B`), every nonzero `z` with `N z ≤ B` reaches
+  `1`, `-i` or `-1`.
 - `CheckAxioms.lean`: `#print axioms` for every main theorem (not part of the library).

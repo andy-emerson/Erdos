@@ -53,7 +53,7 @@ The count is literal (cycles as sets, not up to units). Section 4 of `symmetry-t
 In particular, under symmetry the units are on one footing: a unit cycle exists exactly when $S(1)$ is a unit, and then every unit lies on one.
 
 *Remark 3.2 (without symmetry).* Consider the expression $E_2$ with $\alpha = 2 - i$ at modulus $\pi^2 = 2i$, with digit $d(a+bi) = i$ for $a$ odd, $b$ even, and $d(a+bi) = 1$ for $a$ even, $b$ odd (Section 7 checks it is an expression). It is not symmetric, as no expression at modulus $\pi^2$ is (Section 5): $d(-1) = i \neq -d(1)$. Here
-$$S(1) = \frac{2}{\pi^2} = -i, \quad S(-i) = \frac{-2i}{\pi^2} = -1, \quad S(-1) = \frac{-2+2i}{\pi^2} = 1, \quad S(i) = \frac{2+2i}{\pi^3} = -i,$$
+$$S(1) = \frac{2}{\pi^2} = -i, \quad S(-i) = \frac{-2i}{\pi^2} = -1, \quad S(-1) = \frac{-2+2i}{\pi^3} = 1, \quad S(i) = \frac{2+2i}{\pi^3} = -i,$$
 so $1 \to -i \to -1 \to 1$ is a unit cycle of length $3$, which is not the order of any unit, and the unit $i$ lies off it and maps into it. Both conclusions of Theorem 3.1(1) fail, although $S(1)$ is a unit.
 
 ## 4. Rotation and reflection
@@ -169,7 +169,7 @@ This is the check of `gstopall.c`, which runs every odd $z$ with $B_1 < N(z) \le
 3. $S(1) = -i$, $S(-i) = -1$, $S(-1) = 1$ and $S(i) = -i$, so $1 \to -i \to -1 \to 1$ is a unit cycle and $i$ is not periodic;
 4. $T(z) \neq 0$ for $z \neq 0$.
 
-*Proof.* (1) $\pi^2 = 2i$, so classes modulo $\pi^2$ are classes modulo $2$, and the odd classes are those of $1$ ($a$ odd, $b$ even) and $i$ ($a$ even, $b$ odd). Modulo $2$, $(2-i)z + d(z) \equiv iz + d(z)$, which is $i(a + bi) + i \equiv i(a+1) - b \equiv 0$ in the first case and $i a - b + 1 \equiv 0$ in the second. (2) is the definition. (3) $(2-i) + i = 2 = \pi^2(-i)$; $(2-i)(-i) + 1 = -2i = \pi^2(-1)$; $-(2-i) + i = -2 + 2i = \pi^2 \cdot 1$; $(2-i)i + 1 = 2 + 2i = \pi^3(-i)$. The $S$-orbit of $i$ is $i, -i, -1, 1, -i, \ldots$, which never returns to $i$. (4) For even $z \neq 0$, $z/\pi \neq 0$. For odd $z$, $(2-i)z + d(z) = 0$ would give $5N(z) = N(d(z)) = 1$. $\square$
+*Proof.* (1) $\pi^2 = 2i$, so classes modulo $\pi^2$ are classes modulo $2$, and the odd classes are those of $1$ ($a$ odd, $b$ even) and $i$ ($a$ even, $b$ odd). Modulo $2$, $(2-i)z + d(z) \equiv iz + d(z)$, which is $i(a + bi) + i \equiv i(a+1) - b \equiv 0$ in the first case and $i a - b + 1 \equiv 0$ in the second. (2) is the definition. (3) $(2-i) + i = 2 = \pi^2(-i)$; $(2-i)(-i) + 1 = -2i = \pi^2(-1)$; $-(2-i) + i = -2 + 2i = \pi^3 \cdot 1$; $(2-i)i + 1 = 2 + 2i = \pi^3(-i)$. The $S$-orbit of $i$ is $i, -i, -1, 1, -i, \ldots$, which never returns to $i$. (4) For even $z \neq 0$, $z/\pi \neq 0$. For odd $z$, $(2-i)z + d(z) = 0$ would give $5N(z) = N(d(z)) = 1$. $\square$
 
 *Corollary 6.3.* Suppose the check of Theorem 6.1 holds for $E_2$ with $N_0 = 1$ and bound $B$: every odd $z$ with $1 < N(z) \le B$ has $n$ with $N(T^n(z)) < N(z)$ (`gstopall` with $B_1 = 1$, $B_2 = B$, reporting no failures and no cycles). Then every nonzero $z$ with $N(z) \le B$ has an iterate $T^n(z) \in \{1, -i, -1\}$, the unit cycle of Proposition 6.2, so every such orbit reaches the trivial cycle. The run logged in `symmetry-test.md`, Section 5.1, used $B = 10^7$.
 
@@ -181,4 +181,13 @@ All statements above are proved in full. The only facts taken from computation a
 
 ## 8. Lean formalization
 
-See `lean/README.md` for the file list. The correspondence is filled in below once the proofs build.
+All of Sections 1 to 6 is formalized in `lean/` (core Lean 4.35, no Mathlib, no `sorry`, `admit`, `native_decide` or `bv_decide`, no new axioms; only `propext`, `Classical.choice` and `Quot.sound` appear). Correspondence:
+
+1. Definitions: `Expr`, `Expr.T`, `Expr.S`, `Expr.Symmetric`, `Periodic`, `Reaches`, `OnTrivialCycle`, `Trivial`, `Expr.IsRule` (Expr.lean, Dynamics.lean). Lemma 1.2: `pi_dvd_mul`, `pow_dvd_of_odd_mul`, `Expr.d_odd`, `Expr.d_inj`. Lemma 1.4: `reaches_back`, `Expr.S_commutes`, `iter_unit_mul`.
+2. Theorem 2.1: `trivial_cycles_le_four`, `trivial_cycle_has_unit`, `unit_periodic_iff`, `unit_cycle_eq`, `stab_iff`, `stab_mul`, `trivial_cycle_count` (and `Expr.` versions).
+3. Theorem 3.1: `unit_cycles`, `no_unit_cycle`, `Expr.unit_cycles`. Remark 3.2: `E2_cycle`, `E2_I_not_periodic`, `E2_not_symmetric`.
+4. Proposition 4.2: `Expr.rotate_S`. Lemma 4.3: `trivial_transfer`. Theorem 4.4: `Expr.rotate_symmetric`, `rotate_S_mul`, `rotate_iter`, `rotate_norm`, `rotate_rule`, `rotate_S_one`. Proposition 4.6: `Expr.mirror_S`, `Expr.mirror_norm`. Theorem 4.7: `Expr.mirror_symmetric`, `mirror_iter`, `mirror_norm_iter`, `mirror_rule`.
+5. Lemma 5.1: `Expr.fixed_point`, `Expr.fixed_point_not_rule`. Corollary 5.2: `Expr.digits_units`. Lemma 5.3: `alpha_k3`, `alpha_k4`. Theorem 5.4: `Expr.no_symmetric_rule_below_29`.
+6. Theorem 6.1: `drop_below_start_sound_all`. Proposition 6.2: `digit2_class`, `digit2_correct`, `E2_T_div`, `E2_cycle`, `E2_T_ne_zero`. Corollary 6.3: `E2_sound`.
+
+In Lean, $S$ is defined on all of $\mathbb{Z}[i]$ with $S(z) = 0$ for even $z$, and a cycle is described through `Reaches` (for a periodic point $x$, `Reaches f x y` says that $y$ lies on the cycle of $x$, and then the two cycles are equal). The number of trivial cycles in Theorem 2.1(b) is expressed by the three explicit cases of `trivial_cycle_count`.

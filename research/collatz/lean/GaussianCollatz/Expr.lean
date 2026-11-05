@@ -50,6 +50,9 @@ end Expr
 
 /-! ## Arithmetic lemmas -/
 
+instance (z : GInt) : Decidable (Odd z) := by unfold Odd; infer_instance
+
+
 theorem N_mul (x y : GInt) : N (x * y) = N x * N y := by
   apply Int.ofNat.inj
   simp only [Int.ofNat_eq_natCast, Int.natCast_mul, N_cast, mul_re, mul_im]

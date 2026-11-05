@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <math.h>
 typedef __int128 L; typedef long long ll;
-static L AL[64][2], BE[64][2], DE[64][2], DN[64]; static int MOD=4;
+static L AL[256][2], BE[256][2], DE[256][2], DN[256]; static int MOD=4;
 #define ESC (((L)1)<<110)
 static inline int res(L a, L b){ return (int)((a&(MOD-1))*MOD + (b&(MOD-1))); }
 static inline int step(L *pa, L *pb){

@@ -1,11 +1,13 @@
 /* gcz.c: iterate a Gaussian-integer Collatz-type map on every z with N(z) <= B.
  *
- * The map is given by a table over the 16 residues (a mod 4, b mod 4) of z = a+bi:
+ * The map is given by a table over the MOD^2 residues (a mod MOD, b mod MOD) of z = a+bi, MOD = 4, 8 or 16:
  *     T(z) = (alpha_r z + beta_r) / delta_r      (exact division, checked)
- * Rule file: 16 lines "ra rb  alre alim  bere beim  dere deim".
+ * Rule file: "MOD m" then m^2 lines "ra rb  alre alim  bere beim  dere deim".
  *
  * For each start: follow the orbit until it reaches an already-resolved table
  * element, closes a cycle (Brent), exceeds the step cap or escapes.  Results are
+ * (4 Nov, level 7: tables up to MOD 16; unresolved starts split into step cap and escape,
+ * the first output line ends with "escaped n", n <= unresolved.)
  * back-filled along the stored path, so every table element is resolved once.
  * Statistics: cycles (canonical min element, length, odd steps, basin count within
  * the table), unresolved starts, max total steps to the cycle, max excursion.
@@ -19,13 +21,14 @@
 #include <math.h>
 
 typedef __int128 ll;  /* coordinates are 128-bit; escape at 2^100 */
-static ll AL[64][2], BE[64][2], DE[64][2], DN[64]; static int MOD=4;
+static ll AL[256][2], BE[256][2], DE[256][2], DN[256]; static int MOD=4;
 static ll R; static ll B; static ll W;
 static uint32_t *tot;      /* total steps to reach cycle; UNSET = not done */
 static uint16_t *cyc;      /* cycle id */
 static float *mx;          /* log2 of max norm along the rest of the orbit */
 #define UNSET 0xFFFFFFFFu
 #define UNRES 0xFFFFFFFEu
+#define UNESC 0xFFFFFFFDu   /* unresolved because the orbit escaped (vs UNRES: step cap) */
 #define ESC (((__int128)1)<<100)
 
 static inline int res(ll a, ll b){ return (int)((a&(MOD-1))*MOD + (b&(MOD-1))); }
@@ -57,7 +60,7 @@ static int ncyc=0;
 int main(int argc,char**argv){
   if(argc<3){fprintf(stderr,"usage\n");return 1;}
   FILE*f=fopen(argv[1],"r"); if(!f){perror("rule");return 1;}
-  int nrows=0; { int c; if(fscanf(f,"MOD %d",&MOD)!=1) MOD=4; (void)c; } nrows=MOD*MOD;
+  int nrows=0; { int c; if(fscanf(f,"MOD %d",&MOD)!=1) MOD=4; (void)c; } if(MOD!=4&&MOD!=8&&MOD!=16){fprintf(stderr,"MOD must be 4, 8 or 16\n");return 1;} nrows=MOD*MOD;
   for(int k=0;k<nrows;k++){int ra,rb; long long a1,a2,b1,b2,d1,d2;
     if(fscanf(f,"%d %d %lld %lld %lld %lld %lld %lld",&ra,&rb,&a1,&a2,&b1,&b2,&d1,&d2)!=8){fprintf(stderr,"rule parse\n");return 1;}
     int r=ra*MOD+rb; AL[r][0]=a1;AL[r][1]=a2;BE[r][0]=b1;BE[r][1]=b2;DE[r][0]=d1;DE[r][1]=d2;DN[r]=d1*d1+d2*d2;}
@@ -68,7 +71,7 @@ int main(int argc,char**argv){
   tot=malloc(T*4); cyc=malloc(T*2); mx=malloc(T*4);
   memset(tot,0xFF,T*4);
   ll *pa=malloc((cap+2)*sizeof(ll)), *pb=malloc((cap+2)*sizeof(ll));
-  ll nstart=0,nunres=0; ll maxtot=0, mta=0,mtb=0; double maxexc=0; ll mea=0,meb=0; double sumtot=0;
+  ll nstart=0,nunres=0,nesc=0; ll maxtot=0, mta=0,mtb=0; double maxexc=0; ll mea=0,meb=0; double sumtot=0;
   ll maxstop=0, msa=0, msb=0; /* stopping time: first step with N below N(start) */
   for(ll a=-R;a<=R;a++) for(ll b=-R;b<=R;b++){
     if(a*a+b*b>B) continue;
@@ -79,20 +82,20 @@ int main(int argc,char**argv){
       if(!esc && s<cap && s>maxstop){maxstop=s;msa=a;msb=b;} }
     if(tot[idx(a,b)]!=UNSET) continue;
     /* follow orbit */
-    ll x=a,y=b; ll len=0; int outcome=0; /* 1 hit done, 2 cycle, 3 unresolved */
+    ll x=a,y=b; ll len=0; int outcome=0; int escd=0; /* 1 hit done, 2 cycle, 3 unresolved */
     ll sa=x,sb=y; ll power=1,lam=1;
     pa[0]=x;pb[0]=y;
     while(1){
       if(len>=cap){outcome=3;break;}
-      if(step(&x,&y)){outcome=3;break;}
+      if(step(&x,&y)){outcome=3;escd=1;break;}
       len++; pa[len]=x;pb[len]=y;
       if(intab(x,y) && tot[idx(x,y)]!=UNSET){outcome=1;break;}
       if(x==sa&&y==sb){outcome=2;break;}
       if(power==lam){sa=x;sb=y;power*=2;lam=0;}
       lam++;
     }
-    if(outcome==1 && tot[idx(x,y)]==UNRES) outcome=3;
-    if(outcome==3){ for(ll j=0;j<len;j++) if(intab(pa[j],pb[j])) tot[idx(pa[j],pb[j])]=UNRES; continue; }
+    if(outcome==1 && (tot[idx(x,y)]==UNRES||tot[idx(x,y)]==UNESC)){ escd=(tot[idx(x,y)]==UNESC); outcome=3; }
+    if(outcome==3){ uint32_t m=escd?UNESC:UNRES; for(ll j=0;j<len;j++) if(intab(pa[j],pb[j])) tot[idx(pa[j],pb[j])]=m; continue; }
     ll L=len; /* path pa[0..L] */
     ll ent=L; /* index of first element that is on the cycle (outcome 2) */
     int cid; ll basetot; float basemx;
@@ -119,12 +122,12 @@ int main(int argc,char**argv){
   /* statistics over all starts */
   for(ll a=-R;a<=R;a++) for(ll b=-R;b<=R;b++){
     if(a*a+b*b>B) continue; ll t=idx(a,b);
-    if(tot[t]==UNRES||tot[t]==UNSET){nunres++;continue;}
+    if(tot[t]==UNRES||tot[t]==UNESC||tot[t]==UNSET){nunres++; if(tot[t]==UNESC) nesc++; continue;}
     ccount[cyc[t]]++; sumtot+=tot[t];
     if(tot[t]>maxtot){maxtot=tot[t];mta=a;mtb=b;}
     double n0=nrm(a,b); if(n0>0){ double e=mx[t]-log2(n0); if(e>maxexc){maxexc=e;mea=a;meb=b;} }
   }
-  printf("B %lld starts %lld unresolved %lld cycles %d\n",(long long)B,(long long)nstart,(long long)nunres,ncyc);
+  printf("B %lld starts %lld unresolved %lld cycles %d escaped %lld\n",(long long)B,(long long)nstart,(long long)nunres,ncyc,(long long)nesc);
   printf("maxtot %lld at %lld %lld ; meantot %.2f ; maxstop %lld at %lld %lld ; maxexc_log2 %.2f at %lld %lld\n",(long long)maxtot,(long long)mta,(long long)mtb,sumtot/(double)(nstart-nunres>0?nstart-nunres:1),(long long)maxstop,(long long)msa,(long long)msb,maxexc,(long long)mea,(long long)meb);
   /* sort cycles by count */
   int ord[MAXC]; for(int c=0;c<ncyc;c++)ord[c]=c;

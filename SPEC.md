@@ -14,7 +14,17 @@ The build has three levels. Each level uses only the levels below it, as in BLAS
 
 Operations needed by number theory but not by cryptology are deviations and need discussion (the list is in [`research/needs.md`](research/needs.md)).
 
-### 1.2 The map
+### 1.2 Rules that hold at every level
+
+1. **Exact.** Integers only; no floating point anywhere.
+2. **Closed.** Results stay in our type wherever possible (the norm returns N + 0i, 52). Leaving the type is refused (40).
+3. **Fixed width is the textbook level.** Every operation works at a width designated by the user: two 32-bit halves at the smallest for real use, 256 to 4,096 bits for cryptology (50). Overflow at a fixed width is an error.
+4. **Constant time is available.** Every operation has a form whose time does not depend on the values, or is marked as lacking one (research list).
+5. **Vector lanes by default** (42), 32 bits as the unit (43), separate arrays of real and imaginary parts (15), and larger sizes as separate arrays of 32-bit pieces.
+6. **General before special.** The spec builds the textbook answer for each operation; tricks come later. A method that fails on part of its inputs is not a textbook answer.
+7. **Target ARM64 with NEON** (34). The published code is Nim with inline ARM64 assembly (47).
+
+### 1.3 The map
 
 ```mermaid
 flowchart BT
@@ -71,16 +81,6 @@ flowchart BT
   style L2 fill:#d6d6d6,stroke:#444,color:#111
   style L3 fill:#c6c6c6,stroke:#444,color:#111
 ```
-
-### 1.3 Rules that hold at every level
-
-1. **Exact.** Integers only; no floating point anywhere.
-2. **Closed.** Results stay in our type wherever possible (the norm returns N + 0i, 52). Leaving the type is refused (40).
-3. **Fixed width is the textbook level.** Every operation works at a width designated by the user: two 32-bit halves at the smallest for real use, 256 to 4,096 bits for cryptology (50). Overflow at a fixed width is an error.
-4. **Constant time is available.** Every operation has a form whose time does not depend on the values, or is marked as lacking one (research list).
-5. **Vector lanes by default** (42), 32 bits as the unit (43), separate arrays of real and imaginary parts (15), and larger sizes as separate arrays of 32-bit pieces.
-6. **General before special.** The spec builds the textbook answer for each operation; tricks come later. A method that fails on part of its inputs is not a textbook answer.
-7. **Target ARM64 with NEON** (34). The published code is Nim with inline ARM64 assembly (47).
 
 ### 1.4 What each level contains, and its status
 

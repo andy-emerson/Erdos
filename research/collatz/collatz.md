@@ -170,3 +170,36 @@ What would be publishable:
 - Behajaina and Paran: https://arxiv.org/abs/2312.00390
 - Aliyev, NNTDM 31(3) (2025): https://nntdm.net/papers/nntdm-31/NNTDM-31-3-658-666.pdf
 - Matthews, generalized 3x+1 mappings: https://arxiv.org/abs/1907.13302 , https://arxiv.org/abs/1910.11798
+
+## 5. Level 7 (k = 7): census of minimal unit-equivariant rules (4 Nov)
+
+1. Setup. The Collatz-like window is 128 < N(alpha) < 256. It holds 18 norms: 137, 145, 149, 153, 157, 169, 173, 181, 185, 193, 197, 205, 221, 225, 229, 233, 241, 245. That gives 46 multipliers up to units. The 64 odd classes mod (1+i)^7 fall into 16 unit orbits, and in each orbit the least-norm element of a class is unique. So the minimal digit set is unique: the unit multiples of 1, 3, 5, 7, 1+-2i, 1+-4i, 1+-6i, 2+-3i, 2+-5i and 3+-4i, 64 digits in all. Unlike at k = 6, this set is closed under conjugation, so there are 46 rules up to units. Up to conjugation there are 24, since the mirror image of the rule for alpha is the rule for conj(alpha), and alpha = 13 and alpha = 15 are their own mirror images. The enumeration code reproduces k = 6 (28 multipliers, 4 minimal digit sets, 112 rules). An independent script that tests class membership by Gaussian division by (1+i)^k gives the same counts at k = 6 and k = 7.
+
+2. Tools. The class mod (1+i)^7 is fixed by z mod 16, so the gcz tables are mod 16 (256 rows). gcz.c and gstop.c now accept MOD 16, and gcz reports escapes (coordinates past 2^100) separately from step-cap hits. sweep_eq2.py takes k = 7 and has the options --setup, --only and --cap. The changes are backward compatible: the k = 3 to 6 tables are unchanged.
+
+3. Correction to the earlier runs. In the old runs sweep_eq2.py called gcz in quiet mode, which prints at most 40 raw cycles. Rules with more than 40 raw cycles were therefore undercounted. It now runs gcz non-quiet and groups all raw cycles. Rerunning k = 3 to 6 with the fixed code changes two things. First, alpha = 5 at k = 4 has 35 cycles among resolved starts, not 34. Second, alpha = 11 at k = 6 has 181 or 211 cycles at N(z) <= 10^5 and 560 or 568 at 10^6, depending on the digit set, not 23 or 24. The alpha = 11 count grows with the bound, so for that rule the remark that the counts are the same at 10^5 and 10^6 is also wrong. Every other count at k = 3 to 6 is unchanged, including the 22 single-cycle rules at k = 6 and the 23 or 25 cycles for alpha = 9. The paper (Sections 5 and 5.1) still has the old numbers for alpha = 11 at k = 6 and alpha = 5 at k = 4.
+
+4. Sweep at N(z) <= 10^5 (cap 50000 T-steps). All 46 rules resolved every start: no start hit the cap and none escaped. Eight rules have a single cycle up to units: alpha = 11+-4i (N 137), 12+-3i (153), 11+-8i (185) and 12+-7i (193), which is 4 rules up to conjugation. In each the only cycle is the fixed class of 1: one odd step, with 8 T-steps (9 for 12+-3i).
+
+5. Sweep at N(z) <= 10^6. The full sweep took 2.5 minutes, so all 46 rules were run. Again no start hit the cap or escaped; the largest excursion is 2^153.7 in norm (alpha = 14+-7i). The same 8 rules have a single cycle, with excursions below 2^25, so no exact-arithmetic finishing was needed. Cycle counts are the same as at 10^5 except in the four rules with many cycles, where they grow with the bound.
+
+6. Stopping-time check of the single-cycle rules with gstop. For all 8 rules, every start of norm up to 10^6 drops below its own norm, and the only cycle met is the one through 1. For one rule from each conjugate pair (alpha = -11+4i, -12+3i, -11+8i and -12+7i, which are associates of the ones above), the check was extended to norms in (10^6, 10^9] with escape at coordinates 2^110. All 392306389 starts per rule dropped, with no failures and no cycles. Maximum stopping times were 284, 512, 1596 and 2243 T-steps, and maximum excursions 2^9.7, 2^14.8, 2^29.2 and 2^37.4. So each of the 8 rules has a single cycle up to units for all N(z) <= 10^9.
+
+7. Cycle counts of the other 20 rules up to conjugation, at 10^6: 2 cycles for one rule (12+-i); 3 for nine (10+-9i, 13+-4i, 14+-3i, 13+-6i, 14+-5i, 12+-9i, 13+-8i, 15+-4i, 14+-7i); 4 for one (13+-2i); 5 for two (11+-6i, 14+-i); 8 for one (12+-5i); 11 for one (10+-7i); 16 for one (9+-8i); 33 for one (15+-2i); 72 for alpha = 15; 166 for alpha = 13; and 545 for 11+-10i. Conjugate rules always have the same count. Long cycles include 181 T-steps (21 odd) through 11+4i for alpha = 14+i, and 661 T-steps (75 odd) through 7+-4i for alpha = 15.
+
+8. Divergence. Nothing looks divergent at level 7: every start up to 10^6 reached a cycle in every rule. This fits the divergent-cone criterion of Section 2. Since (1+i)^7 = 8(1-i), lambda = alpha/(1+i)^7 is real up to a unit only if alpha is an associate of a multiple of 1+i, which an odd alpha is not. Instead, the rules where lambda is close to a real multiple of a unit (alpha = 13 and 15, where lambda = alpha(1+i)/16 lies on the diagonal, and 11+-10i, where lambda = (1+21i)/16 or its conjugate is nearly imaginary) have many cycles. The count grows with the bound: 141 to 166 for 13, 64 to 72 for 15, and 149 to 545 for 11+-10i, from 10^5 to 10^6. Many of these cycles have the same length (for 11+-10i, many of 33 odd steps), which suggests families of cycles rather than a finite list.
+
+9. Summary across levels. Single-cycle rules up to units: 0 of 3 at k = 3, 2 of 14 at k = 4 (H and its mirror image), 0 of 11 at k = 5, 22 of 112 at k = 6 and 8 of 46 at k = 7. At k = 7 the single-cycle rules are those with the smaller norms 137, 153, 185 and 193; the drift ln(N(alpha)/256) per odd step is between -0.63 and -0.28. As at k = 6, multipliers of the same norm can behave differently: 9+-8i and 12+-i (N 145) have 16 and 2 cycles, while 12+-3i (N 153) has one.
+
+10. Caveats. A "cycle" is a cycle reached from some start with N(z) <= B, so the counts are lower bounds on the number of cycles of each rule. Cycles are found by gcz with T-steps capped at 50000 and escape at coordinates 2^100. At level 7 neither limit was reached, so every start up to 10^6 is accounted for. Every cycle was re-iterated in exact Python integers by exact.make_S, which picks the digit from the congruence and not from the table, before grouping up to units. The single-cycle claims are computational up to 10^9 (gstop) and are not proofs.
+
+11. Commands (from research/collatz; logs in logs/):
+    - python3 sweep_eq2.py 6 1 --setup ; python3 sweep_eq2.py 7 1 --setup
+    - python3 sweep_eq2.py 6 100000 > logs/k6_1e5_rerun.txt (57 s)
+    - python3 sweep_eq2.py 7 100000 > logs/k7_1e5.txt (21 s)
+    - python3 sweep_eq2.py 7 1000000 > logs/k7_1e6.txt (2 min 26 s)
+    - ./gstop k7_aX_Y.rule 0 1000000 for the 8 single-cycle rules > logs/k7_single_gstop_1e6.txt (1 s in all)
+    - ./gstop k7_a{-11_4,-12_3,-11_8,-12_7}.rule 1000000 1000000000 > logs/k7_single_gstop_1e9.txt (9 min 39 s)
+    - python3 sweep_eq2.py 6 1000000 --only (alpha = 9, 11 rules) > logs/k6_1e6_alpha9_11_rerun.txt (69 s)
+    - python3 sweep_eq2.py k 1000000 for k = 3, 4, 5 > logs/k345_1e6_rerun.txt (57 s)
+    The rule files k7_a-11_4.rule, k7_a-12_3.rule, k7_a-11_8.rule and k7_a-12_7.rule are in research/collatz.

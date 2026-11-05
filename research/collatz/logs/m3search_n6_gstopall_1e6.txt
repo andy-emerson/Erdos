@@ -1110,3 +1110,11 @@ MAP alpha=3-2i N=13 D=[(-1, 0), (-2, 1), (3, 2), (0, -3)] orbit=4 trivial=1 cycl
 MAP alpha=3-2i N=13 D=[(3, 0), (-2, 1), (3, 2), (0, -3)] orbit=4 trivial=1 cycles=1+0i->-2-1i->3+2i[mixed] gstopall fails=0 cycles=0 maxstop=1138 at -99,-984 maxexc=34.34
 MAP alpha=3-2i N=13 D=[(1, 2), (2, 1), (3, 2), (0, -3)] orbit=4 trivial=1 cycles=0-1i->-1+2i->2-3i[mixed] gstopall fails=0 cycles=0 maxstop=1255 at -130,243 maxexc=34.84
 MAP alpha=3-2i N=13 D=[(1, -2), (2, -3), (3, 2), (0, -3)] orbit=4 trivial=1 cycles=0-1i->-1+2i->1-2i->-2+1i[mixed] gstopall fails=0 cycles=0 maxstop=1274 at -547,394 maxexc=35.66
+MAP alpha=3-2i N=13 D=[(1, 2), (2, -3), (3, 2), (0, -3)] orbit=4 trivial=1 cycles=0-1i->-1+2i->2-3i[mixed] gstopall fails=0 cycles=0 maxstop=1157 at -178,171 maxexc=33.35
+MAP alpha=3-2i N=13 D=[(1, 2), (0, -1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=-1+0i->1+0i[unit] gstopall fails=0 cycles=0 maxstop=1246 at 563,-708 maxexc=35.53
+MAP alpha=3-2i N=13 D=[(3, 0), (0, -1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=0-1i->1+0i->-2-1i[mixed] gstopall fails=0 cycles=0 maxstop=1354 at -568,-43 maxexc=34.56
+MAP alpha=3-2i N=13 D=[(1, -2), (-2, 1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=0-1i->1+0i->0+1i[unit] gstopall fails=0 cycles=0 maxstop=1542 at -242,9 maxexc=30.14
+MAP alpha=3-2i N=13 D=[(3, 0), (-2, 1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=1+0i->-2-1i->3+2i[mixed] gstopall fails=0 cycles=0 maxstop=1237 at 243,136 maxexc=29.54
+MAP alpha=3-2i N=13 D=[(-3, -2), (-2, 1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=0-1i->1+0i->0+1i[unit] gstopall fails=0 cycles=0 maxstop=1683 at -129,322 maxexc=35.26
+MAP alpha=3-2i N=13 D=[(3, 0), (2, 1), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=1+0i->-2-1i->2+1i->-1-2i[mixed] gstopall fails=0 cycles=0 maxstop=1467 at -419,-336 maxexc=35.94
+MAP alpha=3-2i N=13 D=[(1, 2), (0, 3), (1, 0), (-2, 3)] orbit=4 trivial=1 cycles=-1+0i->1+0i[unit] gstopall fails=0 cycles=0 maxstop=1444 at 52,349 maxexc=35.98

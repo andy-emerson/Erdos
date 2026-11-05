@@ -1,0 +1,8 @@
+k7_a-11_-4: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 219 at 428 35 meanstop 17.02 maxexc_log2 8.86 at 428 35 
+k7_a-11_-8: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 1041 at 236 859 meanstop 28.27 maxexc_log2 22.88 at 361 42 
+k7_a-11_4: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 219 at 35 428 meanstop 17.02 maxexc_log2 8.86 at 35 428 
+k7_a-11_8: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 1041 at 859 236 meanstop 28.27 maxexc_log2 22.88 at 42 361 
+k7_a-12_-3: cycle-min 1 0 steps 9 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 290 at 507 790 meanstop 18.39 maxexc_log2 11.70 at 315 194 
+k7_a-12_-7: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 997 at 18 727 meanstop 30.62 maxexc_log2 24.10 at 18 727 
+k7_a-12_3: cycle-min 1 0 steps 9 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 290 at 790 507 meanstop 18.39 maxexc_log2 11.70 at 194 315 
+k7_a-12_7: cycle-min 1 0 steps 8 range (0,1000000] starts 392686 fails 0 cycles 1 maxstop 997 at 147 414 meanstop 30.62 maxexc_log2 24.10 at 727 18 

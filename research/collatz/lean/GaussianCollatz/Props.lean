@@ -66,7 +66,11 @@ theorem pi_cube_not_dvd_ten : ¬ pow pi 3 ∣ (10 : GInt) := by
   rintro ⟨q, hq⟩
   have h1 := congrArg GInt.re hq
   have h2 := congrArg GInt.im hq
-  simp [pow] at h1 h2
+  have hp : pow pi 3 = ⟨-2, 2⟩ := by decide
+  rw [hp] at h1 h2
+  simp at h1 h2
+  change (10 : Int) = _ at h1
+  change (0 : Int) = _ at h2
   omega
 
 /-- **Proposition 5(2)**, core fact: if `π^k ∣ 10` then `k ≤ 2`. -/

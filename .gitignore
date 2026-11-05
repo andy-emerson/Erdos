@@ -11,3 +11,4 @@ studies/playground/*
 !studies/playground/*.*
 research/collatz/gcz
 research/collatz/gstop
+**/.lake/

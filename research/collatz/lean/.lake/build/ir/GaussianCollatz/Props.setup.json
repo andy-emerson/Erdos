@@ -1,9 +1,0 @@
-{"plugins": [],
- "package": "GaussianCollatz",
- "options": {},
- "name": "GaussianCollatz.Props",
- "isModule": false,
- "importArts":
- {"GaussianCollatz.Basic":
-  [["/home/claude/erdos/research/collatz/lean/.lake/build/lib/lean/GaussianCollatz/Basic.olean"]]},
- "dynlibs": []}

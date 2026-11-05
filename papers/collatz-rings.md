@@ -382,7 +382,7 @@ Everything is in `research/collatz/`. Integer maps: `zcz.c` (census and drop-bel
 - [Barina 2018] D. Barina, 7x ± 1: Close Relative of the Collatz Problem, arXiv:1807.00908 (2018); *Computational Methods in Science and Technology* 28(4) (2022), 143-147, doi:10.12921/cmst.2022.0000025.
 - [Carnielli 2015] W. Carnielli, Some natural generalizations of the Collatz problem, *Applied Mathematics E-Notes* 15 (2015), 207-215.
 - [Chamberland] M. Chamberland, An update on the $3x+1$ problem. https://chamberland.math.grinnell.edu/papers/3x_survey_eng.pdf
-- [Collatz 1986] L. Collatz, On the motivation and origin of the $3x+1$ problem (in Chinese), *J. Qufu Normal University, Natural Science Edition* 12(3) (1986), 9-11; English translation in [Lagarias 2010, book], 241-247 [unverified: citation copied from Lagarias 2016].
+- [Collatz 1986] L. Collatz, On the motivation and origin of the $3x+1$ problem (in Chinese), *J. Qufu Normal University, Natural Science Edition* 12(3) (1986), 9-11; English translation in *The Ultimate Challenge: The $3x+1$ Problem*, American Mathematical Society, 2010, 241-247 [unverified: citation copied from Lagarias 2016].
 - [Conway 1972] J. H. Conway, Unpredictable iterations, in *Proceedings of the 1972 Number Theory Conference*, University of Colorado, Boulder, 1972, 49-52 [unverified: citation copied from Lagarias 2016].
 - [Coxeter 1971] H. S. M. Coxeter, Cyclic sequences and frieze patterns (The Fourth Felix Behrend Memorial Lecture), *Vinculum* 8 (1971), 4-7 [unverified: citation copied from Lagarias 2016].
 - [Everett 1977] C. J. Everett, Iteration of the number-theoretic function $f(2n) = n$, $f(2n+1) = 3n+2$, *Advances in Mathematics* 25 (1977), 42-45 [unverified: from memory].

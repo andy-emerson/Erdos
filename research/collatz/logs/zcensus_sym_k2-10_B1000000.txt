@@ -1,4 +1,5 @@
 # k m set B ncycles capped escaped log2maxexcursion | key:oddlength:basin ...
+# levels 2 to 9 complete; level 10 for m <= 2031 (the rules 2033 to 2047 are in zcensus_sym_k10top_B100000.txt)
 2 5 sym 1000000 2 0 0 26.2 0 | 1:1:361231 7:3:138769
 2 7 sym 1000000 1 0 0 61.1 0 | 1:1:500000
 3 9 sym 1000000 2 0 0 22.7 0 | 1:1:119131 3:1:380869

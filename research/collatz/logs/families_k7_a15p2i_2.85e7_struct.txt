@@ -1,0 +1,27 @@
+# logs/families_k7_a15p2i_2.85e7.json: alpha=[-15, -2] k=7 B=28500000, 33 cycles
+## 1. classes
+class n=6 V=47 eps=(0, 1): 28 cycles, 22 distinct valuation necklaces, multiplicities [(1, 16), (2, 6)]
+   Hamming distances between necklaces (min over rotations): [(2, 115), (3, 105), (4, 11)]
+class n=1 V=8 eps=(-1, 0): 3 cycles, 1 distinct valuation necklaces, multiplicities [(3, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=5 V=39 eps=(0, -1): 1 cycles, 1 distinct valuation necklaces, multiplicities [(1, 1)]
+class n=12 V=94 eps=(-1, 0): 1 cycles, 1 distinct valuation necklaces, multiplicities [(1, 1)]
+## 2. affine maps between cycles of the same class
+  none
+## 3. constant differences between consecutive canonical elements (sorted by norm)
+  class (1, 8, (-1, 0)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((0, 2), 1), ((1, 1), 1), ((0, -2), 1)]
+  class (6, 47, (0, 1)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((3, 7), 4), ((-2, 10), 4), ((-3, -7), 4)]
+## 4. angles (degrees mod 90) and log-norm of cycle elements
+  class (6, 47, (0, 1)): canonical elements by 10-degree bin mod 90: [3, 6, 4, 1, 4, 5, 2, 2, 1]
+               all elements by 10-degree bin mod 90:       [20, 25, 18, 19, 14, 17, 21, 17, 17]
+   log10 least norm: quartiles 1.9, 2.5, 2.9, 3.2, 3.7
+  class (1, 8, (-1, 0)): canonical elements by 10-degree bin mod 90: [1, 0, 1, 0, 0, 0, 1, 0, 0]
+               all elements by 10-degree bin mod 90:       [1, 0, 1, 0, 0, 0, 1, 0, 0]
+   log10 least norm: quartiles 0.0, 0.0, 0.7, 0.7, 0.7
+  class (5, 39, (0, -1)): canonical elements by 10-degree bin mod 90: [0, 0, 0, 1, 0, 0, 0, 0, 0]
+               all elements by 10-degree bin mod 90:       [1, 1, 0, 1, 0, 1, 1, 0, 0]
+   log10 least norm: quartiles 1.1, 1.1, 1.1, 1.1, 1.1
+## 5. composite classes
+  (7, 34) n=12 V=94: n/n0=2.000; blocks of 6 with sum 47: 0 (block sums [43, 51]); |z_(j+n0) - eps0 z_j|/|z_j|: min 0.701 median 1.58 max 5.01

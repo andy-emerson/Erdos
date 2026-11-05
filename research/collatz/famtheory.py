@@ -79,3 +79,31 @@ def maxbound(k, alpha, n, dmax):
             b, rel = bound(k, alpha, n, V, eps, dmax)
             if b*b > best[0]: best = (b*b, V, eps)
     return best
+
+def bound_one(k, alpha, n, V, eps, dmax):
+    """Bound on |z| for SOME element of every cycle with data (n, V, eps).
+    Write g_i = ln|alpha| - (v_i/2) ln 2, so sum g_i = ln r, r = |alpha|^n / 2^(V/2).  By the cycle lemma some
+    rotation has every suffix sum G_m = sum of the last m of the g_i at most c = max(0, ln r).  For that element
+        |z| <= dmax |alpha|^-1 sum_{m=1}^n exp(G_m) / rel,   G_m = m ln|alpha| - (sigma_m/2) ln 2,
+    sigma_m the sum of the last m valuations, with sigma_m >= k m and G_m <= c."""
+    a = math.sqrt(alpha[0]**2 + alpha[1]**2); la = math.log(a); l2 = math.log(2)
+    ang = n*math.atan2(alpha[1], alpha[0]) - V*math.pi/4 - math.atan2(eps[1], eps[0])
+    lr = n*la - V*l2/2; rel = abs(1 - math.exp(lr)*cmath.exp(1j*ang)); c = max(0.0, lr)
+    S = 0.0
+    for m in range(1, n+1):
+        G = min(m*la - k*m*l2/2, c)
+        if m == n: G = lr
+        S += math.exp(G)
+    return dmax * S / (a * rel), rel
+
+def maxbound_one(k, alpha, n, dmax):
+    """max of bound_one over eps and V with |V - n log2 N(alpha)| < 3.  For the other V, r = |alpha|^n/2^(V/2)
+    is >= 2^1.5 or <= 2^-1.5, and bound_one <= dmax n max(1, r) / (|alpha| |1 - r|) <= 1.55 dmax n / |alpha|."""
+    a2 = alpha[0]**2 + alpha[1]**2
+    best = (0, None, None)
+    Vc = n*math.log2(a2)
+    for V in range(max(k*n, math.ceil(Vc - 3)), math.floor(Vc + 3) + 1):
+        for eps in UNITS:
+            b, rel = bound_one(k, alpha, n, V, eps, dmax)
+            if b*b > best[0]: best = (b*b, V, eps)
+    return best

@@ -1,0 +1,61 @@
+# logs/families_k7_a15_1.65e7.json: alpha=[-15, 0] k=7 B=16500000, 74 cycles
+## 1. classes
+class n=43 V=336 eps=(-1, 0): 32 cycles, 16 distinct valuation necklaces, multiplicities [(2, 16)]
+class n=1 V=8 eps=(-1, 0): 16 cycles, 1 distinct valuation necklaces, multiplicities [(16, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=32 V=250 eps=(0, -1): 7 cycles, 4 distinct valuation necklaces, multiplicities [(1, 1), (2, 3)]
+   Hamming distances between necklaces (min over rotations): [(14, 1), (15, 2), (16, 1), (17, 2)]
+class n=75 V=586 eps=(0, 1): 6 cycles, 3 distinct valuation necklaces, multiplicities [(2, 3)]
+class n=247 V=1930 eps=(0, 1): 4 cycles, 2 distinct valuation necklaces, multiplicities [(2, 2)]
+class n=8 V=62 eps=(0, 1): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=107 V=836 eps=(1, 0): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+class n=11 V=86 eps=(0, -1): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=537 V=4196 eps=(1, 0): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+class n=10 V=78 eps=(0, 1): 1 cycles, 1 distinct valuation necklaces, multiplicities [(1, 1)]
+## 2. affine maps between cycles of the same class
+  ((107, 836, (1, 0)), 'conj', 'fq', 'unit'): 1 pairs
+  ((11, 86, (0, -1)), 'conj', 'fq', 'unit'): 1 pairs
+  ((247, 1930, (0, 1)), 'conj', 'fq', 'unit'): 2 pairs
+  ((32, 250, (0, -1)), 'conj', 'fq', 'unit'): 3 pairs
+  ((43, 336, (-1, 0)), 'conj', 'fq', 'unit'): 16 pairs
+  ((537, 4196, (1, 0)), 'conj', 'fq', 'unit'): 1 pairs
+  ((75, 586, (0, 1)), 'conj', 'fq', 'unit'): 3 pairs
+  ((8, 62, (0, 1)), 'conj', 'fq', 'unit'): 1 pairs
+## 3. constant differences between consecutive canonical elements (sorted by norm)
+  class (1, 8, (-1, 0)): longest run of equal consecutive differences: 2
+   most common pairwise difference of canonical elements: [((1, -1), 12), ((-1, 1), 12), ((0, 2), 9)]
+  class (75, 586, (0, 1)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((3, -3), 1), ((-2, 18), 1), ((21, -5), 1)]
+  class (43, 336, (-1, 0)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((57, -57), 2), ((65, 65), 2), ((-57, 57), 2)]
+  class (32, 250, (0, -1)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((4, 0), 1), ((23, -19), 1), ((13, 17), 1)]
+  class (247, 1930, (0, 1)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((241, -241), 1), ((11, 395), 1), ((636, -230), 1)]
+## 4. angles (degrees mod 90) and log-norm of cycle elements
+  class (43, 336, (-1, 0)): canonical elements by 10-degree bin mod 90: [5, 2, 2, 3, 8, 3, 2, 2, 5]
+               all elements by 10-degree bin mod 90:       [230, 115, 42, 191, 220, 191, 42, 115, 230]
+   log10 least norm: quartiles 2.9, 4.2, 4.6, 5.0, 5.7
+  class (1, 8, (-1, 0)): canonical elements by 10-degree bin mod 90: [5, 1, 2, 2, 0, 2, 2, 1, 1]
+               all elements by 10-degree bin mod 90:       [5, 1, 2, 2, 0, 2, 2, 1, 1]
+   log10 least norm: quartiles 0.0, 1.1, 1.4, 1.5, 1.7
+  class (32, 250, (0, -1)): canonical elements by 10-degree bin mod 90: [0, 0, 2, 0, 2, 0, 3, 0, 0]
+               all elements by 10-degree bin mod 90:       [17, 33, 47, 0, 30, 0, 47, 33, 17]
+   log10 least norm: quartiles 3.3, 3.3, 3.6, 3.8, 3.8
+## 5. composite classes
+  (4, 7) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (7, 4) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (2, 25) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (25, 2) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (7, 36) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (36, 7) n=75 V=586: n/n0=1.744; blocks of 43 with sum 336: 1 (block sums [336])
+  (3, 22) n=107 V=836: n/n0=2.488; blocks of 43 with sum 336: 1 (block sums [343, 336])
+  (22, 3) n=107 V=836: n/n0=2.488; blocks of 43 with sum 336: 1 (block sums [343, 336])
+  (123, 364) n=247 V=1930: n/n0=5.744; blocks of 43 with sum 336: 2 (block sums [336, 330, 336, 342, 343])
+  (364, 123) n=247 V=1930: n/n0=5.744; blocks of 43 with sum 336: 2 (block sums [336, 330, 336, 342, 343])
+  (134, 759) n=247 V=1930: n/n0=5.744; blocks of 43 with sum 336: 2 (block sums [336, 336, 334, 341, 333])
+  (759, 134) n=247 V=1930: n/n0=5.744; blocks of 43 with sum 336: 2 (block sums [336, 336, 334, 341, 333])
+  (4081, 4664) n=537 V=4196: n/n0=12.488; blocks of 43 with sum 336: 4 (block sums [328, 331, 328, 336, 336, 343, 344, 333, 336, 330, 336, 350])
+  (4664, 4081) n=537 V=4196: n/n0=12.488; blocks of 43 with sum 336: 4 (block sums [328, 331, 328, 336, 336, 343, 344, 333, 336, 330, 336, 350])

@@ -1,0 +1,30 @@
+# logs/families_k7_a13_1.3e7.json: alpha=[-13, 0] k=7 B=13000000, 166 cycles
+## 1. classes
+class n=10 V=74 eps=(0, -1): 160 cycles, 35 distinct valuation necklaces, multiplicities [(2, 15), (4, 9), (6, 4), (8, 3), (10, 2), (12, 1), (14, 1)]
+   Hamming distances between necklaces (min over rotations): [(2, 235), (3, 238), (4, 119), (5, 3)]
+class n=3 V=22 eps=(0, -1): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=20 V=148 eps=(-1, 0): 2 cycles, 1 distinct valuation necklaces, multiplicities [(2, 1)]
+   Hamming distances between necklaces (min over rotations): []
+class n=1 V=8 eps=(-1, 0): 1 cycles, 1 distinct valuation necklaces, multiplicities [(1, 1)]
+class n=2 V=14 eps=(0, 1): 1 cycles, 1 distinct valuation necklaces, multiplicities [(1, 1)]
+## 2. affine maps between cycles of the same class
+  ((10, 74, (0, -1)), 'conj', 'fq', 'unit'): 79 pairs
+  ((20, 148, (-1, 0)), 'conj', 'fq', 'unit'): 1 pairs
+  ((3, 22, (0, -1)), 'conj', 'fq', 'unit'): 1 pairs
+## 3. constant differences between consecutive canonical elements (sorted by norm)
+  class (10, 74, (0, -1)): longest run of equal consecutive differences: 1
+   most common pairwise difference of canonical elements: [((0, 144), 8), ((117, 117), 8), ((0, -144), 8)]
+## 4. angles (degrees mod 90) and log-norm of cycle elements
+  class (10, 74, (0, -1)): canonical elements by 10-degree bin mod 90: [21, 18, 17, 19, 8, 19, 19, 18, 21]
+               all elements by 10-degree bin mod 90:       [167, 188, 188, 179, 156, 179, 188, 188, 167]
+   log10 least norm: quartiles 2.9, 4.2, 4.7, 5.0, 5.4
+  class (3, 22, (0, -1)): canonical elements by 10-degree bin mod 90: [0, 1, 0, 0, 0, 0, 0, 1, 0]
+               all elements by 10-degree bin mod 90:       [0, 2, 0, 1, 0, 1, 0, 2, 0]
+   log10 least norm: quartiles 2.2, 2.2, 2.2, 2.2, 2.2
+  class (20, 148, (-1, 0)): canonical elements by 10-degree bin mod 90: [0, 0, 0, 1, 0, 1, 0, 0, 0]
+               all elements by 10-degree bin mod 90:       [0, 10, 0, 10, 0, 10, 0, 10, 0]
+   log10 least norm: quartiles 5.1, 5.1, 5.1, 5.1, 5.1
+## 5. composite classes
+  (188, 301) n=20 V=148: n/n0=2.000; blocks of 10 with sum 74: 0 (block sums [73, 75]); |z_(j+n0) - eps0 z_j|/|z_j|: min 0.707 median 1.58 max 2.24
+  (301, 188) n=20 V=148: n/n0=2.000; blocks of 10 with sum 74: 0 (block sums [73, 75]); |z_(j+n0) - eps0 z_j|/|z_j|: min 0.706 median 1.58 max 2.24

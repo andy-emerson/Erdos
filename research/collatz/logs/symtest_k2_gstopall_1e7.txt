@@ -1,0 +1,10 @@
+alpha -1_-2 D={1,i}
+range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 203 at -2545 -1662 meanstop 7.76 maxexc_log2 11.13 at -621 -2066
+alpha -2_-1 D={1,i}
+range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 210 at 831 -2374 meanstop 7.77 maxexc_log2 10.98 at 985 804
+alpha -2_1 D={1,i}
+range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 216 at -1260 -2387 meanstop 7.77 maxexc_log2 10.06 at -1119 2302
+alpha 1_2 D={1,i}
+range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 260 at 2 -2871 meanstop 7.77 maxexc_log2 10.62 at 1057 -1550
+alpha 2_-1 D={1,i}
+range (1,10000000] starts 15708048 fails 0 cycles 0 maxstop 236 at 189 -1596 meanstop 7.77 maxexc_log2 11.38 at 189 -1596

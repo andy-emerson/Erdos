@@ -1,0 +1,1 @@
+range (1,10000000] starts 3927012 fails 0 cycles 0 maxstop 9754 at 1782 243 meanstop 53.91 maxexc_log2 80.35 at 2728 1543

@@ -101,7 +101,7 @@ Two lists: what to do, and what not to do. Rules marked *(draft)* await the auth
 
 ### Don't
 
-1. **No references, benchmarks or prior art** in the paper.
+1. **References come last.** Prior art is researched first, but the bibliography is written after the text, from a review of the finished paper for every point that needs a source.
 2. **No brand names without need.** Name a language, product or chip only where the point needs it. *(draft)*
 3. **Don't call anything hard.** *(draft)*
 4. **No reflexive three.** Never three items because three sounds complete. *(draft)*

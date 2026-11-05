@@ -1,0 +1,28 @@
+k=7 alpha=(-13, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 7.64583; log2 N(alpha) = 7.40088; drift on L -0.12248 bits of |z| per odd step; valuation counts [(7, 90112), (8, 86016), (9, 20480)]
+   by type: mean v on A 7.93750, on Dg 7.50000; P(A->A) 0.3125, P(Dg->A) 0.5000; stationary share of A 0.4211; mean v 7.68421; drift -0.14167 bits per odd step
+k=7 alpha=(-15, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 7.77083; log2 N(alpha) = 7.81378; drift on L +0.02147 bits of |z| per odd step; valuation counts [(7, 73728), (8, 94208), (9, 28672)]
+   by type: mean v on A 8.31250, on Dg 7.50000; P(A->A) 0.4375, P(Dg->A) 0.5000; stationary share of A 0.4706; mean v 7.88235; drift -0.03429 bits per odd step
+k=6 alpha=(-9, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.29167; log2 N(alpha) = 6.33985; drift on L +0.02409 bits of |z| per odd step; valuation counts [(6, 147456), (7, 40960), (8, 8192)]
+   by type: mean v on A 6.50000, on Dg 6.18750; P(A->A) 0.5000, P(Dg->A) 0.0625; stationary share of A 0.1111; mean v 6.22222; drift +0.05881 bits per odd step
+k=6 alpha=(-9, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.29167; log2 N(alpha) = 6.33985; drift on L +0.02409 bits of |z| per odd step; valuation counts [(6, 147456), (7, 40960), (8, 8192)]
+   by type: mean v on A 6.50000, on Dg 6.18750; P(A->A) 0.5000, P(Dg->A) 0.0625; stationary share of A 0.1111; mean v 6.22222; drift +0.05881 bits per odd step
+k=6 alpha=(-9, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.29167; log2 N(alpha) = 6.33985; drift on L +0.02409 bits of |z| per odd step; valuation counts [(6, 147456), (7, 40960), (8, 8192)]
+   by type: mean v on A 6.50000, on Dg 6.18750; P(A->A) 0.5000, P(Dg->A) 0.0625; stationary share of A 0.1111; mean v 6.22222; drift +0.05881 bits per odd step
+k=6 alpha=(-9, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.29167; log2 N(alpha) = 6.33985; drift on L +0.02409 bits of |z| per odd step; valuation counts [(6, 147456), (7, 40960), (8, 8192)]
+   by type: mean v on A 6.50000, on Dg 6.18750; P(A->A) 0.5000, P(Dg->A) 0.0625; stationary share of A 0.1111; mean v 6.22222; drift +0.05881 bits per odd step
+k=6 alpha=(-11, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.54167; log2 N(alpha) = 6.91886; drift on L +0.18860 bits of |z| per odd step; valuation counts [(6, 114688), (7, 57344), (8, 24576)]
+   by type: mean v on A 6.50000, on Dg 6.56250; P(A->A) 0.5000, P(Dg->A) 0.1875; stationary share of A 0.2727; mean v 6.54545; drift +0.18670 bits per odd step
+k=6 alpha=(-11, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.54167; log2 N(alpha) = 6.91886; drift on L +0.18860 bits of |z| per odd step; valuation counts [(6, 114688), (7, 57344), (8, 24576)]
+   by type: mean v on A 6.50000, on Dg 6.56250; P(A->A) 0.5000, P(Dg->A) 0.1875; stationary share of A 0.2727; mean v 6.54545; drift +0.18670 bits per odd step
+k=6 alpha=(-11, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.54167; log2 N(alpha) = 6.91886; drift on L +0.18860 bits of |z| per odd step; valuation counts [(6, 114688), (7, 57344), (8, 24576)]
+   by type: mean v on A 6.50000, on Dg 6.56250; P(A->A) 0.5000, P(Dg->A) 0.1875; stationary share of A 0.2727; mean v 6.54545; drift +0.18670 bits per odd step
+k=6 alpha=(-11, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 6.54167; log2 N(alpha) = 6.91886; drift on L +0.18860 bits of |z| per odd step; valuation counts [(6, 114688), (7, 57344), (8, 24576)]
+   by type: mean v on A 6.50000, on Dg 6.56250; P(A->A) 0.5000, P(Dg->A) 0.1875; stationary share of A 0.2727; mean v 6.54545; drift +0.18670 bits per odd step
+k=4 alpha=(-5, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 4.41667; log2 N(alpha) = 4.64386; drift on L +0.11359 bits of |z| per odd step; valuation counts [(4, 131072), (5, 49152), (6, 16384)]
+   by type: mean v on A 4.50000, on Dg 4.37500; P(A->A) 0.5000, P(Dg->A) 0.1250; stationary share of A 0.2000; mean v 4.40000; drift +0.12193 bits per odd step
+k=4 alpha=(-5, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 4.41667; log2 N(alpha) = 4.64386; drift on L +0.11359 bits of |z| per odd step; valuation counts [(4, 131072), (5, 49152), (6, 16384)]
+   by type: mean v on A 4.50000, on Dg 4.37500; P(A->A) 0.5000, P(Dg->A) 0.1250; stationary share of A 0.2000; mean v 4.40000; drift +0.12193 bits per odd step
+k=3 alpha=(-3, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 3.58333; log2 N(alpha) = 3.16993; drift on L -0.20670 bits of |z| per odd step; valuation counts [(3, 98304), (4, 81920), (5, 16384)]
+   by type: mean v on A 3.75000, on Dg 3.50000; P(A->A) 0.2500, P(Dg->A) 0.5000; stationary share of A 0.4000; mean v 3.60000; drift -0.21504 bits per odd step
+k=5 alpha=(-7, 0): 196608/196608 odd points of L map into L (m in [1000000000000, 1000000065536)); mean valuation 5.70833; log2 N(alpha) = 5.61471; drift on L -0.04681 bits of |z| per odd step; valuation counts [(5, 81920), (6, 90112), (7, 24576)]
+   by type: mean v on A 6.12500, on Dg 5.50000; P(A->A) 0.3750, P(Dg->A) 0.5000; stationary share of A 0.4444; mean v 5.77778; drift -0.08153 bits per odd step

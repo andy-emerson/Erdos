@@ -13,3 +13,6 @@ research/collatz/gcz
 research/collatz/gstop
 **/.lake/
 research/collatz/zcz
+research/collatz/gstopall
+research/collatz/zany
+__pycache__/

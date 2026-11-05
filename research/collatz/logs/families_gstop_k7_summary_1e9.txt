@@ -1,0 +1,10 @@
+a13 128 s
+range (13000000,1000000000] starts 387593990 fails 0 cycles 0 maxstop 841 at 9386 13763 meanstop 21.48 maxexc_log2 21.26 at 1644 29645
+a11p10i 329 s
+range (10000000,1000000000] starts 388772062 fails 0 cycles 1 maxstop 9518 at 1379 7452 meanstop 55.54 maxexc_log2 74.86 at 9968 22249
+a15 370 s
+range (16500000,1000000000] starts 386219564 fails 8 cycles 2 maxstop 21409 at 8548 9769 meanstop 62.90 maxexc_log2 84.06 at 6407 7322
+a15p2i 419 s
+range (28500000,1000000000] starts 381507118 fails 0 cycles 0 maxstop 13931 at 24415 18028 meanstop 72.12 maxexc_log2 92.10 at 20560 15707
+
+[exited with code 0]

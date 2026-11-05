@@ -1,0 +1,2 @@
+cycle-min 2318 2599 steps 290
+range (10000000,1000000000] starts 388772062 fails 0 cycles 1 maxstop 9518 at 1379 7452 meanstop 55.54 maxexc_log2 74.86 at 9968 22249

@@ -14,3 +14,9 @@ open GInt
 #print axioms tableH_covers
 #print axioms digitH_correct
 #print axioms H_cycle
+#print axioms H_div
+#print axioms digitH_unit_table
+#print axioms digitH_unit
+#print axioms divPi_unit_mul
+#print axioms H_unit
+#print axioms H_sound

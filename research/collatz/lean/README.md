@@ -40,4 +40,11 @@ Build output goes to `.lake/` (ignored by `.gitignore`).
   and `tableH_covers` (the representatives are exactly the 8 odd classes mod 4);
   `digitH_correct` (the digit is correct for every odd `z`); `H_cycle` (from `1`, one odd step
   to `4+4i`, then five divisions by `π` through even values to `-1`, and back from `-1` to `1`).
+- `GaussianCollatz/HSound.lean`: the check applied to `H` itself. `H_div : ∀ z, π ∣ z → H z = divPi z`;
+  `digitH_unit_table` (by `decide`: on the 8 odd residue pairs, every unit sends the digit of a class
+  to the digit of the image class); `digitH_unit` (`d(u z) = u d(z)` for odd `z`); `divPi_unit_mul`;
+  `H_unit : ∀ u z, IsUnit u → H (u * z) = u * H z`; and the corollary `H_sound`, which is
+  `drop_below_start_sound` with `T := H`: if every odd `z` with `re > 0`, `im ≥ 0`,
+  `N0 < N z ≤ B` has `n` with `N (H^n z) < N z`, then every `z` with `N z ≤ B` has `n` with
+  `N (H^n z) ≤ N0`.
 - `CheckAxioms.lean`: `#print axioms` for every main theorem (not part of the library).

@@ -1,3 +1,4 @@
 import GaussianCollatz.Basic
 import GaussianCollatz.Props
 import GaussianCollatz.Soundness
+import GaussianCollatz.RuleH

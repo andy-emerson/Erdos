@@ -1,0 +1,1 @@
+k7_a-11_4: range (1000000,1000000000] starts 392306389 fails 0 cycles 0 maxstop 284 at 4377 19796 meanstop 17.01 maxexc_log2 9.74 at 17581 12454 

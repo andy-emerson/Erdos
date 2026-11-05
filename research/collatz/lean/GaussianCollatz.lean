@@ -3,3 +3,8 @@ import GaussianCollatz.Props
 import GaussianCollatz.Soundness
 import GaussianCollatz.RuleH
 import GaussianCollatz.HSound
+import GaussianCollatz.Dynamics
+import GaussianCollatz.Expr
+import GaussianCollatz.Variants
+import GaussianCollatz.Window
+import GaussianCollatz.TwoMinusI

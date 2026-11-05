@@ -1,0 +1,45 @@
+fixed points: Proposition 4 matches the census for 1016 of 1016 rules (meaningful for the sym set only)
+level 2: 2 rules, 1 single-cycle; smallest m=5 cycles 2, largest m=7 cycles 1; rules with unresolved starts: 0
+  single-cycle m: [7]
+  first single-cycle m = 7 (rank 2 of 2), m/2^k in [1.750, 1.750], drift in [-0.1335, -0.1335]
+  cycle counts of the others (count: rules): [(2, 1)]
+  single-cycle by tenth of window: 0/0 0/0 0/1 0/0 0/0 0/0 0/0 1/1 0/0 0/0
+level 3: 4 rules, 0 single-cycle; smallest m=9 cycles 2, largest m=15 cycles 3; rules with unresolved starts: 0
+  cycle counts of the others (count: rules): [(2, 3), (3, 1)]
+  single-cycle by tenth of window: 0/0 0/1 0/0 0/1 0/0 0/0 0/1 0/0 0/1 0/0
+level 4: 8 rules, 2 single-cycle; smallest m=17 cycles 4, largest m=31 cycles 7; rules with unresolved starts: 0
+  single-cycle m: [21, 25]
+  first single-cycle m = 21 (rank 3 of 8), m/2^k in [1.312, 1.562], drift in [-0.4212, -0.2469]
+  cycle counts of the others (count: rules): [(2, 2), (4, 2), (5, 1), (7, 1)]
+  single-cycle by tenth of window: 0/1 0/1 0/0 1/1 0/1 1/1 0/1 0/0 0/1 0/1
+level 5: 16 rules, 4 single-cycle; smallest m=33 cycles 8, largest m=63 cycles 12; rules with unresolved starts: 0
+  single-cycle m: [41, 43, 49, 53]
+  first single-cycle m = 41 (rank 5 of 16), m/2^k in [1.281, 1.656], drift in [-0.4453, -0.1886]
+  cycle counts of the others (count: rules): [(2, 2), (3, 5), (4, 2), (6, 1), (8, 1), (12, 1)]
+  single-cycle by tenth of window: 0/2 0/1 1/2 1/1 0/2 1/2 1/1 0/2 0/1 0/2
+level 6: 32 rules, 5 single-cycle; smallest m=65 cycles 16, largest m=127 cycles 16; rules with unresolved starts: 1
+  single-cycle m: [77, 85, 99, 107, 111]
+  first single-cycle m = 77 (rank 7 of 32), m/2^k in [1.203, 1.734], drift in [-0.5082, -0.1425]
+  cycle counts of the others (count: rules): [(2, 9), (3, 9), (4, 1), (5, 2), (7, 1), (16, 2), (17, 1), (34, 1), (50, 1)]
+  single-cycle by tenth of window: 0/3 0/3 1/4 1/3 0/3 1/3 1/3 1/4 0/3 0/3
+level 7: 64 rules, 15 single-cycle; smallest m=129 cycles 32, largest m=255 cycles 32; rules with unresolved starts: 1
+  single-cycle m: [153, 155, 157, 165, 167, 173, 193, 195, 197, 201, 207, 211, 213, 227, 229]
+  first single-cycle m = 153 (rank 13 of 64), m/2^k in [1.195, 1.789], drift in [-0.5147, -0.1115]
+  cycle counts of the others (count: rules): [(2, 19), (3, 9), (4, 7), (5, 2), (6, 3), (9, 1), (11, 4), (32, 2), (46, 1), (294, 1)]
+  single-cycle by tenth of window: 0/6 1/7 3/6 2/7 0/6 4/6 3/7 2/6 0/7 0/6
+level 8: 128 rules, 30 single-cycle; smallest m=257 cycles 64, largest m=511 cycles 64; rules with unresolved starts: 2
+  single-cycle m: [307, 309, 311, 313, 329, 331, 333, 335, 339, 341, 343, 345, 347, 385, 387, 393, 397, 399, 401, 413, 417, 423, 425, 437, 443, 445, 451, 459, 467, 469]
+  first single-cycle m = 307 (rank 26 of 128), m/2^k in [1.199, 1.832], drift in [-0.5115, -0.0877]
+  cycle counts of the others (count: rules): [(2, 43), (3, 20), (4, 8), (5, 5), (6, 8), (7, 1), (8, 3), (9, 2), (12, 1), (13, 3), (21, 1), (22, 1), (64, 2)]
+  single-cycle by tenth of window: 0/13 1/13 5/12 7/13 0/13 6/13 4/13 5/12 2/13 0/13
+level 9: 256 rules, 67 single-cycle; smallest m=513 cycles 128, largest m=1023 cycles 128; rules with unresolved starts: 4
+  single-cycle m: [611, 613, 615, 617, 619, 621, 623, 625, 627, 655, 657, 661, 663, 665, 667, 669, 671, 673, 677, 679, 681, 683, 685, 687, 691, 693, 769, 771, 773, 775, 779, 781, 783, 787, 789, 791, 799, 801, 803, 805, 825, 827, 829, 833, 835, 843, 845, 849, 851, 853, 855, 857, 871, 875, 887, 889, 893, 897, 899, 905, 907, 909, 917, 919, 933, 935, 937]
+  first single-cycle m = 611 (rank 50 of 256), m/2^k in [1.193, 1.830], drift in [-0.5164, -0.0888]
+  cycle counts of the others (count: rules): [(2, 68), (3, 46), (4, 18), (5, 13), (6, 8), (7, 3), (8, 4), (9, 1), (10, 4), (11, 1), (12, 3), (13, 1), (14, 2), (18, 3), (21, 1), (26, 3), (31, 1), (32, 1), (38, 1), (43, 2), (60, 1), (69, 1), (86, 1), (128, 2)]
+  single-cycle by tenth of window: 0/26 2/25 12/26 12/25 0/26 14/26 12/25 12/26 3/25 0/26
+level 10: 506 rules, 127 single-cycle; smallest m=1025 cycles 256, largest m=2035 cycles 20; rules with unresolved starts: 3
+  single-cycle m: [1223, 1225, 1227, 1229, 1231, 1233, 1235, 1239, 1241, 1243, 1245, 1251, 1253, 1255, 1309, 1311, 1313, 1315, 1317, 1319, 1321, 1323, 1325, 1327, 1329, 1331, 1333, 1335, 1337, 1339, 1341, 1345, 1353, 1355, 1357, 1359, 1361, 1363, 1365, 1369, 1371, 1373, 1375, 1381, 1383, 1385, 1387, 1389, 1537, 1541, 1543, 1545, 1547, 1549, 1559, 1561, 1563, 1565, 1567, 1571, 1573, 1575, 1577, 1587, 1589, 1593, 1595, 1601, 1603, 1607, 1609, 1611, 1653, 1657, 1659, 1667, 1669, 1685, 1687, 1689, 1691, 1693, 1697, 1699, 1701, 1703, 1705, 1707, 1709, 1711, 1713, 1741, 1743, 1747, 1749, 1751, 1767, 1775, 1777, 1781, 1787, 1789, 1791, 1793, 1795, 1797, 1799, 1801, 1805, 1807, 1809, 1811, 1813, 1817, 1819, 1831, 1839, 1845, 1847, 1853, 1861, 1863, 1865, 1867, 1869, 1873, 1875]
+  first single-cycle m = 1223 (rank 100 of 506), m/2^k in [1.194, 1.831], drift in [-0.5156, -0.0883]
+  cycle counts of the others (count: rules): [(2, 150), (3, 91), (4, 40), (5, 20), (6, 8), (7, 13), (8, 8), (9, 9), (10, 5), (11, 5), (12, 4), (13, 3), (15, 3), (17, 4), (19, 1), (20, 3), (23, 1), (28, 1), (30, 1), (36, 1), (37, 1), (42, 1), (44, 1), (51, 1), (54, 1), (85, 1), (97, 1), (256, 1)]
+  single-cycle by tenth of window: 0/51 3/51 23/52 22/51 0/51 24/51 19/51 26/52 10/51 0/45
+all levels, single-cycle by tenth of window (m/2^k - 1 in [i/10, (i+1)/10)): 0/102 7/102 45/103 46/102 0/102 51/102 40/102 47/103 15/102 0/96

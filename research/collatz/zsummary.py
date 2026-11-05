@@ -4,6 +4,7 @@ Reads logs/zcensus_<set>_*.txt lines "k m set B ncyc capped escaped maxlog2 nbig
 prints, per level: rules, single-cycle rules (one cycle up to sign and no unresolved start),
 their multipliers, the drift ln m - (k+1) ln 2 of each, the cycle-count distribution of the
 others, and the single-cycle counts by position of m in the window (tenths of (2^k, 2^(k+1))).
+Also checks the fixed points against Proposition 4 (sym logs).
 Usage: python3 zsummary.py logfile [logfile ...]
 """
 import sys, math
@@ -16,6 +17,16 @@ for fn in sys.argv[1:]:
         head = line.split('|')[0].split()
         k, m, ncyc, capped, esc = int(head[0]), int(head[1]), int(head[4]), int(head[5]), int(head[6])
         rows[(k, m)] = (ncyc, capped, esc, int(head[3]), line.split('|')[1].split())
+# Proposition 4: for the sym set the fixed points up to sign are the odd x < 2^(k-1)/delta,
+# delta = min(m - 2^k, 2^(k+1) - m); check against the cycles of odd length 1 in the logs
+bad = 0
+for (k, m), r in rows.items():
+    delta = min(m - 2**k, 2**(k + 1) - m); t = 2**(k - 1) / delta
+    pred = sorted(x for x in range(1, 2**(k - 1), 2) if x < t)
+    found = sorted(int(c.split(':')[0]) for c in r[4] if c.split(':')[1] == '1')
+    if pred != found: bad += 1
+print(f'fixed points: Proposition 4 matches the census for {len(rows) - bad} of {len(rows)} rules'
+      ' (meaningful for the sym set only)')
 levels = sorted({k for k, m in rows})
 bins_all = defaultdict(lambda: [0, 0])
 for k in levels:

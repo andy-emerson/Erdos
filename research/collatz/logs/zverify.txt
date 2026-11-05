@@ -1,0 +1,1 @@
+765 rules with two distinct cycles up to sign confirmed, 0 failures

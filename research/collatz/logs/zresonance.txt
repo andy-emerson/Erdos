@@ -1,0 +1,28 @@
+k=10 m=1437  2-cycles found   4  E(2,21) =    4.1
+k=10 m=1439  2-cycles found   5  E(2,21) =    5.0
+k=10 m=1441  2-cycles found   7  E(2,21) =    6.3
+k=10 m=1443  2-cycles found  10  E(2,21) =    8.8
+k=10 m=1445  2-cycles found  16  E(2,21) =   14.4
+k=10 m=1447  2-cycles found  41  E(2,21) =   39.2
+k=10 m=1449  2-cycles found  53  E(2,21) =   53.5
+k=10 m=1451  2-cycles found  18  E(2,21) =   15.9
+k=10 m=1453  2-cycles found   9  E(2,21) =    9.3
+k=10 m=1455  2-cycles found   6  E(2,21) =    6.6
+k=10 m=1457  2-cycles found   6  E(2,21) =    5.1
+k=10 m=1459  2-cycles found   4  E(2,21) =    4.2
+k=10 m=1461  2-cycles found   3  E(2,21) =    3.5
+k=9 m=715  2-cycles found   3  E(2,19) =    2.5
+k=9 m=717  2-cycles found   3  E(2,19) =    3.2
+k=9 m=719  2-cycles found   4  E(2,19) =    4.5
+k=9 m=721  2-cycles found   7  E(2,19) =    7.4
+k=9 m=723  2-cycles found  20  E(2,19) =   21.0
+k=9 m=725  2-cycles found  25  E(2,19) =   24.5
+k=9 m=727  2-cycles found   9  E(2,19) =    7.7
+k=9 m=729  2-cycles found   4  E(2,19) =    4.6
+k=9 m=731  2-cycles found   2  E(2,19) =    3.3
+k=9 m=733  2-cycles found   2  E(2,19) =    2.5
+k=7 m=181 n=2 V=15: m^n / 2^V = 0.999786, 2-cycles found 293, E = 292.6, all cycles 294
+k=6 m=97 n=5 V=33: m^n / 2^V = 0.999698, 5-cycles found 49, E = 45.3, all cycles 50
+k=10 m=1505 n=9 V=95: m^n / 2^V = 0.999951, 9-cycles found 92, E = 89.9, all cycles 97
+k=8 m=363 n=2 V=17: m^n / 2^V = 1.005318, 2-cycles found 12, E = 11.8, all cycles 13
+k=9 m=645 n=3 V=28: m^n / 2^V = 0.999630, 3-cycles found 85, E = 84.5, all cycles 86

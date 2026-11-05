@@ -4,7 +4,7 @@
 
 ## Abstract
 
-We study maps on the Gaussian integers built like the $3x+1$ map, with the prime $1+i$ in the role of $2$. An element divisible by $1+i$ is divided by it; any other $z$ is sent to $\alpha z + d$, where the digit $d$ is chosen by the class of $z$ modulo $(1+i)^k$ so that the result is divisible by $(1+i)^k$. We ask three things of such a rule: that it commute with multiplication by units, so that it treats $z$ and $-z$ alike, which $3x+1$ does not; that its digits be as small as possible; and that it expand in the worst case and contract on average, which happens exactly when $2^k < N(\alpha) < 2^{k+1}$. No such rule exists at levels $k \le 2$. Ordered by the norm of $\alpha$, the first such rule with a single cycle up to units is $H$, with $\alpha = 5+2i$, $k = 4$ and digits $\pm 1, \pm i, \pm(2+i), \pm(1-2i)$. It is the only one at level $4$ up to conjugation; levels $3$ and $5$ have none, and levels $6$ and $7$ have $22$ of $112$ and $8$ of $46$. We conjecture that every orbit of $H$ on $\mathbb{Z}[i] \setminus \{0\}$ reaches $\pm 1$ or $\pm i$, and we have checked this for all starts of norm at most $3 \cdot 10^9$. The multiplier $3$ falls at level $3$, where its rule has five cycles, and no rule with $\alpha = 3$ both agrees with $3x+1$ on the positive integers and contracts on average. The elementary propositions, the soundness of the check, and the facts about $H$ that the check uses are proved in Lean 4.
+We study maps on the Gaussian integers built like the $3x+1$ map, with the prime $1+i$ in the role of $2$. An element divisible by $1+i$ is divided by it; any other $z$ is sent to $\alpha z + d$, where the digit $d$ is chosen by the class of $z$ modulo $(1+i)^k$ so that the result is divisible by $(1+i)^k$. We ask three things of such a rule: that it commute with multiplication by units, so that it treats $z$ and $-z$ alike, which $3x+1$ does not; that its digits be as small as possible; and that it expand in the worst case and contract on average, which happens exactly when $2^k < N(\alpha) < 2^{k+1}$. No such rule exists at levels $k \le 2$. Ordered by the norm of $\alpha$, the first such rule with a single cycle up to units is $H$, with $\alpha = 5+2i$, $k = 4$ and digits $\pm 1, \pm i, \pm(2+i), \pm(1-2i)$. It is the only one at level $4$ up to conjugation; levels $3$ and $5$ have none, and levels $6$ and $7$ have $22$ of $112$ and $8$ of $46$. We conjecture that every orbit of $H$ on $\mathbb{Z}[i] \setminus \{0\}$ reaches $\pm 1$ or $\pm i$, and we have checked this for all starts of norm at most $3 \cdot 10^9$. The multiplier $3$ falls at level $3$, where its rule has five cycles, and no rule with $\alpha = 3$ both agrees with $3x+1$ on the positive integers and contracts on average. The soundness of the check, the facts about $H$ that it uses, and three of the elementary propositions are proved in Lean 4.
 
 ## 1. Introduction
 
@@ -22,7 +22,7 @@ where $d(z)$ is the element of $\{\pm 1, \pm i, \pm(2+i), \pm(1-2i)\}$ that make
 
 *Conjecture 1.* Every orbit of $H$ on $\mathbb{Z}[i] \setminus \{0\}$ reaches $\pm 1$ or $\pm i$. Up to units, $H$ has a single cycle.
 
-On $\mathbb{Z}[i]$ itself the cycles are the two through $\pm 1$ and through $\pm i$, each the image of the other under multiplication by $i$. We have checked Conjecture 1 for every start of norm at most $3 \cdot 10^9$ (Section 7). The check rests on a reduction to one starting point per class of associates, and that reduction, the elementary propositions of Sections 3 and 4, and the facts about $H$ the reduction needs are proved in Lean 4 without external libraries (Section 8).
+On $\mathbb{Z}[i]$ itself the cycles are the two through $\pm 1$ and through $\pm i$, each the image of the other under multiplication by $i$. We have checked Conjecture 1 for every start of norm at most $3 \cdot 10^9$ (Section 7). The check rests on a reduction to one starting point per class of associates. That reduction and the facts about $H$ it needs are proved in Lean 4 without external libraries, as are Propositions 2 and 4 and part of Proposition 1 (Section 8).
 
 Section 2 surveys prior work. Section 3 sets up the family and the criteria, and Section 4 proves the basic facts about them. Section 5 is a census of the rules at levels $3$ to $7$. Section 6 studies $H$, Section 7 the computation, Section 8 the formal proofs, and Section 9 lists open questions.
 
@@ -30,7 +30,7 @@ Section 2 surveys prior work. Section 3 sets up the family and the criteria, and
 
 Lagarias's annotated bibliographies [2, 3] record the generalizations of $3x+1$ to other rings. We read them in part [unverified: bibliography I was read up to about entry 100, and bibliography II in its second version in full and in its current version up to entry 89].
 
-The family studied here is a case of several general frameworks. Matthews [4, Section 10] considers generalized $3x+1$ maps on the ring of integers $\mathcal{O}_K$ of a number field, taken modulo a non-unit $d$, and works examples on $\mathbb{Z}[\sqrt 2]$ and $\mathbb{Z}[\sqrt 3]$; our rules are maps of this kind on $\mathbb{Z}[i]$ with $d = (1+i)^k$, though $\mathbb{Z}[i]$ is not among his examples. As reported by Siegel [5], Leigh was the first to consider Collatz-type maps on rings of algebraic integers, and Matthews knew of no other work on them [unverified: Leigh's work not seen]. Kohl's residue-class-wise affine maps [6] include maps of $\mathbb{Z}^2$ whose pieces have $2 \times 2$ integer matrix multipliers and lattice moduli, and each step of our rules is such a map [unverified: taken from the package source; no worked $\mathbb{Z}^2$ example seen]. Siegel's Hydra maps [5] cover maps on rings of integers in general, without examples in $\mathbb{Z}[i]$. Conway [7] showed in 1972 that a generalization of $3x+1$ to residue-class-wise affine maps of $\mathbb{Z}$ is undecidable [unverified: known through [13]], so questions about such maps in general have no algorithmic answer and must be settled rule by rule.
+The family studied here is a case of several general frameworks. Matthews [4, Section 10] considers generalized $3x+1$ maps on the ring of integers $\mathcal{O}_K$ of a number field, taken modulo a non-unit $d$, and works examples on $\mathbb{Z}[\sqrt 2]$ and $\mathbb{Z}[\sqrt 3]$; our rules are maps of this kind on $\mathbb{Z}[i]$ with $d = (1+i)^k$, though $\mathbb{Z}[i]$ is not among his examples. As reported by Siegel [5], Leigh was the first to consider Collatz-type maps on rings of algebraic integers, and Matthews knew of no other work on them [unverified: Leigh's work not seen]. Kohl's residue-class-wise affine maps [6] include maps of $\mathbb{Z}^2$ whose pieces have $2 \times 2$ integer matrix multipliers and lattice moduli, and each step of our rules is such a map [unverified: taken from the package source; no worked $\mathbb{Z}^2$ example seen]. Siegel's Hydra maps [5] cover maps on rings of integers in general, without examples in $\mathbb{Z}[i]$. Conway [7] showed in 1972 that a generalization of $3x+1$ to residue-class-wise affine maps of $\mathbb{Z}$ is undecidable [unverified: known through [14]], so questions about such maps in general have no algorithmic answer and must be settled rule by rule.
 
 Kionke [8] studies maps on lattices $\mathbb{Z}^e$ and on $\mathbb{Z}[\sqrt 2]$ of the form $x \mapsto (m_w x + r_w)/d$ on each coset, with positive integer multipliers $m_w$. He proves that tame cones give divergent orbits of positive lower density, that on $\mathbb{Z}[\sqrt 2]$ at least half of all points diverge, and that a map can have finite stopping time on a set of density one and still diverge on a set of positive density. His multipliers are scalars, and he proposes integer matrices in their place as an open extension. Multiplication by a Gaussian $\alpha$ followed by division by a power of $1+i$ is of that matrix kind, and it rotates as well as stretches.
 
@@ -96,7 +96,7 @@ We compare Collatz-like rules by the norm of $\alpha$. The windows $(2^k, 2^{k+1
 
 ### 3.6 The parallel in $\mathbb{Z}$
 
-The same criteria can be applied in $\mathbb{Z}$, with $2$ in place of $1+i$ and $-1$ as the only nontrivial unit. A rule at level $k$ has digits for the odd classes modulo $2^k$ and is Collatz-like when $2^k < m < 2^{k+1}$ for its multiplier $m$. The multiplier $3$ forces level $1$, where there is a single odd class and $x \equiv -x \pmod 2$, so $x$ and $-x$ receive the same digit and no rule commutes with $-1$. This is why $3x+1$ is not symmetric. Symmetric integer rules exist from level $2$ on, with multiplier $5$ or $7$ and digits $\pm 1$: the digit is $-1$ for $x \equiv 1 \pmod 4$ and $+1$ for $x \equiv 3$ when $m = 5$, and the reverse when $m = 7$. For this draft we followed every odd start with $|x| \le 10^5$ under both. The rule $5x \pm 1$ has two cycles up to sign, the fixed point $1$ and $7 \to 9 \to 11$. The rule $7x \pm 1$ has only the fixed point $1$ up to sign, and every odd $x$ with $3 \le x \le 10^7$ falls below $x$ in absolute value, so that holds for all $|x| \le 10^7$. We have not looked for these two rules in the literature. So in $\mathbb{Z}$ the first symmetric Collatz-like rule with a single cycle, in the order of Section 3.5, is $7x \pm 1$, at the lowest level that has symmetric rules. In $\mathbb{Z}[i]$ that level is $3$, where no rule has a single cycle, and the first is $H$ at level $4$. In both rings the first single-cycle rule has the largest multiplier at its level.
+The same criteria can be applied in $\mathbb{Z}$, with $2$ in place of $1+i$ and $-1$ as the only nontrivial unit. A rule at level $k$ has digits for the odd classes modulo $2^k$ and is Collatz-like when $2^k < m < 2^{k+1}$ for its multiplier $m$. The multiplier $3$ forces level $1$, where there is a single odd class and $x \equiv -x \pmod 2$, so $x$ and $-x$ receive the same digit and no rule commutes with $-1$. This is why $3x+1$ is not symmetric. Symmetric integer rules exist from level $2$ on, with multiplier $5$ or $7$ and digits $\pm 1$: the digit is $-1$ for $x \equiv 1 \pmod 4$ and $+1$ for $x \equiv 3$ when $m = 5$, and the reverse when $m = 7$. We followed every odd start with $|x| \le 10^5$ under both (script `zsym.py`). The rule $5x \pm 1$ has two cycles up to sign, the fixed point $1$ and $7 \to 9 \to 11$. Under $7x \pm 1$ every odd $x$ with $3 \le x \le 10^7$ falls below $x$ in absolute value, so every odd $x$ with $|x| \le 10^7$ reaches the fixed point $1$ or $-1$. This is an observation up to that bound. Integer rules of this kind may already appear in the literature on generalized maps [4, 2, 3], which we have not searched for them. Up to $10^7$, then, the first symmetric Collatz-like rule in $\mathbb{Z}$ with a single cycle, in the order of Section 3.5, is $7x \pm 1$, at the lowest level that has symmetric rules. In $\mathbb{Z}[i]$ that level is $3$, where no rule has a single cycle, and the first is $H$ at level $4$. In both rings the first single-cycle rule has the largest multiplier at its level.
 
 ### 3.7 The multiplier $3$
 
@@ -125,7 +125,7 @@ Without the lower end of the window, single-cycle rules are easy to find and eas
 
 $$|S(z)| \le \frac{\sqrt 5\, |z| + 1}{2^{3/2}},$$
 
-which is less than $|z|$ once $|z| > 1/(2^{3/2} - \sqrt 5) \approx 1.69$. Every odd non-unit has norm at least $5$, so every odd step from a non-unit lowers the norm, and every orbit reaches a unit. From $1$ the digit is $1$, and $(1+2i) + 1 = 2+2i = -i(1+i)^3$, so $S(1) = -i$. By symmetry $S(-i) = -1$, $S(-1) = i$ and $S(i) = 1$, so the rule has exactly one cycle on $\mathbb{Z}[i] \setminus \{0\}$, through all four units. We confirmed this with the exact-arithmetic code of Section 7 for every odd start with $N(z) \le 10^5$, for $\alpha = 1+2i$, $2+i$, $1-2i$ and $2-i$: every odd step lowered the norm, every orbit reached a unit within $20$ odd steps, and the only cycle up to units is the class of $1$. Such a rule is the Gaussian counterpart of the $x+1$ problem, which Lagarias [14] calls the solved cousin of $3x+1$.
+which is less than $|z|$ once $|z| > 1/(2^{3/2} - \sqrt 5) \approx 1.69$. Every odd non-unit has norm at least $5$, so every odd step from a non-unit lowers the norm, and every orbit reaches a unit. From $1$ the digit is $1$, and $(1+2i) + 1 = 2+2i = -i(1+i)^3$, so $S(1) = -i$. By symmetry $S(-i) = -1$, $S(-1) = i$ and $S(i) = 1$, so the rule has exactly one cycle on $\mathbb{Z}[i] \setminus \{0\}$, through all four units. We confirmed this with the exact-arithmetic code of Section 7 (script `below_window.py`) for every odd start with $N(z) \le 10^5$, for $\alpha = 1+2i$, $2+i$, $1-2i$ and $2-i$: every odd step lowered the norm, every orbit reached a unit within $20$ odd steps, and the only cycle up to units is the class of $1$. Such a rule is the Gaussian counterpart of the $x+1$ problem, which Lagarias [14] calls the solved cousin of $3x+1$.
 
 ## 4. Basic results
 
@@ -171,3 +171,204 @@ At level $2$ the multiplier $2+i$ has the smallest odd prime norm, which makes i
 The minimal symmetric digit sets of Section 3.3 are as follows. At level $3$ the units are a complete set of odd residues, so the digit set is the units. At level $4$, where classes modulo $(1+i)^4 = -4$ are classes modulo $4$, there are two orbits of classes: the classes of the units, and the classes of the unit multiples of $1+2i$, each of which contains two elements of norm $5$. The minimal sets are the units with the unit multiples of $2+i$, and the units with the unit multiples of $1+2i$; they are complex conjugates. At level $5$ the minimal set is unique: the unit multiples of $1$, $3$, $1+2i$ and $1-2i$. At level $6$ there are eight orbits and four minimal sets: the unit multiples of $1$, $3$, $1 \pm 2i$ and $2 \pm 3i$, together with those of $1+4i$ or $1-4i$ and of $3+4i$ or $3-4i$. None of the four is closed under conjugation. At level $7$ there are sixteen orbits, each class has a unique element of least norm, and the minimal set is unique: the unit multiples of $1, 3, 5, 7, 1 \pm 2i, 1 \pm 4i, 1 \pm 6i, 2 \pm 3i, 2 \pm 5i$ and $3 \pm 4i$. It is closed under conjugation.
 
 Propositions 1(2), 2 and 4 are proved in Lean (Section 8). Propositions 1(1) and 3 are not.
+
+## 5. The census
+
+### 5.1 Method and summary
+
+A rule in the census is symmetric, minimal and Collatz-like, and every choice of minimal digit set is counted. Rules are counted up to units, which replace $\alpha$ by an associate, and up to conjugation, which replaces $(\alpha, D)$ by $(\bar\alpha, \bar D)$; cycles are counted up to units. For each rule the program `gcz` (Section 7) followed every start with $N(z) \le B$ to its cycle, and every cycle it reported was iterated again in exact integer arithmetic, with each digit chosen from the congruence instead of from a table, before cycles were grouped up to units. A cycle in the census is one reached from some start with $N(z) \le B$, so the counts of cycles are lower bounds.
+
+| $k$ | rules (up to conjugation) | single cycle (up to conjugation) | cycles of the other rules, up to conjugation | checked to |
+|---|---|---|---|---|
+| 0 to 2 | 0 | none | none | proof |
+| 3 | 3 (2) | 0 | 5, 4 | $10^9$ |
+| 4 | 14 (7) | 2 (1): $H$ | 2, 2, 3, 3, 6; $\alpha = 5$: 35 or more, divergent | $10^6$; $H$ to $3 \cdot 10^9$ |
+| 5 | 11 (6) | 0 | 2, 3, 3, 4, 4, 18 | $10^6$ |
+| 6 | 112 (56) | 22 (11) | 2 to 10; $\alpha = 9$: 23, 25; $\alpha = 11$: 560, 568; both divergent | $10^6$ |
+| 7 | 46 (24) | 8 (4) | 2 to 33; $\alpha = 13, 15, 11 \pm 10i$: 166, 72, 545 | $10^6$; single-cycle rules to $10^9$ |
+
+"Checked to" is the bound on $N(z)$ up to which every start was followed to its cycle, except where starts escaped (Section 5.5). Level $4$ is the first level with a single-cycle rule, $H$ is the only one there up to conjugation, levels $3$ and $5$ have none, and levels $6$ and $7$ have $22$ of $112$ and $8$ of $46$. Since every rule at levels $3$ and $4$ with smaller norm than $H$ has at least two cycles, $H$ is the first single-cycle rule in the order of Section 3.5. Single-cycle rules are common from level $6$ on, so what distinguishes $H$ is that it comes first.
+
+### 5.2 Levels $3$ to $5$
+
+The table lists each rule with $k \le 5$ up to conjugation, with two of its cycles, each given by a representative in the first quadrant and its length in odd steps.
+
+| $k$ | $\alpha$ | cycles found | two cycles (odd length) |
+|---|---|---|---|
+| 3 | $3$ | 5 | $1$ (1), $2+i$ (2) |
+| 3 | $3+2i$ | 4 | $1$ (1), $3$ (4) |
+| 4 | $4+i$ | 2 | $1$ (1), $2+i$ (1) |
+| 4 | $4-i$ | 2 | $1$ (1), $2+i$ (1) |
+| 4 | $5$ | 35 or more, and divergent orbits | $1$ (1), $2+i$ (1) |
+| 4 | $4+3i$ | 3 | $1$ (1), $6+3i$ (11) |
+| 4 | $4-3i$ | 6 | $1$ (1), $4+i$ (12) |
+| 4 | $5+2i$ | 1 | $1$ (1) only |
+| 4 | $5-2i$ | 3 | $1$ (1), $3+4i$ (6) |
+| 5 | $6+i$ | 2 | $1$ (1), $5$ (4) |
+| 5 | $5+4i$ | 4 | $1$ (1), $2+i$ (1) |
+| 5 | $6+3i$ | 3 | $1$ (1), $2+i$ (2) |
+| 5 | $7$ | 18 | $1$ (1), $2+i$ (1) |
+| 5 | $7+2i$ | 4 | $1$ (1), $2+i$ (3) |
+| 5 | $6+5i$ | 3 | $1$ (1), $2+i$ (7) |
+
+At level $4$ the digit set in each row is the units with the unit multiples of $2+i$; the other minimal set gives the mirror images. At level $5$ the rules with $\alpha = 6-i$, $5-4i$, $6-3i$, $7-2i$ and $6-5i$ are the mirror images of those listed, and $\alpha = 7$ is its own. The counts are for all starts with $N(z) \le 10^6$, and apart from $\alpha = 5$, whose corrected count we have only at $10^6$, they are the same at $10^5$. For $\alpha = 5$ the count covers the starts that reached a cycle; the other $10.5\%$ escaped past coordinates $2^{100}$ (Section 5.5). Two of the cycles are long: $\alpha = 5-2i$ has one of $70$ odd steps through $15+16i$, and $\alpha = 6+5i$ one of $130$ odd steps through $164+199i$. At level $3$ we also tried the non-minimal digit sets made of the unit multiples of $2+i$, $2-i$ or $3$; each gives between $5$ and $14$ cycles.
+
+*Proposition 5.* Among the symmetric, minimal, Collatz-like rules with $k \le 5$, every rule other than $H$ and its mirror image has at least two cycles up to units.
+
+*Proof.* The table exhibits two cycles for each, and each was verified in exact arithmetic. $\square$
+
+What is not proven is that $H$ has only one cycle. That is Conjecture 1.
+
+### 5.3 Level $6$
+
+At level $6$ there are $28$ multipliers and four minimal digit sets, so $112$ rules, $56$ up to conjugation; no rule is its own mirror image. Of the $112$, $22$ have a single cycle up to units for all starts with $N(z) \le 10^6$, with $\alpha = 7 \pm 4i$, $8 \pm 3i$, $9 \pm 2i$, $10 \pm i$, $10 \pm 3i$ and $11 \pm 2i$. Four of these have $\alpha = 11 \pm 2i$, of norm $125$ and drift $\ln(125/128)$ per odd step, and their excursions are large enough to need special handling (Section 7).
+
+The $45$ rules up to conjugation with more than one cycle have these counts: $19$ have $2$ cycles, $4$ have $3$, $3$ have $4$, $5$ have $5$, one each has $6$ and $7$, $4$ have $8$, $2$ have $9$ and $2$ have $10$. The other four are the rules with $\alpha = 9$, with $23$ and $25$ cycles, and with $\alpha = 11$, with $560$ and $568$ cycles at $N(z) \le 10^6$ against $181$ and $211$ at $10^5$. All four have orbits that appear to diverge. For six of the $45$, those with $\alpha = 10 \pm 5i$ and the two with $\alpha = 11 \pm 2i$ that have two cycles, some starts reached the cap of $50000$ steps, so their counts are lower bounds; this does not affect the count of $22$. Apart from $\alpha = 11$, every count is the same at $10^5$ and $10^6$.
+
+### 5.4 Level $7$
+
+The window $(128, 256)$ holds $18$ norms and $46$ multipliers up to units. The $64$ odd classes modulo $(1+i)^7$ form $16$ orbits under the units, the minimal digit set is unique and closed under conjugation (Section 4.4), and so there are $46$ rules, $24$ up to conjugation, with $\alpha = 13$ and $\alpha = 15$ their own mirror images. Every start with $N(z) \le 10^6$ reached a cycle in every rule, with no step-cap hit and no escape.
+
+Eight rules have a single cycle up to units: $\alpha = 11 \pm 4i$, $12 \pm 3i$, $11 \pm 8i$ and $12 \pm 7i$, of norms $137$, $153$, $185$ and $193$. In each the cycle is the fixed class of $1$. For one rule of each mirror pair the check of Section 7 extends this to all $N(z) \le 10^9$. Multipliers of the same norm can behave differently: $9 \pm 8i$ and $12 \pm i$, both of norm $145$, have $16$ and $2$ cycles.
+
+The other $20$ rules up to conjugation have, at $10^6$: $2$ cycles for $12 \pm i$; $3$ for nine rules; $4$ for $13 \pm 2i$; $5$ for $11 \pm 6i$ and $14 \pm i$; $8$ for $12 \pm 5i$; $11$ for $10 \pm 7i$; $16$ for $9 \pm 8i$; $33$ for $15 \pm 2i$; $72$ for $15$; $166$ for $13$; and $545$ for $11 \pm 10i$. Conjugate rules have the same count. The last three counts grow with the bound, from $64$, $141$ and $149$ at $10^5$. Long cycles include one of $75$ odd steps for $\alpha = 15$ and one of $21$ odd steps through $11+4i$ for $\alpha = 14+i$.
+
+### 5.5 Divergence
+
+Orbits that appear to diverge occur only for $\alpha = 5$ at level $4$ and $\alpha = 9, 11$ at level $6$. These are the cases in which
+
+$$\lambda = \frac{\alpha}{(1+i)^k}$$
+
+is real up to a unit. Since $(1+i)^2 = 2i$, this happens exactly when $\alpha$ is real up to a unit and $k$ is even, and in the windows that gives $5$ at level $4$, where $\lambda = -5/4$, and $9$ and $11$ at level $6$. The Collatz-like condition makes $|\lambda| > 1$. An odd step with exactly $k$ divisions multiplies $z$ by $\lambda$ up to a bounded error. When $\lambda$ is real up to a unit, a run of such steps keeps $z$ along a fixed set of directions while $|z|$ grows by $|\lambda|$ each time; otherwise the direction turns at each step.
+
+For $\alpha = 5$ the mechanism is visible. Of about $1500$ random starts with norm up to $1.8 \cdot 10^7$, $176$ gave orbits that appear to diverge, and all of them settled onto the lines $x - y = \pm 1$ or $x + y = \pm 1$ with ratio $-5/4$ per odd step. Of $1000$ sample points on these lines, $876$ map back onto them, and on them the rule acts like a one-dimensional $5x+1$ map with exactly four divisions per odd step. This is the analogue on lines of Kionke's divergent cones [8]. Matthews [4, Example 10.1] reports a similar picture for an extension of $3x+1$ to $\mathbb{Z}[\sqrt 2]$, whose multiplier $3$ is real: finitely many cycles found, three one-dimensional invariant sets, and apparently divergent orbits. Every digit set we tried with $\alpha = 5$, $9$ or $11$ had such orbits. The divergence is not proven.
+
+The condition is on $\lambda$ itself. For $\alpha = 3$ at level $3$ and $\alpha = 7$ at level $5$, $\lambda^2$ is real up to a unit but $\lambda$ is not, and both rules converged on every start tried. At odd levels $\lambda$ is never real up to a unit, and no rule at levels $3$, $5$ or $7$ has orbits that appear to diverge. At level $7$, where $(1+i)^7 = 8(1-i)$, the rules whose $\lambda$ is closest to a real multiple of a unit have the most cycles: for $\alpha = 13$ and $15$, $\lambda = \alpha(1+i)/16$ lies on a diagonal, and for $\alpha = 11 \pm 10i$, $\lambda$ is $(1+21i)/16$ or its conjugate, nearly imaginary.
+
+### 5.6 Families of cycles
+
+> [PLACEHOLDER: result of the separate study of cycle families, not yet available.] This subsection will report whether the cycle counts that grow with the bound ($\alpha = 11$ at level $6$; $\alpha = 13$, $15$ and $11 \pm 10i$ at level $7$, where many cycles share a length, for $11 \pm 10i$ often $33$ odd steps) come from families of cycles. Until that result is in, the counts in Sections 5.3 and 5.4 for these rules are lower bounds at $N(z) \le 10^6$ and nothing more.
+
+## 6. The rule H
+
+### 6.1 Definition
+
+$H$ has $\alpha = 5+2i$, $N(\alpha) = 29$ and $k = 4$, so $16 < 29 < 32$. Since $(1+i)^4 = -4$, classes modulo $(1+i)^4$ are classes modulo $4$. There are $8$ odd classes in two orbits under the units, the classes of the units and those of the unit multiples of $1+2i$, and the digit set is
+
+$$D = \{\pm 1,\ \pm i,\ \pm(2+i),\ \pm(1-2i)\},$$
+
+the units together with the unit multiples of $2+i$. The digit $d(z)$ is the element of $D$ that makes $(5+2i)z + d(z)$ divisible by $4$:
+
+| $z \bmod 4$ | $1$ | $i$ | $-1$ | $-i$ | $1+2i$ | $2+i$ | $-1-2i$ | $2-i$ |
+|---|---|---|---|---|---|---|---|---|
+| $d(z)$ | $-1+2i$ | $-2-i$ | $1-2i$ | $2+i$ | $-1$ | $-i$ | $1$ | $i$ |
+
+The table follows from one congruence. Modulo $4$, $\alpha \equiv 1+2i$, and $(1+2i)^2 = -3+4i \equiv 1$. If $z \equiv u$ for a unit $u$, the digit must be $\equiv -(1+2i)u$; no unit lies in that class, and its elements of least norm are unit multiples of $2+i$. If $z \equiv (1+2i)u$, the digit must be $\equiv -(1+2i)^2 u \equiv -u$, the unit $-u$. Multiplication by $\alpha$ swaps the two orbits of classes, and the digits alternate between units and associates of $2+i$. For example, $(5+2i) \cdot 1 + (-1+2i) = 4+4i = -(1+i)^5$, so $S(1) = -1$, and by symmetry $S(-1) = 1$. The other minimal digit set gives the mirror image of the rule with $\alpha = 5-2i$.
+
+Where $3x+1$ has one digit, $H$ has eight, because the window forces level $4$, and there are $2^{k-1} = 8$ odd classes modulo $(1+i)^4$.
+
+### 6.2 Orbits
+
+Orbits of $H$ rise and fall as orbits of $3x+1$ do. Under $S$ the orbit of $3$ is
+
+$$3 \to -4-i \to 4+3i \to -3+2i \to 2-3i \to -4+3i \to -2-i \to -i,$$
+
+with norms $9, 17, 25, 13, 13, 25, 5, 1$ and $4, 4, 6, 5, 4, 7, 7$ factors of $1+i$ removed at the successive steps. Longer orbits are common: $6827+4464i$ takes $2042$ odd steps to reach a unit.
+
+### 6.3 The backward form
+
+Lagarias [14] restates $3x+1$ in terms of the inverse maps $2x$ and $(2x-1)/3$: once an iterate of these maps is not an integer it never is again, so the integers in the orbit of $4$ under the semigroup they generate form the backward tree, and the conjecture says that this set is every positive integer except $1$ and $2$. The same holds for $H$, in the form of the rule that performs all $k$ divisions at once, $z \mapsto (\alpha z + d(z))/(1+i)^4$ on odd $z$ and $z \mapsto z/(1+i)$ on even $z$. Its orbits are subsequences of those of $H$, and the intermediate values $(\alpha z + d)/(1+i)^j$ with $j < 4$ are even, so the two rules reach a unit together. Its inverse branches are
+
+$$w \mapsto (1+i)w \quad \text{and} \quad w \mapsto \frac{-4w - d}{5+2i}, \quad d \in D.$$
+
+If $-4w - d$ is divisible by $5+2i$, its quotient $z$ satisfies $\alpha z + d = (1+i)^4 w$, which forces $z$ to be odd and $d$ to be the digit of $z$. If $w$ has $(5+2i)^j$ with $j \ge 1$ in its denominator, so does $-4w - d$, because $4$ and $d$ are prime to $5+2i$, and the second branch raises the exponent to $j+1$; the first leaves it unchanged. So the Gaussian integers in the semigroup orbit are exactly the backward tree, and Conjecture 1 says:
+
+*Conjecture 1, backward form.* The Gaussian integers in the orbit of $\{1, i\}$ under the semigroup generated by $w \mapsto (1+i)w$ and $w \mapsto (-4w-d)/(5+2i)$, $d \in D$, are all of $\mathbb{Z}[i] \setminus \{0\}$.
+
+The starting set $\{1, i\}$ suffices because $-1$ and $-i$ are the images of $1$ and $i$ under backward steps. As for $3x+1$, the orbit is not discrete, since the second branch multiplies the norm by $16/29 < 1$, so density arguments of Erdős's kind for semigroups of expanding affine maps [14] do not apply.
+
+### 6.4 Drift and excursions
+
+Every odd step of $H$ gains at least four factors of $1+i$, which divide the norm by $16$, against a factor of $29$; on average it gains five, which divide by $32$. So the norm changes on average by a factor $29/32$ per odd step, $\log_2 29 - 5 = -0.14$ bits. For $3x+1$, measured on $x^2$ so that the two compare, the factor is $(3/4)^2 = 9/16$, or $-0.83$ bits. $H$ contracts about six times more slowly, so its orbits can climb far before they fall.
+
+A random-walk model makes this quantitative. Treat the excess divisions $v - k$ at successive odd steps as independent geometric variables. Then $\log_2 N$ performs a random walk with drift $-0.142$ bits and variance $2$ per odd step. Simulating $4 \cdot 10^6$ such walks gives a mean of $53.8$ steps of $T$ until the walk first falls below its start; the check of Section 7 measured between $53.82$ and $53.93$ in each of its $30$ chunks. For the largest excursion, the probability that the walk climbs $h$ bits above its start before stopping is about $C e^{-\theta h}$, where $\theta$ solves $\mathbb{E}[e^{\theta X}] = 1$ for the change $X$ per odd step. Here $\theta = 0.165$ per bit, and simulation gives $C \approx 0.36$, with the peak taken just after each multiplication. Over $n$ independent starts the record then has median about $(\ln n + \ln C - \ln \ln 2)/\theta$, which for the $1.18 \cdot 10^9$ starts of the check is $122.4$ bits. The observed record is $122.9$ bits, at $17467+5226i$. The agreement is closer than the model justifies, because the starts are not independent: the records in $14$ of the $30$ chunks come from orbits that pass through one point of norm about $2^{151.2}$ (checked directly for five of them). The mean stopping time is the better test of the model.
+
+The level-$7$ single-cycle rules are the contrast. Their drift is between $-0.90$ bits (norm $137$) and $-0.41$ bits (norm $193$) per odd step, against $-0.14$ for $H$. Over the same range, all starts with $N(z) \le 10^9$, their largest excursions are $2^{9.7}$, $2^{14.8}$, $2^{29.2}$ and $2^{37.4}$ in norm, in order of increasing norm, and their longest stopping times $284$ to $2243$ steps of $T$. For $H$ the largest excursion over that range is $2^{122.9}$ and the longest stopping time $12226$. Up to $N(z) \le 10^6$ the level-$7$ excursions stay below $2^{25}$. By the model, the weaker the drift the heavier the tail of the excursions, and among the symmetric, minimal rules with a single cycle known to us, $H$ has the weakest drift apart from the four level-$6$ rules with $\alpha = 11 \pm 2i$.
+
+## 7. Computational verification
+
+The program `gcz.c` classifies every $z$ with $N(z) \le B$. It stores one entry per lattice point, follows each orbit until it reaches a point already classified, closes a cycle (found with Brent's method), escapes past coordinates $2^{100}$ or reaches a step cap, and fills in the result along the path. Coordinates are 128-bit integers. A rule is given as a table over the residues of $(a \bmod M, b \bmod M)$, with $M = 4$, $8$ or $16$; modulo $16$ fixes the class modulo $(1+i)^7$.
+
+For symmetric rules, `gstop.c` checks a larger range by the drop-below-start method. For each odd $z = a+bi$ with $a > 0$, $b \ge 0$ and $N_0 < N(z) \le B$, it iterates $T$ until the norm falls below $N(z)$, and it reports any orbit that returns to an associate of its start, reaches the step cap, or escapes past coordinates $2^{110}$. If every such start falls below its own norm, then by induction on the norm every $z$ with $N(z) \le B$, of any parity and any associate, reaches a norm at most $N_0$ (Theorem `drop_below_start_sound`, Section 8), and so ends in one of the cycles that `gcz` found below $N_0$. Norms are compared exactly in 128-bit arithmetic while they are below $10^{36}$, that is while coordinates are below about $2^{60}$; above that the iteration continues without comparing, so the method cannot report a false drop.
+
+For $H$, `gcz` classified every $z$ with $N(z) \le 10^7$ and found only the cycles through $\pm 1$ and $\pm i$. Then `gstop` covered $10^7 < N(z) \le 3 \cdot 10^9$ in $30$ chunks, $1.18 \cdot 10^9$ starts, with no failure and no other cycle, in about $15$ minutes on one core. The largest coordinates met were below $2^{80}$. Over that range the longest stopping time is $13913$ steps of $T$, at $6742+34011i$, the mean is $53.9$, and the largest excursion, $\log_2$ of the peak norm before stopping divided by the starting norm, is $122.9$, at $17467+5226i$. The rule file read by `gstop` agrees entry for entry with the digit table proved correct in Lean.
+
+The Python module `exact.py` iterates the same rules in unbounded integer arithmetic and chooses each digit from the congruence. It re-derives every cycle reported here and agrees with `gcz` and `gstop` on the extreme orbits. The sweeps behind the census are `sweep_eq2.py` (symmetric rules at levels $3$ to $7$, at $N(z) \le 10^5$ and $10^6$) and `sweep_gen.py` (the non-symmetric rules of Section 3.2).
+
+Other runs of `gstop` cover $G_3$ and $G_{3+2i}$ to $N(z) \le 10^9$, $3.93 \cdot 10^8$ starts each, with no failure and no new cycle; and the level-$7$ single-cycle rules with $\alpha = -11+4i$, $-12+3i$, $-11+8i$ and $-12+7i$, associates of one rule from each mirror pair, over $10^6 < N(z) \le 10^9$, $392306389$ starts each, with no failure and no cycle, after all eight rules had been checked from norm $1$ to $10^6$. For the four level-$6$ rules with $\alpha = 11 \pm 2i$, whose excursions pass the escape bound of `gcz`, `gstop` was run from norm $1$ to $10^6$ with escape at $2^{110}$, and the $26$ starts that escaped even that bound were iterated in unbounded arithmetic until their norm fell below the starting norm, which took up to $138239$ steps of $T$ with excursions up to about $2^{300}$.
+
+## 8. Formal verification
+
+The Lean 4 development in `research/collatz/lean/` proves the following, with Gaussian integers as pairs of integers and $\pi = 1+i$.
+
+| statement | Lean theorems |
+|---|---|
+| Proposition 2: for $k \le 2$, a digit function that depends only on the class modulo $\pi^k$ and takes odd values has $d(-z) \ne -d(z)$ for some odd $z$ | `prop1`, `pi_sq_dvd_two_mul` |
+| Proposition 4: no Gaussian integer has norm $3$ | `prop3_int`, `prop3` |
+| Proposition 1(2): if $\pi^k$ divides $3n+1$ for every odd natural $n$, then $k \le 2$ | `prop5_2`, `prop5_2'` |
+| Soundness of the drop-below-start check, for any $T$ that divides by $\pi$ on even inputs and commutes with units | `drop_below_start_sound` |
+| $\pi^4 = -4$; the digit table of $H$ is correct for every odd $z$, and its representatives are exactly the eight odd classes modulo $4$ | `pi_pow_four`, `four_dvd_class`, `tableH_reps`, `tableH_distinct`, `tableH_covers`, `digitH_correct` |
+| From $1$, one odd step to $4+4i$ and five divisions through even values give $-1$, and from $-1$ back to $1$ | `H_cycle` |
+| $H$ divides by $\pi$ on even inputs and commutes with units | `H_div`, `digitH_unit`, `H_unit` |
+| The check applied to $H$: if every odd $z$ with $a > 0$, $b \ge 0$, $N_0 < N(z) \le B$ has an iterate of smaller norm, then every $z$ with $N(z) \le B$ has an iterate of norm at most $N_0$ | `H_sound` |
+
+The names `prop1`, `prop3` and `prop5_2` follow the numbering of the first draft. In Proposition 4 the step from the window $2 < N(\alpha) < 4$ to $N(\alpha) = 3$, and in Proposition 1(2) the step from $k \le 2$ to $9 > 2^{k+1}$, are not formalized. Propositions 1(1), 3 and 5 and the census are not formalized.
+
+The development uses core Lean 4 (toolchain `v4.35.0`) and no Mathlib or other library. It contains no `sorry` or `admit` and no `native_decide` or `bv_decide`, so every `decide` proof is checked by the kernel. The tactics are `omega`, `decide`, `simp`, `grind`, `induction` and `rcases`. The file `CheckAxioms.lean` prints the axioms of every main theorem: each depends on at most `propext`, `Classical.choice` and `Quot.sound`, and `pi_pow_four` and `digitH_unit_table` on none. We rebuilt the development and reran the axiom check for this draft.
+
+What is trusted is the computation. `H_sound` turns the bound $3 \cdot 10^9$ into a theorem given two facts that Lean does not check: that the `gstop` run established its hypothesis with $N_0 = 10^7$ and $B = 3 \cdot 10^9$, and that the `gcz` run found every cycle reached from $N(z) \le 10^7$. Both rest on the C programs, their 128-bit arithmetic, the compiler, and the agreement of the rule file with `digitH`.
+
+## 9. Open questions
+
+1. *A second cycle or a divergent orbit for $H$.* A cycle of $H$ up to units with $n$ odd steps $z_j \mapsto z_{j+1}$ and total division exponent $V$ satisfies $\prod_j (\alpha + d_j/z_j) = \varepsilon (1+i)^V$ for a unit $\varepsilon$. When the $z_j$ are large this forces $2^V$ to be close to $29^n$ and the argument of $(5+2i)^n$ to be close to $V\pi/4$ modulo $\pi/2$. The second condition has no analogue for $3x+1$. Bounds of the Steiner and Simons–de Weger type [20, 21], which use linear forms in logarithms, might be adapted to both conditions together and exclude cycles with few odd steps.
+2. *The level-$6$ and level-$7$ single-cycle rules.* The same question for the $22$ rules at level $6$ and the $8$ at level $7$. The four with $\alpha = 11 \pm 2i$, with drift $\ln(125/128)$, have the heaviest excursions of any rule here.
+3. *Higher levels.* Level $8$ has the window $(256, 512)$. Whether single-cycle rules stay a minority there, as at levels $6$ and $7$, and whether the growing cycle counts of Section 5.6 continue, is open.
+4. *Divergence for $\alpha = 5$.* The lines $x \pm y = \pm 1$ are nearly invariant, and an exact description of the points that stay on them would prove that this rule has divergent orbits.
+5. *A density theorem.* Terras [22] and Everett [23] showed that almost every positive integer has a finite stopping time under $3x+1$, because the parity pattern of the first $n$ steps depends only on $x \bmod 2^n$. The analogous pattern for these rules depends only on $z$ modulo a power of $1+i$, and we expect the same argument to give finite stopping time on a set of density one whenever $N(\alpha) < 2^{k+1}$; this has not been worked out. It would not rule out divergence, since Kionke's examples [8] show that density-one stopping and positive-density divergence can coexist. Nichols [24] proved a theorem of Terras type in function rings of curves over $\mathbb{F}_2$ [unverified: only the abstract seen], and Siegel and O'Dwyer [15] prove almost-bounded orbits on a set of logarithmic density one for Hydra maps on rings of integers under a dimension constraint. Whether $H$ or an iterate of it meets their hypotheses is open; a direct encoding modulo $(1+i)^4$ appears to fail their constraint [unverified: a rough estimate].
+6. *Generalized rules that restrict to $3x+1$.* Proposition 1 rules out a single multiplier $3$ at a single level. Rules of Matthews type [4], in which the multiplier or the level depends on the class, remain. Such a rule would need level at most $2$ on the class of $3 \bmod 4$ and could compensate with higher levels elsewhere. We have not tested any. By Conway's theorem [7] such rules have to be studied one at a time, and if one were found with a single cycle, proving that would include proving the Collatz conjecture.
+7. *The $2$-adic extension.* Since the digit of $H$ depends only on $z \bmod 4$, $H$ extends continuously to $\mathbb{Z}_2[i]$. For $3x+1$ the $2$-adic extension preserves Haar measure and is conjugate to the shift [1, 25]. Whether the analogues hold for $H$ is open.
+8. *Larger bounds.* At about $1.2 \cdot 10^6$ starts per second per core, checking $H$ to $10^{11}$ needs about nine core-hours.
+
+## 10. Code and data availability
+
+Everything is in `research/collatz/`. The C programs are `gcz.c` (full classification) and `gstop.c` (drop-below-start check), with the rule files `alpha5p2i_k4.rule` ($H$), `G3_k3.rule`, `G3p2i_k3.rule` and `k7_a-11_4.rule`, `k7_a-12_3.rule`, `k7_a-11_8.rule`, `k7_a-12_7.rule`. The Python files are `rules.py` (rule tables and digit rules), `exact.py` (exact iteration and cycle checks), `sweep_eq.py` and `sweep_eq2.py` (symmetric sweeps), `sweep_gen.py` (non-symmetric sweeps), `joseph.py` (Joseph-type maps), `bigrun.py` and `run_stop.sh` (driving the large runs), `zsym.py` (the integer rules of Section 3.6) and `below_window.py` (Section 3.8). Logs of the runs are in `logs/`, among them `alpha5p2i_k4.stop` (the $3 \cdot 10^9$ check of $H$, chunk by chunk), `G3_k3.stop`, `G3p2i_k3.stop`, `k345_1e6_rerun.txt`, `k6_1e6.txt`, `k6_1e6_alpha9_11_rerun.txt`, `k7_1e6.txt` and `k7_single_gstop_1e9.txt`. The Lean proofs are in `lean/`, built with `lake build`, with axioms printed by `lake env lean CheckAxioms.lean`.
+
+## References
+
+1. J. C. Lagarias, The $3x+1$ problem and its generalizations, *American Mathematical Monthly* 92 (1985), 3–23.
+2. J. C. Lagarias, The $3x+1$ problem: an annotated bibliography (1963–1999), arXiv:math/0309224.
+3. J. C. Lagarias, The $3x+1$ problem: an annotated bibliography, II (2000–2009), arXiv:math/0608208.
+4. K. R. Matthews, Generalized $3x+1$ mappings: Markov chains and ergodic theory, in J. C. Lagarias (ed.), *The Ultimate Challenge: The $3x+1$ Problem*, American Mathematical Society, 2010, 79–103. Preprint: http://www.numbertheory.org/PDFS/matthews-final-revised.pdf.
+5. M. C. Siegel, $(p,q)$-adic analysis and the Collatz conjecture, arXiv:2412.02902.
+6. S. Kohl, RCWA: Residue-Class-Wise Affine Groups, GAP package; see also S. Kohl, *Restklassenweise affine Gruppen*, Dissertation, Universität Stuttgart, 2005.
+7. J. H. Conway, Unpredictable iterations, in *Proceedings of the 1972 Number Theory Conference*, University of Colorado, Boulder, 1972, 49–52 [unverified: not seen; citation copied from [14]].
+8. S. Kionke, A geometric approach to divergent points of higher dimensional Collatz mappings, arXiv:1511.05893 (2015); *Monatshefte für Mathematik* 182 (2017) [unverified: journal details from a secondary source].
+9. J. A. Joseph, A chaotic extension of the $3x+1$ function to $\mathbb{Z}_2[i]$, *Fibonacci Quarterly* 36(4) (1998), 309–316.
+10. G. I. Kucinski, Cycles for the $3x+1$ map on the Gaussian integers, preprint, University of Scranton, May 2000. https://monks.scranton.edu/files/pubs/kucinski.pdf
+11. M. Chamberland, An update on the $3x+1$ problem. https://chamberland.math.grinnell.edu/papers/3x_survey_eng.pdf
+12. A. Alvarado, The Collatz conjecture over the Gaussian integers, talk slides, University of Colima, 2 April 2025, on work of a 2017 REU at CSU Channel Islands. https://fefoaranda.com/wp-content/uploads/2025/04/colima-alvarado-2025.pdf [unverified: slides only].
+13. D. A. Klarner and R. Rado, Arithmetic properties of certain recursively defined sets, *Pacific Journal of Mathematics* 53(2) (1974), 445–463 [unverified: not seen; citation copied from [14]].
+14. J. C. Lagarias, Erdős, Klarner, and the $3x+1$ problem, *American Mathematical Monthly* 123(8) (2016), 753–776.
+15. M. Siegel and R. O'Dwyer, Almost-boundedness of Collatz-type maps on number rings via Archimedean methods, arXiv:2609.33018 (2026).
+16. A. Garg, Collatz-type dynamics on Gaussian integers: fractal stability islands, long cycles, and dyadic rational structure, Zenodo, doi:10.5281/zenodo.19078383 (March 2026) [unverified: seen only through a summary].
+17. Aliyev, *Notes on Number Theory and Discrete Mathematics* 31(3) (2025), 658–666.
+18. K. R. Matthews and A. M. Watts, A generalization of Hasse's generalization of the Syracuse algorithm, *Acta Arithmetica* 43 (1984), 167–175.
+19. H. Möller, Über Hasses Verallgemeinerung des Syracuse-Algorithmus (Kakutanis Problem), *Acta Arithmetica* 34 (1978), 219–226.
+20. R. P. Steiner, A theorem on the Syracuse problem, *Proceedings of the 7th Manitoba Conference on Numerical Mathematics* (1977), 553–559.
+21. J. Simons and B. de Weger, Theoretical and computational bounds for $m$-cycles of the $3n+1$ problem, *Acta Arithmetica* 117 (2005), 51–70.
+22. R. Terras, A stopping time problem on the positive integers, *Acta Arithmetica* 30 (1976), 241–252.
+23. C. J. Everett, Iteration of the number-theoretic function $f(2n) = n$, $f(2n+1) = 3n+2$, *Advances in Mathematics* 25 (1977), 42–45.
+24. D. Nichols, Analogues of the $3x+1$ problem in polynomial rings of characteristic $2$, *Experimental Mathematics* (2016), arXiv:1610.02545.
+25. D. J. Bernstein, A non-iterative $2$-adic statement of the $3N+1$ conjecture, *Proceedings of the American Mathematical Society* 121 (1994), 405–408.
+
+[unverified: references 4, 8 (arXiv version), 9, 10 and 11 were read through text extraction, and 14 from page images in full. Reference 1 is confirmed by the reference list of [14]. The titles, page ranges and initials in references 17 to 23 and 25 are given from memory, from the working notes or from other papers' bibliographies, and have not been checked against the publications.]

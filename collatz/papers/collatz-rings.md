@@ -12,7 +12,7 @@ The $3x+1$ map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
 $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
 
-Starting from $1$ gives the cycle $1 \to 4 \to 2 \to 1$, and starting from $5$ gives $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into it. The question is whether every orbit reaches $1$. Collatz posed it in the 1930s [Lagarias 1985; Collatz 1986], conjecturing that every orbit does. The conjecture has been verified for every start below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
+$C(1)$ gives the cycle $1 \to 4 \to 2 \to 1$. The orbit from $C(5)$ gives $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into cycle starting a $1$. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s, conjecturing that every orbit reaches $1$ [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n\leq2^{71} \approx 2.36 \cdot 10^{21}$ and remains open [Barina 2025].
 
 The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
 
@@ -31,10 +31,10 @@ The formula for $C$ also defines a map on $\mathbb{Z}$. On the negative integers
 $$\begin{aligned}
 &{-1} \to -2 \to -1, \\
 &{-5} \to -14 \to -7 \to -20 \to -10 \to -5, \\
-&{-17} \to -50 \to -25 \to -74 \to -37 \to \cdots \to -136 \to -68 \to -34 \to -17,
+&{-17} \to -50 \to -25 \to -74 \to -37 \to \cdots \to -136 \to -68 \to -34 \to -17.
 \end{aligned}$$
 
-which are the cycles of $C_{-1}$ on $\mathbb{N}$ with the signs reversed. In the same way, $C_{-1}$ on the negative integers has the cycle $-1 \to -4 \to -2 \to -1$, the cycle of $C$ on $\mathbb{N}$ with the signs reversed. The reason is that for odd $n$,
+These are the same cycles of $C_{-1}$ on $\mathbb{N}$ with the signs reversed. Similarly, $C_{-1}(-1)$ has the cycle $-1 \to -4 \to -2 \to -1$, which is the same cycle of $C$ on $\mathbb{N}$ with the signs reversed. The reason is that for odd $n$,
 
 $$C(-n) = 3(-n) + 1 = -(3n - 1) = -C_{-1}(n),$$
 
@@ -44,18 +44,18 @@ $$C(-n) = -C_{-1}(n) \quad \text{for all } n \in \mathbb{Z}.$$
 
 Since $C_{-1}(n) \neq C(n)$ for odd $n$, $C(-n) \neq -C(n)$ for odd $n$, and therefore $C$ is not an odd function.
 
-Barina's map [Barina 2018] is odd. It is
+Barina's map is odd [Barina 2018]. It is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. The orbit of $-5$ is the negative of the orbit of $5$,
+Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. For example, the orbit of $-5$ is the negative of the orbit of $5$,
 
 $$\begin{aligned}
-&5 \to 36 \to 18 \to 9 \to 64 \to \cdots \to 1, \\
-&{-5} \to -36 \to -18 \to -9 \to -64 \to \cdots \to -1,
+&5 \to 36 \to 18 \to 9 \to 64 \to 32 \to 16 \to 8 \to 4 \to 2 \to 1, \\
+&{-5} \to -36 \to -18 \to -9 \to -64 \to -32 \to -16 \to -8 \to -4 \to -2 \to -1,
 \end{aligned}$$
 
-and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the latter below $10^{15}$.
+and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$, and was verified the latter below $10^{15}$ [Barina 2018?].
 
 The same construction can be applied to the multiplier $3$:
 

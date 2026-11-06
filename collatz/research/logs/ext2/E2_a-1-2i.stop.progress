@@ -3,3 +3,20 @@
 15:42:01 done (500000001,1000000001]  10.0%  7.13e+07 starts/s  elapsed 22 s  ETA 198 s  bad chunks 0
 15:42:24 done (1000000001,1500000001]  15.0%  5.3e+07 starts/s  elapsed 44 s  ETA 252 s  bad chunks 0
 15:42:24 done (1500000001,2000000001]  20.0%  7.04e+07 starts/s  elapsed 45 s  ETA 178 s  bad chunks 0
+15:42:46 done (2000000001,2500000001]  25.0%  5.86e+07 starts/s  elapsed 67 s  ETA 201 s  bad chunks 0
+15:42:46 done (2500000001,3000000001]  30.0%  7.01e+07 starts/s  elapsed 67 s  ETA 157 s  bad chunks 0
+15:43:09 done (3000000001,3500000001]  35.0%  6.13e+07 starts/s  elapsed 90 s  ETA 167 s  bad chunks 0
+15:43:09 done (3500000001,4000000001]  40.0%  6.96e+07 starts/s  elapsed 90 s  ETA 135 s  bad chunks 0
+15:43:32 done (4000000001,4500000001]  45.0%  6.27e+07 starts/s  elapsed 113 s  ETA 138 s  bad chunks 0
+15:43:33 done (4500000001,5000000001]  50.0%  6.9e+07 starts/s  elapsed 114 s  ETA 114 s  bad chunks 0
+15:43:56 done (5000000001,5500000001]  55.0%  6.31e+07 starts/s  elapsed 137 s  ETA 112 s  bad chunks 0
+15:43:57 done (5500000001,6000000001]  60.0%  6.86e+07 starts/s  elapsed 137 s  ETA 92 s  bad chunks 0
+15:44:19 done (6000000001,6500000001]  65.0%  6.4e+07 starts/s  elapsed 160 s  ETA 86 s  bad chunks 0
+15:44:19 done (6500000001,7000000001]  70.0%  6.86e+07 starts/s  elapsed 160 s  ETA 69 s  bad chunks 0
+15:44:41 done (7000000001,7500000001]  75.0%  6.46e+07 starts/s  elapsed 182 s  ETA 61 s  bad chunks 0
+15:44:42 done (7500000001,8000000001]  80.0%  6.87e+07 starts/s  elapsed 183 s  ETA 46 s  bad chunks 0
+15:45:04 done (8000000001,8500000001]  85.0%  6.51e+07 starts/s  elapsed 205 s  ETA 36 s  bad chunks 0
+15:45:05 done (8500000001,9000000001]  90.0%  6.87e+07 starts/s  elapsed 206 s  ETA 23 s  bad chunks 0
+15:45:27 done (9000000001,9500000001]  95.0%  6.55e+07 starts/s  elapsed 228 s  ETA 12 s  bad chunks 0
+15:45:28 done (9500000001,10000000000]  100.0%  6.87e+07 starts/s  elapsed 229 s  ETA 0 s  bad chunks 0
+15:45:28 finished, 15707963012 starts in 229 s, bad chunks 0

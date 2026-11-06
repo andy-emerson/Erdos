@@ -1,0 +1,65 @@
+# Barina-type maps on Zw at pi^3: commuting tables, each orbit digit among the 2 smallest (all smallest tables plus 100 random tables per multiplier); checked on R/U through F=S, full classification to |N| <= 100000
+maps tested 1632; Collatz at 100000: 47; failures {'cycle': 1259, '1 not periodic': 319, 'escape/cap/zero': 7}
+  alpha 9+2w (|N| 67): tables 102 (smallest 2), Collatz 3 (smallest 0)
+  alpha 9+7w (|N| 67): tables 102 (smallest 2), Collatz 2 (smallest 0)
+  alpha 9+8w (|N| 73): tables 102 (smallest 2), Collatz 0 (smallest 0)
+  alpha 9+w (|N| 73): tables 102 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+5w (|N| 75): tables 102 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+3w (|N| 79): tables 102 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+7w (|N| 79): tables 102 (smallest 2), Collatz 2 (smallest 0)
+  alpha 9 (|N| 81): tables 102 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+9w (|N| 91): tables 102 (smallest 2), Collatz 2 (smallest 0)
+  alpha 10+w (|N| 91): tables 102 (smallest 2), Collatz 1 (smallest 0)
+  alpha 11+5w (|N| 91): tables 102 (smallest 2), Collatz 4 (smallest 0)
+  alpha 11+6w (|N| 91): tables 102 (smallest 2), Collatz 5 (smallest 0)
+  alpha 11+4w (|N| 93): tables 102 (smallest 2), Collatz 3 (smallest 0)
+  alpha 11+7w (|N| 93): tables 102 (smallest 2), Collatz 7 (smallest 0)
+  alpha 11+3w (|N| 97): tables 102 (smallest 2), Collatz 12 (smallest 0)
+  alpha 11+8w (|N| 97): tables 102 (smallest 2), Collatz 6 (smallest 0)
+  PASS a9+2w_10 alpha=9+2w smallest=False total digit size 672 table [1]->-1-2w, [3]->5+2w, [2+w]->5w, [3+w]->-1+3w, [4+w]->6+w, [5+w]->-3-w, [6+w]->-4-3w, [5+2w]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 34
+  PASS a9+7w_22 alpha=9+7w smallest=False total digit size 816 table [1]->-1+w, [3]->5+3w, [2+w]->5, [3+w]->4+w, [4+w]->-5-6w, [5+w]->-6-5w, [6+w]->1+4w, [5+2w]->1+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 28
+  PASS a9+2w_39 alpha=9+2w smallest=False total digit size 912 table [1]->-1+6w, [3]->5+2w, [2+w]->5w, [3+w]->-1+3w, [4+w]->-2+w, [5+w]->5-w, [6+w]->-4-3w, [5+2w]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a9+2w_40 alpha=9+2w smallest=False total digit size 912 table [1]->-1+6w, [3]->5+2w, [2+w]->5w, [3+w]->-1+3w, [4+w]->6+w, [5+w]->-3-w, [6+w]->-4-3w, [5+2w]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 28
+  PASS a9+7w_40 alpha=9+7w smallest=False total digit size 912 table [1]->-1-7w, [3]->5+3w, [2+w]->5, [3+w]->4+w, [4+w]->-5-6w, [5+w]->2+3w, [6+w]->1+4w, [5+2w]->1+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a10+7w_22 alpha=10+7w smallest=False total digit size 816 table [1]->-2+w, [3]->2+3w, [2+w]->3-w, [3+w]->1, [4+w]->-1-7w, [5+w]->-3+2w, [6+w]->-5-5w, [5+2w]->4-w | cycle of [1] len 1: 1+0 | max odd steps to cycle 117
+  PASS a10+7w_58 alpha=10+7w smallest=False total digit size 960 table [1]->6+w, [3]->2+3w, [2+w]->3-w, [3+w]->1, [4+w]->-1-7w, [5+w]->-3+2w, [6+w]->-5-5w, [5+2w]->4-w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 127
+  PASS a11+6w_2 alpha=11+6w smallest=False total digit size 480 table [1]->-3+2w, [3]->-1-2w, [2+w]->-w, [3+w]->-3+w, [4+w]->2+3w, [5+w]->-1-3w, [6+w]->4-w, [5+2w]->-3 | cycle of [1] len 1: 1+0 | max odd steps to cycle 539
+  PASS a11+5w_5 alpha=11+5w smallest=False total digit size 576 table [1]->5+3w, [3]->-1+w, [2+w]->-1, [3+w]->-4-5w, [4+w]->1-2w, [5+w]->-2+w, [6+w]->3+4w, [5+2w]->-5-5w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 446
+  PASS a11+6w_6 alpha=11+6w smallest=False total digit size 576 table [1]->5+2w, [3]->-1-2w, [2+w]->-w, [3+w]->-3+w, [4+w]->2+3w, [5+w]->-1-3w, [6+w]->4-w, [5+2w]->5 | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 446
+  PASS a11+5w_10 alpha=11+5w smallest=False total digit size 624 table [1]->5+3w, [3]->-1+w, [2+w]->-1, [3+w]->-4-5w, [4+w]->1-2w, [5+w]->6+w, [6+w]->3+4w, [5+2w]->3+3w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 446
+  PASS a11+6w_9 alpha=11+6w smallest=False total digit size 624 table [1]->5+2w, [3]->-1-2w, [2+w]->-w, [3+w]->5+w, [4+w]->2+3w, [5+w]->-1-3w, [6+w]->4-w, [5+2w]->5 | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 453
+  PASS a11+6w_13 alpha=11+6w smallest=False total digit size 720 table [1]->-3+2w, [3]->-1-2w, [2+w]->-w, [3+w]->-3+w, [4+w]->-6-5w, [5+w]->-1-3w, [6+w]->4-w, [5+2w]->5 | cycle of [1] len 1: 1+0 | max odd steps to cycle 582
+  PASS a11+5w_16 alpha=11+5w smallest=False total digit size 768 table [1]->-3-5w, [3]->-1+w, [2+w]->-1, [3+w]->-4-5w, [4+w]->1-2w, [5+w]->6+w, [6+w]->-5-4w, [5+2w]->-5-5w | cycle of [1] len 1: 1+0 | max odd steps to cycle 573
+  PASS a10+w_21 alpha=10+w smallest=False total digit size 816 table [1]->-2-w, [3]->2+5w, [2+w]->5+5w, [3+w]->3+4w, [4+w]->1-5w, [5+w]->-1-6w, [6+w]->-3+w, [5+2w]->w | cycle of [1] len 1: 1+0 | max odd steps to cycle 506
+  PASS a10+9w_43 alpha=10+9w smallest=False total digit size 912 table [1]->6+7w, [3]->2-3w, [2+w]->5+5w, [3+w]->3+4w, [4+w]->1-5w, [5+w]->-1+2w, [6+w]->-3+w, [5+2w]->w | cycle of [1] len 1: 1+0 | max odd steps to cycle 699
+  PASS a11+5w_53 alpha=11+5w smallest=False total digit size 960 table [1]->5+3w, [3]->7+w, [2+w]->-1, [3+w]->4+3w, [4+w]->1+6w, [5+w]->6+w, [6+w]->3+4w, [5+2w]->3+3w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 599
+  PASS a11+6w_67 alpha=11+6w smallest=False total digit size 1056 table [1]->5+2w, [3]->7+6w, [2+w]->-w, [3+w]->-3+w, [4+w]->-6-5w, [5+w]->-1+5w, [6+w]->-4-w, [5+2w]->5 | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 656
+  PASS a10+9w_98 alpha=10+9w smallest=False total digit size 1344 table [1]->6+7w, [3]->2+5w, [2+w]->5+5w, [3+w]->3+4w, [4+w]->1-5w, [5+w]->-1-6w, [6+w]->-3+w, [5+2w]->-7w | cycle of [1] len 1: 1+0 | max odd steps to cycle 662
+  PASS a11+4w_5 alpha=11+4w smallest=False total digit size 576 table [1]->-3-4w, [3]->-1+4w, [2+w]->-2+w, [3+w]->3+5w, [4+w]->w, [5+w]->5+5w, [6+w]->2+w, [5+2w]->1-2w | cycle of [1] len 1: 1+0 | max odd steps to cycle 692
+  PASS a11+4w_6 alpha=11+4w smallest=False total digit size 576 table [1]->5+4w, [3]->-1-4w, [2+w]->-2+w, [3+w]->3+5w, [4+w]->w, [5+w]->5+5w, [6+w]->2+w, [5+2w]->1-2w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 894
+  PASS a11+7w_3 alpha=11+7w smallest=False total digit size 576 table [1]->-3+w, [3]->-1-5w, [2+w]->1-2w, [3+w]->-2-w, [4+w]->-5, [5+w]->w, [6+w]->-3+2w, [5+2w]->-1-3w | cycle of [1] len 1: 1+0 | max odd steps to cycle 692
+  PASS a11+4w_13 alpha=11+4w smallest=False total digit size 672 table [1]->-3-4w, [3]->-1-4w, [2+w]->6+w, [3+w]->-5-3w, [4+w]->w, [5+w]->5+5w, [6+w]->2+w, [5+2w]->1-2w | cycle of [1] len 1: 1+0 | max odd steps to cycle 807
+  PASS a11+7w_18 alpha=11+7w smallest=False total digit size 816 table [1]->-3+w, [3]->-1-5w, [2+w]->1-2w, [3+w]->6+7w, [4+w]->-5, [5+w]->w, [6+w]->5+2w, [5+2w]->-1-3w | cycle of [1] len 1: 1+0 | max odd steps to cycle 729
+  PASS a11+7w_22 alpha=11+7w smallest=False total digit size 816 table [1]->5+w, [3]->-1+3w, [2+w]->1-2w, [3+w]->6-w, [4+w]->-5, [5+w]->w, [6+w]->5+2w, [5+2w]->-1-3w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 913
+  PASS a11+7w_39 alpha=11+7w smallest=False total digit size 960 table [1]->-3+w, [3]->-1-5w, [2+w]->1+6w, [3+w]->6+7w, [4+w]->-5, [5+w]->w, [6+w]->5+2w, [5+2w]->-1-3w | cycle of [1] len 1: 1+0 | max odd steps to cycle 629
+  PASS a11+7w_42 alpha=11+7w smallest=False total digit size 960 table [1]->-3+w, [3]->-1+3w, [2+w]->1+6w, [3+w]->6+7w, [4+w]->3, [5+w]->w, [6+w]->-3+2w, [5+2w]->-1+5w | cycle of [1] len 1: 1+0 | max odd steps to cycle 656
+  PASS a11+7w_62 alpha=11+7w smallest=False total digit size 1104 table [1]->-3+w, [3]->-1-5w, [2+w]->1-2w, [3+w]->6+7w, [4+w]->-5, [5+w]->-7w, [6+w]->5+2w, [5+2w]->-1-3w | cycle of [1] len 1: 1+0 | max odd steps to cycle 743
+  PASS a11+7w_71 alpha=11+7w smallest=False total digit size 1104 table [1]->5+w, [3]->-1+3w, [2+w]->1-2w, [3+w]->6+7w, [4+w]->-5, [5+w]->-7w, [6+w]->5+2w, [5+2w]->-1-3w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 535
+  PASS a11+3w_2 alpha=11+3w smallest=False total digit size 576 table [1]->-3-3w, [3]->-1-w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1+6w, [5+2w]->-1+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 2267
+  PASS a11+3w_5 alpha=11+3w smallest=False total digit size 672 table [1]->5+5w, [3]->-1-w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1+6w, [5+2w]->-1+w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2146
+  PASS a11+8w_5 alpha=11+8w smallest=False total digit size 672 table [1]->5, [3]->-1, [2+w]->2-3w, [3+w]->-1+5w, [4+w]->-4-3w, [5+w]->1-3w, [6+w]->-2-3w, [5+2w]->1+2w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2146
+  PASS a11+3w_24 alpha=11+3w smallest=False total digit size 816 table [1]->-3-3w, [3]->-1-w, [2+w]->-3+2w, [3+w]->-6-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1-2w, [5+2w]->-1-7w | cycle of [1] len 1: 1+0 | max odd steps to cycle 1999
+  PASS a11+3w_25 alpha=11+3w smallest=False total digit size 816 table [1]->-3-3w, [3]->-1-w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1+6w, [5+2w]->-1-7w | cycle of [1] len 1: 1+0 | max odd steps to cycle 2464
+  PASS a11+8w_28 alpha=11+8w smallest=False total digit size 816 table [1]->5, [3]->-1, [2+w]->2-3w, [3+w]->-1-3w, [4+w]->-4-3w, [5+w]->1+5w, [6+w]->-2-3w, [5+2w]->1-6w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2125
+  PASS a11+3w_42 alpha=11+3w smallest=False total digit size 912 table [1]->-3-3w, [3]->7+7w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->-4+w, [6+w]->1+6w, [5+2w]->-1+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 2098
+  PASS a11+3w_45 alpha=11+3w smallest=False total digit size 912 table [1]->5+5w, [3]->-1-w, [2+w]->-3+2w, [3+w]->-6-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1-2w, [5+2w]->-1-7w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2286
+  PASS a11+8w_47 alpha=11+8w smallest=False total digit size 912 table [1]->5, [3]->-1, [2+w]->2+5w, [3+w]->-1+5w, [4+w]->-4-3w, [5+w]->1-3w, [6+w]->-2-3w, [5+2w]->-7-6w | cycle of [1] len 4: 1+0 2+1 3+1 4+1 | max odd steps to cycle 2594
+  PASS a11+8w_49 alpha=11+8w smallest=False total digit size 960 table [1]->-3, [3]->7, [2+w]->2-3w, [3+w]->-1+5w, [4+w]->4+5w, [5+w]->1+5w, [6+w]->-2-3w, [5+2w]->1+2w | cycle of [1] len 1: 1+0 | max odd steps to cycle 3991
+  PASS a11+8w_50 alpha=11+8w smallest=False total digit size 960 table [1]->5, [3]->-1, [2+w]->2-3w, [3+w]->-1-3w, [4+w]->-4-3w, [5+w]->1+5w, [6+w]->6+5w, [5+2w]->1-6w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2400
+  PASS a11+3w_65 alpha=11+3w smallest=False total digit size 1056 table [1]->5+5w, [3]->-1-w, [2+w]->5+2w, [3+w]->-6-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1+6w, [5+2w]->-1-7w | cycle of [1] len 4: 1+0 2+1 3+2 4+3 | max odd steps to cycle 3356
+  PASS a11+3w_67 alpha=11+3w smallest=False total digit size 1056 table [1]->5+5w, [3]->7+7w, [2+w]->5+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1-2w, [5+2w]->-1-7w | cycle of [1] len 7: 1+0 2+1 3+2 3+0 5+2 6+3 4+3 | max odd steps to cycle 2292
+  PASS a11+3w_72 alpha=11+3w smallest=False total digit size 1104 table [1]->5+5w, [3]->7+7w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1+4w, [5+w]->4+w, [6+w]->1-2w, [5+2w]->-1-7w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 2556
+  PASS a11+8w_70 alpha=11+8w smallest=False total digit size 1104 table [1]->5, [3]->-1, [2+w]->2-3w, [3+w]->-1+5w, [4+w]->-4-3w, [5+w]->1+5w, [6+w]->6+5w, [5+2w]->1-6w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 3610
+  PASS a11+3w_74 alpha=11+3w smallest=False total digit size 1152 table [1]->-3-3w, [3]->7+7w, [2+w]->-3+2w, [3+w]->2-w, [4+w]->-1-4w, [5+w]->-4+w, [6+w]->1+6w, [5+2w]->7+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 2021
+  PASS a11+3w_86 alpha=11+3w smallest=False total digit size 1248 table [1]->-3-3w, [3]->7+7w, [2+w]->5+2w, [3+w]->-6-w, [4+w]->-1-4w, [5+w]->4+w, [6+w]->1+6w, [5+2w]->7+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 1554
+  PASS a11+3w_90 alpha=11+3w smallest=False total digit size 1296 table [1]->-3-3w, [3]->7+7w, [2+w]->-3+2w, [3+w]->-6-w, [4+w]->-1-4w, [5+w]->-4+w, [6+w]->1+6w, [5+2w]->-1-7w | cycle of [1] len 1: 1+0 | max odd steps to cycle 1896

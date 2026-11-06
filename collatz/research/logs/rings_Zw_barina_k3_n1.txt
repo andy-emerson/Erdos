@@ -1,0 +1,18 @@
+# Barina-type maps on Zw at pi^3: commuting tables, each orbit digit among the 1 smallest; checked on R/U through F=S, full classification to |N| <= 100000
+maps tested 32; Collatz at 100000: 0; failures {'cycle': 32}
+  alpha 9+2w (|N| 67): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 9+7w (|N| 67): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 9+8w (|N| 73): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 9+w (|N| 73): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+5w (|N| 75): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+3w (|N| 79): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+7w (|N| 79): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 9 (|N| 81): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+9w (|N| 91): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 10+w (|N| 91): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+5w (|N| 91): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+6w (|N| 91): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+4w (|N| 93): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+7w (|N| 93): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+3w (|N| 97): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 11+8w (|N| 97): tables 2 (smallest 2), Collatz 0 (smallest 0)

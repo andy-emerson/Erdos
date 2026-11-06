@@ -88,7 +88,7 @@ def mirror_map(R, alpha, tab, k):
     return sa, st
 
 
-def cmd_mirror(R, k, B, nsmall, seed=1):
+def cmd_mirror(R, k, B, nsmall, seed=1, nsample=0):
     rnd = random.Random(seed)
     L = [f"# rotated and mirrored maps in {R.name} at pi^{k}"]
     eta = RT.eta(R)
@@ -121,7 +121,13 @@ def cmd_mirror(R, k, B, nsmall, seed=1):
     for a0 in RT.multipliers(R, k):
         cl = RT.cand_lists(R, a0, k, nsmall)
         oc = R.odd_classes(k)
-        for ch in itertools.product(*[cl[i][0] for i in oc]):
+        if nsample:
+            chs = {tuple(cl[i][1][0] for i in oc)}
+            while len(chs) < nsample: chs.add(tuple(rnd.choice(cl[i][0]) for i in oc))
+            chs = sorted(chs)
+        else:
+            chs = itertools.product(*[cl[i][0] for i in oc])
+        for ch in chs:
             tab = dict(zip(oc, ch))
             com = R.acts_freely(k) and RR.commutes(R, tab, k)
             grp = len(meta)
@@ -151,7 +157,7 @@ def cmd_mirror(R, k, B, nsmall, seed=1):
         if True:
             L.append(f"alpha={Q.fmt(R, a0)} digits {RT.describe(R, ch, R.odd_classes(k), k)} commuting={com}: "
                      f"rotations {dict(zip([Q.fmt(R, u) for u in R.U], rots))} mirror {mir}")
-    L.insert(3, f"literal verdicts to |N| <= {B} over {len(meta)} tables (digits among the {nsmall} smallest): {dict(agree)}")
+    L.insert(3, f"literal verdicts to |N| <= {B} over {len(meta)} tables (digits among the {nsmall} smallest{', random sample' if nsample else ''}): {dict(agree)}")
     RT.log(R, f'mirror_k{k}', L)
 
 
@@ -185,4 +191,4 @@ if __name__ == '__main__':
     R = Q.Ring(a[1])
     if a[0] == 'forced': cmd_forced(R, int(a[2]))
     elif a[0] == 'assoc': cmd_assoc(R, int(a[2]), int(a[3]), int(a[4]))
-    elif a[0] == 'mirror': cmd_mirror(R, int(a[2]), int(float(a[3])), int(a[4]))
+    elif a[0] == 'mirror': cmd_mirror(R, int(a[2]), int(float(a[3])), int(a[4]), nsample=int(a[5]) if len(a) > 5 else 0)

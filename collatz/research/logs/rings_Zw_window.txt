@@ -1,0 +1,5 @@
+# window q^k < |N(alpha)| < q^(k + 1/(q-1)) for Zw, q = 4
+k=0: (1, 1.587); integers []; norms of odd elements []; 0 multipliers up to units: 
+k=1: (4, 6.350); integers [5, 6]; norms of odd elements []; 0 multipliers up to units: 
+k=2: (16, 25.398); integers [17, 18, 19, 20, 21, 22, 23, 24, 25]; norms of odd elements [19, 21, 25]; 5 multipliers up to units: 5+2w (19), 5+3w (19), 5+4w (21), 5+w (21), 5 (25)
+k=3: (64, 101.594); integers [65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]...; norms of odd elements [67, 73, 75, 79, 81, 91, 93, 97]; 16 multipliers up to units: 9+2w (67), 9+7w (67), 9+8w (73), 9+w (73), 10+5w (75), 10+3w (79), 10+7w (79), 9 (81), 10+9w (91), 10+w (91), 11+5w (91), 11+6w (91), 11+4w (93), 11+7w (93), 11+3w (97), 11+8w (97)

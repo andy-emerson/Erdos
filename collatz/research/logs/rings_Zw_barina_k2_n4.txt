@@ -1,0 +1,13 @@
+# Barina-type maps on Zw at pi^2: commuting tables, each orbit digit among the 4 smallest; checked on R/U through F=S, full classification to |N| <= 100000
+maps tested 100; Collatz at 100000: 6; failures {'cycle': 71, '1 not periodic': 14, 'orbit of 1 escapes': 8, 'escape/cap/zero': 1}
+  alpha 5+2w (|N| 19): tables 20 (smallest 1), Collatz 3 (smallest 1)
+  alpha 5+3w (|N| 19): tables 20 (smallest 1), Collatz 3 (smallest 1)
+  alpha 5+4w (|N| 21): tables 20 (smallest 1), Collatz 0 (smallest 0)
+  alpha 5+w (|N| 21): tables 20 (smallest 1), Collatz 0 (smallest 0)
+  alpha 5 (|N| 25): tables 20 (smallest 1), Collatz 0 (smallest 0)
+  PASS a5+2w_0 alpha=5+2w smallest=True total digit size 24 table [1]->-1-2w, [2+w]->w | cycle of [1] len 1: 1+0 | max odd steps to cycle 75
+  PASS a5+3w_0 alpha=5+3w smallest=True total digit size 24 table [1]->-1+w, [2+w]->1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 75
+  PASS a5+2w_5 alpha=5+2w smallest=False total digit size 96 table [1]->-1-2w, [2+w]->4+w | cycle of [1] len 1: 1+0 | max odd steps to cycle 84
+  PASS a5+3w_5 alpha=5+3w smallest=False total digit size 96 table [1]->-1+w, [2+w]->1+4w | cycle of [1] len 1: 1+0 | max odd steps to cycle 84
+  PASS a5+2w_8 alpha=5+2w smallest=False total digit size 120 table [1]->3+2w, [2+w]->-4-3w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 93
+  PASS a5+3w_10 alpha=5+3w smallest=False total digit size 120 table [1]->3+w, [2+w]->-3-4w | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 93

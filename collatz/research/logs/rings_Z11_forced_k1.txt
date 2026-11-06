@@ -1,0 +1,5 @@
+# forced fixed points in Z11 at pi^1: units eta = eps pi^v - alpha, v = k..k+4 (K1, K2). eps = 1 applies to every map; eps != 1 only to maps commuting with the units
+alpha=1+f (N 5): none
+alpha=-1-f (N 5): none
+alpha=2-f (N 5): none
+alpha=-2+f (N 5): none

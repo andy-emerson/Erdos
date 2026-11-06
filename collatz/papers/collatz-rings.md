@@ -12,7 +12,7 @@ The $3x+1$ map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
 $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
 
-$C(1)$ gives the cycle $1 \to 4 \to 2 \to 1$. The orbit from $C(5)$ gives $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into cycle starting a $1$. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s, conjecturing that every orbit reaches $1$ [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n\leq2^{71} \approx 2.36 \cdot 10^{21}$ and remains open [Barina 2025].
+The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into that cycle. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
 The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
 
@@ -34,7 +34,7 @@ $$\begin{aligned}
 &{-17} \to -50 \to -25 \to -74 \to -37 \to \cdots \to -136 \to -68 \to -34 \to -17.
 \end{aligned}$$
 
-These are the same cycles of $C_{-1}$ on $\mathbb{N}$ with the signs reversed. Similarly, $C_{-1}(-1)$ has the cycle $-1 \to -4 \to -2 \to -1$, which is the same cycle of $C$ on $\mathbb{N}$ with the signs reversed. The reason is that for odd $n$,
+With the signs reversed, these are exactly the cycles of $C_{-1}$ on $\mathbb{N}$. Similarly, the orbit of $-1$ under $C_{-1}$ is the cycle $-1 \to -4 \to -2 \to -1$, which with the signs reversed is the cycle of $C$ on $\mathbb{N}$. The reason is that for odd $n$,
 
 $$C(-n) = 3(-n) + 1 = -(3n - 1) = -C_{-1}(n),$$
 
@@ -55,7 +55,7 @@ $$\begin{aligned}
 &{-5} \to -36 \to -18 \to -9 \to -64 \to -32 \to -16 \to -8 \to -4 \to -2 \to -1,
 \end{aligned}$$
 
-and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$, and was verified the latter below $10^{15}$ [Barina 2018?].
+and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the conjecture on $\mathbb{N}$ below $10^{15}$ [Barina 2022].
 
 The same construction can be applied to the multiplier $3$:
 

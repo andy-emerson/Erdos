@@ -8,3 +8,6 @@ B = 9.6000e+12: basic box 8696, basic disc 41065; averaged box 38875, averaged d
 B = 9.7000e+12: basic box 8696, basic disc 41065; averaged box 38875, averaged disc 41065
 B = 1.0000e+13: basic box 8696, basic disc 41065; averaged box 38875, averaged disc 41065
 B = 1.3200e+13: basic box 8696, basic disc 41065; averaged box 41065, averaged disc 49761
+avg False disc True : bound 8696 up to B=6.9219e+12, then 38875 at B=6.9277e+12
+avg True disc True : bound 8696 up to B=5.0059e+12, then 38875 at B=5.0088e+12
+avg True disc False : bound 8696 up to B=9.5625e+12, then 38875 at B=9.5719e+12

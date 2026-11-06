@@ -181,14 +181,23 @@ def cand_lists(R, alpha, k, nsmall, classes=None):
     return out
 
 
-def commuting_tables(R, alpha, k, nsmall):
-    """commuting tables: per orbit a digit among the nsmall smallest of the class; yields (table, total size, is_smallest)"""
+def commuting_tables(R, alpha, k, nsmall, nsample=0, seed=1):
+    """commuting tables: per orbit a digit among the nsmall smallest of the class; yields (table, total size, is_smallest).
+    nsample > 0: every smallest table plus nsample random tables instead of the full product"""
     orbs = R.unit_orbits(k)
     cl = cand_lists(R, alpha, k, nsmall, [o[0][1] for o in orbs])
     lists = [cl[o[0][1]][0] for o in orbs]
     leasts = [cl[o[0][1]][1] for o in orbs]
     res = []
-    for ch in itertools.product(*lists):
+    if nsample:
+        import random
+        rnd = random.Random(seed)
+        chs = set(itertools.product(*leasts))
+        while len(chs) < nsample + len(set(itertools.product(*leasts))): chs.add(tuple(rnd.choice(l) for l in lists))
+        it = sorted(chs)
+    else:
+        it = itertools.product(*lists)
+    for ch in it:
         tab = {}
         for o, d in zip(orbs, ch):
             for u, j in o: tab[j] = R.mul(u, d)
@@ -304,16 +313,17 @@ def summarize(R, F, k, out, info, B, title):
     return L, rows
 
 
-def cmd_barina(R, k, nsmall, B):
+def cmd_barina(R, k, nsmall, B, nsample=0):
     if not R.acts_freely(k):
         log(R, f'barina_k{k}', [f"# k={k}: units do not act freely on odd classes mod pi^{k} (k <= kappa = {R.kappa()}), no commuting table"]); return
     F = canonF(R)
     at = []
     for a in multipliers(R, k):
-        at.append((a, commuting_tables(R, a, k, nsmall)))
+        at.append((a, commuting_tables(R, a, k, nsmall, nsample)))
     out, info = run_search(R, F, k, at, B)
-    L, rows = summarize(R, F, k, out, info, B, f"# Barina-type maps on {R.name} at pi^{k}: commuting tables, each orbit digit among the {nsmall} smallest; checked on R/U through F={F}, full classification to |N| <= {B}")
-    log(R, f'barina_k{k}_n{nsmall}', L)
+    smp = f" (all smallest tables plus {nsample} random tables per multiplier)" if nsample else ''
+    L, rows = summarize(R, F, k, out, info, B, f"# Barina-type maps on {R.name} at pi^{k}: commuting tables, each orbit digit among the {nsmall} smallest{smp}; checked on R/U through F={F}, full classification to |N| <= {B}")
+    log(R, f'barina_k{k}_n{nsmall}' + (f'_s{nsample}' if nsample else ''), L)
 
 
 def cmd_fd(R, F, k, nsmall, B):
@@ -391,7 +401,7 @@ if __name__ == '__main__':
     R = Q.Ring(a[1])
     if a[0] == 'inv': cmd_inv(R, int(a[2]) if len(a) > 2 else 5)
     elif a[0] == 'window': cmd_window(R, int(a[2]) if len(a) > 2 else 5)
-    elif a[0] == 'barina': cmd_barina(R, int(a[2]), int(a[3]), int(float(a[4])))
+    elif a[0] == 'barina': cmd_barina(R, int(a[2]), int(a[3]), int(float(a[4])), int(a[5]) if len(a) > 5 else 0)
     elif a[0] == 'fd': cmd_fd(R, a[2], int(a[3]), int(a[4]), int(float(a[5])))
     elif a[0] == 'literal': cmd_literal(R, int(a[2]), int(float(a[3])), int(a[4]) if len(a) > 4 else 1, int(a[5]) if len(a) > 5 else 0)
     elif a[0] == 'confirm':

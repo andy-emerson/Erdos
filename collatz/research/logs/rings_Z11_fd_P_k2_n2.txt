@@ -1,0 +1,12 @@
+# Collatz-type maps on Z11, F=P z mod pi^2 in {1, f, 1+f, 3+f, 1+2f, 2+3f} (subgroup complement), modulus pi^2 (table read mod pi^2), each digit among the 2 smallest; full classification to |N| <= 100000
+maps tested 480; Collatz at 100000: 4; failures {'cycle': 381, 'escape/cap/zero': 15, '1 not periodic': 80}
+  alpha 4+f (|N| 23): tables 96 (smallest 1), Collatz 2 (smallest 0)
+  alpha 5-f (|N| 23): tables 96 (smallest 1), Collatz 2 (smallest 0)
+  alpha -1+3f (|N| 25): tables 96 (smallest 1), Collatz 0 (smallest 0)
+  alpha 2-3f (|N| 25): tables 96 (smallest 1), Collatz 0 (smallest 0)
+  alpha 5 (|N| 25): tables 96 (smallest 1), Collatz 0 (smallest 0)
+  PASS a4+f_2 alpha=4+f smallest=False total digit size 32 table [1]->-f, [f]->-1-f, [1+f]->-1-2f, [3+f]->-1, [1+2f]->-2+f, [2+3f]->1-f | cycle of [1] len 1: 1+0 | max odd steps to cycle 748
+  PASS a5-f_2 alpha=5-f smallest=False total digit size 32 table [1]->-1+f, [f]->1, [1+f]->f, [3+f]->2-f, [1+2f]->1+f, [2+3f]->-3+2f | cycle of [1] len 1: 1+0 | max odd steps to cycle 748
+  PASS a4+f_41 alpha=4+f smallest=False total digit size 48 table [1]->4-f, [f]->-1-f, [1+f]->-1-2f, [3+f]->-1, [1+2f]->2+f, [2+3f]->1-f | cycle of [1] len 1: 1+0 | max odd steps to cycle 859
+  PASS a5-f_41 alpha=5-f smallest=False total digit size 48 table [1]->3+f, [f]->1, [1+f]->f, [3+f]->2-f, [1+2f]->-3+f, [2+3f]->-3+2f | cycle of [1] len 1: 1+0 | max odd steps to cycle 859
+  (on P the commuting extension D(uf) = u d(f) is a residue-class table mod pi^2)

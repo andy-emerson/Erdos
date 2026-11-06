@@ -1,0 +1,258 @@
+# literal Barina-type maps on Z11 at pi^1: all associates, digits among the 3 smallest per class, every odd z with |N| <= 100000
+maps 256, Collatz on R (literal cycles) 40; (commuting, trivial-cycle count) among them: {(False, 2): 12, (False, 1): 28}
+a1+f_0 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->1, [1+f]->-f | PASS trivial cycles 2: {len 7 units: -1+0} {len 1 units: 1+0} | max odd steps 145
+a1+f_1 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->1, [1+f]->f | PASS trivial cycles 2: {len 8 units: -1+0} {len 1 units: 1+0} | max odd steps 142
+a1+f_2 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->1, [1+f]->2-f | PASS trivial cycles 2: {len 7 units: -1+0} {len 1 units: 1+0} | max odd steps 169
+a1+f_3 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->1, [1+f]->-2+f | FAIL cycle len 30 min 15-8 (norm 297) from start 8-1 trivial so far 2
+a1+f_4 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-1, [1+f]->-f | FAIL cycle len 7 min 2+1 (norm 9) from start 0+1 trivial so far 1
+a1+f_5 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-1, [1+f]->f | FAIL cycle len 7 min -3+1 (norm 9) from start -1+1 trivial so far 1
+a1+f_6 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-1, [1+f]->2-f | PASS trivial cycles 1: {len 1 units: 1+0} | max odd steps 113
+a1+f_7 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-1, [1+f]->-2+f | PASS trivial cycles 1: {len 1 units: 1+0} | max odd steps 109
+a1+f_8 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->3, [1+f]->-f | FAIL cycle len 1 min 0+1 (norm 3) from start 0+1 trivial so far 2
+a1+f_9 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->3, [1+f]->f | FAIL cycle len 8 min -3+0 (norm 9) from start -1+0 trivial so far 0
+a1+f_10 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->3, [1+f]->2-f | FAIL cycle len 1 min 0+1 (norm 3) from start 0+1 trivial so far 1
+a1+f_11 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->3, [1+f]->-2+f | FAIL cycle len 1 min 0+1 (norm 3) from start 0+1 trivial so far 2
+a1+f_12 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-3, [1+f]->-f | FAIL cycle len 1 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a1+f_13 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-3, [1+f]->f | FAIL cycle len 1 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a1+f_14 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-3, [1+f]->2-f | FAIL cycle len 1 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a1+f_15 alpha=1+f commuting=False S(1)=1 digits [1]->1-f, [f]->-3, [1+f]->-2+f | FAIL cycle len 1 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a1+f_16 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->1, [1+f]->-f | FAIL cycle len 7 min 3-1 (norm 9) from start 0-1 trivial so far 1
+a1+f_17 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->1, [1+f]->f | FAIL cycle len 7 min -2-1 (norm 9) from start 0-1 trivial so far 1
+a1+f_18 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->1, [1+f]->2-f | PASS trivial cycles 1: {len 1 units: -1+0} | max odd steps 109
+a1+f_19 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->1, [1+f]->-2+f | PASS trivial cycles 1: {len 1 units: -1+0} | max odd steps 113
+a1+f_20 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-1, [1+f]->-f | PASS trivial cycles 2: {len 1 units: -1+0} {len 8 units: 1+0} | max odd steps 142
+a1+f_21 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-1, [1+f]->f | PASS trivial cycles 2: {len 1 units: -1+0} {len 7 units: 1+0} | max odd steps 145
+a1+f_22 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-1, [1+f]->2-f | FAIL cycle len 30 min -15+8 (norm 297) from start -8+1 trivial so far 2
+a1+f_23 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-1, [1+f]->-2+f | PASS trivial cycles 2: {len 1 units: -1+0} {len 7 units: 1+0} | max odd steps 169
+a1+f_24 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->3, [1+f]->-f | FAIL cycle len 1 min 0+1 (norm 3) from start 1+0 trivial so far 1
+a1+f_25 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->3, [1+f]->f | FAIL cycle len 1 min 0+1 (norm 3) from start 1+0 trivial so far 1
+a1+f_26 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->3, [1+f]->2-f | FAIL cycle len 1 min 0+1 (norm 3) from start 1+0 trivial so far 1
+a1+f_27 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->3, [1+f]->-2+f | FAIL cycle len 1 min 0+1 (norm 3) from start 1+0 trivial so far 1
+a1+f_28 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-3, [1+f]->-f | FAIL cycle len 8 min 3+0 (norm 9) from start 1+0 trivial so far 1
+a1+f_29 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-3, [1+f]->f | FAIL cycle len 1 min 0-1 (norm 3) from start 0-1 trivial so far 2
+a1+f_30 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-3, [1+f]->2-f | FAIL cycle len 1 min 0-1 (norm 3) from start 0-1 trivial so far 2
+a1+f_31 alpha=1+f commuting=False S(1)=f digits [1]->-1+f, [f]->-3, [1+f]->-2+f | FAIL cycle len 1 min 0-1 (norm 3) from start 0-1 trivial so far 1
+a1+f_32 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->1, [1+f]->-f | FAIL cycle len 8 min -2-1 (norm 9) from start -1+0 trivial so far 0
+a1+f_33 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->1, [1+f]->f | FAIL code 2 start -1+0
+a1+f_34 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->1, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_35 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->1, [1+f]->-2+f | FAIL code 2 start 1+0
+a1+f_36 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-1, [1+f]->-f | FAIL cycle len 8 min 0+1 (norm 3) from start -1+0 trivial so far 0
+a1+f_37 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-1, [1+f]->f | FAIL code 2 start -1+0
+a1+f_38 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-1, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_39 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-1, [1+f]->-2+f | FAIL code 2 start -1+0
+a1+f_40 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->3, [1+f]->-f | FAIL code 2 start -1+0
+a1+f_41 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->3, [1+f]->f | FAIL code 2 start -1+0
+a1+f_42 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->3, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_43 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->3, [1+f]->-2+f | FAIL cycle len 1 min 0+1 (norm 3) from start -1+0 trivial so far 0
+a1+f_44 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-3, [1+f]->-f | FAIL code 2 start 1+0
+a1+f_45 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-3, [1+f]->f | FAIL code 2 start -1+0
+a1+f_46 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-3, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_47 alpha=1+f commuting=False S(1)=0 digits [1]->-1-f, [f]->-3, [1+f]->-2+f | FAIL cycle len 1 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a1+f_48 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->1, [1+f]->-f | FAIL code 2 start -1+0
+a1+f_49 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->1, [1+f]->f | FAIL code 2 start -1+0
+a1+f_50 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->1, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_51 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->1, [1+f]->-2+f | FAIL code 2 start -1+0
+a1+f_52 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-1, [1+f]->-f | FAIL code 2 start -1+0
+a1+f_53 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-1, [1+f]->f | FAIL code 2 start -1+0
+a1+f_54 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-1, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_55 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-1, [1+f]->-2+f | FAIL code 2 start -1+0
+a1+f_56 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->3, [1+f]->-f | FAIL code 2 start -1+0
+a1+f_57 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->3, [1+f]->f | FAIL code 2 start -1+0
+a1+f_58 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->3, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_59 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->3, [1+f]->-2+f | FAIL code 2 start -1+0
+a1+f_60 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-3, [1+f]->-f | FAIL code 2 start -1+0
+a1+f_61 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-3, [1+f]->f | FAIL code 2 start -1+0
+a1+f_62 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-3, [1+f]->2-f | FAIL code 2 start -1+0
+a1+f_63 alpha=1+f commuting=False S(1)=1+f digits [1]->1+f, [f]->-3, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_0 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->1, [1+f]->-f | PASS trivial cycles 1: {len 5 units: -1+0 1+0} | max odd steps 130
+a-1-f_1 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->1, [1+f]->f | FAIL cycle len 49 min 1+3 (norm 31) from start -3+2 trivial so far 1
+a-1-f_2 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->1, [1+f]->2-f | FAIL cycle len 19 min 4-5 (norm 71) from start 3+3 trivial so far 1
+a-1-f_3 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->1, [1+f]->-2+f | FAIL cycle len 3 min -3+1 (norm 9) from start 1-1 trivial so far 1
+a-1-f_4 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-1, [1+f]->-f | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 151
+a-1-f_5 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-1, [1+f]->f | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 113
+a-1-f_6 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-1, [1+f]->2-f | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 114
+a-1-f_7 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-1, [1+f]->-2+f | FAIL cycle len 30 min -9+8 (norm 201) from start -4-7 trivial so far 1
+a-1-f_8 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->3, [1+f]->-f | FAIL cycle len 3 min 0+1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_9 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->3, [1+f]->f | FAIL cycle len 11 min 4+1 (norm 23) from start 4+1 trivial so far 1
+a-1-f_10 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->3, [1+f]->2-f | FAIL cycle len 8 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_11 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->3, [1+f]->-2+f | FAIL cycle len 3 min 1-1 (norm 3) from start 1-1 trivial so far 1
+a-1-f_12 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-3, [1+f]->-f | PASS trivial cycles 1: {len 8 units: -1+0 1+0} | max odd steps 130
+a-1-f_13 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-3, [1+f]->f | FAIL cycle len 3 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_14 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-3, [1+f]->2-f | FAIL cycle len 3 min -1+1 (norm 3) from start -1+1 trivial so far 1
+a-1-f_15 alpha=-1-f commuting=False S(1)=-f digits [1]->1-f, [f]->-3, [1+f]->-2+f | FAIL cycle len 8 min 3-3 (norm 27) from start 1+2 trivial so far 1
+a-1-f_16 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->1, [1+f]->-f | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 113
+a-1-f_17 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->1, [1+f]->f | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 151
+a-1-f_18 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->1, [1+f]->2-f | FAIL cycle len 30 min 9-8 (norm 201) from start 4+7 trivial so far 1
+a-1-f_19 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->1, [1+f]->-2+f | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 114
+a-1-f_20 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-1, [1+f]->-f | FAIL cycle len 49 min -1-3 (norm 31) from start 3-2 trivial so far 1
+a-1-f_21 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-1, [1+f]->f | PASS trivial cycles 1: {len 5 units: 1+0 -1+0} | max odd steps 130
+a-1-f_22 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-1, [1+f]->2-f | FAIL cycle len 3 min 3-1 (norm 9) from start -1+1 trivial so far 1
+a-1-f_23 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-1, [1+f]->-2+f | FAIL cycle len 19 min -4+5 (norm 71) from start -3-3 trivial so far 1
+a-1-f_24 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->3, [1+f]->-f | FAIL cycle len 3 min 0+1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_25 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->3, [1+f]->f | PASS trivial cycles 1: {len 8 units: 1+0 -1+0} | max odd steps 130
+a-1-f_26 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->3, [1+f]->2-f | FAIL cycle len 8 min -3+3 (norm 27) from start -1-2 trivial so far 1
+a-1-f_27 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->3, [1+f]->-2+f | FAIL cycle len 3 min 1-1 (norm 3) from start 1-1 trivial so far 1
+a-1-f_28 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-3, [1+f]->-f | FAIL cycle len 11 min -4-1 (norm 23) from start -4-1 trivial so far 1
+a-1-f_29 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-3, [1+f]->f | FAIL cycle len 3 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_30 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-3, [1+f]->2-f | FAIL cycle len 3 min -1+1 (norm 3) from start -1+1 trivial so far 1
+a-1-f_31 alpha=-1-f commuting=False S(1)=-1 digits [1]->-1+f, [f]->-3, [1+f]->-2+f | FAIL cycle len 8 min 0+1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_32 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->1, [1+f]->-f | FAIL code 2 start -1+0
+a-1-f_33 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->1, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_34 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->1, [1+f]->2-f | FAIL code 2 start -1+0
+a-1-f_35 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->1, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_36 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-1, [1+f]->-f | FAIL code 2 start -1+0
+a-1-f_37 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-1, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_38 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-1, [1+f]->2-f | FAIL code 2 start -1+0
+a-1-f_39 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-1, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_40 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->3, [1+f]->-f | FAIL code 2 start -1+0
+a-1-f_41 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->3, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_42 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->3, [1+f]->2-f | FAIL code 2 start -1+0
+a-1-f_43 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->3, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_44 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-3, [1+f]->-f | FAIL code 2 start -1+0
+a-1-f_45 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-3, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_46 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-3, [1+f]->2-f | FAIL code 2 start -1+0
+a-1-f_47 alpha=-1-f commuting=False S(1)=-1-f digits [1]->-1-f, [f]->-3, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_48 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->1, [1+f]->-f | FAIL code 2 start 1+0
+a-1-f_49 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->1, [1+f]->f | FAIL cycle len 11 min -1-1 (norm 5) from start -1+0 trivial so far 0
+a-1-f_50 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->1, [1+f]->2-f | FAIL code 2 start 1+0
+a-1-f_51 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->1, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_52 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-1, [1+f]->-f | FAIL cycle len 8 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a-1-f_53 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-1, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_54 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-1, [1+f]->2-f | FAIL code 2 start 1+0
+a-1-f_55 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-1, [1+f]->-2+f | FAIL code 2 start -1+0
+a-1-f_56 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->3, [1+f]->-f | FAIL code 2 start 1+0
+a-1-f_57 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->3, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_58 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->3, [1+f]->2-f | FAIL code 2 start 1+0
+a-1-f_59 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->3, [1+f]->-2+f | FAIL code 2 start 1+0
+a-1-f_60 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-3, [1+f]->-f | FAIL code 2 start 1+0
+a-1-f_61 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-3, [1+f]->f | FAIL code 2 start -1+0
+a-1-f_62 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-3, [1+f]->2-f | FAIL code 2 start 1+0
+a-1-f_63 alpha=-1-f commuting=False S(1)=0 digits [1]->1+f, [f]->-3, [1+f]->-2+f | FAIL code 2 start 1+0
+a2-f_0 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1-f, [1+f]->1 | FAIL cycle len 7 min -3+1 (norm 9) from start -1+1 trivial so far 1
+a2-f_1 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1-f, [1+f]->-1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 7 units: 1+0} | max odd steps 145
+a2-f_2 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1-f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1+0 trivial so far 1
+a2-f_3 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1-f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+1 trivial so far 2
+a2-f_4 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1+f, [1+f]->1 | FAIL cycle len 7 min 2+1 (norm 9) from start -1+1 trivial so far 1
+a2-f_5 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1+f, [1+f]->-1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 8 units: 1+0} | max odd steps 142
+a2-f_6 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1+f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1+0 trivial so far 1
+a2-f_7 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1+f, [1+f]->-3 | FAIL cycle len 8 min 3+0 (norm 9) from start 1+0 trivial so far 1
+a2-f_8 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1-f, [1+f]->1 | PASS trivial cycles 1: {len 1 units: -1+0} | max odd steps 113
+a2-f_9 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1-f, [1+f]->-1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 7 units: 1+0} | max odd steps 169
+a2-f_10 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1-f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1+0 trivial so far 1
+a2-f_11 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->-1-f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+1 trivial so far 1
+a2-f_12 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1+f, [1+f]->1 | PASS trivial cycles 1: {len 1 units: -1+0} | max odd steps 109
+a2-f_13 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1+f, [1+f]->-1 | FAIL cycle len 30 min -7-8 (norm 297) from start -7-1 trivial so far 2
+a2-f_14 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1+f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1+0 trivial so far 1
+a2-f_15 alpha=2-f commuting=False S(1)=1-f digits [1]->-f, [f]->1+f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+1 trivial so far 2
+a2-f_16 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1-f, [1+f]->1 | PASS trivial cycles 2: {len 8 units: -1+0} {len 1 units: 1+0} | max odd steps 142
+a2-f_17 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1-f, [1+f]->-1 | FAIL cycle len 7 min -2-1 (norm 9) from start 0-1 trivial so far 1
+a2-f_18 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1-f, [1+f]->3 | FAIL cycle len 8 min -3+0 (norm 9) from start -1+0 trivial so far 0
+a2-f_19 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1-f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a2-f_20 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1+f, [1+f]->1 | PASS trivial cycles 2: {len 7 units: -1+0} {len 1 units: 1+0} | max odd steps 145
+a2-f_21 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1+f, [1+f]->-1 | FAIL cycle len 7 min 3-1 (norm 9) from start 1-1 trivial so far 1
+a2-f_22 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1+f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a2-f_23 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1+f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a2-f_24 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1-f, [1+f]->1 | FAIL cycle len 30 min 7+8 (norm 297) from start 7+1 trivial so far 2
+a2-f_25 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1-f, [1+f]->-1 | PASS trivial cycles 1: {len 1 units: 1+0} | max odd steps 109
+a2-f_26 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1-f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a2-f_27 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->-1-f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a2-f_28 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1+f, [1+f]->1 | PASS trivial cycles 2: {len 7 units: -1+0} {len 1 units: 1+0} | max odd steps 169
+a2-f_29 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1+f, [1+f]->-1 | PASS trivial cycles 1: {len 1 units: 1+0} | max odd steps 113
+a2-f_30 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1+f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 1
+a2-f_31 alpha=2-f commuting=False S(1)=1 digits [1]->f, [f]->1+f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a2-f_32 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1-f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_33 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_34 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1-f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_35 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a2-f_36 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1+f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_37 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1+f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_38 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1+f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_39 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1+f, [1+f]->-3 | FAIL code 2 start -1+0
+a2-f_40 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1-f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_41 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_42 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1-f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_43 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->-1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a2-f_44 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1+f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_45 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1+f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_46 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1+f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_47 alpha=2-f commuting=False S(1)=2-f digits [1]->2-f, [f]->1+f, [1+f]->-3 | FAIL code 2 start -1+0
+a2-f_48 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1-f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_49 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_50 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1-f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_51 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a2-f_52 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1+f, [1+f]->1 | FAIL cycle len 8 min -3+1 (norm 9) from start -1+0 trivial so far 0
+a2-f_53 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1+f, [1+f]->-1 | FAIL cycle len 8 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a2-f_54 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1+f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_55 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1+f, [1+f]->-3 | FAIL code 2 start 1+0
+a2-f_56 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1-f, [1+f]->1 | FAIL code 2 start 1+0
+a2-f_57 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_58 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1-f, [1+f]->3 | FAIL cycle len 1 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a2-f_59 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->-1-f, [1+f]->-3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a2-f_60 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1+f, [1+f]->1 | FAIL code 2 start -1+0
+a2-f_61 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1+f, [1+f]->-1 | FAIL code 2 start -1+0
+a2-f_62 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1+f, [1+f]->3 | FAIL code 2 start -1+0
+a2-f_63 alpha=2-f commuting=False S(1)=0 digits [1]->-2+f, [f]->1+f, [1+f]->-3 | FAIL code 2 start -1+0
+a-2+f_0 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1-f, [1+f]->1 | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 151
+a-2+f_1 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1-f, [1+f]->-1 | PASS trivial cycles 1: {len 5 units: 1+0 -1+0} | max odd steps 130
+a-2+f_2 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1-f, [1+f]->3 | PASS trivial cycles 1: {len 8 units: 1+0 -1+0} | max odd steps 130
+a-2+f_3 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1-f, [1+f]->-3 | FAIL cycle len 3 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_4 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1+f, [1+f]->1 | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 113
+a-2+f_5 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1+f, [1+f]->-1 | FAIL cycle len 49 min -4+3 (norm 31) from start 1+2 trivial so far 1
+a-2+f_6 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1+f, [1+f]->3 | FAIL cycle len 3 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_7 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1+f, [1+f]->-3 | FAIL cycle len 11 min -5+1 (norm 23) from start -5+1 trivial so far 1
+a-2+f_8 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1-f, [1+f]->1 | PASS trivial cycles 1: {len 3 units: -1+0} | max odd steps 114
+a-2+f_9 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1-f, [1+f]->-1 | FAIL cycle len 19 min 1-5 (norm 71) from start -6+3 trivial so far 1
+a-2+f_10 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1-f, [1+f]->3 | FAIL cycle len 3 min 0+1 (norm 3) from start 0+1 trivial so far 1
+a-2+f_11 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->-1-f, [1+f]->-3 | FAIL cycle len 8 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_12 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1+f, [1+f]->1 | FAIL cycle len 30 min 1+8 (norm 201) from start 11-7 trivial so far 1
+a-2+f_13 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1+f, [1+f]->-1 | FAIL cycle len 3 min 2+1 (norm 9) from start 0-1 trivial so far 1
+a-2+f_14 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1+f, [1+f]->3 | FAIL cycle len 8 min 0-3 (norm 27) from start -3+2 trivial so far 1
+a-2+f_15 alpha=-2+f commuting=False S(1)=-1 digits [1]->-f, [f]->1+f, [1+f]->-3 | FAIL cycle len 3 min 0-1 (norm 3) from start 0-1 trivial so far 1
+a-2+f_16 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1-f, [1+f]->1 | FAIL cycle len 49 min 4-3 (norm 31) from start -1-2 trivial so far 1
+a-2+f_17 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1-f, [1+f]->-1 | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 113
+a-2+f_18 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1-f, [1+f]->3 | FAIL cycle len 11 min 5-1 (norm 23) from start 5-1 trivial so far 1
+a-2+f_19 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1-f, [1+f]->-3 | FAIL cycle len 3 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_20 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1+f, [1+f]->1 | PASS trivial cycles 1: {len 5 units: -1+0 1+0} | max odd steps 130
+a-2+f_21 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1+f, [1+f]->-1 | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 151
+a-2+f_22 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1+f, [1+f]->3 | FAIL cycle len 3 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_23 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1+f, [1+f]->-3 | PASS trivial cycles 1: {len 8 units: -1+0 1+0} | max odd steps 130
+a-2+f_24 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1-f, [1+f]->1 | FAIL cycle len 3 min -2-1 (norm 9) from start 0+1 trivial so far 1
+a-2+f_25 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1-f, [1+f]->-1 | FAIL cycle len 30 min -1-8 (norm 201) from start -11+7 trivial so far 1
+a-2+f_26 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1-f, [1+f]->3 | FAIL cycle len 3 min 0+1 (norm 3) from start 0+1 trivial so far 1
+a-2+f_27 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->-1-f, [1+f]->-3 | FAIL cycle len 8 min 0+3 (norm 27) from start 3-2 trivial so far 1
+a-2+f_28 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1+f, [1+f]->1 | FAIL cycle len 19 min -1+5 (norm 71) from start 6-3 trivial so far 1
+a-2+f_29 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1+f, [1+f]->-1 | PASS trivial cycles 1: {len 3 units: 1+0} | max odd steps 114
+a-2+f_30 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1+f, [1+f]->3 | FAIL cycle len 8 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_31 alpha=-2+f commuting=False S(1)=-1+f digits [1]->f, [f]->1+f, [1+f]->-3 | FAIL cycle len 3 min 0-1 (norm 3) from start 0-1 trivial so far 1
+a-2+f_32 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1-f, [1+f]->1 | FAIL cycle len 11 min -2+1 (norm 5) from start -1+0 trivial so far 0
+a-2+f_33 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_34 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1-f, [1+f]->3 | FAIL code 2 start -1+0
+a-2+f_35 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a-2+f_36 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1+f, [1+f]->1 | FAIL code 2 start 1+0
+a-2+f_37 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1+f, [1+f]->-1 | FAIL cycle len 8 min 0-1 (norm 3) from start -1+0 trivial so far 0
+a-2+f_38 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1+f, [1+f]->3 | FAIL code 2 start 1+0
+a-2+f_39 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1+f, [1+f]->-3 | FAIL code 2 start 1+0
+a-2+f_40 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1-f, [1+f]->1 | FAIL code 2 start -1+0
+a-2+f_41 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_42 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1-f, [1+f]->3 | FAIL code 2 start 1+0
+a-2+f_43 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->-1-f, [1+f]->-3 | FAIL code 2 start 1+0
+a-2+f_44 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1+f, [1+f]->1 | FAIL code 2 start 1+0
+a-2+f_45 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1+f, [1+f]->-1 | FAIL code 2 start 1+0
+a-2+f_46 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1+f, [1+f]->3 | FAIL code 2 start 1+0
+a-2+f_47 alpha=-2+f commuting=False S(1)=0 digits [1]->2-f, [f]->1+f, [1+f]->-3 | FAIL code 2 start 1+0
+a-2+f_48 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1-f, [1+f]->1 | FAIL code 2 start -1+0
+a-2+f_49 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_50 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1-f, [1+f]->3 | FAIL code 2 start -1+0
+a-2+f_51 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a-2+f_52 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1+f, [1+f]->1 | FAIL code 2 start -1+0
+a-2+f_53 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1+f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_54 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1+f, [1+f]->3 | FAIL code 2 start -1+0
+a-2+f_55 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1+f, [1+f]->-3 | FAIL code 2 start -1+0
+a-2+f_56 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1-f, [1+f]->1 | FAIL code 2 start -1+0
+a-2+f_57 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1-f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_58 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1-f, [1+f]->3 | FAIL code 2 start -1+0
+a-2+f_59 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->-1-f, [1+f]->-3 | FAIL code 2 start -1+0
+a-2+f_60 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1+f, [1+f]->1 | FAIL code 2 start -1+0
+a-2+f_61 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1+f, [1+f]->-1 | FAIL code 2 start -1+0
+a-2+f_62 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1+f, [1+f]->3 | FAIL code 2 start -1+0
+a-2+f_63 alpha=-2+f commuting=False S(1)=-2+f digits [1]->-2+f, [f]->1+f, [1+f]->-3 | FAIL code 2 start -1+0

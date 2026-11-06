@@ -248,8 +248,9 @@ def arith_F(R, k):
     return K, flags, f"z mod pi^{m} in {{{', '.join(Q.fmt(R, R.classrep(h, m)) for h in sorted(H))}}} ({desc})"
 
 
-def fd_tables(R, F, alpha, k, nsmall, flags=None, K=None):
-    """tables at modulus pi^k for the classes meeting F, each digit among the nsmall smallest; lifted to K"""
+def fd_tables(R, F, alpha, k, nsmall, flags=None, K=None, nsample=0, seed=1):
+    """tables at modulus pi^k for the classes meeting F, each digit among the nsmall smallest; lifted to K.
+    nsample > 0: every smallest table plus nsample random tables instead of the full product"""
     K = K or k
     if F == 'P':
         meet = sorted({R.idx(R.classrep(i, K), k) for i in R.odd_classes(K) if flags[i]})
@@ -259,7 +260,15 @@ def fd_tables(R, F, alpha, k, nsmall, flags=None, K=None):
     lists = [cl[i][0] for i in meet]
     leasts = [cl[i][1] for i in meet]
     res = []
-    for ch in itertools.product(*lists):
+    if nsample:
+        import random
+        rnd = random.Random(seed)
+        chs = set(itertools.product(*leasts)); n0 = len(chs)
+        while len(chs) < nsample + n0: chs.add(tuple(rnd.choice(l) for l in lists))
+        it = sorted(chs)
+    else:
+        it = itertools.product(*lists)
+    for ch in it:
         tab = {i: cl[i][0][0] for i in R.odd_classes(k)}
         for i, d in zip(meet, ch): tab[i] = d
         smallest = all(d in l for d, l in zip(ch, leasts))
@@ -326,17 +335,18 @@ def cmd_barina(R, k, nsmall, B, nsample=0):
     log(R, f'barina_k{k}_n{nsmall}' + (f'_s{nsample}' if nsample else ''), L)
 
 
-def cmd_fd(R, F, k, nsmall, B):
+def cmd_fd(R, F, k, nsmall, B, nsample=0):
     flags = None; K = k; extra = ''
     if F == 'P':
         K, flags, extra = arith_F(R, k)
-    at = [(a, fd_tables(R, F, a, k, nsmall, flags, K)) for a in fd_multipliers(R, k)]
+    at = [(a, fd_tables(R, F, a, k, nsmall, flags, K, nsample)) for a in fd_multipliers(R, k)]
+    if nsample: extra += f' (all smallest tables plus {nsample} random tables per multiplier)'
     out, info = run_search(R, F, k, at, B, flags=flags, K=K)
     L, rows = summarize(R, F, k, out, info, B, f"# Collatz-type maps on {R.name}, F={F} {extra}, modulus pi^{k} (table read mod pi^{K}), each digit among the {nsmall} smallest; full classification to |N| <= {B}")
     if F == 'P':
         # how many of the P tables are commuting tables (their commuting extension is a residue-class table mod pi^k)
         L.append(f"  (on P the commuting extension D(uf) = u d(f) is a residue-class table mod pi^{K})")
-    log(R, f'fd_{F}_k{k}_n{nsmall}', L)
+    log(R, f'fd_{F}_k{k}_n{nsmall}' + (f'_s{nsample}' if nsample else ''), L)
 
 
 def cmd_literal(R, k, B, nsmall=1, maxtables=0):
@@ -402,7 +412,7 @@ if __name__ == '__main__':
     if a[0] == 'inv': cmd_inv(R, int(a[2]) if len(a) > 2 else 5)
     elif a[0] == 'window': cmd_window(R, int(a[2]) if len(a) > 2 else 5)
     elif a[0] == 'barina': cmd_barina(R, int(a[2]), int(a[3]), int(float(a[4])), int(a[5]) if len(a) > 5 else 0)
-    elif a[0] == 'fd': cmd_fd(R, a[2], int(a[3]), int(a[4]), int(float(a[5])))
+    elif a[0] == 'fd': cmd_fd(R, a[2], int(a[3]), int(a[4]), int(float(a[5])), int(a[6]) if len(a) > 6 else 0)
     elif a[0] == 'literal': cmd_literal(R, int(a[2]), int(float(a[3])), int(a[4]) if len(a) > 4 else 1, int(a[5]) if len(a) > 5 else 0)
     elif a[0] == 'confirm':
         F, k, B2, B1, tag, al = a[2], int(a[3]), int(float(a[4])), int(float(a[5])), a[6], parse(R, a[7])

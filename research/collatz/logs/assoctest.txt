@@ -1,0 +1,11 @@
+Z[i] k=3: 96 odd alpha with N<=61, digits N<=65, z with N<=400: {'pairs': 903168, 'comm': 32256, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 32256, 'failS_c': 0}
+Z[i] k=4: 96 odd alpha with N<=61, digits N<=65, z with N<=400: {'pairs': 451584, 'comm': 32256, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 32256, 'failS_c': 0}
+Z k=2 (modulus 4): odd |m|<=63, |d|<=65, |z|<=3000: {'pairs': 139392, 'comm': 4224, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 4224, 'failS_c': 0}
+Z k=3 (modulus 8): odd |m|<=63, |d|<=65, |z|<=3000: {'pairs': 69760, 'comm': 4224, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 4224, 'failS_c': 0}
+Z k=4 (modulus 16): odd |m|<=63, |d|<=65, |z|<=3000: {'pairs': 34944, 'comm': 4224, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 4224, 'failS_c': 0}
+Z[i] k=1, N(alpha)<=29, digits N<=41, z N<=200: {'pairs': 721344, 'comm': 10608, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 10608, 'failS_c': 0}
+Z[i] k=2, N(alpha)<=29, digits N<=41, z N<=200: {'pairs': 360672, 'comm': 10608, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 10608, 'failS_c': 0}
+Z[i] k=3, N(alpha)<=29, digits N<=41, z N<=200: {'pairs': 180336, 'comm': 10608, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 10608, 'failS_c': 0}
+Z[i] k=4, N(alpha)<=29, digits N<=41, z N<=200: {'pairs': 90480, 'comm': 10608, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 10608, 'failS_c': 0}
+bound check (k=1,3 sample): tested 139733568 violations of the bound 0
+Z k=1 (modulus 2):  {'pairs': 278784, 'comm': 4224, 'passS_nc': 0, 'passT_nc': 0, 'passS_c': 4224, 'failS_c': 0}

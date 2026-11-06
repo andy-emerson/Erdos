@@ -1,0 +1,53 @@
+# Zg5, modulus pi^3 (pi = 2), Barina-type maps read literally on R; kappa(+-1) = 1; filter |N| <= 3000 then 30000 (box starts), then units +-eps^n (|n| <= 40) and 200 random starts near 2^50
+
+alpha=9-g |N|=71 D=(-0.449,-0.068) [per-embedding window] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1502}
+
+alpha=9-g |N|=71 D=(-0.449,-0.068) [per-embedding window] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1504}
+
+alpha=-1+8g |N|=71 D=(+0.245,-0.762) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1494, 'other cycle': 8}
+
+alpha=-1+8g |N|=71 D=(+0.245,-0.762) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1491, 'other cycle': 13}
+
+alpha=-7+8g |N|=71 D=(-0.762,+0.245) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 49, 'escape': 1453}
+
+alpha=-7+8g |N|=71 D=(-0.762,+0.245) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1436, 'other cycle': 68}
+
+alpha=8+g |N|=71 D=(-0.068,-0.449) [per-embedding window] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1502}
+
+alpha=8+g |N|=71 D=(-0.068,-0.449) [per-embedding window] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1504}
+
+alpha=-3+8g |N|=79 D=(-0.019,-0.343) [per-embedding window] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1499, 'escape': 3}
+
+alpha=-3+8g |N|=79 D=(-0.019,-0.343) [per-embedding window] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1503, 'escape': 1}
+
+alpha=-5+8g |N|=79 D=(-0.343,-0.019) [per-embedding window] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1502}
+
+alpha=-5+8g |N|=79 D=(-0.343,-0.019) [per-embedding window] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1504}
+
+alpha=9 |N|=81 D=(-0.163,-0.163) [per-embedding window] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1477, 'escape': 25}
+
+alpha=9 |N|=81 D=(-0.163,-0.163) [per-embedding window] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1483, 'escape': 21}
+
+alpha=10-g |N|=89 D=(-0.266,+0.075) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1137, 'escape': 365}
+
+alpha=10-g |N|=89 D=(-0.266,+0.075) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 1101, 'escape': 403}
+
+alpha=9+g |N|=89 D=(+0.075,-0.266) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1032, 'other cycle': 470}
+
+alpha=9+g |N|=89 D=(+0.075,-0.266) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 440, 'escape': 1064}
+
+alpha=-3+9g |N|=99 D=(+0.198,-0.235) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1323, 'other cycle': 179}
+
+alpha=-3+9g |N|=99 D=(+0.198,-0.235) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 178, 'escape': 1326}
+
+alpha=-6+9g |N|=99 D=(-0.235,+0.198) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1168, 'other cycle': 334}
+
+alpha=-6+9g |N|=99 D=(-0.235,+0.198) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 345, 'escape': 1159}
+
+alpha=-4+9g |N|=101 D=(+0.068,-0.076) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 724, 'other cycle': 778}
+
+alpha=-4+9g |N|=101 D=(+0.068,-0.076) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 817, 'escape': 687}
+
+alpha=-5+9g |N|=101 D=(-0.076,+0.068) [control (expands in an embedding)] tables C (1502, 1502 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 534, 'other cycle': 968}
+
+alpha=-5+9g |N|=101 D=(-0.076,+0.068) [control (expands in an embedding)] tables N (1504, 2 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 714, 'other cycle': 790}

@@ -1,0 +1,13 @@
+# Zr3, modulus pi^3 (pi = 1+s), Barina-type maps read literally on R; kappa(+-1) = 2; filter |N| <= 3000 then 30000 (box starts), then units +-eps^n (|n| <= 40) and 200 random starts near 2^50
+
+alpha=21+12s |N|=9 D=(-0.415,-0.415) [per-embedding window] tables C (36, 36 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 34, 'zero': 2}
+
+alpha=21+12s |N|=9 D=(-0.415,-0.415) [per-embedding window] tables N (400, 20 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 339, 'zero': 61}
+
+alpha=31+18s |N|=11 D=(+0.158,-0.699) [control (expands in an embedding)] tables C (36, 36 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 26, 'other cycle': 10}
+
+alpha=31+18s |N|=11 D=(+0.158,-0.699) [control (expands in an embedding)] tables N (400, 20 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 271, 'other cycle': 104, 'zero': 25}
+
+alpha=17+10s |N|=11 D=(-0.699,+0.158) [control (expands in an embedding)] tables C (36, 36 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 20, 'escape': 16}
+
+alpha=17+10s |N|=11 D=(-0.699,+0.158) [control (expands in an embedding)] tables N (400, 20 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 249, 'escape': 147, 'zero': 4}

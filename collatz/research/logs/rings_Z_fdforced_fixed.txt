@@ -1,0 +1,7 @@
+# forced fixed classes for Collatz-type maps: predicted failures against the engine (B = 1e5)
+Zs2 F=R k=3: 1+2s not predicted, fails: 18; 1+2s not predicted, passes: 6; 1+2s predicted fail, fails: 232; 1-2s not predicted, fails: 18; 1-2s not predicted, passes: 6; 1-2s predicted fail, fails: 232; 3 not predicted, fails: 24; 3 predicted fail, fails: 232
+Zs2 F=H k=3: 1+2s not predicted, fails: 16; 1+2s not predicted, passes: 8; 1+2s predicted fail, fails: 232; 1-2s not predicted, fails: 15; 1-2s not predicted, passes: 9; 1-2s predicted fail, fails: 232; 3 not predicted, fails: 24; 3 predicted fail, fails: 232
+Zw F=S k=2: 5 not predicted, fails: 303; 5 predicted fail, fails: 1698; 5+4w not predicted, fails: 286; 5+4w not predicted, passes: 17; 5+4w predicted fail, fails: 1698; 5+w not predicted, fails: 289; 5+w not predicted, passes: 14; 5+w predicted fail, fails: 1698
+Z11 F=R k=2: 5 not predicted, fails: 4; 5 predicted fail, fails: 9212
+Zi F=Q k=3: 2+3i not predicted, fails: 96; 2+3i predicted fail, fails: 160; 3 not predicted, fails: 91; 3 not predicted, passes: 5; 3 predicted fail, fails: 160; 3+2i not predicted, fails: 92; 3+2i not predicted, passes: 4; 3+2i predicted fail, fails: 160
+Zi F=C k=3: 2+3i not predicted, fails: 102; 2+3i not predicted, passes: 6; 2+3i predicted fail, fails: 148; 3 not predicted, fails: 102; 3 not predicted, passes: 6; 3 predicted fail, fails: 148; 3+2i not predicted, fails: 102; 3+2i not predicted, passes: 6; 3+2i predicted fail, fails: 148

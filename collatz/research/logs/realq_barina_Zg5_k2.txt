@@ -1,0 +1,21 @@
+# Zg5, modulus pi^2 (pi = 2), Barina-type maps read literally on R; kappa(+-1) = 1; filter |N| <= 3000 then 30000 (box starts), then units +-eps^n (|n| <= 40) and 200 random starts near 2^50
+
+alpha=5-g |N|=19 D=(-0.575,+0.157) [control (expands in an embedding)] tables C (972, 972 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 417, 'other cycle': 520, 'zero': 35}
+
+alpha=5-g |N|=19 D=(-0.575,+0.157) [control (expands in an embedding)] tables N (3001, 15 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1300, 'other cycle': 1701}
+
+alpha=-1+4g |N|=19 D=(+0.119,-0.538) [control (expands in an embedding)] tables C (972, 972 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 855, 'other cycle': 109, 'zero': 8}
+
+alpha=-1+4g |N|=19 D=(+0.119,-0.538) [control (expands in an embedding)] tables N (3001, 19 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 335, 'escape': 2666}
+
+alpha=-3+4g |N|=19 D=(-0.538,+0.119) [control (expands in an embedding)] tables C (972, 972 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 691, 'other cycle': 193, 'zero': 88}
+
+alpha=-3+4g |N|=19 D=(-0.538,+0.119) [control (expands in an embedding)] tables N (3001, 16 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 2718, 'other cycle': 283}
+
+alpha=4+g |N|=19 D=(+0.157,-0.575) [control (expands in an embedding)] tables C (972, 972 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 843, 'other cycle': 129}
+
+alpha=4+g |N|=19 D=(+0.157,-0.575) [control (expands in an embedding)] tables N (3001, 16 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 559, 'escape': 2442}
+
+alpha=5 |N|=25 D=(-0.011,-0.011) [per-embedding window] tables C (972, 972 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 923, 'escape': 49}
+
+alpha=5 |N|=25 D=(-0.011,-0.011) [per-embedding window] tables N (3001, 15 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 2606, 'escape': 395}

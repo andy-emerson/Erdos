@@ -1,0 +1,107 @@
+# Collatz-type maps on R/U (cone E), |N| <= 20000; lifts and units
+
+## Zr2 k=2 digits among 12 smallest: 8 Collatz maps on R/U of 288
+  alpha=1+2r |N|=7 p=1 w=-eps^0: 1 maps; w=+-1: lift is a Collatz map on R
+  alpha=1+2r |N|=7 p=1 w=eps^0: 3 maps; w=+-1: lift is a Collatz map on R
+  alpha=1+2r |N|=7 p=1 w=eps^1: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=1+2r |N|=7 p=4 w=eps^2: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=3+r |N|=7 p=1 w=eps^1: 2 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  totals: {'w=+-1': 4, 'p|j': 3, 'p∤j': 1}
+  check 1+2r p=1 w=e^1 [1]->1, [1+r]->1-r: of 3696 starts u f, 0 reach a periodic unit, 3696 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-1: alpha=3-r, w=1, 3696 periodic, 0 walk, 0 neither
+  check 1+2r p=1 w=1 [1]->-1+2r, [1+r]->-1+r: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 1+2r p=1 w=-1 [1]->-3-2r, [1+r]->1-r: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 1+2r p=4 w=e^2 [1]->-3+2r, [1+r]->-1+3r: of 3696 starts u f, 0 reach a periodic unit, 3696 reach a unit and then walk (w of infinite order), 0 neither
+
+## Zr2 k=3 digits among 5 smallest: 19 Collatz maps on R/U of 1296
+  alpha=3 |N|=9 p=1 w=-eps^0: 3 maps; w=+-1: lift is a Collatz map on R
+  alpha=3 |N|=9 p=1 w=eps^-1: 2 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=3 |N|=9 p=1 w=eps^0: 14 maps; w=+-1: lift is a Collatz map on R
+  totals: {'w=+-1': 17, 'p|j': 2}
+  check 3 p=1 w=1 [1]->1, [3]->-1, [1+r]->1-r, [3+r]->-1+r: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 3 p=1 w=e^-1 [1]->1-2r, [3]->-1+2r, [1+r]->1+r, [3+r]->-1-3r: of 3696 starts u f, 0 reach a periodic unit, 3696 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=3+3r, w=1, 3696 periodic, 0 walk, 0 neither
+  check 3 p=1 w=-1 [1]->-3-2r, [3]->-1, [1+r]->1+r, [3+r]->-1+3r: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+
+## Zr2 k=4 digits among 2 smallest (smallest + 300 sampled per multiplier): 349 Collatz maps on R/U of 1792
+  alpha=1+3r |N|=17 p=1 w=eps^0: 28 maps; w=+-1: lift is a Collatz map on R
+  alpha=1+3r |N|=17 p=1 w=eps^1: 15 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=1+4r |N|=31 p=1 w=eps^1: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=3+4r |N|=23 p=1 w=eps^0: 11 maps; w=+-1: lift is a Collatz map on R
+  alpha=3+4r |N|=23 p=1 w=eps^1: 12 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+2r |N|=17 p=1 w=eps^0: 96 maps; w=+-1: lift is a Collatz map on R
+  alpha=5+2r |N|=17 p=1 w=eps^1: 88 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+r |N|=23 p=1 w=eps^0: 75 maps; w=+-1: lift is a Collatz map on R
+  alpha=7+3r |N|=31 p=1 w=eps^1: 23 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  totals: {'w=+-1': 210, 'p|j': 139}
+  check 1+3r p=1 w=1 [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->-1-2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->1-2r, [3+3r]->-1: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 1+3r p=1 w=e^1 [1]->3+r, [3]->1-r, [1+r]->-3, [3+r]->-1-2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->1-2r, [3+3r]->3: of 3696 starts u f, 0 reach a periodic unit, 3696 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-1: alpha=5-2r, w=1, 3696 periodic, 0 walk, 0 neither
+  check 5+2r p=1 w=1 [1]->-1-2r, [3]->1-2r, [1+r]->-1+r, [3+r]->1+r, [1+2r]->3, [3+2r]->1, [1+3r]->-1-r, [3+3r]->1-r: of 3696 starts u f, 3696 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 5+2r p=1 w=e^1 [1]->-1+2r, [3]->1-2r, [1+r]->-1+r, [3+r]->1+r, [1+2r]->3, [3+2r]->1, [1+3r]->-1-r, [3+3r]->1-r: of 3696 starts u f, 0 reach a periodic unit, 3696 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-1: alpha=-1+3r, w=1, 3696 periodic, 0 walk, 0 neither
+
+## Zr3 k=1 digits among 40 smallest: 2 Collatz maps on R/U of 42
+  alpha=s |N|=3 p=1 w=-eps^-1: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=s |N|=3 p=1 w=eps^-1: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  totals: {'p|j': 2}
+  check s p=1 w=-e^-1 [1]->-2-s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=3+2s, w=-1, 4224 periodic, 0 walk, 0 neither
+  check s p=1 w=e^-1 [1]->2-s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=3+2s, w=1, 4224 periodic, 0 walk, 0 neither
+
+## Zr3 k=3 digits among 4 smallest: 255 Collatz maps on R/U of 2000
+  alpha=1+2s |N|=11 p=1 w=eps^-2: 9 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=1+2s |N|=11 p=1 w=eps^-1: 4 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=1+2s |N|=11 p=2 w=eps^-5: 2 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=1+2s |N|=11 p=2 w=eps^-4: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=1+2s |N|=11 p=2 w=eps^-3: 2 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=4+3s |N|=11 p=1 w=eps^-2: 32 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+3s |N|=11 p=1 w=eps^-1: 50 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+3s |N|=11 p=2 w=eps^-2: 15 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+3s |N|=11 p=2 w=eps^-1: 5 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=4+3s |N|=11 p=3 w=eps^-6: 1 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+s |N|=13 p=1 w=eps^-3: 6 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+s |N|=13 p=1 w=eps^-2: 12 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+s |N|=13 p=1 w=eps^-1: 5 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+s |N|=13 p=2 w=eps^-3: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=4+s |N|=13 p=2 w=eps^-2: 6 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+2s |N|=13 p=1 w=eps^-2: 54 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+2s |N|=13 p=1 w=eps^-1: 32 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+2s |N|=13 p=2 w=eps^-3: 6 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=5+2s |N|=13 p=2 w=eps^-2: 6 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=5+2s |N|=13 p=2 w=eps^-1: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=5+2s |N|=13 p=3 w=eps^-2: 2 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=5+2s |N|=13 p=4 w=eps^-7: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=5+2s |N|=13 p=11 w=eps^-12: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=5+2s |N|=13 p=12 w=eps^-17: 1 maps; p does not divide j: no rotation lifts to a Collatz map
+  totals: {'p|j': 233, 'p∤j': 22}
+  check 1+2s p=1 w=e^-1 [1]->1, [3]->-1, [s]->-2-s, [2+s]->-2+s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=8+5s, w=1, 4224 periodic, 0 walk, 0 neither
+  check 1+2s p=1 w=e^-2 [1]->-3, [3]->-1, [s]->-2-s, [2+s]->-s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^2: alpha=31+18s, w=1, 4224 periodic, 0 walk, 0 neither
+  check 1+2s p=2 w=e^-4 [1]->-1+2s, [3]->-1, [s]->-2-s, [2+s]->4-s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^2: alpha=31+18s, w=1, 4224 periodic, 0 walk, 0 neither
+  check 1+2s p=2 w=e^-5 [1]->-1+2s, [3]->-1, [s]->2-s, [2+s]->-2+s: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither
+
+## Zr3 k=4 digits among 2 smallest (smallest + 300 sampled per multiplier): 76 Collatz maps on R/U of 1200
+  alpha=2+3s |N|=23 p=1 w=eps^-2: 20 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=2+3s |N|=23 p=2 w=eps^-5: 28 maps; p does not divide j: no rotation lifts to a Collatz map
+  alpha=2+3s |N|=23 p=2 w=eps^-3: 28 maps; p does not divide j: no rotation lifts to a Collatz map
+  totals: {'p|j': 20, 'p∤j': 56}
+  check 2+3s p=2 w=e^-5 [1]->-2+s, [3]->-2-s, [s]->-1-2s, [2+s]->-1, [1+2s]->-4+s, [3+2s]->-4-s, [3s]->1+2s, [2+3s]->-3: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither
+  check 2+3s p=2 w=e^-3 [1]->-2+s, [3]->-2-s, [s]->-1+2s, [2+s]->-1, [1+2s]->-4+s, [3+2s]->-4-s, [3s]->1-2s, [2+3s]->-3: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither
+  check 2+3s p=1 w=e^-2 [1]->2+s, [3]->-2-s, [s]->-1-2s, [2+s]->-1, [1+2s]->4+s, [3+2s]->-4-s, [3s]->1+2s, [2+3s]->-3: of 4224 starts u f, 0 reach a periodic unit, 4224 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^2: alpha=50+29s, w=1, 4224 periodic, 0 walk, 0 neither
+
+## Zg5 k=1 digits among 8 smallest: 13 Collatz maps on R/U of 640
+  alpha=-1+2g |N|=5 p=1 w=-eps^0: 3 maps; w=+-1: lift is a Collatz map on R
+  alpha=-1+2g |N|=5 p=1 w=eps^-1: 3 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=-1+2g |N|=5 p=1 w=eps^0: 5 maps; w=+-1: lift is a Collatz map on R
+  alpha=-1+2g |N|=5 p=1 w=eps^1: 2 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  totals: {'w=+-1': 8, 'p|j': 5}
+  check -1+2g p=1 w=e^-1 [1]->-1, [g]->2-g, [1+g]->-3+g: of 3774 starts u f, 0 reach a periodic unit, 3774 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=2+g, w=1, 3774 periodic, 0 walk, 0 neither
+  check -1+2g p=1 w=-1 [1]->-1-2g, [g]->-g, [1+g]->1-g: of 3774 starts u f, 3774 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check -1+2g p=1 w=e^1 [1]->1+2g, [g]->g, [1+g]->1+g: of 3774 starts u f, 0 reach a periodic unit, 3774 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-1: alpha=3-g, w=1, 3774 periodic, 0 walk, 0 neither
+  check -1+2g p=1 w=1 [1]->3-2g, [g]->-g, [1+g]->-1+g: of 3774 starts u f, 3774 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+
+## Zg5 k=2 digits among 2 smallest (smallest + 300 sampled per multiplier): 75 Collatz maps on R/U of 900
+  alpha=-1+4g |N|=19 p=1 w=eps^-1: 14 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=-1+4g |N|=19 p=1 w=eps^1: 12 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  alpha=4+g |N|=19 p=1 w=eps^0: 36 maps; w=+-1: lift is a Collatz map on R
+  alpha=4+g |N|=19 p=1 w=eps^2: 13 maps; p | j: a rotation by eps^(-j/p) lifts to a Collatz map
+  totals: {'p|j': 39, 'w=+-1': 36}
+  check -1+4g p=1 w=e^-1 [1]->-3, [3]->-1, [g]->-4+g, [1+g]->-3+g, [2+g]->-2+g, [3+g]->-1+g, [1+2g]->-3+2g, [3+2g]->-1-2g, [3g]->-g, [1+3g]->-3-g, [2+3g]->-2-g, [3+3g]->3-g: of 3774 starts u f, 0 reach a periodic unit, 3774 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^1: alpha=4+3g, w=1, 3774 periodic, 0 walk, 0 neither
+  check -1+4g p=1 w=e^1 [1]->1, [3]->-1, [g]->-4+g, [1+g]->-3+g, [2+g]->-2+g, [3+g]->3-3g, [1+2g]->1+2g, [3+2g]->-1-2g, [3g]->4-g, [1+3g]->1-g, [2+3g]->-2-g, [3+3g]->3-g: of 3774 starts u f, 0 reach a periodic unit, 3774 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-1: alpha=5-g, w=1, 3774 periodic, 0 walk, 0 neither
+  check 4+g p=1 w=1 [1]->-g, [3]->-4+g, [g]->-1-g, [1+g]->-1+2g, [2+g]->-1+g, [3+g]->-1, [1+2g]->-2+g, [3+2g]->2-g, [3g]->-3+g, [1+3g]->-3, [2+3g]->-3+3g, [3+3g]->1+2g: of 3774 starts u f, 3774 reach a periodic unit, 0 reach a unit and then walk (w of infinite order), 0 neither
+  check 4+g p=1 w=e^2 [1]->3g, [3]->-4+g, [g]->-1-g, [1+g]->-1-2g, [2+g]->-1+g, [3+g]->-1, [1+2g]->-2+g, [3+2g]->2-g, [3g]->-3+g, [1+3g]->-3, [2+3g]->1-g, [3+3g]->1+2g: of 3774 starts u f, 0 reach a periodic unit, 3774 reach a unit and then walk (w of infinite order), 0 neither; rotated by eps^-2: alpha=7-3g, w=1, 3774 periodic, 0 walk, 0 neither

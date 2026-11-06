@@ -1,0 +1,5 @@
+# Zr2, modulus pi^3 (pi = r), Barina-type maps read literally on R; kappa(+-1) = 2; filter |N| <= 3000 then 30000 (box starts), then units +-eps^n (|n| <= 40) and 200 random starts near 2^50
+
+alpha=3 |N|=9 D=(-0.415,-0.415) [per-embedding window] tables C (36, 36 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 36}
+
+alpha=3 |N|=9 D=(-0.415,-0.415) [per-embedding window] tables N (256, 16 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 228, 'zero': 28}

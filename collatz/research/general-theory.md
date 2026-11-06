@@ -67,3 +67,218 @@ Each item gives the claim with its catalog ids, the general hypothesis under whi
 18. Drop-below-start soundness (V1, V2). Hypotheses: a size $N : R \to \mathbb{N}$ with $N(z/\pi) < N(z)$ for even $z \ne 0$; for V1 also a $U$-invariant size, commuting, and a fundamental domain. The proof (strong induction on $N$) is ring-free; Lean for $\mathbb{Z}[i]$ only; RT 9.1 uses it on $\mathbb{Z}[\sqrt 2]/U$ with $|N|$. Added: Proposition 8.7 (statement and the one-line proof, for the record).
 
 Summary of the audit. Items 1, 2, 4 (exact part), 6, 7, 8, 9, 11, 12 and 14 had general proofs on paper, some stated in narrower settings than their proofs need. Items 3 (eventual existence), 5, 10, 13 (beyond order 2 and beyond the fixed prime), 16 and 17 lacked a general proof; they are supplied in Sections 5, 6, 9, 10, 13 and 14. Item 4 (heuristic part) and item 5 have genuine exceptions in a ring with two archimedean places, $\mathbb{Z}[\sqrt 2]$, where the norm form fails and the per-place form is the correct one; items 6, 7 and 8 have exceptions there because $U$ is infinite, and Sections 7 and 8 give the exact weaker statements. The split ring $\mathbb{Z}[\theta]$ is an exception to no theorem, but it shows that "odd" is relative to the chosen prime (norms of odd elements can be even) and that an automorphism can move $P$, which Section 10 covers.
+
+## 3. Classes modulo $\pi^k$ and digits
+
+*Lemma 3.1.* Assume (D), (P).
+
+1. For $j \ge 0$, $x \mapsto \pi^j x$ induces an isomorphism of groups $R/\pi R \to \pi^jR/\pi^{j+1}R$. Hence $|R/\pi^kR| = q^k$, there are $q^{k-1}$ even and $q^{k-1}(q-1)$ odd classes modulo $\pi^k$ ($k \ge 1$), and the even classes are the classes $\pi x$ with $x$ modulo $\pi^{k-1}$.
+2. $\pi R$ is a maximal ideal, $R/\pi^k R$ is a local ring with maximal ideal $\pi R/\pi^k R$, and every odd element is invertible modulo $\pi^k$. So the odd classes modulo $\pi^k$ are the group $(R/\pi^k)^\times$.
+3. $v(xy) = v(x) + v(y)$ for $x, y \ne 0$; if $\alpha$ is odd and $\pi^k \mid \alpha x$ then $\pi^k \mid x$; units are odd and multiplication by a unit preserves $v$.
+
+*Proof.* (1) The map $R \to \pi^jR/\pi^{j+1}R$, $x \mapsto \pi^jx$, is onto, and $\pi^jx = \pi^{j+1}y$ gives $x = \pi y$ after cancelling $\pi^j$ in the domain, so the kernel is $\pi R$. The filtration $R \supset \pi R \supset \dots \supset \pi^kR$ has $k$ quotients of size $q$. (2) $R/\pi R$ is a finite domain, hence a field. An ideal of $R$ containing $\pi^k$ and contained in a maximal ideal $M$ gives $\pi \in M$ since $M$ is prime, so $M = \pi R$. If $\alpha$ is odd, $\alpha\beta = 1 + \pi t$ for some $\beta, t$, and $\alpha\beta(1 - \pi t + \dots + (-\pi t)^{k-1}) = 1 \pm (\pi t)^k$. (3) Write $x = \pi^a x'$, $y = \pi^b y'$ with $x', y'$ odd; $x'y'$ is odd because $\pi$ is prime. The second statement is the case $v(\alpha) = 0$. A unit is odd since $\pi$ is not a unit. $\square$
+
+GP Lemma 9.1 (item 1 of the audit) follows: $d(z) \equiv -\alpha z \pmod \pi$ is odd; two digits in one class differ by a multiple of $\pi^k$, so $\pi^k \mid \alpha(z' - z)$ and $z' \equiv z$ by (3); and every odd class $c$ is the class of $-\alpha z$ for $z \equiv -\alpha^{-1}c$, using (2). Every odd $\alpha$ has a map at every modulus: choose for each odd class any element of the class of $-\alpha z$; for $k \ge 1$ it is odd.
+
+## 4. The existence threshold
+
+*Theorem 4.1 (IC Theorem 1).* Assume (Dd) and (Gf), and put $\kappa = \max_{u \in U, u \ne 1} v_P(u - 1)$. For a level $k$ the following are equivalent: some odd $\alpha$ has a map at $P^k$ commuting with $U$; every odd $\alpha$ has one; $k > \kappa$; $U$ acts freely on the odd classes modulo $P^k$. Up to the choice inside each class, a commuting table is one digit for one class in each orbit.
+
+The proof in IC 2.2 uses exactly (Dd) and (Gf) ($R/P^k$ finite is not needed, only a choice of orbit representatives). For an infinite $U$ (IC 2.3 item 5) the kernel of $U \to (R/P^k)^\times$ has finite index because $(R/P^k)^\times$ is finite, so it contains some $u \ne 1$, and no level admits a table commuting with all of $U$; this uses (Dd) and $R/P$ finite.
+
+*Proposition 4.2.* Let $R$ be the ring of integers of a number field $K$, $P$ a prime of $R$ above the rational prime $p$, $e = e(P/p)$, and $U$ a finite group of units (so $U \subseteq \mu(K)$, the roots of unity).
+
+1. If $p = 2$ and $-1 \in U$, then $\kappa = e$. So commuting maps exist exactly from $P^{e+1}$: from $P^2$ when $2$ is unramified at $P$, from $P^3$ when $e = 2$.
+2. If $p$ is odd, $\kappa = \max e/\varphi(p^a)$ over the $a \ge 1$ such that $U$ contains a root of unity of order $p^a$, and $\kappa = 0$ if there is none.
+
+*Proof.* Let $\zeta \in U$ have order $m > 1$. Standard facts on cyclotomic integers: if $m$ is not a prime power, $1 - \zeta$ is a unit (it divides $\Phi_m(1) = 1$); if $m = \ell^a$ with $\ell$ prime, then $\prod_{\zeta'}(1 - \zeta') = \Phi_{\ell^a}(1) = \ell$ over the primitive $\ell^a$-th roots $\zeta'$, which are all associates of $1 - \zeta$ in $\mathbb{Z}[\zeta]$, so $(1 - \zeta)^{\varphi(\ell^a)} = \ell\cdot(\text{unit})$ and $v_P(1 - \zeta) = v_P(\ell)/\varphi(\ell^a)$. This is $0$ unless $\ell = p$, and then it is $e/\varphi(p^a)$. (1) For $p = 2$ the largest value $e/\varphi(2^a) = e/2^{a-1}$ occurs at $a = 1$, $\zeta = -1$, and it is attained since $-1 \in U$. (2) is the same computation with $\ell = p$ odd. $\square$
+
+So in every ring of integers with $P$ above $2$, $\kappa = v_P(2)$. This covers IC 2.3 at once ($\mathbb{Z}$: $e = 1$; $\mathbb{Z}[i]$: $e = 2$; $\mathbb{Z}[\omega]$: $e = 1$; other imaginary quadratic fields: $e$) and the rings of RT ($\mathbb{Z}[\sqrt{-2}]$: $\kappa = 2$; $\mathbb{Z}[\theta]$ and $\mathbb{Z}[\phi]$: $\kappa = 1$), and for an infinite $U$ it gives the threshold $P^{e+1}$ for the torsion subgroup $\mu(K)$, as in $\mathbb{Z}[\sqrt 2]$. By (2), a map of $\mathbb{Z}[\omega]$ dividing by $1 - \omega$ (the untested E8) commutes with the units from $(1 - \omega)^2$: $\kappa = 2/\varphi(3) = 1$.
+
+## 5. Which moduli carry multipliers
+
+*Proposition 5.1 (GP Proposition 2.1, first sentence).* Assume (D), (P), (N). The modulus $\pi^k$ carries a multiplier in the window iff $(q^k, q^{k + 1/(q-1)})$ contains $N(\alpha)$ for some odd $\alpha$. (By Section 3 every odd $\alpha$ has a map at every modulus.)
+
+*Theorem 5.2.* Assume (O) with $N = |N_{K/\mathbb{Q}}|$, let $P = \pi R$ lie above the rational prime $p$, $q = N(\pi)$ and $\lambda = q^{1/(q-1)}$. If
+$$(\lambda^{1/n} - 1)\,q^{k/n} > 2,$$
+then the window at $\pi^k$ contains $N(a) = |a|^n$ for a rational integer $a$ prime to $p$, and $a$ is an odd element of $R$. In particular only finitely many moduli carry no multiplier.
+
+*Proof.* $P \cap \mathbb{Z} = p\mathbb{Z}$, so an integer prime to $p$ is not in $P$, that is, odd. For $a \in \mathbb{Z}$, $N_{K/\mathbb{Q}}(a) = a^n$, and $q^k < a^n < \lambda q^k$ says $q^{k/n} < a < \lambda^{1/n}q^{k/n}$. An open interval of length greater than $2$ contains two consecutive integers, and of two consecutive integers at least one is prime to $p$. $\square$
+
+The bound is crude but uniform: for $\mathbb{Z}$ it gives $k \ge 2$ (true from $k = 1$), for $\mathbb{Z}[i]$ and $\mathbb{Z}[\sqrt{-2}]$ ($q = 2$, $n = 2$) $k \ge 5$ (true from $k = 2$ in $\mathbb{Z}[i]$, and at $k = 1$ and from $k = 3$ in $\mathbb{Z}[\sqrt{-2}]$, whose $\pi^2$ is empty), for $\mathbb{Z}[\omega]$ ($q = 4$) $k \ge 3$ (true from 2). It holds in $\mathbb{Z}[\sqrt 2]$ with $|N|$ as well, and the integer multipliers it produces are balanced between the two real places ($|\sigma_1(a)| = |\sigma_2(a)|$), so they lie in the per-place window of Section 6.2 too. Which small moduli are empty is ring-specific: GP 2 ($\mathbb{Z}$, $\mathbb{Z}[i]$, $\mathbb{Z}[\omega]$), RT 5.2 ($\mathbb{Z}[\sqrt{-2}]$: odd elements have $a$ odd, so $a^2 + 2b^2 \equiv 1, 3 \pmod 8$ and $(4, 8)$ holds none), RT 6.2 ($\mathbb{Z}[\theta]$ at $\theta$: $(2, 4)$ holds only $3$, inert, not a norm), RT 9.2 ($\mathbb{Z}[\sqrt 2]$: $|N|$ of an odd element is $\pm 1 \bmod 8$).
+
+## 6. The window, the drift, and below the window
+
+### 6.1 The exact part
+
+GP Lemma 4.1 holds under (D) and (P) alone: its proof uses that $T'$ modulo $\pi^k$ depends only on $z$ modulo $\pi^{2k}$, that $\alpha$ is invertible modulo $\pi^k$ (Lemma 3.1(2)), and the class counts of Lemma 3.1(1). So for every ring, every odd $\alpha$ and every table, the Markov matrix of $T'$ on classes modulo $\pi^k$ is doubly stochastic and irreducible, with uniform weights $q^{-k}$. Likewise (IC 2.4) $z \mapsto \alpha z + d$ permutes the classes modulo $\pi^{k+j}$ above one odd class modulo $\pi^k$ onto the classes of $\pi^kR$ modulo $\pi^{k+j}$, so in density $P(v - k \ge j) = q^{-j}$ and the mean of $v - k$ is $1/(q-1)$. These are statements about residues and hold in every ring satisfying (D), (P), including the split ring, $\mathbb{Z}[\sqrt 2]$, and the function-field analogues.
+
+### 6.2 The drift per archimedean place
+
+Assume (O). For odd $z$ with $|z|_v$ large compared with the digits, an odd step changes $\log|z|_v$ by about $\log|\alpha|_v - v\log|\pi|_v$, and with the exponent distribution of 6.1 the mean change is
+$$\delta_v = \log|\alpha|_v - \left(k + \tfrac{1}{q-1}\right)\log|\pi|_v .$$
+Since $\prod_v|x|_v^{n_v} = N(x)$, $\sum_v n_v\delta_v = \log N(\alpha) - (k + \frac{1}{q-1})\log q$, the norm drift of W3. Under (A1) there is one place and $\delta_v = \frac1n(\log N(\alpha) - (k + \frac1{q-1})\log q)$, so the window $q^k < N(\alpha) < q^{k+1/(q-1)}$ is exactly "expanding in the worst case, contracting on average". With several places the drift is a vector. The heuristic for a residue-class map read on $R$ is then: orbits converge on average iff $\delta_v < 0$ at every place; the $|N|$ window says only that the weighted sum is negative. This is what RT 9.2 found in $\mathbb{Z}[\sqrt 2]$ (multipliers in the $|N|$ window with $\delta_1 > 0 > \delta_2$ diverge along $\sigma_1$). On $R/U$ with a fundamental domain such as the cone, the representative is renormalized by units after each step, which moves size between the places along the unit lattice, and only the sum is relevant; RT 9.4 confirms the $|N|$ window there. The statement is heuristic in both cases (it is the equidistribution heuristic of W3 applied place by place); the identity $\sum n_v\delta_v = $ norm drift is exact.
+
+### 6.3 Below the window, one archimedean place
+
+*Theorem 6.3.* Assume (D), (P) and (A1), and let $(\alpha, k, d)$ be a map with $k \ge 1$ and $N(\alpha) < q^k$. Then every orbit of $T$ and of $S$ is eventually periodic.
+
+*Proof.* Fix an embedding of $K$ in $\mathbb{C}$, so $N(z) = |z|^n$ and $|\pi| = q^{1/n} > 1$. The table takes finitely many values (one per odd class, Lemma 3.1), so $\delta = \max|d(z)|$ is finite. Put $\rho = |\alpha|/|\pi|^k < 1$ and $R_0 = \delta/(|\pi|^k(1 - \rho))$. For odd $z$, $S(z) = (\alpha z + d(z))/\pi^v$ with $v \ge k$, so $|S(z)| \le \rho|z| + \delta/|\pi|^k$. Iterating, $|S^m(z)| \le \rho^m|z| + R_0$, so the $S$-orbit enters the disc $|y| \le R_0 + 1$, and the disc is mapped into itself: $|y| \le R_0 + 1$ gives $|S(y)| \le \rho(R_0 + 1) + R_0(1 - \rho) \le R_0 + 1$. An order is discrete in $\mathbb{C}$ (a lattice, or $\mathbb{Z} \subset \mathbb{R}$), so the disc holds finitely many elements and the orbit is eventually periodic. A $T$-orbit from $z \ne 0$ passes through the odd part of $z$, then through the $S$-orbit, with only the even elements $\pi^j S(y)$, $0 < j \le v$, between $y$ and $S(y)$; these have $|\pi^jS(y)| \le |\alpha y + d(y)| \le |\alpha|(R_0 + 1) + \delta$ once $y$ is in the disc. So the $T$-orbit eventually stays in a bounded set, which is finite, and is eventually periodic. $0$ is fixed. $\square$
+
+This is D2 Proposition 3 for any order in $\mathbb{Q}$ or an imaginary quadratic field, any prime $\pi$ (above $2$ or not) and any table. The proof uses one archimedean absolute value with $|\pi| > 1$ and finitely many elements in a bounded set, which is the condition that W9 identifies.
+
+### 6.4 Several archimedean places
+
+*Theorem 6.4.* Assume (D), (P) and (O), and suppose that at every archimedean place $|\pi|_v > 1$ and $|\alpha|_v < |\pi|_v^k$. Then every orbit of $T$ and of $S$ is eventually periodic.
+
+*Proof.* The argument of 6.3 at each place separately gives $|S^m(z)|_v \le \rho_v^m|z|_v + R_v$ and invariant boxes $\{|y|_v \le R_v + 1 \text{ for all } v\}$; the even steps $y \mapsto y/\pi$ shrink every coordinate since $|\pi|_v > 1$. $R$ is a lattice in $\prod_v K_v$, so a box holds finitely many elements. $\square$
+
+The norm form fails with two places. In $\mathbb{Z}[\sqrt 2]$ with $\pi = \sqrt 2$ ($|\pi|_v = \sqrt 2$ at both places) take $k = 2$, $\alpha = \varepsilon^2 = 3 + 2\sqrt 2$, a unit, and the smallest digits. Then $|N(\alpha)| = 1 < q^k = 4$, below the $|N|$ window, but $|\sigma_1(\alpha)| = 5.83 > |\pi|^2 = 2$, and the per-place drift is $\delta_1 = \log_2 5.83 - 3/2 = +1.04$ bits, $\delta_2 = -4.04$ bits. Of 200 odd starts with $|a|, |b| \le 30$, 182 passed $10^{40}$ in a coordinate, 17 became periodic and one reached $0$ (`ringbelow.py`, `logs/rings_Zr2_below.txt`). So "below the window every orbit is eventually periodic" is false for the $|N|$ window in a real quadratic ring, and Theorem 6.4 is the correct statement.
+
+## 7. Trivial cycles and unit cycles for a group action
+
+Setting: a set $X$, a group $G$ acting on $X$, a point $e$, a map $f : X \to X$. A cycle is trivial if it meets the orbit $Ge$. For rings, $X = R$, $G = U$, $e = 1$.
+
+*Theorem 7.1 (T1).* If $Ge$ is finite, $f$ has at most $|Ge| \le |G|$ trivial cycles, for every $f$.
+
+*Proof.* Distinct cycles are disjoint (F6), and each trivial cycle contains a point of $Ge$; choosing one gives an injection into $Ge$. $\square$
+
+*Theorem 7.2 (T2, A7).* Let $G$ be finite and $f$ equivariant, $f(gx) = gf(x)$. If $e$ is not periodic, no point of $Ge$ is and there is no trivial cycle. If $e$ is periodic with cycle $C$, let $p \ge 1$ be the least $j$ with $f^j(e) \in Ge$ and $f^p(e) = \varepsilon e$. Then the trivial cycles are the sets $gC$, $g \in G$; $gC = C$ iff $ge \in C$ iff $g \in H = \langle\varepsilon\rangle G_e$, with $G_e$ the stabilizer of $e$; $H$ is a subgroup; and the number of trivial cycles is the index $[G : H]$, which divides $|G|$. If the orbit is free ($G_e = 1$, as for $e = 1$ in a domain), the number is $|G|/\mathrm{ord}(\varepsilon)$.
+
+*Proof.* $f^j(ge) = gf^j(e)$, so $ge$ is periodic iff $e$ is, and the cycle of $ge$ is $gC$. A trivial cycle contains some $ge$, so it is $gC$. $gC = C$ iff $ge \in C$ (both are cycles through $ge$). The elements of $C \cap Ge$ are the $f^j(e)$ with $f^j(e) \in Ge$; as in QUO Theorem 4.1, these are exactly the $j$ divisible by $p$ (write $j = sp + t$, $0 \le t < p$: $f^{sp}(e) = \varepsilon^s e$, and $f^t(\varepsilon^s e) = \varepsilon^s f^t(e) \in Ge$ forces $f^t(e) \in Ge$, so $t = 0$). And $f^{sp}(e) = \varepsilon^s e$. So $ge \in C$ iff $ge = \varepsilon^se$ for some $s$ iff $g \in \langle\varepsilon\rangle G_e$. The set $H = \{g : gC = C\}$ is the stabilizer of the set $C$, hence a subgroup, and we have just shown $H = \langle\varepsilon\rangle G_e$. The cycles are in bijection with the cosets $gH$. $\square$
+
+In $\mathbb{Z}[\sqrt 2]$ with $U$ infinite, T1 has no content (RT 9.3: 4 to 12 trivial cycles). For a finite subgroup $H_0 \subseteq U$, Theorems 7.1 and 7.2 apply with $G = H_0$ and give at most $|H_0|$ cycles through $H_0$, and $|H_0|/\mathrm{ord}(\varepsilon)$ of them for maps commuting with $H_0$; cycles through other units are not counted.
+
+*Theorem 7.3 (T3, any group of units).* Assume (D) and (G), $U$ finite or not, and let $f$ commute with $U$, $w = f(1)$. If $w \in U$, then $f^n(u) = uw^n$ for every $u \in U$. If $w$ has finite order, every unit lies on a unit cycle, the unit cycles are the cosets $u\langle w\rangle$, there are $[U : \langle w\rangle]$ of them, each of length $\mathrm{ord}(w)$. If $w$ has infinite order, no unit is periodic, so no cycle meets $U$. If $w \notin U$, no unit maps to a unit and there is no unit cycle.
+
+*Proof.* $f(u) = uf(1) = uw$ and induction. $uw^n = u$ iff $w^n = 1$. If $w \notin U$ and $uw \in U$ then $w = u^{-1}(uw) \in U$. $\square$
+
+## 8. Descent, transfer and lifts for a group action
+
+Setting of Section 7. $f$ respects orbits if $f(gx) \in Gf(x)$ for all $g, x$. $X/G$ is the orbit space, $[x]$ the orbit of $x$. For a subset $Y \subseteq X$ (for rings, the nonzero or the odd elements), $f$ is Collatz on $Y$ if every $y \in Y$ has an iterate lying on a trivial cycle, and $\bar f$ is Collatz on $Y/G$ in Collatz's sense if every $[y]$, $y \in Y$, reaches $[e]$ and $[e]$ is periodic.
+
+*Theorem 8.1 (descent, A2).* For any group $G$: there is $\bar f$ on $X/G$ with $\bar f[x] = [f(x)]$ iff $f$ respects orbits; it is unique, and $\bar f^n[x] = [f^n(x)]$. Equivariant maps respect orbits. (QUO Proposition 2.2; no finiteness and no ring structure.)
+
+*Theorem 8.2 (transfer, A4).* Let $G$ be finite, $f$ respect orbits, and $e \in Y$. Then $f$ is Collatz on $Y$ iff $\bar f$ is Collatz on $Y/G$ in Collatz's sense. In orbit form: iff every $y \in Y$ has an iterate in $Ge$ and $f^p(e) \in Ge$ for some $p \ge 1$.
+
+*Proof.* QUO Theorem 3.2 with $Ge$ for $U$: the pigeonhole step uses that $g = f^p$ maps the finite set $Ge$ into itself. $Y$ need not be invariant under $G$ or $f$. $\square$
+
+*Theorem 8.3 (transfer for an infinite group).* Let $G$ be any group, $f$ respect orbits, $e \in Y$, and suppose $\bar f$ is Collatz on $Y/G$, with $p$ the least period of $[e]$ and $g = f^p$, which maps $Ge$ into itself. Then $f$ is Collatz on $Y$ iff for every $y \in Ge$ reached from $Y$ the $g$-orbit of $y$ is eventually periodic. If $f$ is equivariant and $f^p(e) = \varepsilon e$, this holds iff $\varepsilon^m \in G_e$ for some $m \ge 1$; on a free orbit, iff $\varepsilon$ has finite order.
+
+*Proof.* If $y \in Ge$ is reached from $z \in Y$ and its $g$-orbit is eventually periodic, some $g^i(y)$ is $g$-periodic, hence $f$-periodic, and it lies in $Ge$: so $z$ reaches a trivial cycle. Conversely, if $f$ is Collatz on $Y$ and $y = f^n(z) \in Ge$, the $f$-orbit of $z$ is eventually periodic, so it has finitely many points, so the $g$-orbit of $y$ takes finitely many values and is eventually periodic. For equivariant $f$, $g(he) = h\varepsilon e$, so $g^m(he) = h\varepsilon^m e$; the $g$-orbit of $he$ is eventually periodic iff $\varepsilon^i e = \varepsilon^j e$ for some $i < j$, iff $\varepsilon^{j-i} \in G_e$. The condition is necessary because $e \in Y$: if $f$ is Collatz, the $g$-orbit of $e$ is eventually periodic. It is sufficient for all $he$ at once. $\square$
+
+In $\mathbb{Z}[\sqrt 2]$ (RT 9.4) the commuting extension $L$ of a Collatz-type map is equivariant for the whole unit group, $L^p(1) = \varepsilon_0 = 1 + \sqrt 2$ for the first map, of infinite order, and $L$ is not Collatz although $\bar L$ is: Theorem 8.3 says exactly when the lift works, namely when $L^p(1) = \pm 1$ (the torsion units), which RT found for 4, 15 and 210 of the Collatz-type maps at $\pi^2$, $\pi^3$, $\pi^4$.
+
+*Theorem 8.4 (lifts, A5).* Let $G$ be finite, $f$ respect orbits, and $[x]$ have least period $p$ under $\bar f$. Then $g = f^p$ maps $Gx$ into itself; a point of $Gx$ is $f$-periodic iff it is $g$-periodic, with least $f$-period $p$ times its least $g$-period; every $f$-period is a multiple of $p$; the cycles of $f$ over the cycle of $[x]$ correspond to the $g$-cycles in $Gx$, with $|C| = p|C \cap Gx|$; there are between $1$ and $|Gx|$ of them. (QUO Theorem 4.1, with $Gx$ for $Uz$.)
+
+*Theorem 8.5 (equivariant lifts, A6).* If moreover $f$ is equivariant and $f^p(x) = \varepsilon x$, then $f^{pm}(hx) = h\varepsilon^mx$ for all $h \in G$; $hx$ lies on the cycle of $x$ iff $hx = \varepsilon^mx$ for some $m$, iff $h \in \langle\varepsilon\rangle G_x$; the cycles over $[x]$ are the $hC$, their number is $[G : \langle\varepsilon\rangle G_x]$, and on a free orbit it is $|G|/\mathrm{ord}(\varepsilon)$ with each of length $p\,\mathrm{ord}(\varepsilon)$. (The proof of Theorem 7.2 with $x$ for $e$.)
+
+*Theorem 8.6 (maps agreeing up to the group: R4, A11).* If $f$ respects orbits and $f'(x) \in Gf(x)$ for every $x$, then $f'$ respects orbits and $\bar f' = \bar f$; with $G$ finite and $e \in Y$, $f'$ is Collatz on $Y$ iff $f$ is. If $\tau : X \to X$ is a bijection with $\tau(Gx) = G\tau(x)$, $\tau(Ge) = Ge$ and $\tau(Y) = Y$, and $f'(x) \in G\,\tau(f(\tau^{-1}x))$ for every $x$, then $\bar f' = \bar\tau\bar f\bar\tau^{-1}$ and, for finite $G$, $f'$ is Collatz on $Y$ iff $f$ is (A12).
+
+*Proof.* $[f'(x)] = [f(x)]$ for all $x$, so $[f'(gx)] = [f(gx)] = [f(x)] = [f'(x)]$, and the induced maps agree; Theorem 8.2 applies to both. For $\tau$: $[f'(x)] = \bar\tau\bar f\bar\tau^{-1}[x]$; the conjugate of a map Collatz on $Y/G$ by a bijection of $X/G$ fixing $[e]$ and preserving $Y/G$ is Collatz on $Y/G$; Theorem 8.2 lifts it. $\square$
+
+For rings: rotation is $f = S_\alpha$, $f' = S_{u\alpha}$, $f'(z) = S_\alpha(uz) \in US_\alpha(z)$ when $S_\alpha$ respects associates; the mirror is $\tau = \sigma$ with $f'(z) = \eta^v\sigma(S_\alpha(\sigma^{-1}z))$ (Section 10). The transfer lemma R4 (TH Lemma 4.3) is the first part, since a map $g$ commuting with $U$ with $g(z) \in Uf(z)$ forces $f$ to respect associates.
+
+*Proposition 8.7 (drop below start, V1, V2).* Let $N : X \to \mathbb{N}$ and $T : X \to X$, and suppose every $x$ with $N_0 < N(x) \le B$ has an iterate of smaller size. Then every $x$ with $N(x) \le B$ has an iterate with $N \le N_0$. (Strong induction on $N(x)$, TH Theorem 6.1. For rings one applies it to odd $x$ after noting $N(x/\pi) < N(x)$; with a $U$-invariant $N$ and $T$ commuting with $U$ it suffices to check one element per class of associates, which is V1.)
+
+## 9. Respecting associates is commuting, for residue-class maps
+
+*Theorem 9.1.* Assume (D), (P), (G) with $U$ finite or not, and let $N : R \to \mathbb{N}$ be multiplicative with $N(x) = 0$ only for $x = 0$, $N(u) = 1$ for $u \in U$, and $N(\pi) \ge 2$. Let $(\alpha, k, d)$ be a map, $w(z) = \alpha z + d(z)$, and suppose:
+
+(B) for every odd $z_0$, every $u \in U$ and every bound $B$ there is $z \equiv z_0 \pmod{\pi^{k+1}}$ with $N(w(z)) > B$ and $N(w(uz)) > B$.
+
+Then the following are equivalent: the table commutes with $U$; $T$ commutes with $U$; $T$ respects associates; $S$ commutes with $U$; $S$ respects associates. The respecting conditions may be weakened to one $z$ per odd class and unit, with $N(w(z))$ and $N(w(uz))$ above $N(d(uz) - u\,d(z))$.
+
+*Proof.* Commuting tables give commuting $T$ and $S$ (Lemma 3.1(3): multiplying by a unit preserves $v$), and commuting implies respecting. For the converse fix an odd $z_0$ and $u \in U$, put $e = d(uz_0) - u\,d(z_0)$, and take $z$ from (B) with $N(w(z)), N(w(uz)) > N(e)$. Since $z \equiv z_0$ and $uz \equiv uz_0$ modulo $\pi^k$, the digits at $z$ and $uz$ are those at $z_0$ and $uz_0$, and $z$ is odd. Put $W = w(z)$ and $W' = w(uz)$; then $W' = uW + e$.
+
+For $T$: $W' = \varepsilon W$ for some $\varepsilon \in U$, so $(\varepsilon - u)W = e$. If $\varepsilon \ne u$, $N(e) = N(\varepsilon - u)N(W) \ge N(W)$, a contradiction. So $e = 0$.
+
+For $S$: $W = \pi^ao$, $W' = \pi^bo'$ with $o, o'$ odd and $o' = \varepsilon o$ for some $\varepsilon \in U$. If $b \ge a$, then $W' = \varepsilon\pi^{b-a}W$, so $(\varepsilon\pi^{b-a} - u)W = e$; if $b > a$ the coefficient is nonzero because $N(\varepsilon\pi^{b-a}) = N(\pi)^{b-a} \ge 2 > 1 = N(u)$, so $N(e) \ge N(W)$, a contradiction; if $b = a$ we are in the case of $T$. If $b < a$, then $\pi^{a-b}W' = \varepsilon W$, and with $W' = uW + e$, $(\varepsilon - u\pi^{a-b})W' = \varepsilon W' - u\varepsilon W = \varepsilon e$; the coefficient is nonzero as before, so $N(e) = N(\varepsilon e) \ge N(W')$, a contradiction. So $e = 0$, that is $d(uz_0) = u\,d(z_0)$. $\square$
+
+The proof needs no inverse of $\pi$, no finiteness of $U$, and not that $N = 1$ only on units: only $N(x) \ge 1$ for $x \ne 0$ and $N(\pi^t) \ne 1$ for $t \ge 1$. These are exactly the hypotheses of the abstract Lean version (Section 15).
+
+*Lemma 9.2.* Condition (B) holds for every map on every order $R$ of a number field $K$ (with $N = |N_{K/\mathbb{Q}}|$, any prime $\pi$, any $U \subseteq R^\times$).
+
+*Proof.* Take $z = z_0 + \pi^{k+1}t$ with $t \in \mathbb{Z}$. Then $w(z) = a + bt$ and $w(uz) = a' + b't$ with $a = w(z_0)$, $a' = w(uz_0)$, $b = \alpha\pi^{k+1} \ne 0$, $b' = ub \ne 0$, since the digits do not change. For $b \ne 0$, $N_{K/\mathbb{Q}}(a + bt) = N_{K/\mathbb{Q}}(b)\prod_\tau(t + \tau(a/b))$ over the embeddings $\tau$ of $K$, a polynomial in $t$ of degree $n$ with leading coefficient $N_{K/\mathbb{Q}}(b) \ne 0$, so $|N(a + bt)| \to \infty$ as $t \to \infty$; the same for $a' + b't$, and for $t$ large both exceed $B$. $\square$
+
+QUO Lemma 5.0' is the case of imaginary quadratic $R$, where it used $t\bar\beta$ in place of $t$; Lemma 9.2 covers $\mathbb{Z}$, all imaginary and real quadratic orders (including $\mathbb{Z}[\sqrt 2]$ with $|N|$, which RT 9.3 used without proof), the split ring and every higher-degree order.
+
+*Corollary 9.3 (A9).* Under the hypotheses of Theorem 9.1: (1) if some $u \in U$, $u \ne 1$, is $\equiv 1 \pmod{\pi^k}$, no map at $\pi^k$ respects associates (a commuting table would give $d(z)(1 - u) = 0$, so $d(z) = 0$, which is even); in particular, with infinite $U$ no residue-class map respects associates at any modulus (Section 4). (2) If $S(uz) = \chi(u)uS(z)$ with $\chi(u) \in U$, the table commutes, and $\chi = 1$ wherever $S(z) \ne 0$. (3) Commuting tables are closed under rotation. (QUO Corollary 5.2, now in this generality.)
+
+## 10. Automorphisms: rotation, mirror and the split ring
+
+Assume (D), (P), (G) and (S); $U$ is closed under $\sigma$ (automorphisms map units to units; if $U \ne R^\times$, assume $\sigma(U) = U$ and, when $\sigma(\pi) = \eta\pi$, $\eta \in U$).
+
+*Lemma 10.1.* Under (O), $N(\sigma(z)) = N(z)$ for every automorphism $\sigma$ of $R$. (For $z \ne 0$, $\sigma$ maps $zR$ onto $\sigma(z)R$ and induces a ring isomorphism $R/zR \to R/\sigma(z)R$, so the indices agree.) This replaces the argument of GP Proposition 3.1, which used the complex conjugation of an imaginary quadratic field.
+
+*Proposition 10.2 (transport).* For every automorphism $\sigma$, every generator $\pi$ and every map $(\alpha, k, d)$ dividing by $\pi$: $(\sigma(\alpha), k, \sigma d\sigma^{-1})$ is a map dividing by $\sigma(\pi)$, and
+$$\sigma \circ S^{\pi}_{\alpha, d} = S^{\sigma(\pi)}_{\sigma(\alpha), \sigma d\sigma^{-1}} \circ \sigma, \qquad \sigma\circ T^{\pi}_{\alpha,d} = T^{\sigma(\pi)}_{\sigma(\alpha),\sigma d\sigma^{-1}}\circ\sigma.$$
+
+*Proof.* $\sigma(\pi)$ is prime, $y$ is odd for $\pi$ iff $\sigma(y)$ is odd for $\sigma(\pi)$, and $\sigma$ maps classes modulo $\pi^k$ to classes modulo $\sigma(\pi)^k$, so $d' = \sigma d\sigma^{-1}$ depends only on the class. $\sigma(\alpha)\sigma(z) + d'(\sigma z) = \sigma(\alpha z + d(z))$, and $\sigma(\pi^vy) = \sigma(\pi)^v\sigma(y)$ with $\sigma(y)$ odd for $\sigma(\pi)$. $\square$
+
+*Proposition 10.3 (change of generator).* For $\eta \in R^\times$, a map dividing by $\pi$ is a map dividing by $\eta\pi$ with the same table (same ideal, same classes), and $S^{\eta\pi}_{\alpha,d}(z) = \eta^{-v}S^{\pi}_{\alpha,d}(z)$ with $v = v(\alpha z + d(z))$, since $\pi^vy = (\eta\pi)^v(\eta^{-v}y)$.
+
+*Theorem 10.4 (mirror for any automorphism fixing $P$).* Let $\sigma(\pi) = \eta\pi$ and call $(\sigma(\alpha), k, d^\sigma)$, $d^\sigma = \sigma d\sigma^{-1}$, the mirrored map. Then for odd $z$ with $w = \alpha\sigma^{-1}(z) + d(\sigma^{-1}z) \ne 0$,
+$$S_{\sigma\alpha}(z) = \eta^{v(w)}\,\sigma\big(S_\alpha(\sigma^{-1}z)\big),$$
+and (under (O)) $N(S_{\sigma\alpha}(z)) = N(S_\alpha(\sigma^{-1}z))$. If the table commutes with $U$, so does $d^\sigma$, $S^n_{\sigma\alpha}(z) = \eta^{V_n}\sigma(S^n_\alpha(\sigma^{-1}z))$ with $V_n$ the total exponent of the first $n$ steps from $\sigma^{-1}(z)$, and, for finite $U$, the mirror is Collatz iff the map is. If $\eta = 1$, $S_{\sigma\alpha} = \sigma S_\alpha\sigma^{-1}$ for every table, and the mirror is Collatz iff the map is, for any $U$.
+
+*Proof.* By Proposition 10.2, $\sigma S^\pi_{\alpha,d}\sigma^{-1} = S^{\eta\pi}_{\sigma\alpha,d^\sigma}$, and by Proposition 10.3 this is $\eta^{-v}S^{\pi}_{\sigma\alpha,d^\sigma}$ with $v$ the exponent of $\sigma(\alpha)z + d^\sigma(z) = \sigma(w)$, which equals $v(w)$. Norms by Lemma 10.1. If $d(uz) = u\,d(z)$, then $d^\sigma(uz) = \sigma(d(\sigma^{-1}(u)\sigma^{-1}(z))) = \sigma(\sigma^{-1}(u)\,d(\sigma^{-1}z)) = u\,d^\sigma(z)$. The iterate formula is GP Theorem 3.2(2) with $\sigma^{-1}$ in place of $\sigma$ (the induction uses that $S_{\sigma\alpha}$ commutes with $U$ to pull out $\eta^{V_n}$). The Collatz statement is Theorem 8.6 with $\tau = \sigma$ ($\sigma$ fixes $U$ setwise, preserves odd elements, and $S_{\sigma\alpha}(z) \in U\sigma(S_\alpha(\sigma^{-1}z))$). For $\eta = 1$ the map is conjugate by the bijection $\sigma$, which maps cycles to cycles and units to units, so no finiteness is needed. $\square$
+
+So the factor $(\sigma(\pi)/\pi)^v = \eta^v$ is the change of generator of Proposition 10.3, and R8's decomposition (conjugation by $\sigma$ followed by a change of generator) is Propositions 10.2 and 10.3. This explains the three behaviours of RT 10.5 by one statement: $\eta = 1$ gives an exact conjugacy (Z, $\mathbb{Z}[\omega]$, $\mathbb{Z}[\phi]$); $\eta \ne 1$ gives the unit factor, harmless for commuting tables and fatal for the relation after one step otherwise ($\mathbb{Z}[i]$, $\mathbb{Z}[\sqrt{-2}]$, $\mathbb{Z}[\sqrt 2]$); and if $\sigma(P) \ne P$ (the split ring), Proposition 10.2 is an exact conjugacy between the family dividing by $\pi$ and the family dividing by $\sigma(\pi)$, which is RT 6.5 ($\sigma S_\theta\sigma = S_{\bar\theta}$, every count agreeing under $\alpha \mapsto \bar\alpha$), and there is no mirror inside one family.
+
+*Corollary 10.5 (families, R10).* Let $\mathrm{Aut}_P(R)$ be the automorphisms with $\sigma(P) = P$. For a commuting table, the maps obtained from $(\alpha, d)$ by rotations and by the automorphisms in $\mathrm{Aut}_P(R)$ form a family of at most $|U|\cdot|\mathrm{Aut}_P(R)|$ maps, all Collatz together (finite $U$); they induce at most $|\mathrm{Aut}_P(R)|$ maps on $R/U$, conjugate to each other. In quadratic rings with $\sigma(P) = P$ this is $2|U|$; in the split ring it is $|U|$, with the conjugate family dividing by the other prime.
+
+## 11. Forced fixed points
+
+*Theorem 11.1 (K1).* Assume (D), (P), (G), any $U$. Let $(\alpha, k, d)$ be a map, $k \ge 1$, $v \ge k$, $\varepsilon \in U$, $z$ odd, and suppose $\delta = (\varepsilon\pi^v - \alpha)z \in D$. Then $d(z) = \delta$ and $S(z) = \varepsilon z$. If $z \notin U$ and either $\varepsilon = 1$ or the table commutes with $U$, every iterate of $z$ is $\varepsilon^nz$, a non-unit, and the map is not Collatz on the odd elements.
+
+*Proof.* TH Lemma 5.1, with Lemma 3.1(3) for the cancellation: $\delta = d(z_0)$ and $\alpha z + \delta = \varepsilon\pi^vz$ give $\pi^k \mid \alpha(z_0 - z)$, so $z \equiv z_0$ and $d(z) = \delta$; then $S(z) = \varepsilon z$ since $\varepsilon z$ is odd. Under commuting (or $\varepsilon = 1$), $S^n(z) = \varepsilon^nz$, and $\varepsilon^nz \in U$ would make $z$ a unit. So no iterate of $z$ lies on a trivial cycle (for $\varepsilon$ of infinite order the orbit is not even periodic). $\square$
+
+*Corollary 11.2 (K2).* Under the same hypotheses, if $\eta = \varepsilon\pi^v - \alpha$ is a unit for some $v \ge k$ and the map is Collatz (with $\varepsilon = 1$ or a commuting table), every digit is a unit. (TH Corollary 5.2: for a digit $\delta$ put $z = \eta^{-1}\delta$, odd, and a unit iff $\delta$ is.)
+
+*Theorem 11.3 (Collatz-type version, RT 10.4).* Let $F$ be a fundamental domain for $U$ on odd elements (one element in each class $Uz$), $S_F$ a Collatz-type map at $\pi^k$ with table $d$ on the odd classes meeting $F$, $\eta = \varepsilon\pi^v - \alpha$ a unit for some $\varepsilon \in U$, $v \ge k$, and $c$ an odd class. If $z = \eta^{-1}d(c)$ is a non-unit lying in $F$, then $[z]$ is a fixed class other than $[1]$. The proof of RT 10.4 uses only (D), (P) and that $F$ is a fundamental domain; it holds for infinite $U$ (the cone of $\mathbb{Z}[\sqrt 2]$, RT 9.5).
+
+## 12. Smallest digits and ties
+
+*Proposition 12.1 (D1).* Assume (D), (P), (G) and a size $s : R \to \mathbb{N}$ with $s(uz) = s(z)$ for $u \in U$. If every odd class modulo $\pi^k$ has a unique element of least size, the table of these elements commutes with $U$. With (Gf) and $k > \kappa$, the number of commuting smallest-size tables is the product, over the $U$-orbits of odd classes, of the number of least elements of one class in the orbit.
+
+*Proof.* Multiplication by $u$ maps the class of $-\alpha z$ bijectively onto the class of $-\alpha uz$ and preserves $s$, so it maps least elements to least elements; with uniqueness, $d(uz) = u\,d(z)$. For the count, a commuting table is determined by its values on one class per orbit (Theorem 4.1), and the value there may be any least element, its unit multiples being least in the other classes of the orbit. $\square$
+
+*Proposition 12.2 (D2).* Let $R$ be a lattice in a Euclidean space with $s(z) = \|z\|^2$ ($\mathbb{Z}$, or an order in an imaginary quadratic field with $s = N$; or any order with the trace form $\sum_v n_v|z|_v^2$), and $\Lambda = \pi^kR$. The least elements of a class $x + \Lambda$ lie in the closed Voronoi cell $V = \{y : \|y\| \le \|y - \lambda\| \text{ for all } \lambda \in \Lambda\}$, and a class has two least elements only if they lie on the boundary of $V$.
+
+*Proof.* If $y$ is least, $y - \lambda$ is in the class, so $\|y\| \le \|y - \lambda\|$. If $y$ and $y' = y - \lambda$, $\lambda \ne 0$, are both least, then $\|y\| = \|y - \lambda\|$, so $y$ lies on the bisector of $0$ and $\lambda$, which meets $V$ only in its boundary. $\square$
+
+The two propositions combine only when the Euclidean size is invariant under $U$, which holds under (A1) ($|u| = 1$) and fails for an infinite $U$: in $\mathbb{Z}[\sqrt 2]$ the trace form is not invariant under $\varepsilon$, so smallest digits need not commute even without ties, and in any case no table commutes with all units (Section 4). The tie counts (D2, D3 for $\mathbb{Z}[i]$, D8 for $\mathbb{Z}[\omega]$, RT 5.1, 7.1 for $\mathbb{Z}[\sqrt{-2}]$, $\mathbb{Z}[\phi]$, none in $\mathbb{Z}[\theta]$) depend on the shape of the lattice $\pi^kR$ and are ring-specific.
+
+## 13. Arithmetic fundamental domains
+
+*Theorem 13.1.* Assume (D), (P), (Gf), let $m = \kappa + 1$ (with $\kappa$ as in Section 4 for $P = \pi R$), let $\bar U$ be the image of $U$ in $(R/\pi^m)^\times$ and $H$ a set of representatives of the cosets of $\bar U$ in $(R/\pi^m)^\times$, and put $\mathcal{P} = \{z \text{ odd} : z \bmod \pi^m \in H\}$.
+
+1. Every odd $z$ is $uf$ with $f \in \mathcal{P}$ and $u \in U$, both unique; $u$ depends only on $z \bmod \pi^m$. So $\mathcal{P}$ is a fundamental domain for $U$ on odd elements.
+2. Let $d$ be a Collatz-type table on $\mathcal{P}$ at $\pi^k$ (a digit for each odd class modulo $\pi^k$ meeting $\mathcal{P}$, in the class of $-\alpha f$). Its commuting extension $D(uf) = u\,d(f)$ depends only on $z \bmod \pi^{K}$, $K = \max(k, m)$, satisfies $\pi^k \mid \alpha z + D(z)$, commutes with $U$, and the map $L(z) = $ odd part of $\alpha z + D(z)$ induces $\bar S_{\mathcal{P}}$ on the odd classes of $R/U$.
+3. If $k \ge m$, restriction and commuting extension are inverse bijections between the commuting tables of the maps $(\alpha, k, D)$ and the Collatz-type tables on $\mathcal{P}$ at $\pi^k$, and $(\alpha, k, D)$ is a Collatz map on the odd elements of $R$ iff $S_{\mathcal{P}}$ is a Collatz map on $\mathcal{P}$ in Collatz's sense.
+
+*Proof.* (1) By Lemma 3.1(2) the odd classes modulo $\pi^m$ are $(R/\pi^m)^\times$. $U$ acts freely on them (Theorem 4.1 with $k = m > \kappa$; the proof of (3) iff (4) there uses only (D) and the valuation), so $u \mapsto \bar u$ is injective and $|\bar U| = |U|$. The class of $z$ lies in exactly one coset $\bar u_0 h$, $h \in H$; then $u_0^{-1}z \in \mathcal{P}$, and if $u^{-1}z \in \mathcal{P}$ then $\bar u^{-1}\bar z \in H$, so $\bar u = \bar u_0$ and $u = u_0$. (2) If $z \equiv z' \pmod{\pi^K}$, then $z \equiv z' \pmod{\pi^m}$, so $z = uf$ and $z' = uf'$ with the same $u$, and $f \equiv f' \pmod{\pi^k}$ (multiply by $u^{-1}$), so $D(z) = u\,d(f) = u\,d(f') = D(z')$. $D(uf) = u\,d(f) \equiv -u\alpha f = -\alpha z \pmod{\pi^k}$. $D(u'z) = D(u'uf) = u'u\,d(f) = u'D(z)$. The odd part of $\alpha(uf) + D(uf) = u(\alpha f + d(f))$ is $u$ times the odd part of $\alpha f + d(f)$, an associate of $S_{\mathcal{P}}(f)$. (3) For $k \ge m$, $K = k$ and $(\alpha, k, D)$ is a map of our form commuting with $U$; conversely a commuting table restricts to a table on the classes meeting $\mathcal{P}$, and the two operations are inverse (a commuting table is determined by its values on $\mathcal{P}$, by (1)). The classes modulo $\pi^k$ meeting $\mathcal{P}$ form a transversal of the $U$-orbits of odd classes, which is the parametrization of Theorem 4.1. By (2) both maps induce $\bar S_{\mathcal{P}}$, and by Theorem 8.2 the commuting map is Collatz on $R$ iff its induced map is Collatz on $R/U$, which is the Collatz property of $S_{\mathcal{P}}$. $\square$
+
+So for $k \ge \kappa + 1$ the count of Collatz-type maps on $\mathcal{P}$ equals the count of commuting Barina-type Collatz maps table by table, in every ring with (D), (P), (Gf); the seven agreements of RT 10.6 and FD Proposition 4.4 are instances. For $k < m$, (2) shows that the $\mathcal{P}$-maps are commuting maps with a table modulo $\pi^m$ but only $\pi^k \mid \alpha z + D(z)$, not maps of our form at $\pi^k$; since $\mathcal{P}$ lies in fixed classes modulo $\pi^m$, $v(\alpha f + d(f))$ is no longer geometric from $k$ on (FD 5, RT 5.4 and 7.4), which is why the counts and the window differ there. With an infinite $U$ there is no arithmetic fundamental domain: a union of classes modulo $\pi^m$ is invariant under the infinitely many units $\equiv 1 \pmod{\pi^m}$ (RT 9.1).
+
+## 14. Cycle conditions
+
+*Theorem 14.1 (cycle equation).* Assume (D), (P). Let $z_0, \dots, z_{n-1}$ be odd with $\alpha z_j + d_j = \pi^{v_j}z_{j+1}$ ($d_j = d(z_j)$), $z_n = \varepsilon z_0$ with $\varepsilon \in U$, $s_j = v_0 + \dots + v_{j-1}$ and $V = s_n$. Then
+$$z_0(\varepsilon\pi^V - \alpha^n) = \sum_{j=0}^{n-1}\alpha^{n-1-j}\pi^{s_j}d_j, \qquad \prod_{j=0}^{n-1}\Big(1 + \frac{d_j}{\alpha z_j}\Big) = \frac{\varepsilon\pi^V}{\alpha^n}$$
+(the second in the field of fractions, when all $z_j \ne 0$).
+
+*Proof.* By induction, $\pi^{s_m}z_m = \alpha^mz_0 + \sum_{j<m}\alpha^{m-1-j}\pi^{s_j}d_j$: the step is $\pi^{s_{m+1}}z_{m+1} = \pi^{s_m}(\alpha z_m + d_m)$. Put $m = n$. For the product, $\alpha z_j + d_j = \pi^{v_j}z_{j+1}$ gives $\prod_j(\alpha + d_j/z_j) = \pi^V z_n/z_0 = \varepsilon\pi^V$; divide by $\alpha^n$. $\square$
+
+*Corollary 14.2 (one condition per place).* Under (O), let $v$ be an archimedean place, $\delta_v = \max_j|d_j|_v$, and suppose $|z_j|_v \ge M$ for all $j$. Then
+$$\Big|\frac{\varepsilon\pi^V}{\alpha^n} - 1\Big|_v \le \Big(1 + \frac{\delta_v}{|\alpha|_vM}\Big)^n - 1 \le \exp\Big(\frac{n\delta_v}{|\alpha|_vM}\Big) - 1.$$
+
+*Proof.* $|\prod(1 + x_j) - 1| \le \prod(1 + |x_j|) - 1$, by expanding the product. $\square$
+
+So a cycle whose elements are large at the place $v$ (relative to $n\delta_v/|\alpha|_v$) has $\varepsilon\pi^V/\alpha^n$ close to $1$ at $v$. At a complex place that is two real conditions, size $|\pi|_v^V \approx |\alpha|_v^n$ and angle $\arg\varepsilon + V\arg\pi - n\arg\alpha \approx 0 \pmod{2\pi}$; at a real place, size and the exact sign condition that $\sigma_v(\varepsilon\pi^V\alpha^{-n}) > 0$. Under (A1) there is one place: size and angle (imaginary quadratic), or size and sign ($\mathbb{Z}$). For cycles up to units ($\varepsilon$ free in $U$, maps commuting with $U$) the angle is taken modulo $2\pi/|U|$ when $U$ is the group of roots of unity of an imaginary quadratic ring ($90^\circ$ in $\mathbb{Z}[i]$, $180^\circ$ in $\mathbb{Z}[\sqrt{-2}]$, $\mathbb{Z}[\theta]$, $\mathbb{Z}[\phi]$, $60^\circ$ in $\mathbb{Z}[\omega]$), and the sign is absorbed by $-1$. With an infinite unit group of rank $r$, $\varepsilon$ ranges over a lattice in the log-embedding, and the $r + 1$ size conditions reduce to the norm condition $N(\alpha)^n \approx q^V$ plus $r$ conditions modulo that lattice, as in the $\mathbb{Z}[\sqrt 2]$ row of RT 11. These are the counts of RT 11, now derived.
+
+*Proposition 14.3 (rational multipliers in imaginary quadratic rings).* Assume (A1) with $K$ imaginary quadratic, complex conjugation $c$, and $\alpha \in \mathbb{Z}$. The angle condition reads $V\arg\pi + \arg\varepsilon \equiv 0 \pmod \pi$. It is a congruence condition on $V$ (no condition on the size of $\arg$) iff $\arg\pi$ is a rational multiple of $\pi$, iff $c(P) = P$, that is iff the rational prime under $P$ is inert or ramified; when it splits, $\arg\pi/\pi$ is irrational and the angle condition is a genuine second real condition.
+
+*Proof.* $\arg\pi \in \pi\mathbb{Q}$ iff $(\pi/c(\pi))^m = 1$ for some $m \ge 1$, since $\pi/c(\pi) = e^{2i\arg\pi}$. If $c(P) = P$, $c(\pi) = \eta\pi$ with $\eta$ a unit, of absolute value $1$, hence a root of unity, so $\pi/c(\pi) = \eta^{-1}$ is one. If $\pi/c(\pi)$ is a root of unity it lies in $R$ (an algebraic integer of $K$), so $c(\pi) \mid \pi$ and $c(\pi)$, $\pi$ are associates, so $c(P) = P$. $\square$
+
+This is the irrationality of $\arg\theta$ (RT 6.5) as an instance, and the reason the multiplier $5$ behaves differently only in the split ring (RT 11). The heuristic count E (M6) was derived for $q = 2$ and $|U| = 4$ and is not generalized here.

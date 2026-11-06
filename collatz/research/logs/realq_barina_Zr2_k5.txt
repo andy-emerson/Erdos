@@ -1,0 +1,21 @@
+# Zr2, modulus pi^5 (pi = r), Barina-type maps read literally on R; kappa(+-1) = 2; filter |N| <= 3000 then 30000 (box starts), then units +-eps^n (|n| <= 40) and 200 random starts near 2^50
+
+alpha=7-r |N|=47 D=(-0.518,+0.073) [control (expands in an embedding)] tables C (3004, 3004 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'zero': 164, 'other cycle': 2154, 'escape': 686}
+
+alpha=7-r |N|=47 D=(-0.518,+0.073) [control (expands in an embedding)] tables N (3016, 6 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1229, 'other cycle': 1787}
+
+alpha=7+r |N|=47 D=(+0.073,-0.518) [control (expands in an embedding)] tables C (3004, 3004 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1218, 'other cycle': 1732, 'zero': 54}
+
+alpha=7+r |N|=47 D=(+0.073,-0.518) [control (expands in an embedding)] tables N (3016, 9 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'escape': 1207, 'other cycle': 1809}
+
+alpha=1+5r |N|=49 D=(+0.013,-0.398) [control (expands in an embedding)] tables C (3004, 3004 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 2780, 'escape': 209, 'zero': 15}
+
+alpha=1+5r |N|=49 D=(+0.013,-0.398) [control (expands in an embedding)] tables N (3016, 11 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 2788, 'escape': 228}
+
+alpha=7 |N|=49 D=(-0.193,-0.193) [per-embedding window] tables C (3004, 3004 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 3004}
+
+alpha=7 |N|=49 D=(-0.193,-0.193) [per-embedding window] tables N (3016, 5 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 3014, 'escape': 2}
+
+alpha=-1+5r |N|=49 D=(-0.398,+0.013) [control (expands in an embedding)] tables C (3004, 3004 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 2858, 'escape': 68, 'cap': 2, 'zero': 76}
+
+alpha=-1+5r |N|=49 D=(-0.398,+0.013) [control (expands in an embedding)] tables N (3016, 8 commute with -1): pass 3000: 0, pass 30000: 0; failures at 3000: {'other cycle': 2861, 'escape': 155}

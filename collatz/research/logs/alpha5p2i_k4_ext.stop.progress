@@ -49,3 +49,19 @@
 2026-11-06 13:56:39 start alpha5p2i_k4.rule (7600000000,130000000000] chunk 1000000000 jobs 2: 123 chunks to do, 46 already logged
 13:57:40 done (8600000000,9600000000]  0.8%  6.38e+06 starts/s  elapsed 62 s  ETA 7468 s  bad chunks 0
 13:57:42 done (7600000000,8600000000]  1.6%  1.25e+07 starts/s  elapsed 63 s  ETA 3791 s  bad chunks 0
+13:58:45 done (9600000000,10600000000]  2.5%  9.31e+06 starts/s  elapsed 126 s  ETA 5034 s  bad chunks 0
+13:58:46 done (10600000000,11600000000]  3.3%  1.23e+07 starts/s  elapsed 128 s  ETA 3779 s  bad chunks 0
+13:59:49 done (11600000000,12600000000]  4.1%  1.03e+07 starts/s  elapsed 190 s  ETA 4461 s  bad chunks 0
+13:59:50 done (12600000000,13600000000]  4.9%  1.23e+07 starts/s  elapsed 191 s  ETA 3707 s  bad chunks 0
+14:00:52 done (13600000000,14600000000]  5.7%  1.09e+07 starts/s  elapsed 253 s  ETA 4174 s  bad chunks 0
+14:00:54 done (14600000000,15600000000]  6.5%  1.23e+07 starts/s  elapsed 255 s  ETA 3645 s  bad chunks 0
+14:01:55 done (15600000000,16600000000]  7.4%  1.12e+07 starts/s  elapsed 316 s  ETA 3984 s  bad chunks 0
+14:01:58 done (16600000000,17600000000]  8.2%  1.23e+07 starts/s  elapsed 319 s  ETA 3590 s  bad chunks 0
+14:03:23 done (17600000000,18600000000]  9.0%  1.07e+07 starts/s  elapsed 405 s  ETA 4098 s  bad chunks 0
+14:03:29 done (18600000000,19600000000]  9.8%  1.15e+07 starts/s  elapsed 411 s  ETA 3779 s  bad chunks 0
+14:05:23 done (19600000000,20600000000]  10.6%  9.74e+06 starts/s  elapsed 524 s  ETA 4412 s  bad chunks 0
+14:05:30 done (20600000000,21600000000]  11.4%  1.04e+07 starts/s  elapsed 531 s  ETA 4111 s  bad chunks 0
+14:07:22 done (21600000000,22600000000]  12.3%  9.16e+06 starts/s  elapsed 643 s  ETA 4604 s  bad chunks 0
+14:07:30 done (22600000000,23600000000]  13.1%  9.64e+06 starts/s  elapsed 652 s  ETA 4335 s  bad chunks 0
+14:09:23 done (23600000000,24600000000]  13.9%  8.73e+06 starts/s  elapsed 765 s  ETA 4740 s  bad chunks 0
+14:09:28 done (24600000000,25600000000]  14.7%  9.19e+06 starts/s  elapsed 769 s  ETA 4460 s  bad chunks 0

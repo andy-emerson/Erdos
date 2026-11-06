@@ -1,0 +1,28 @@
+# cyclecircuit.py: Steiner-type 1-cycles, certarith P = 320 bits
+digit table of the 5+2i map: unique digit for each odd class mod 4 (checked)
+
+7x+-1: theta = log2 7, 45 certified partial quotients, last convergent denominator 4.126e+25
+  |V - n theta| <= 16/3 * 4^(-n) / ln 2 for a 1-cycle with n >= 2 (Section 5)
+  Laurent (17.9, 30/D): n <= N0 = 22614
+  Matveev (Cor. 2.3, t = 2, D = 1): constant 1.0383e+09, n <= N0 = 19261278125
+  N0 = 22614 < q_8 = 88349: |n theta - V| >= |q_7 theta - p_7| >= 1.1021e-05 for 0 < n <= N0, so n <= N1 = 10
+  N0 = 19261278125 < q_19 = 28354739801: |n theta - V| >= |q_18 theta - p_18| >= 3.0417e-11 for 0 < n <= N0, so n <= N1 = 19
+
+5+2i (size): theta = log2 29, 45 certified partial quotients, last convergent denominator 4.904e+25
+  |V - n theta| <= 74 * 4^(-n) / ln 2 for a 1-cycle with n >= 4 (Section 5)
+  Laurent (17.9, 30/D): n <= N0 = 39134
+  Matveev (Cor. 2.3, t = 2, D = 1): constant 1.7967e+09, n <= N0 = 34806290681
+  N0 = 39134 < q_8 = 51986: |n theta - V| >= |q_7 theta - p_7| >= 1.5405e-05 for 0 < n <= N0, so n <= N1 = 12
+  N0 = 34806290681 < q_16 = 56346954291: |n theta - V| >= |q_15 theta - p_15| >= 1.7711e-11 for 0 < n <= N0, so n <= N1 = 22
+
+7x+-1: exhaustive search of 1-cycles with n <= 60 (16 (n, V, d, e) tests)
+  n = 1, V = 3, d = +1, e = +1, x0 = 1, genuine 1-cycle: True
+  n = 1, V = 3, d = +1, e = -1, x0 = -1, genuine 1-cycle: True
+  n = 1, V = 3, d = -1, e = +1, x0 = 1, genuine 1-cycle: True
+  n = 1, V = 3, d = -1, e = -1, x0 = -1, genuine 1-cycle: True
+
+5+2i: exhaustive search of 1-cycles up to units with n <= 40 (226560 (n, V, eps, d, e) tests)
+  n = 1, V = 5, eps = (-1, 0), d = (1, 0), e = (2, 1), z0 = (0, -1), genuine 1-cycle: True
+  n = 1, V = 5, eps = (-1, 0), d = (1, 0), e = (-1, 2), z0 = (1, 0), genuine 1-cycle: True
+  n = 1, V = 5, eps = (-1, 0), d = (1, 0), e = (-2, -1), z0 = (0, 1), genuine 1-cycle: True
+  n = 1, V = 5, eps = (-1, 0), d = (1, 0), e = (1, -2), z0 = (-1, 0), genuine 1-cycle: True

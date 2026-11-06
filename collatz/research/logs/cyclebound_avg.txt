@@ -1,0 +1,7 @@
+# cyclebound_avg.py: certified maximum cycle means of 1/u (averaged refinement)
+3x+1   bound 2.361e+21  eta = 1/512, U = 32: bins 1778, edge ranges 6382, iterations 729, 0.9 s
+        certified: mean of 1/u over any cycle <= c = 817115346562/2^40 = 0.743162   (graph value >= 0.743162, float)
+        best closed walk found: 12 bins, mean weight 0.743162, u from 1.0000 to 1.8854
+3x+1   bound 2.361e+21  eta = 1/2048, U = 32: bins 7101, edge ranges 25463, iterations 6000, 17.1 s
+        certified: mean of 1/u over any cycle <= c = 800842536056/2^40 = 0.728362   (graph value >= 0.728361, float)
+        best closed walk found: 53 bins, mean weight 0.728362, u from 1.0000 to 1.9691

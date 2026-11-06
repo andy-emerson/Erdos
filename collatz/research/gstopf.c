@@ -21,7 +21,11 @@
  * A start counts as dropping only on an exact comparison N(z_t) < N(z_0); a return to an associate
  * of the start with equal norm is reported as "cycle-min" (as in gstop); cap or escape is FAIL.
  *
- * usage: gstopf rulefile B1 B2 [cap=10^7]     (cap in raw T steps)
+ * With the fifth argument "all" the starts are all odd z with B1 < N(z) <= B2 in all four
+ * quadrants and a cycle is a return to z itself, as in gstopall.c (for maps that need not commute
+ * with the units; soundness catalog V2).
+ *
+ * usage: gstopf rulefile B1 B2 [cap=10^7] [all]     (cap in raw T steps)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,6 +79,7 @@ int main(int argc, char **argv){
     ODD[r] = odd; AL[r][0] = a1; AL[r][1] = a2; BE[r][0] = b1; BE[r][1] = b2; }
   fclose(f);
   ll B1 = atoll(argv[2]), B2 = atoll(argv[3]); ll cap = argc > 4 ? atoll(argv[4]) : 10000000LL;
+  int allq = argc > 5 && argv[5][0] == 'a'; int nq = allq ? 4 : 1;
   ll amax = (ll)floor(sqrt((double)B2)); while (amax * amax > B2) amax--; while ((amax + 1) * (amax + 1) <= B2) amax++;
   ll n = 0, fails = 0, cycles = 0, maxs = 0, msa = 0, msb = 0; double maxe = 0; ll mea = 0, meb = 0; double sums = 0;
   const int M1 = MOD - 1;
@@ -84,8 +89,10 @@ int main(int argc, char **argv){
     ll bmin = 0; ll lo = B1 - a * a; if (lo >= 0) { bmin = (ll)floor(sqrt((double)lo)); while (bmin * bmin <= lo) bmin++; while (bmin > 0 && (bmin - 1) * (bmin - 1) > lo) bmin--; }
     for (ll b = bmin; b <= bmax; b++) {
       if (((a + b) & 1) == 0) continue;
+      for (int q = 0; q < nq; q++) {
+      ll a0 = q == 0 ? a : q == 1 ? -b : q == 2 ? -a : b, b0 = q == 0 ? b : q == 1 ? a : q == 2 ? -b : -a;
       n++;
-      L n0 = (L)a * a + (L)b * b; ll x = a, y = b; ll s = 0; double mx = 0; int ok = 0;
+      L n0 = (L)a * a + (L)b * b; ll x = a0, y = b0; ll s = 0; double mx = 0; int ok = 0;
       while (s < cap) {
         /* x + yi is odd here, |x|, |y| < LIM */
         int r = (int)((x & M1) * MOD + (y & M1));
@@ -96,7 +103,7 @@ int main(int argc, char **argv){
         if (x < LIM && x > -LIM && y < LIM && y > -LIM) {
           L nn = (L)x * x + (L)y * y;
           if (nn < n0) { int k = 0; while ((nn << (k + 1)) < n0) k++; s -= k; ok = 1; break; }
-          if (nn == n0 && ((x == a && y == b) || (x == -b && y == a) || (x == -a && y == -b) || (x == b && y == -a))) { ok = 2; break; }
+          if (nn == n0 && (allq ? (x == a0 && y == b0) : ((x == a && y == b) || (x == -b && y == a) || (x == -a && y == -b) || (x == b && y == -a)))) { ok = 2; break; }
           continue; }
         /* wide path */
         L X = x, Y = y; int esc = 0;
@@ -113,12 +120,13 @@ int main(int argc, char **argv){
         x = (ll)X; y = (ll)Y;
         { L nn = (L)x * x + (L)y * y;
           if (nn < n0) { int k = 0; while ((nn << (k + 1)) < n0) k++; s -= k; ok = 1; break; }
-          if (nn == n0 && ((x == a && y == b) || (x == -b && y == a) || (x == -a && y == -b) || (x == b && y == -a))) { ok = 2; break; } }
+          if (nn == n0 && (allq ? (x == a0 && y == b0) : ((x == a && y == b) || (x == -b && y == a) || (x == -a && y == -b) || (x == b && y == -a)))) { ok = 2; break; } }
       }
-      if (ok == 2) { cycles++; printf("cycle-min %lld %lld steps %lld\n", a, b, s); continue; }
-      if (!ok) { fails++; printf("FAIL %lld %lld steps %lld\n", a, b, s); fflush(stdout); continue; }
-      sums += s; if (s > maxs) { maxs = s; msa = a; msb = b; }
-      double e = log2(mx / (double)n0); if (e > maxe) { maxe = e; mea = a; meb = b; }
+      if (ok == 2) { cycles++; printf("cycle-min %lld %lld steps %lld\n", a0, b0, s); continue; }
+      if (!ok) { fails++; printf("FAIL %lld %lld steps %lld\n", a0, b0, s); fflush(stdout); continue; }
+      sums += s; if (s > maxs) { maxs = s; msa = a0; msb = b0; }
+      double e = log2(mx / (double)n0); if (e > maxe) { maxe = e; mea = a0; meb = b0; }
+      }
     }
   }
   printf("range (%lld,%lld] starts %lld fails %lld cycles %lld maxstop %lld at %lld %lld meanstop %.2f maxexc_log2 %.2f at %lld %lld cpu %.1f\n",

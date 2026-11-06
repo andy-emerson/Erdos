@@ -176,7 +176,8 @@ def cand_lists(R, alpha, k, nsmall, classes=None):
         L = bc[j]
         m = R.size(L[0])
         least = [z for z in L if R.size(z) == m]
-        out[i] = (L[:max(nsmall, len(least))], least)
+        cut = R.size(L[nsmall - 1])          # all digits of size <= the size of the nsmall-th (ties at the cut kept)
+        out[i] = ([z for z in L if R.size(z) <= cut], least)
     return out
 
 
@@ -355,7 +356,15 @@ def cmd_literal(R, k, B, nsmall=1, maxtables=0):
         if ok:
             ntc = int(l.split('trivial cycles ')[1].split(':')[0]); cnt[(com, ntc)] += 1
         s1 = RR.apply_S(R, a, tab, k, (1, 0))[0]
-        lines.append(f"{tag} alpha={Q.fmt(R, a)} commuting={com} S(1)={Q.fmt(R, s1)} digits {describe(R, ch, oc, k)} | {l.split(tag, 1)[1].strip()}")
+        pred = ''
+        if com and ok:
+            # period p of [1] and eps = S^p(1); predicted number of trivial cycles |U|/ord(eps) (A6, T2, T3)
+            x = s1; p = 1
+            while not R.is_unit(x) and p < 10000: x = RR.apply_S(R, a, tab, k, x)[0]; p += 1
+            pr = len(R.U) // R.unit_order(x)
+            cnt[('pred_ok', pr == ntc)] += 1
+            pred = f" [p={p} eps={Q.fmt(R, x)} predicted {pr}{' OK' if pr == ntc else ' MISMATCH'}]"
+        lines.append(f"{tag} alpha={Q.fmt(R, a)} commuting={com} S(1)={Q.fmt(R, s1)} digits {describe(R, ch, oc, k)} | {l.split(tag, 1)[1].strip()}{pred}")
     lines.insert(1, f"maps {len(out)}, Collatz on R (literal cycles) {npass}; (commuting, trivial-cycle count) among them: {dict(cnt)}")
     log(R, f'literal_k{k}_n{nsmall}', lines)
 

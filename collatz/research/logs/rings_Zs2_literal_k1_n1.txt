@@ -1,0 +1,10 @@
+# literal Barina-type maps on Zs2 at pi^1: all associates, digits among the 1 smallest per class, every odd z with |N| <= 100000
+maps 8, Collatz on R (literal cycles) 4; (commuting, trivial-cycle count) among them: {(False, 1): 4}
+a1+s_0 alpha=1+s commuting=False S(1)=1-s digits [1]->1 | FAIL cycle len 8 min 7-4 (norm 81) from start -1-4 trivial so far 2
+a1+s_1 alpha=1+s commuting=False S(1)=1 digits [1]->-1 | FAIL cycle len 8 min -7+4 (norm 81) from start 1+4 trivial so far 2
+a-1-s_0 alpha=-1-s commuting=False S(1)=-1 digits [1]->1 | PASS trivial cycles 1: {len 3 units: -1+0 1+0} | max odd steps 91
+a-1-s_1 alpha=-1-s commuting=False S(1)=-1+s digits [1]->-1 | PASS trivial cycles 1: {len 3 units: -1+0 1+0} | max odd steps 91
+a1-s_0 alpha=1-s commuting=False S(1)=-1-s digits [1]->1 | PASS trivial cycles 1: {len 2 units: 1+0} | max odd steps 93
+a1-s_1 alpha=1-s commuting=False S(1)=-1 digits [1]->-1 | PASS trivial cycles 1: {len 2 units: -1+0} | max odd steps 93
+a-1+s_0 alpha=-1+s commuting=False S(1)=1 digits [1]->1 | FAIL cycle len 2 min -1+2 (norm 9) from start -1+2 trivial so far 1
+a-1+s_1 alpha=-1+s commuting=False S(1)=1+s digits [1]->-1 | FAIL cycle len 2 min 1-2 (norm 9) from start -1-2 trivial so far 1

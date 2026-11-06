@@ -1,0 +1,19 @@
+# forced fixed points in Zs2 at pi^4: units eta = eps pi^v - alpha, v = k..k+4 (K1, K2). eps = 1 applies to every map; eps != 1 only to maps commuting with the units
+alpha=3+2s (N 17): none
+alpha=-3-2s (N 17): none
+alpha=3-2s (N 17): none
+alpha=-3+2s (N 17): none
+alpha=1+3s (N 19): none
+alpha=-1-3s (N 19): none
+alpha=1-3s (N 19): none
+alpha=-1+3s (N 19): none
+alpha=5 (N 25): eps=1 v=4 eta=-1
+alpha=-5 (N 25): eps=-1 v=4 eta=1
+alpha=3+3s (N 27): none
+alpha=-3-3s (N 27): none
+alpha=3-3s (N 27): none
+alpha=-3+3s (N 27): none
+alpha=5+s (N 27): none
+alpha=-5-s (N 27): none
+alpha=5-s (N 27): none
+alpha=-5+s (N 27): none

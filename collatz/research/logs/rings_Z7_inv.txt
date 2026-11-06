@@ -1,0 +1,13 @@
+# ring Z7: t=1 n=2 (tau^2 = t tau - n), pi = t, q = 2
+factorization of 2: 2 = pi * (1-t), the cofactor is prime and not an associate of pi: split, e = 1, f = 1
+units: ['1', '-1'], |U| = 2, orders [1, 2]
+kappa = max v_pi(u - 1) = 1 (v by unit: [('-1', 1)])
+U acts freely on odd classes mod pi^K from K = 2
+conjugation: sigma(pi) = 1-t; sigma(pi) is not a unit times pi (sigma moves the prime)
+lattice: tau = 0.5000+1.3229j; norm form a^2 + 1ab + 2b^2, discriminant -7
+smallest digits by modulus: K, odd classes, tied classes (size: count), smallest tables, commuting smallest tables, orbits of U
+  K=1: 1 odd classes, 1 tied {(1, 2): 1}, 2 smallest tables, 0 commuting, 1 orbits; least elements [1]
+  K=2: 2 odd classes, 0 tied {}, 1 smallest tables, 1 commuting, 1 orbits; least elements [1]
+  K=3: 4 odd classes, 0 tied {}, 1 smallest tables, 1 commuting, 2 orbits; least elements [1, 2]
+  K=4: 8 odd classes, 0 tied {}, 1 smallest tables, 1 commuting, 4 orbits; least elements [1, 2, 4, 8]
+  K=5: 16 odd classes, 0 tied {}, 1 smallest tables, 1 commuting, 8 orbits; least elements [1, 2, 4, 7, 8, 11, 16]

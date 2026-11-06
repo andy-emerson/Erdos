@@ -1,0 +1,13 @@
+# Barina-type maps on Zs2 at pi^4: commuting tables, each orbit digit among the 1 smallest; checked on R/U through F=R, full classification to |N| <= 100000
+maps tested 18; Collatz at 100000: 2; failures {'cycle': 16}
+  alpha 3+2s (|N| 17): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 3-2s (|N| 17): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 1+3s (|N| 19): tables 2 (smallest 2), Collatz 1 (smallest 1)
+  alpha 1-3s (|N| 19): tables 2 (smallest 2), Collatz 1 (smallest 1)
+  alpha 5 (|N| 25): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 3+3s (|N| 27): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 3-3s (|N| 27): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 5+s (|N| 27): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 5-s (|N| 27): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  PASS a1+3s_1 alpha=1+3s smallest=True total digit size 32 table [1]->-1+s, [1+s]->1, [3+s]->-1+2s, [1+2s]->-1-s | cycle of [1] len 1: 1+0 | max odd steps to cycle 27
+  PASS a1-3s_1 alpha=1-3s smallest=True total digit size 32 table [1]->-1-s, [1+s]->1+2s, [3+s]->-1, [1+2s]->-1+s | cycle of [1] len 1: 1+0 | max odd steps to cycle 27

@@ -1,0 +1,50 @@
+# literal Barina-type maps on Zs2 at pi^1: all associates, digits among the 12 smallest per class, every odd z with |N| <= 100000
+maps 48, Collatz on R (literal cycles) 4; (commuting, trivial-cycle count) among them: {(False, 1): 4}
+a1+s_0 alpha=1+s commuting=False S(1)=1-s digits [1]->1 | FAIL cycle len 8 min 7-4 (norm 81) from start -1-4 trivial so far 2
+a1+s_1 alpha=1+s commuting=False S(1)=1 digits [1]->-1 | FAIL cycle len 8 min -7+4 (norm 81) from start 1+4 trivial so far 2
+a1+s_2 alpha=1+s commuting=False S(1)=0 digits [1]->-1-s | FAIL cycle len 1 min 1+1 (norm 3) from start -1+0 trivial so far 0
+a1+s_3 alpha=1+s commuting=False S(1)=-1 digits [1]->1-s | FAIL cycle len 2 min 1-1 (norm 3) from start 1-1 trivial so far 1
+a1+s_4 alpha=1+s commuting=False S(1)=-1-s digits [1]->1+s | FAIL code 2 start -1+0
+a1+s_5 alpha=1+s commuting=False S(1)=-1 digits [1]->-1+s | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 1
+a1+s_6 alpha=1+s commuting=False S(1)=-1 digits [1]->-1-2s | FAIL cycle len 2 min -1+1 (norm 3) from start 1-1 trivial so far 1
+a1+s_7 alpha=1+s commuting=False S(1)=-1-s digits [1]->1-2s | FAIL cycle len 2 min 1-2 (norm 9) from start -1+0 trivial so far 0
+a1+s_8 alpha=1+s commuting=False S(1)=1-2s digits [1]->3 | FAIL cycle len 2 min -1-1 (norm 3) from start -1+0 trivial so far 0
+a1+s_9 alpha=1+s commuting=False S(1)=3-s digits [1]->1+2s | FAIL cycle len 2 min -1+1 (norm 3) from start 1-1 trivial so far 1
+a1+s_10 alpha=1+s commuting=False S(1)=3 digits [1]->-1+2s | FAIL cycle len 1 min 1-2 (norm 9) from start -1+0 trivial so far 0
+a1+s_11 alpha=1+s commuting=False S(1)=1+s digits [1]->-3 | FAIL cycle len 2 min -1-1 (norm 3) from start -1+0 trivial so far 0
+a-1-s_0 alpha=-1-s commuting=False S(1)=-1 digits [1]->1 | PASS trivial cycles 1: {len 3 units: -1+0 1+0} | max odd steps 91
+a-1-s_1 alpha=-1-s commuting=False S(1)=-1+s digits [1]->-1 | PASS trivial cycles 1: {len 3 units: -1+0 1+0} | max odd steps 91
+a-1-s_2 alpha=-1-s commuting=False S(1)=1+s digits [1]->-1-s | FAIL code 2 start -1+0
+a-1-s_3 alpha=-1-s commuting=False S(1)=1 digits [1]->1-s | FAIL cycle len 3 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a-1-s_4 alpha=-1-s commuting=False S(1)=0 digits [1]->1+s | FAIL cycle len 3 min 1+1 (norm 3) from start -1+0 trivial so far 0
+a-1-s_5 alpha=-1-s commuting=False S(1)=1 digits [1]->-1+s | FAIL cycle len 3 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a-1-s_6 alpha=-1-s commuting=False S(1)=-3+s digits [1]->-1-2s | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a-1-s_7 alpha=-1-s commuting=False S(1)=-3 digits [1]->1-2s | FAIL code 2 start -1+0
+a-1-s_8 alpha=-1-s commuting=False S(1)=-1-s digits [1]->3 | FAIL cycle len 1 min 1+1 (norm 3) from start -1+0 trivial so far 0
+a-1-s_9 alpha=-1-s commuting=False S(1)=1 digits [1]->1+2s | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a-1-s_10 alpha=-1-s commuting=False S(1)=1+s digits [1]->-1+2s | FAIL cycle len 3 min 1-2 (norm 9) from start -1+0 trivial so far 0
+a-1-s_11 alpha=-1-s commuting=False S(1)=-1+2s digits [1]->-3 | FAIL cycle len 1 min 1+1 (norm 3) from start -1+0 trivial so far 0
+a1-s_0 alpha=1-s commuting=False S(1)=-1-s digits [1]->1 | PASS trivial cycles 1: {len 2 units: 1+0} | max odd steps 93
+a1-s_1 alpha=1-s commuting=False S(1)=-1 digits [1]->-1 | PASS trivial cycles 1: {len 2 units: -1+0} | max odd steps 93
+a1-s_2 alpha=1-s commuting=False S(1)=1 digits [1]->-1-s | FAIL cycle len 2 min -1-1 (norm 3) from start -1-1 trivial so far 1
+a1-s_3 alpha=1-s commuting=False S(1)=-1+s digits [1]->1-s | FAIL code 2 start -1+0
+a1-s_4 alpha=1-s commuting=False S(1)=-1 digits [1]->1+s | FAIL cycle len 2 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a1-s_5 alpha=1-s commuting=False S(1)=0 digits [1]->-1+s | FAIL cycle len 2 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a1-s_6 alpha=1-s commuting=False S(1)=-3 digits [1]->-1-2s | FAIL code 2 start -1+0
+a1-s_7 alpha=1-s commuting=False S(1)=-3-s digits [1]->1-2s | FAIL cycle len 1 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a1-s_8 alpha=1-s commuting=False S(1)=-1-2s digits [1]->3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a1-s_9 alpha=1-s commuting=False S(1)=1-s digits [1]->1+2s | FAIL cycle len 2 min 1+2 (norm 9) from start -1+0 trivial so far 0
+a1-s_10 alpha=1-s commuting=False S(1)=1 digits [1]->-1+2s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 1
+a1-s_11 alpha=1-s commuting=False S(1)=-1+s digits [1]->-3 | FAIL cycle len 1 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a-1+s_0 alpha=-1+s commuting=False S(1)=1 digits [1]->1 | FAIL cycle len 2 min -1+2 (norm 9) from start -1+2 trivial so far 1
+a-1+s_1 alpha=-1+s commuting=False S(1)=1+s digits [1]->-1 | FAIL cycle len 2 min 1-2 (norm 9) from start -1-2 trivial so far 1
+a-1+s_2 alpha=-1+s commuting=False S(1)=1 digits [1]->-1-s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 1
+a-1+s_3 alpha=-1+s commuting=False S(1)=0 digits [1]->1-s | FAIL cycle len 1 min 1-1 (norm 3) from start -1+0 trivial so far 0
+a-1+s_4 alpha=-1+s commuting=False S(1)=-1 digits [1]->1+s | FAIL cycle len 1 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a-1+s_5 alpha=-1+s commuting=False S(1)=1-s digits [1]->-1+s | FAIL code 2 start -1+0
+a-1+s_6 alpha=-1+s commuting=False S(1)=-1+s digits [1]->-1-2s | FAIL cycle len 1 min -1-2 (norm 9) from start -1+0 trivial so far 0
+a-1+s_7 alpha=-1+s commuting=False S(1)=-1 digits [1]->1-2s | FAIL cycle len 1 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a-1+s_8 alpha=-1+s commuting=False S(1)=1-s digits [1]->3 | FAIL cycle len 1 min -1+1 (norm 3) from start -1+0 trivial so far 0
+a-1+s_9 alpha=-1+s commuting=False S(1)=3 digits [1]->1+2s | FAIL cycle len 1 min 1+2 (norm 9) from start -1+0 trivial so far 0
+a-1+s_10 alpha=-1+s commuting=False S(1)=3+s digits [1]->-1+2s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 1
+a-1+s_11 alpha=-1+s commuting=False S(1)=1+2s digits [1]->-3 | FAIL cycle len 1 min 1-1 (norm 3) from start -1+0 trivial so far 0

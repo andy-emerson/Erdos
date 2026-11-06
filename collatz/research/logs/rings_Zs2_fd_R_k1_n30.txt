@@ -1,0 +1,6 @@
+# Collatz-type maps on Zs2, F=R , modulus pi^1 (table read mod pi^1), each digit among the 30 smallest; full classification to |N| <= 100000
+maps tested 68; Collatz at 100000: 2; failures {'cycle': 34, 'orbit of 1 escapes': 4, '1 not periodic': 28}
+  alpha 1+s (|N| 3): tables 34 (smallest 2), Collatz 1 (smallest 1)
+  alpha 1-s (|N| 3): tables 34 (smallest 2), Collatz 1 (smallest 1)
+  PASS a1+s_1 alpha=1+s smallest=True total digit size 1 table [1]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 89
+  PASS a1-s_1 alpha=1-s smallest=True total digit size 1 table [1]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 89

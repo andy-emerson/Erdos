@@ -1,0 +1,42 @@
+# literal Barina-type maps on Zs2 at pi^3: all associates, digits among the 1 smallest per class, every odd z with |N| <= 100000
+maps 40, Collatz on R (literal cycles) 18; (commuting, trivial-cycle count) among them: {(False, 1): 8, (True, 2): 4, ('pred_ok', True): 8, (True, 1): 4, (False, 2): 2}
+a1+2s_0 alpha=1+2s commuting=False S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1-s | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 20
+a1+2s_1 alpha=1+2s commuting=True S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1+s | FAIL cycle len 2 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a1+2s_2 alpha=1+2s commuting=True S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1-s | FAIL cycle len 2 min 1-1 (norm 3) from start -1-1 trivial so far 1
+a1+2s_3 alpha=1+2s commuting=False S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1+s | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 20
+a-1-2s_0 alpha=-1-2s commuting=False S(1)=1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1-s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a-1-2s_1 alpha=-1-2s commuting=True S(1)=1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1+s | FAIL cycle len 1 min -1+1 (norm 3) from start -1-1 trivial so far 2
+a-1-2s_2 alpha=-1-2s commuting=True S(1)=1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1-s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a-1-2s_3 alpha=-1-2s commuting=False S(1)=1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1+s | FAIL cycle len 1 min -1+1 (norm 3) from start -1-1 trivial so far 2
+a1-2s_0 alpha=1-2s commuting=False S(1)=1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1-s | FAIL cycle len 1 min -1+1 (norm 3) from start -1+1 trivial so far 2
+a1-2s_1 alpha=1-2s commuting=True S(1)=1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1+s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a1-2s_2 alpha=1-2s commuting=True S(1)=1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1-s | FAIL cycle len 1 min 1-1 (norm 3) from start 1-1 trivial so far 2
+a1-2s_3 alpha=1-2s commuting=False S(1)=1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1+s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a-1+2s_0 alpha=-1+2s commuting=False S(1)=-1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1-s | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 26
+a-1+2s_1 alpha=-1+2s commuting=True S(1)=-1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1+s | FAIL cycle len 2 min -1+1 (norm 3) from start 1-1 trivial so far 1
+a-1+2s_2 alpha=-1+2s commuting=True S(1)=-1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1-s | FAIL cycle len 2 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a-1+2s_3 alpha=-1+2s commuting=False S(1)=-1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1+s | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 26
+a3_0 alpha=3 commuting=False S(1)=1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1-s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a3_1 alpha=3 commuting=True S(1)=1 digits [1]->1, [3]->-1, [1+s]->1-s, [3+s]->-1+s | FAIL cycle len 1 min 1-1 (norm 3) from start -1-1 trivial so far 2
+a3_2 alpha=3 commuting=True S(1)=1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1-s | FAIL cycle len 1 min -1-1 (norm 3) from start -1-1 trivial so far 2
+a3_3 alpha=3 commuting=False S(1)=1 digits [1]->1, [3]->-1, [1+s]->1+s, [3+s]->-1+s | FAIL cycle len 1 min 1+1 (norm 3) from start -1-1 trivial so far 2
+a-3_0 alpha=-3 commuting=False S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1-s | FAIL cycle len 3 min -1-1 (norm 3) from start -1-1 trivial so far 1
+a-3_1 alpha=-3 commuting=True S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1-s, [3+s]->1+s | FAIL cycle len 2 min 1+1 (norm 3) from start -1-1 trivial so far 1
+a-3_2 alpha=-3 commuting=True S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1-s | FAIL cycle len 2 min -1+1 (norm 3) from start -1-1 trivial so far 1
+a-3_3 alpha=-3 commuting=False S(1)=-1 digits [1]->-1, [3]->1, [1+s]->-1+s, [3+s]->1+s | FAIL cycle len 3 min -1+1 (norm 3) from start -1-1 trivial so far 1
+a3+s_0 alpha=3+s commuting=False S(1)=1 digits [1]->1-s, [3]->-1-s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 1: {len 1 units: 1+0} | max odd steps 82
+a3+s_1 alpha=3+s commuting=True S(1)=1 digits [1]->1-s, [3]->-1+s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 1 units: 1+0} | max odd steps 54 [p=1 eps=1 predicted 2 OK]
+a3+s_2 alpha=3+s commuting=True S(1)=-1+s digits [1]->1+s, [3]->-1-s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 1: {len 6 units: 1+0 -1+0} | max odd steps 69 [p=3 eps=-1 predicted 1 OK]
+a3+s_3 alpha=3+s commuting=False S(1)=-1+s digits [1]->1+s, [3]->-1+s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 1: {len 1 units: -1+0} | max odd steps 82
+a-3-s_0 alpha=-3-s commuting=False S(1)=1-s digits [1]->-1-s, [3]->1-s, [1+s]->1, [3+s]->-1 | FAIL cycle len 7 min -3+0 (norm 9) from start -1-2 trivial so far 1
+a-3-s_1 alpha=-3-s commuting=True S(1)=1-s digits [1]->-1-s, [3]->1+s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 2: {len 3 units: -1+0} {len 3 units: 1+0} | max odd steps 69 [p=3 eps=1 predicted 2 OK]
+a-3-s_2 alpha=-3-s commuting=True S(1)=-1 digits [1]->-1+s, [3]->1-s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 54 [p=1 eps=-1 predicted 1 OK]
+a-3-s_3 alpha=-3-s commuting=False S(1)=-1 digits [1]->-1+s, [3]->1+s, [1+s]->1, [3+s]->-1 | FAIL cycle len 7 min 1-2 (norm 9) from start 1-2 trivial so far 1
+a3-s_0 alpha=3-s commuting=False S(1)=1+s digits [1]->1-s, [3]->-1-s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 3 units: 1+0} | max odd steps 53
+a3-s_1 alpha=3-s commuting=True S(1)=1+s digits [1]->1-s, [3]->-1+s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 2: {len 3 units: -1+0} {len 3 units: 1+0} | max odd steps 69 [p=3 eps=1 predicted 2 OK]
+a3-s_2 alpha=3-s commuting=True S(1)=1 digits [1]->1+s, [3]->-1-s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 2: {len 1 units: -1+0} {len 1 units: 1+0} | max odd steps 54 [p=1 eps=1 predicted 2 OK]
+a3-s_3 alpha=3-s commuting=False S(1)=1 digits [1]->1+s, [3]->-1+s, [1+s]->-1, [3+s]->1 | PASS trivial cycles 2: {len 3 units: -1+0} {len 1 units: 1+0} | max odd steps 53
+a-3+s_0 alpha=-3+s commuting=False S(1)=-1 digits [1]->-1-s, [3]->1-s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 1: {len 4 units: 1+0 -1+0} | max odd steps 50
+a-3+s_1 alpha=-3+s commuting=True S(1)=-1 digits [1]->-1-s, [3]->1+s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 1: {len 2 units: 1+0 -1+0} | max odd steps 54 [p=1 eps=-1 predicted 1 OK]
+a-3+s_2 alpha=-3+s commuting=True S(1)=-1-s digits [1]->-1+s, [3]->1-s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 1: {len 6 units: 1+0 -1+0} | max odd steps 69 [p=3 eps=-1 predicted 1 OK]
+a-3+s_3 alpha=-3+s commuting=False S(1)=-1-s digits [1]->-1+s, [3]->1+s, [1+s]->1, [3+s]->-1 | PASS trivial cycles 1: {len 4 units: -1+0 1+0} | max odd steps 50

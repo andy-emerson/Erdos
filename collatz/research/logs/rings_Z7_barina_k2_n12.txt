@@ -1,0 +1,3 @@
+# Barina-type maps on Z7 at pi^2: commuting tables, each orbit digit among the 12 smallest; checked on R/U through F=R, full classification to |N| <= 100000
+maps tested 13; Collatz at 100000: 0; failures {'cycle': 11, 'orbit of 1 escapes': 1, '1 not periodic': 1}
+  alpha -1+2t (|N| 7): tables 13 (smallest 1), Collatz 0 (smallest 0)

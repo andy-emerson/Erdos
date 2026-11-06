@@ -11,3 +11,45 @@
 7x+-1  bound 1.000e+15  eta = 1/512, U = 32: bins 1778, edge ranges 6777, iterations 3351, 1.5 s
         certified: mean of 1/u over any cycle <= c = 807906498158/2^40 = 0.734787   (graph value >= 0.734787, float)
         best closed walk found: 26 bins, mean weight 0.734787, u from 1.0000 to 1.9414
+7x+-1  bound 1.000e+15  eta = 1/2048, U = 32: bins 7101, edge ranges 27042, iterations 3414, 15.8 s
+        certified: mean of 1/u over any cycle <= c = 804094641258/2^40 = 0.731320   (graph value >= 0.731320, float)
+        best closed walk found: 26 bins, mean weight 0.731320, u from 1.0000 to 1.9471
+7x+-1  bound 1.000e+15  eta = 1/4096, U = 64: bins 17038, edge ranges 73396, iterations 6000, 95.6 s
+        certified: mean of 1/u over any cycle <= c = 798486727137/2^40 = 0.726219   (graph value >= 0.726074, float)
+        best closed walk found: 83 bins, mean weight 0.726147, u from 1.0000 to 1.9770
+5+2i   bound 3.000e+09  eta = 1/512, U = 32: bins 1778, edge ranges 11319, iterations 250, 1.3 s
+        certified: mean of 1/u over any cycle <= c = 953657131353/2^40 = 0.867346   (graph value >= 0.867346, float)
+        best closed walk found: 7 bins, mean weight 0.867346, u from 1.0000 to 1.3453
+5+2i   bound 3.000e+09  eta = 1/2048, U = 32: bins 7101, edge ranges 45162, iterations 6000, 29.0 s
+        certified: mean of 1/u over any cycle <= c = 937431416844/2^40 = 0.852589   (graph value >= 0.852157, float)
+        best closed walk found: 127 bins, mean weight 0.852379, u from 1.0000 to 1.4074
+5+2i   bound 3.000e+09  eta = 1/4096, U = 64: bins 17038, edge ranges 125378, iterations 6000, 173.1 s
+        certified: mean of 1/u over any cycle <= c = 935255468522/2^40 = 0.850610   (graph value >= 0.849523, float)
+        best closed walk found: 155 bins, mean weight 0.850000, u from 1.0000 to 1.4098
+
+7x +- 1 with c = 0.726219
+  X = 1.0000e+15: averaged n >= 27855251 (V = 78199576);  linearised basic (c = 1) n >= 27855251
+  X = 2.0000e+15: averaged n >= 27855251 (V = 78199576);  linearised basic (c = 1) n >= 27855251
+  X = 3.0000e+15: averaged n >= 27855251 (V = 78199576);  linearised basic (c = 1) n >= 27855251
+  X = 4.0000e+15: averaged n >= 465645424 (V = 1307231973);  linearised basic (c = 1) n >= 27855251
+  X = 4.5000e+15: averaged n >= 493500675 (V = 1385431549);  linearised basic (c = 1) n >= 27855251
+  X = 5.0000e+15: averaged n >= 521355926 (V = 1463631125);  linearised basic (c = 1) n >= 27855251
+  X = 1.0000e+16: averaged n >= 660632181 (V = 1854629005);  linearised basic (c = 1) n >= 604921679
+  first-order thresholds X_c(p/q) = c / (7 ln2 |p/q - log2 7|) for the records of the basic method:
+    n = 27855251    basic X* = 5.0869e+15   averaged X* = 3.6942e+15
+    n = 465645424   basic X* = 5.6340e+15   averaged X* = 4.0915e+15
+    n = 604921679   basic X* = 1.0945e+16   averaged X* = 7.9484e+15
+    n = 855618938   basic X* = 1.4291e+17   averaged X* = 1.0378e+17
+    n = 883474189   basic X* = 1.7282e+18   averaged X* = 1.2550e+18
+    n = 5328700385  basic X* = 2.2124e+18   averaged X* = 1.6067e+18
+    n = 8862597141  basic X* = 2.4372e+19   averaged X* = 1.7699e+19
+
+5+2i with c = 0.850610
+  B = 3.000e+09: basic box 1901; averaged size 169, angle 161, box 1901 (V = 9235, W = 921), disc 1901
+  B = 4.000e+09: basic box 1901; averaged size 169, angle 161, box 1901 (V = 9235, W = 921), disc 2190
+  B = 5.000e+09: basic box 1901; averaged size 169, angle 161, box 1901 (V = 9235, W = 921), disc 2190
+  B = 5.500e+09: basic box 1901; averaged size 169, angle 161, box 2190 (V = 10639, W = 1061), disc 2190
+  B = 6.000e+09: basic box 1901; averaged size 169, angle 161, box 2190 (V = 10639, W = 1061), disc 2190
+  B = 7.000e+09: basic box 1901; averaged size 169, angle 161, box 2190 (V = 10639, W = 1061), disc 2190
+  B = 1.000e+10: basic box 2190; averaged size 169, angle 161, box 2190 (V = 10639, W = 1061), disc 2190
+  B = 1.000e+11: basic box 6281; averaged size 683, angle 1224, box 8696 (V = 42245, W = 4213), disc 8696

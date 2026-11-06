@@ -1,0 +1,10 @@
+B = 1.3000e+11: basic box 8696, basic disc 8696; averaged box 8696, averaged disc 8696
+B = 1.0000e+12: basic box 8696, basic disc 8696; averaged box 8696, averaged disc 8696
+B = 5.0000e+12: basic box 8696, basic disc 8696; averaged box 8696, averaged disc 8696
+B = 8.0000e+12: basic box 8696, basic disc 38875; averaged box 8696, averaged disc 41065
+B = 9.0000e+12: basic box 8696, basic disc 38875; averaged box 8696, averaged disc 41065
+B = 9.5000e+12: basic box 8696, basic disc 41065; averaged box 8696, averaged disc 41065
+B = 9.6000e+12: basic box 8696, basic disc 41065; averaged box 38875, averaged disc 41065
+B = 9.7000e+12: basic box 8696, basic disc 41065; averaged box 38875, averaged disc 41065
+B = 1.0000e+13: basic box 8696, basic disc 41065; averaged box 38875, averaged disc 41065
+B = 1.3200e+13: basic box 8696, basic disc 41065; averaged box 41065, averaged disc 49761

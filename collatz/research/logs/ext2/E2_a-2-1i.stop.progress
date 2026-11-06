@@ -20,3 +20,13 @@
 15:49:14 done (9000000001,9500000001]  95.0%  6.59e+07 starts/s  elapsed 226 s  ETA 12 s  bad chunks 0
 15:49:15 done (9500000001,10000000000]  100.0%  6.91e+07 starts/s  elapsed 227 s  ETA 0 s  bad chunks 0
 15:49:15 finished, 15707963012 starts in 227 s, bad chunks 0
+2026-11-06 16:42:03 start ./gstopf E2_a-2-1i.rule {lo} {hi} 10000000 all (10000000000,14000000000] chunk 500000000 jobs 2: 8 chunks to do, 20 already logged
+16:42:26 done (10000000000,10500000000]  12.5%  3.45e+07 starts/s  elapsed 23 s  ETA 159 s  bad chunks 0
+16:42:26 done (10500000000,11000000000]  25.0%  6.87e+07 starts/s  elapsed 23 s  ETA 69 s  bad chunks 0
+16:42:49 done (11000000000,11500000000]  37.5%  5.18e+07 starts/s  elapsed 45 s  ETA 76 s  bad chunks 0
+16:42:49 done (11500000000,12000000000]  50.0%  6.87e+07 starts/s  elapsed 46 s  ETA 46 s  bad chunks 0
+16:43:12 done (12000000000,12500000000]  62.5%  5.72e+07 starts/s  elapsed 69 s  ETA 41 s  bad chunks 0
+16:43:12 done (12500000000,13000000000]  75.0%  6.84e+07 starts/s  elapsed 69 s  ETA 23 s  bad chunks 0
+16:43:35 done (13000000000,13500000000]  87.5%  6.03e+07 starts/s  elapsed 91 s  ETA 13 s  bad chunks 0
+16:43:35 done (13500000000,14000000000]  100.0%  6.86e+07 starts/s  elapsed 92 s  ETA 0 s  bad chunks 0
+16:43:35 finished, 6283186132 starts in 92 s, bad chunks 0

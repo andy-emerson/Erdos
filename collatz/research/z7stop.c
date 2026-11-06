@@ -17,7 +17,7 @@
  *    M < 2^k and M t + x < 2^k t + r for every t >= t0 (t0 from lo), the class drops and is
  *    skipped; otherwise it is a survivor, iterated from the state M t + x (a later point of the
  *    same orbit; a drop found from there is a drop of n).
- * Survivors are iterated in __int128 (odd step, then the whole power of 2 by ctz); a start whose
+ * Survivors are iterated in 64 bits while below 2^60, then in __int128 (odd step, then the whole power of 2 by ctz); a start whose
  * iterate passes 2^120 is reported (FAIL big) and would need multiword arithmetic.
  *
  * usage: z7stop lo hi k [survivor-file]   (lo a multiple of 2^k; prints counts, survivors fraction,
@@ -61,6 +61,15 @@ int main(int argc, char **argv){
       checked++;
       U x = sM[i] * (U)t + (U)sx[i];             /* x > 0 */
       ull s = 0;
+      /* 64-bit fast path while x < 2^60 (then 7x + 1 < 2^63) */
+      if (x < ((U)1 << 60)) {
+        ull y = (ull)x;
+        while (y >= n0 && y < (1ULL << 60)) {
+          y >>= __builtin_ctzll(y); if (y < n0) break;
+          y = 7 * y + (((y & 3) == 1) ? 1 : -1ULL); s++;
+        }
+        x = y;
+      }
       while (x >= n0) {
         if (!(x & 1)) { x >>= ctz128(x); if (x < n0) break; }
         x = 7 * x + (((x & 3) == 1) ? 1 : (U)-1); s++;

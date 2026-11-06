@@ -20,3 +20,23 @@
 15:56:50 done (9000000001,9500000001]  95.0%  6.58e+07 starts/s  elapsed 227 s  ETA 12 s  bad chunks 0
 15:56:50 done (9500000001,10000000000]  100.0%  6.92e+07 starts/s  elapsed 227 s  ETA 0 s  bad chunks 0
 15:56:50 finished, 15707963012 starts in 227 s, bad chunks 0
+2026-11-06 16:47:46 start ./gstopf E2_a-2+1i.rule {lo} {hi} 10000000 all (10000000000,19000000000] chunk 500000000 jobs 2: 18 chunks to do, 20 already logged
+16:48:09 done (10500000000,11000000000]  5.6%  3.42e+07 starts/s  elapsed 23 s  ETA 390 s  bad chunks 0
+16:48:09 done (10000000000,10500000000]  11.1%  6.83e+07 starts/s  elapsed 23 s  ETA 184 s  bad chunks 0
+16:48:32 done (11500000000,12000000000]  16.7%  5.16e+07 starts/s  elapsed 46 s  ETA 228 s  bad chunks 0
+16:48:32 done (11000000000,11500000000]  22.2%  6.85e+07 starts/s  elapsed 46 s  ETA 161 s  bad chunks 0
+16:48:55 done (12000000000,12500000000]  27.8%  5.7e+07 starts/s  elapsed 69 s  ETA 179 s  bad chunks 0
+16:48:55 done (12500000000,13000000000]  33.3%  6.83e+07 starts/s  elapsed 69 s  ETA 138 s  bad chunks 0
+16:49:18 done (13000000000,13500000000]  38.9%  5.97e+07 starts/s  elapsed 92 s  ETA 145 s  bad chunks 0
+16:49:18 done (13500000000,14000000000]  44.4%  6.81e+07 starts/s  elapsed 92 s  ETA 115 s  bad chunks 0
+16:49:41 done (14000000000,14500000000]  50.0%  6.14e+07 starts/s  elapsed 115 s  ETA 115 s  bad chunks 0
+16:49:41 done (14500000000,15000000000]  55.6%  6.81e+07 starts/s  elapsed 115 s  ETA 92 s  bad chunks 0
+16:50:04 done (15000000000,15500000000]  61.1%  6.26e+07 starts/s  elapsed 138 s  ETA 88 s  bad chunks 0
+16:50:05 done (15500000000,16000000000]  66.7%  6.8e+07 starts/s  elapsed 139 s  ETA 69 s  bad chunks 0
+16:50:27 done (16000000000,16500000000]  72.2%  6.35e+07 starts/s  elapsed 161 s  ETA 62 s  bad chunks 0
+16:50:28 done (16500000000,17000000000]  77.8%  6.79e+07 starts/s  elapsed 162 s  ETA 46 s  bad chunks 0
+16:50:50 done (17000000000,17500000000]  83.3%  6.41e+07 starts/s  elapsed 184 s  ETA 37 s  bad chunks 0
+16:50:51 done (17500000000,18000000000]  88.9%  6.8e+07 starts/s  elapsed 185 s  ETA 23 s  bad chunks 0
+16:51:13 done (18000000000,18500000000]  94.4%  6.46e+07 starts/s  elapsed 207 s  ETA 12 s  bad chunks 0
+16:51:14 done (18500000000,19000000000]  100.0%  6.8e+07 starts/s  elapsed 208 s  ETA 0 s  bad chunks 0
+16:51:14 finished, 14137167568 starts in 208 s, bad chunks 0

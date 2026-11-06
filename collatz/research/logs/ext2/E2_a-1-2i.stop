@@ -18,3 +18,17 @@ range (8000000001,8500000001] starts 785399612 fails 0 cycles 0 maxstop 260 at -
 range (8500000001,9000000001] starts 785397704 fails 0 cycles 0 maxstop 273 at -76797 -52162 meanstop 7.77 maxexc_log2 12.95 at 93282 10239 cpu 22.4
 range (9000000001,9500000001] starts 785396768 fails 0 cycles 0 maxstop 286 at -89642 32731 meanstop 7.77 maxexc_log2 12.45 at 95955 12462 cpu 22.4
 range (9500000001,10000000000] starts 785398936 fails 0 cycles 0 maxstop 270 at 38607 89538 meanstop 7.77 maxexc_log2 12.71 at -55482 81995 cpu 22.4
+range (10000000000,10500000000] starts 785398324 fails 0 cycles 0 maxstop 306 at 47253 -89656 meanstop 7.77 maxexc_log2 12.23 at 96602 33687 cpu 22.3
+range (10500000000,11000000000] starts 785398132 fails 0 cycles 0 maxstop 270 at -48577 -92206 meanstop 7.77 maxexc_log2 12.77 at 9775 104098 cpu 22.3
+range (11500000000,12000000000] starts 785398548 fails 0 cycles 0 maxstop 276 at -98845 43662 meanstop 7.77 maxexc_log2 12.88 at -102771 -37072 cpu 22.5
+range (11000000000,11500000000] starts 785398412 fails 0 cycles 0 maxstop 286 at -101194 -33445 meanstop 7.77 maxexc_log2 12.62 at -98401 36402 cpu 22.9
+range (12000000000,12500000000] starts 785398008 fails 0 cycles 0 maxstop 273 at 39267 103422 meanstop 7.77 maxexc_log2 12.38 at 14485 -109736 cpu 22.6
+range (12500000000,13000000000] starts 785397860 fails 0 cycles 0 maxstop 280 at 47444 103137 meanstop 7.77 maxexc_log2 12.62 at 113009 1724 cpu 22.5
+range (13000000000,13500000000] starts 785398056 fails 0 cycles 0 maxstop 253 at 115235 -6818 meanstop 7.77 maxexc_log2 12.23 at 79976 83389 cpu 22.5
+range (13500000000,14000000000] starts 785398792 fails 0 cycles 0 maxstop 260 at 103618 -54625 meanstop 7.77 maxexc_log2 12.45 at -61824 -99211 cpu 22.7
+range (14000000000,14500000000] starts 785397492 fails 0 cycles 0 maxstop 276 at 117917 -17152 meanstop 7.77 maxexc_log2 12.81 at -4657 119234 cpu 22.5
+range (14500000000,15000000000] starts 785398604 fails 0 cycles 0 maxstop 296 at -45755 112360 meanstop 7.77 maxexc_log2 13.84 at 65673 100932 cpu 22.5
+range (15000000000,15500000000] starts 785397200 fails 0 cycles 0 maxstop 339 at 109342 55939 meanstop 7.77 maxexc_log2 12.77 at -14216 -122131 cpu 22.4
+range (15500000000,16000000000] starts 785399644 fails 0 cycles 0 maxstop 276 at 27967 -121326 meanstop 7.77 maxexc_log2 12.91 at -90897 87522 cpu 22.5
+range (16000000000,16500000000] starts 785397304 fails 0 cycles 0 maxstop 260 at -127767 -4428 meanstop 7.77 maxexc_log2 12.27 at 122376 -35747 cpu 22.7
+range (16500000000,17000000000] starts 785397568 fails 0 cycles 0 maxstop 273 at 127581 -26528 meanstop 7.77 maxexc_log2 13.93 at -56067 117632 cpu 22.7

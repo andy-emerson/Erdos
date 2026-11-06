@@ -1,0 +1,6 @@
+# z7stop benchmark, one core, window of 2^31 integers above 10^15 (FAIL big = iterate above 2^120, needs multiword)
+z7stop (999999999574016,1000002147057664] k=20 survivors 96000 of 524288 classes (0.1831); odd numbers 1073741824, skipped mod 7 56173646, iterated 140434354 (0.1308 of odd); big 15; odd steps after sieve mean 20.80 max 1414 at 1000000819760597; sieve 0.03 s, total 16.51 s, 6.51e+07 odd numbers per s
+z7stop (999999986991104,1000002134474752] k=24 survivors 1405440 of 8388608 classes (0.1675); odd numbers 1073741824, skipped mod 7 51398907, iterated 128497413 (0.1197 of odd); big 15; odd steps after sieve mean 21.26 max 1412 at 1000000819760597; sieve 0.40 s, total 16.17 s, 6.81e+07 odd numbers per s
+z7stop (999999986991104,1000002134474752] k=26 survivors 5219840 of 33554432 classes (0.1556); odd numbers 1073741824, skipped mod 7 47724245, iterated 119310635 (0.1111 of odd); big 15; odd steps after sieve mean 22.18 max 1411 at 1000000819760597; sieve 1.75 s, total 17.84 s, 6.67e+07 odd numbers per s
+# z7test.py at k=24:
+samples 300000, dropped within the prefix 249475, survivors needed 50525, non-dropping non-survivors 0 (must be 0)

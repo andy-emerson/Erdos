@@ -26,7 +26,7 @@ the last of length $18$, and these are conjectured to be all [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-The formula for $C$ also defines a map on $\mathbb{Z}$. On the negative integers it has the three cycles
+The formula for $C$ also defines a map on $\mathbb{Z}$. It fixes $0$, since $0/2 = 0$, as does every map considered here, so statements about orbits on $\mathbb{Z}$ concern the nonzero starts. On the negative integers it has the three cycles
 
 $$\begin{aligned}
 &{-1} \to -2 \to -1, \\
@@ -55,7 +55,7 @@ $$\begin{aligned}
 &{-5} \to -36 \to -18 \to -9 \to -64 \to -32 \to -16 \to -8 \to -4 \to -2 \to -1,
 \end{aligned}$$
 
-and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the conjecture on $\mathbb{N}$ below $10^{15}$ [Barina 2022].
+and the conjecture that every nonzero orbit reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the conjecture on $\mathbb{N}$ below $10^{15}$ [Barina 2022].
 
 The same construction can be applied to the multiplier $3$:
 

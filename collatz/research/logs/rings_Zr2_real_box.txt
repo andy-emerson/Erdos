@@ -1,0 +1,4 @@
+# box-size test: trivial and other cycles of the smallest table, starts |a|,|b| <= X
+X=10: alpha (3, 1): trivial 5 other 0 escaped 34 | alpha (3, 0): trivial 9 other 9 escaped 0
+X=20: alpha (3, 1): trivial 5 other 0 escaped 119 | alpha (3, 0): trivial 9 other 14 escaped 0
+X=40: alpha (3, 1): trivial 5 other 0 escaped 440 | alpha (3, 0): trivial 9 other 15 escaped 0

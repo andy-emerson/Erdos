@@ -2,15 +2,14 @@
 
 Starts: odd a + b sqrt2 with |a|, |b| <= X. Each orbit of S is followed until it closes a cycle, escapes
 (max(|a|,|b|) > 10^30) or runs cap steps. Reported: trivial cycles (containing a unit, |N| = 1), other cycles,
-escapes, and for escaping orbits the final |N| and log2 of |sigma1|, |sigma2| (divergence along the unit direction
-shows as bounded |N| with sigma1 -> infinity or sigma2 -> infinity).
+escapes, and for escaping orbits the median |N| at escape and which embedding is the larger.
 usage: python3 ringreal.py X cap
 """
 import sys, math, collections, itertools
 import qring as Q, ringrun as RR, ringtest as RT
 
 R = Q.Ring('Zr2')
-X = int(sys.argv[1]); CAP = int(sys.argv[2])
+X = int(sys.argv[1]) if __name__ == '__main__' else 30; CAP = int(sys.argv[2]) if __name__ == '__main__' else 3000
 
 
 def census(alpha, tab, k):
@@ -65,4 +64,4 @@ def main():
     RT.log(R, 'real_literal', L)
 
 
-main()
+if __name__ == '__main__': main()

@@ -212,7 +212,7 @@ def inF(R, F, z):
         return s > 0 or (s == 0 and b > 0)
     if F == 'H':      # upper half-plane, Im z > 0, or Im z = 0 and Re z > 0
         return b > 0 or (b == 0 and a > 0)
-    if F == 'Pos':    # Z: positives
+    if F == 'O':      # Z: positives
         return a > 0
     if F == 'Q': return a > 0 and b >= 0
     if F == 'C': return a > 0 and -a < b <= a

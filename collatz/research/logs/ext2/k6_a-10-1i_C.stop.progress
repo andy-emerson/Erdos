@@ -1,0 +1,6 @@
+2026-11-06 15:17:53 start ./gstopf k6_a-10-1i_C.rule {lo} {hi} (1,160000000] chunk 40000000 jobs 2: 4 chunks to do, 0 already logged
+15:17:54 done (40000001,80000001]  25.0%  1.39e+07 starts/s  elapsed 1 s  ETA 3 s  bad chunks 0
+15:17:54 done (1,40000001]  50.0%  2.74e+07 starts/s  elapsed 1 s  ETA 1 s  bad chunks 0
+15:17:55 done (80000001,120000001]  75.0%  2.07e+07 starts/s  elapsed 2 s  ETA 1 s  bad chunks 0
+15:17:55 done (120000001,160000000]  100.0%  2.64e+07 starts/s  elapsed 2 s  ETA 0 s  bad chunks 0
+15:17:55 finished, 62831850 starts in 2 s, bad chunks 0

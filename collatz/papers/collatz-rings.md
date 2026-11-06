@@ -14,7 +14,7 @@ $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{c
 
 From $5$ its orbit is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, and $1 \to 4 \to 2 \to 1$ is a cycle. Collatz posed the problem in the 1930s [Lagarias 1985; Collatz 1986], conjecturing that every orbit reaches $1$. The conjecture has been verified for every start below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
-The nearby map $C^-$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
+The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\
@@ -26,15 +26,19 @@ the last of length $18$, and these are conjectured to be all [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-The formula for $C$ defines a map on $\mathbb{Z}$, and on the negative integers it reproduces the cycles of $C^-$ with the signs reversed. From $-5$,
+The formula for $C$ also defines a map on $\mathbb{Z}$. From $-5$ it gives
 
 $$-5 \to -14 \to -7 \to -20 \to -10 \to -5,$$
 
-which is the second cycle of $C^-$ negated: $C(-5) = -14 = -C^-(5)$, and the same holds at each step. The cycles of $C^-$ through $1$ and $17$ give cycles of $C$ through $-1$ and $-17$ in the same way. This is an identity. For odd $n$, $C(-n) = 3(-n) + 1 = -(3n - 1) = -C^-(n)$, and halving commutes with negation, so
+the second cycle of $C_{-1}$ with the signs reversed: $C(-5) = -14 = -C_{-1}(5)$. More generally, for odd $n$,
 
-$$C(-n) = -C^-(n) \quad \text{for all } n \in \mathbb{Z}.$$
+$$C(-n) = 3(-n) + 1 = -(3n - 1) = -C_{-1}(n),$$
 
-In particular $C$ is not an odd function: $C(5) = 16$ while $C(-5) = -14$, and the orbits of $5$ and $-5$ have nothing to do with each other.
+and halving commutes with negation, which gives the identity
+
+$$C(-n) = -C_{-1}(n) \quad \text{for all } n \in \mathbb{Z}.$$
+
+So the cycles of $C_{-1}$ through $1$, $5$ and $17$ become cycles of $C$ through $-1$, $-5$ and $-17$. Since $C(-n) \neq -C(n)$, $C$ is not an odd function: $C(5) = 16$ while $C(-5) = -14$.
 
 Barina's map [Barina 2018] is odd. It is
 

@@ -1,0 +1,16 @@
+2026-11-06 15:18:02 start ./gstopf k6_a-9-2i_D.rule {lo} {hi} (1,4200000000] chunk 300000000 jobs 2: 14 chunks to do, 0 already logged
+15:18:07 done (1,300000001]  7.1%  2.3e+07 starts/s  elapsed 5 s  ETA 67 s  bad chunks 0
+15:18:07 done (300000001,600000001]  14.3%  4.55e+07 starts/s  elapsed 5 s  ETA 31 s  bad chunks 0
+15:18:12 done (600000001,900000001]  21.4%  3.46e+07 starts/s  elapsed 10 s  ETA 37 s  bad chunks 0
+15:18:13 done (900000001,1200000001]  28.6%  4.55e+07 starts/s  elapsed 10 s  ETA 26 s  bad chunks 0
+15:18:18 done (1200000001,1500000001]  35.7%  3.81e+07 starts/s  elapsed 15 s  ETA 28 s  bad chunks 0
+15:18:18 done (1500000001,1800000001]  42.9%  4.52e+07 starts/s  elapsed 16 s  ETA 21 s  bad chunks 0
+15:18:23 done (1800000001,2100000001]  50.0%  3.96e+07 starts/s  elapsed 21 s  ETA 21 s  bad chunks 0
+15:18:23 done (2100000001,2400000001]  57.1%  4.46e+07 starts/s  elapsed 21 s  ETA 16 s  bad chunks 0
+15:18:28 done (2400000001,2700000001]  64.3%  4.05e+07 starts/s  elapsed 26 s  ETA 15 s  bad chunks 0
+15:18:28 done (2700000001,3000000001]  71.4%  4.47e+07 starts/s  elapsed 26 s  ETA 11 s  bad chunks 0
+15:18:34 done (3000000001,3300000001]  78.6%  4.13e+07 starts/s  elapsed 31 s  ETA 9 s  bad chunks 0
+15:18:34 done (3300000001,3600000001]  85.7%  4.48e+07 starts/s  elapsed 32 s  ETA 5 s  bad chunks 0
+15:18:39 done (3600000001,3900000001]  92.9%  4.18e+07 starts/s  elapsed 37 s  ETA 3 s  bad chunks 0
+15:18:39 done (3900000001,4200000000]  100.0%  4.48e+07 starts/s  elapsed 37 s  ETA 0 s  bad chunks 0
+15:18:39 finished, 1649336173 starts in 37 s, bad chunks 0

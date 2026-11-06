@@ -1,0 +1,14 @@
+range (1,300000001] starts 117809667 fails 0 cycles 0 maxstop 793 at 2776 6983 meanstop 18.99 maxexc_log2 20.06 at 6684 5585 cpu 5.1
+range (300000001,600000001] starts 117809721 fails 0 cycles 0 maxstop 801 at 2115 24382 meanstop 18.99 maxexc_log2 19.47 at 20141 1766 cpu 5.1
+range (600000001,900000001] starts 117809693 fails 0 cycles 0 maxstop 778 at 20018 18549 meanstop 18.99 maxexc_log2 19.01 at 3814 25537 cpu 5.0
+range (900000001,1200000001] starts 117809793 fails 0 cycles 0 maxstop 771 at 17883 25872 meanstop 18.99 maxexc_log2 21.56 at 32158 5291 cpu 5.1
+range (1200000001,1500000001] starts 117809760 fails 0 cycles 0 maxstop 756 at 13650 33577 meanstop 18.99 maxexc_log2 21.29 at 15393 32378 cpu 5.2
+range (1500000001,1800000001] starts 117809794 fails 0 cycles 0 maxstop 786 at 39138 12537 meanstop 18.99 maxexc_log2 20.93 at 39362 10149 cpu 5.2
+range (1800000001,2100000001] starts 117809718 fails 0 cycles 0 maxstop 727 at 15180 42103 meanstop 18.99 maxexc_log2 19.83 at 6068 42491 cpu 5.3
+range (2100000001,2400000001] starts 117809752 fails 0 cycles 0 maxstop 741 at 7563 47328 meanstop 18.99 maxexc_log2 20.52 at 41745 21258 cpu 5.4
+range (2400000001,2700000001] starts 117809524 fails 0 cycles 0 maxstop 771 at 44869 21518 meanstop 19.00 maxexc_log2 20.42 at 25110 44485 cpu 5.3
+range (2700000001,3000000001] starts 117809901 fails 0 cycles 0 maxstop 741 at 24540 46789 meanstop 18.99 maxexc_log2 19.83 at 36579 38574 cpu 5.2
+range (3000000001,3300000001] starts 117809611 fails 0 cycles 0 maxstop 764 at 45098 35425 meanstop 18.99 maxexc_log2 20.06 at 53643 11558 cpu 5.1
+range (3300000001,3600000001] starts 117809623 fails 0 cycles 0 maxstop 816 at 45840 38095 meanstop 19.00 maxexc_log2 20.06 at 56960 10497 cpu 5.2
+range (3600000001,3900000001] starts 117809821 fails 0 cycles 0 maxstop 727 at 58941 11986 meanstop 18.99 maxexc_log2 19.56 at 26287 55616 cpu 5.2
+range (3900000001,4200000000] starts 117809795 fails 0 cycles 0 maxstop 719 at 54432 34817 meanstop 18.99 maxexc_log2 19.65 at 57459 26414 cpu 5.2

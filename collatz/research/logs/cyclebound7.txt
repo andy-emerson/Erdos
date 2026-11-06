@@ -1,0 +1,126 @@
+# cyclebound7.py: exact bound for 7x +- 1, certarith precision P = 320 bits
+log2 7 enclosure width: 8.582604391416319e-94
+certified partial quotients of log2 7 (45): [2, 1, 4, 5, 4, 5, 4, 1, 29, 1, 4, 8, 1, 1, 2, 1, 31, 10, 1, 2, 2, 6, 2, 3, 1, 1, 197, 1, 4, 5, 149, 5, 1, 10, 1, 4, 4, 1, 3, 14, 3, 1, 1, 1, 6]
+convergents p/q: [(2, 1), (3, 1), (14, 5), (73, 26), (306, 109), (1603, 571), (6718, 2393), (8321, 2964), (248027, 88349), (256348, 91313), (1273419, 453601), (10443700, 3720121), (11717119, 4173722), (22160819, 7893843), (56038757, 19961408), (78199576, 27855251), (2480225613, 883474189), (24880455706, 8862597141), (27360681319, 9746071330), (79601818344, 28354739801), (186564318007, 66455550932), (1198987726386, 427088045393), (2584539770779, 920631641718), (8952607038723, 3188982970547), (11537146809502, 4109614612265)]
+
+X = 10^15 + 1 (least odd |x| above Barina's bound 10^15)
+outer interval width 4.12198583111132e-16  inner width 4.12198583111132e-16
+smallest denominator in outer interval: n0 = 27855251  V0 = 78199576
+V0/n0 in inner interval (bound attained by the method): True
+n0 is a convergent denominator: True
+admissible V for n0 (outer): [78199576]
+steps of f in such a cycle >= n0 + V0 = 106054827
+V0/n0 - log2 7 sign: +
+position of V0/n0 in I: (f - lo)/(hi - lo) = 0.598291525683187
+
+all fractions V/n in the outer I(X) with n <= 10^9 (reduced):
+  count: 125 ; those with n <= 3*10^8:
+  n = 27855251  V = 78199576
+  n = 159237663  V = 447036637
+  n = 187092914  V = 525236213
+  n = 214948165  V = 603435789
+  n = 230735851  V = 647757427
+  n = 242803416  V = 681635365
+  n = 258591102  V = 725957003
+  n = 270658667  V = 759834941
+  n = 286446353  V = 804156579
+  n = 298513918  V = 838034517
+(every multiple and every sum of admissible (n, V) is admissible)
+
+record thresholds X*(V/n) = 1/|2^(V/n) - 7| among convergents and intermediate fractions
+(the bound is >= n exactly when X exceeds every X* of smaller n; mpmath 80 digits, planning numbers)
+  n = 1                V = 2                 X* = 3.3333e-01   bound becomes n once X > 0.0000e+00
+  n = 1                V = 3                 X* = 1.0000e+00   bound becomes n once X > 3.3333e-01
+  n = 3                V = 8                 X* = 1.5375e+00   bound becomes n once X > 1.0000e+00
+  n = 4                V = 11                X* = 3.6653e+00   bound becomes n once X > 1.5375e+00
+  n = 5                V = 14                X* = 2.8093e+01   bound becomes n once X > 3.6653e+00
+  n = 16               V = 45                X* = 3.9986e+01   bound becomes n once X > 2.8093e+01
+  n = 21               V = 59                X* = 9.4954e+01   bound becomes n once X > 3.9986e+01
+  n = 26               V = 73                X* = 6.1080e+02   bound becomes n once X > 9.4954e+01
+  n = 57               V = 160               X* = 6.1096e+02   bound becomes n once X > 6.1080e+02
+  n = 83               V = 233               X* = 1.6357e+03   bound becomes n once X > 6.1096e+02
+  n = 109              V = 306               X* = 1.3320e+04   bound becomes n once X > 1.6357e+03
+  n = 353              V = 991               X* = 1.9597e+04   bound becomes n once X > 1.3320e+04
+  n = 462              V = 1297              X* = 4.6998e+04   bound becomes n once X > 1.9597e+04
+  n = 571              V = 1603              X* = 3.4663e+05   bound becomes n once X > 4.6998e+04
+  n = 1822             V = 5115              X* = 5.6215e+05   bound becomes n once X > 3.4663e+05
+  n = 2393             V = 6718              X* = 1.5014e+06   bound becomes n once X > 5.6215e+05
+  n = 2964             V = 8321              X* = 5.5427e+07   bound becomes n once X > 1.5014e+06
+  n = 46853            V = 131533            X* = 5.9182e+07   bound becomes n once X > 5.5427e+07
+  n = 49817            V = 139854            X* = 6.7484e+07   bound becomes n once X > 5.9182e+07
+  n = 52781            V = 148175            X* = 7.7083e+07   bound becomes n once X > 6.7484e+07
+  n = 55745            V = 156496            X* = 8.8308e+07   bound becomes n once X > 7.7083e+07
+  n = 58709            V = 164817            X* = 1.0161e+08   bound becomes n once X > 8.8308e+07
+  n = 61673            V = 173138            X* = 1.1763e+08   bound becomes n once X > 1.0161e+08
+  n = 64637            V = 181459            X* = 1.3728e+08   bound becomes n once X > 1.1763e+08
+  n = 67601            V = 189780            X* = 1.6198e+08   bound becomes n once X > 1.3728e+08
+  n = 70565            V = 198101            X* = 1.9393e+08   bound becomes n once X > 1.6198e+08
+  n = 73529            V = 206422            X* = 2.3688e+08   bound becomes n once X > 1.9393e+08
+  n = 76493            V = 214743            X* = 2.9772e+08   bound becomes n once X > 2.3688e+08
+  n = 79457            V = 223064            X* = 3.9055e+08   bound becomes n once X > 2.9772e+08
+  n = 82421            V = 231385            X* = 5.4956e+08   bound becomes n once X > 3.9055e+08
+  n = 85385            V = 239706            X* = 8.8482e+08   bound becomes n once X > 5.4956e+08
+  n = 88349            V = 248027            X* = 2.0535e+09   bound becomes n once X > 8.8482e+08
+  n = 91313            V = 256348            X* = 8.7370e+09   bound becomes n once X > 2.0535e+09
+  n = 270975           V = 760723            X* = 1.2249e+10   bound becomes n once X > 8.7370e+09
+  n = 362288           V = 1017071           X* = 3.1043e+10   bound becomes n once X > 1.2249e+10
+  n = 453601           V = 1273419           X* = 3.7204e+11   bound becomes n once X > 3.1043e+10
+  n = 2359318          V = 6623443           X* = 5.4173e+11   bound becomes n once X > 3.7204e+11
+  n = 2812919          V = 7896862           X* = 8.9700e+11   bound becomes n once X > 5.4173e+11
+  n = 3266520          V = 9170281           X* = 1.7042e+12   bound becomes n once X > 8.9700e+11
+  n = 3720121          V = 10443700          X* = 5.3337e+12   bound becomes n once X > 1.7042e+12
+  n = 4173722          V = 11717119          X* = 7.9996e+12   bound becomes n once X > 5.3337e+12
+  n = 7893843          V = 22160819          X* = 4.4918e+13   bound becomes n once X > 7.9996e+12
+  n = 19961408         V = 56038757          X* = 1.1724e+14   bound becomes n once X > 4.4918e+13
+  n = 27855251         V = 78199576          X* = 5.0869e+15   bound becomes n once X > 1.1724e+14
+  n = 465645424        V = 1307231973        X* = 5.6340e+15   bound becomes n once X > 5.0869e+15
+  n = 493500675        V = 1385431549        X* = 6.3947e+15   bound becomes n once X > 5.6340e+15
+  n = 521355926        V = 1463631125        X* = 7.2716e+15   bound becomes n once X > 6.3947e+15
+  n = 549211177        V = 1541830701        X* = 8.2935e+15   bound becomes n once X > 7.2716e+15
+  n = 577066428        V = 1620030277        X* = 9.4997e+15   bound becomes n once X > 8.2935e+15
+  n = 604921679        V = 1698229853        X* = 1.0945e+16   bound becomes n once X > 9.4997e+15
+  n = 632776930        V = 1776429429        X* = 1.2708e+16   bound becomes n once X > 1.0945e+16
+  n = 660632181        V = 1854629005        X* = 1.4907e+16   bound becomes n once X > 1.2708e+16
+  n = 688487432        V = 1932828581        X* = 1.7725e+16   bound becomes n once X > 1.4907e+16
+  n = 716342683        V = 2011028157        X* = 2.1469e+16   bound becomes n once X > 1.7725e+16
+  n = 744197934        V = 2089227733        X* = 2.6683e+16   bound becomes n once X > 2.1469e+16
+  n = 772053185        V = 2167427309        X* = 3.4444e+16   bound becomes n once X > 2.6683e+16
+  n = 799908436        V = 2245626885        X* = 4.7223e+16   bound becomes n once X > 3.4444e+16
+  n = 827763687        V = 2323826461        X* = 7.2212e+16   bound becomes n once X > 4.7223e+16
+  n = 855618938        V = 2402026037        X* = 1.4291e+17   bound becomes n once X > 7.2212e+16
+  n = 883474189        V = 2480225613        X* = 1.7282e+18   bound becomes n once X > 1.4291e+17
+  n = 5328700385       V = 14959553254       X* = 2.2124e+18   bound becomes n once X > 1.7282e+18
+  n = 6212174574       V = 17439778867       X* = 3.2742e+18   bound becomes n once X > 2.2124e+18
+  n = 7095648763       V = 19920004480       X* = 5.1192e+18   bound becomes n once X > 3.2742e+18
+  n = 7979122952       V = 22400230093       X* = 9.1204e+18   bound becomes n once X > 5.1192e+18
+  n = 8862597141       V = 24880455706       X* = 2.4372e+19   bound becomes n once X > 9.1204e+18
+  n = 9746071330       V = 27360681319       X* = 6.6038e+19   bound becomes n once X > 2.4372e+19
+  n = 18608668471      V = 52241137025       X* = 8.6129e+19   bound becomes n once X > 6.6038e+19
+  n = 28354739801      V = 79601818344       X* = 4.1410e+20   bound becomes n once X > 8.6129e+19
+  n = 38100811131      V = 106962499663      X* = 4.8162e+20   bound becomes n once X > 4.1410e+20
+  n = 66455550932      V = 186564318007      X* = 6.2478e+21   bound becomes n once X > 4.8162e+20
+  n = 294176943529     V = 825859090372      X* = 1.1346e+22   bound becomes n once X > 6.2478e+21
+  n = 360632494461     V = 1012423408379     X* = 2.3586e+22   bound becomes n once X > 1.1346e+22
+  n = 427088045393     V = 1198987726386     X* = 9.1773e+22   bound becomes n once X > 2.3586e+22
+  n = 920631641718     V = 2584539770779     X* = 6.9264e+23   bound becomes n once X > 9.1773e+22
+  n = 2268351328829    V = 6368067267944     X* = 1.1368e+24   bound becomes n once X > 6.9264e+23
+  n = 3188982970547    V = 8952607038723     X* = 4.7864e+24   bound becomes n once X > 1.1368e+24
+  n = 4109614612265    V = 11537146809502    X* = 6.1994e+24   bound becomes n once X > 4.7864e+24
+
+exact checks of the bound at chosen X:
+  X = 1.0000e+15 : n >= 27855251 (V = 78199576), attained True
+  X = 5.0860e+15 : n >= 27855251 (V = 78199576), attained True
+  X = 5.0870e+15 : n >= 465645424 (V = 1307231973), attained True
+  X = 5.0000e+15 : n >= 27855251 (V = 78199576), attained True
+  X = 6.0000e+15 : n >= 493500675 (V = 1385431549), attained True
+  X = 1.7280e+18 : n >= 883474189 (V = 2480225613), attained True
+  X = 1.7290e+18 : n >= 5328700385 (V = 14959553254), attained True
+  X = 1.1529e+18 : n >= 883474189 (V = 2480225613), attained True
+  X = 3.0000e+15 : n >= 27855251 (V = 78199576), attained True
+  X = 1.0000e+16 : n >= 604921679 (V = 1698229853), attained True
+  X = 1.0000e+17 : n >= 855618938 (V = 2402026037), attained True
+  X = 1.0000e+18 : n >= 883474189 (V = 2480225613), attained True
+  X = 1.0000e+19 : n >= 8862597141 (V = 24880455706), attained True
+  X = 2.9515e+20 : n >= 28354739801 (V = 79601818344), attained True
+  X = 1.0000e+21 : n >= 66455550932 (V = 186564318007), attained True
+  X = 2.3612e+21 : n >= 66455550932 (V = 186564318007), attained True

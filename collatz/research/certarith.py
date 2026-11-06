@@ -41,8 +41,7 @@ def atanh_pos(p, q, prec=P):
     return lo, hi
 
 
-def ln_rat(a, b, prec=P):
-    """Enclosure of ln(a/b) for positive integers a, b: ln(a/b) = 2 atanh((a-b)/(a+b))."""
+def _ln_rat_direct(a, b, prec=P):
     num, den = a - b, a + b
     if num == 0:
         return 0, 0
@@ -52,7 +51,43 @@ def ln_rat(a, b, prec=P):
     return -2 * hi, -2 * lo
 
 
+def ln_rat(a, b, prec=P):
+    """Enclosure of ln(a/b), a, b > 0: write a/b = 2^k * c with c in [2/3, 4/3),
+    then ln(a/b) = k ln 2 + 2 atanh((c-1)/(c+1))."""
+    assert a > 0 and b > 0
+    k = 0
+    while 3 * a >= 4 * b:
+        b *= 2
+        k += 1
+    while 3 * a < 2 * b:
+        a *= 2
+        k -= 1
+    lo, hi = _ln_rat_direct(a, b, prec)
+    if k:
+        l2 = _ln_rat_direct(2, 1, prec)
+        if k > 0:
+            lo, hi = lo + k * l2[0], hi + k * l2[1]
+        else:
+            lo, hi = lo + k * l2[1], hi + k * l2[0]
+    return lo, hi
+
+
 def atan_small(p, q, prec=P):
+    """Enclosure of atan(p/q) for 0 < p <= q, with reduction by atan(1/2)."""
+    assert 0 < p <= q
+    if 10 * p <= 3 * q:
+        return _atan_series(p, q, prec)
+    h = _atan_series(1, 2, prec)
+    u, v = 2 * p - q, 2 * q + p   # atan(p/q) = atan(1/2) + atan(u/v)
+    if u == 0:
+        return h
+    t = _atan_series(abs(u), v, prec)
+    if u > 0:
+        return h[0] + t[0], h[1] + t[1]
+    return h[0] - t[1], h[1] - t[0]
+
+
+def _atan_series(p, q, prec=P):
     """Enclosure of atan(p/q), 0 < p <= q (alternating series with tail bound)."""
     assert 0 < p <= q
     one = 1 << prec

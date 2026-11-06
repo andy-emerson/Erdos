@@ -2,21 +2,21 @@ alpha5p2i_k4_ext.stop: (3000000000, 130000000000] 169 chunks, contiguous True, s
 E2_a-1-2i.stop: (1, 17000000000] 34 chunks, contiguous True, starts 26703536956, fails 0, cycles 0, longest 339 at (109342, 55939), excursion 13.93 at (-56067, 117632), cpu 765 s
 E2_a-2+1i.stop: (1, 19000000000] 38 chunks, contiguous True, starts 29845130580, fails 0, cycles 0, longest 346 at (85355, -94280), excursion 14.32 at (16193, -27234), cpu 858 s
 E2_a-2-1i.stop: (1, 14000000000] 28 chunks, contiguous True, starts 21991149144, fails 0, cycles 0, longest 319 at (88326, 39181), excursion 16.42 at (12010, 41489), cpu 628 s
-E2_a1+2i.stop: (1, 14000000000] 28 chunks, contiguous True, starts 21991149144, fails 0, cycles 0, longest 313 at (-530, -14307), excursion 14.67 at (-24676, -7341), cpu 629 s
+E2_a1+2i.stop: (1, 16000000000] 32 chunks, contiguous True, starts 25132742084, fails 0, cycles 0, longest 313 at (-530, -14307), excursion 14.67 at (-24676, -7341), cpu 720 s
 E2_a2-1i.stop: (1, 10000000000] 20 chunks, contiguous True, starts 15707963012, fails 0, cycles 0, longest 349 at (-99344, 7883), excursion 13.84 at (61160, -7709), cpu 451 s
 cone_2+i.stop: (100000, 170000000000] 85 chunks, contiguous True, starts 66758804697, fails 0, cycles 0, longest 111 at (113842, -80707), excursion 6.37 at (-, -), cpu 2498 s
-k6_a-10-1i_C.stop: (1, 160000000] 4 chunks, contiguous True, starts 62831850, fails 0, cycles 0, longest 2734 at (5249, 5280), excursion 41.02 at (413, 3656), cpu 4 s
+k6_a-10-1i_C.stop: (1, 82000000000] 45 chunks, contiguous True, starts 32201324699, fails 0, cycles 0, longest 3676 at (46964, 63523), excursion 50.58 at (5501, 252964), cpu 2218 s
 k6_a-10-3i_A.stop: (1, 8200000000] 17 chunks, contiguous True, starts 3220132404, fails 0, cycles 0, longest 7038 at (50730, 27829), excursion 90.88 at (50, 70423), cpu 327 s
 k6_a-10-3i_B.stop: (1, 8200000000] 17 chunks, contiguous True, starts 3220132404, fails 0, cycles 0, longest 7101 at (5524, 29369), excursion 69.99 at (65665, 52500), cpu 328 s
-k6_a-11-2i_B.stop: (1, 30000000] 30 chunks, contiguous True, starts 11781012, fails 508, cycles 0, longest 134152 at (1940, 3563), excursion 202.31 at (77, 98), cpu 6 s; FAIL starts resolved by gstop_big.py: 508 of 508
-k6_a-11-2i_D.stop: (1, 30000000] 30 chunks, contiguous True, starts 11781012, fails 515, cycles 0, longest 146276 at (1305, 4974), excursion 202.64 at (199, 124), cpu 6 s; FAIL starts resolved by gstop_big.py: 515 of 515
-k6_a-7-4i_A.stop: (1, 33000000000] 33 chunks, contiguous True, starts 12959069513, fails 0, cycles 0, longest 225 at (82274, 148327), excursion 6.72 at (82274, 148327), cpu 414 s
-k6_a-7-4i_B.stop: (1, 33000000000] 33 chunks, contiguous True, starts 12959069513, fails 0, cycles 0, longest 232 at (57488, 34227), excursion 6.83 at (3, 0), cpu 418 s
-k6_a-7-4i_C.stop: (1, 33000000000] 33 chunks, contiguous True, starts 12959069513, fails 0, cycles 0, longest 232 at (48915, 82278), excursion 6.74 at (50124, 85389), cpu 415 s
+k6_a-11-2i_B.stop: (1, 135000000] 51 chunks, contiguous True, starts 53014366, fails 2550, cycles 0, longest 166318 at (7063, 526), excursion 202.31 at (77, 98), cpu 29 s; FAIL starts resolved by gstop_big.py: 2550 of 2550
+k6_a-11-2i_D.stop: (1, 135000000] 51 chunks, contiguous True, starts 53014366, fails 2494, cycles 0, longest 161849 at (5528, 6279), excursion 202.64 at (199, 124), cpu 29 s; FAIL starts resolved by gstop_big.py: 2494 of 2494
+k6_a-7-4i_A.stop: (1, 44000000000] 44 chunks, contiguous True, starts 17278759378, fails 0, cycles 0, longest 225 at (82274, 148327), excursion 6.72 at (82274, 148327), cpu 556 s
+k6_a-7-4i_B.stop: (1, 44000000000] 44 chunks, contiguous True, starts 17278759378, fails 0, cycles 0, longest 239 at (76825, 181842), excursion 6.83 at (3, 0), cpu 560 s
+k6_a-7-4i_C.stop: (1, 44000000000] 44 chunks, contiguous True, starts 17278759378, fails 0, cycles 0, longest 239 at (123111, 144640), excursion 6.76 at (123111, 144640), cpu 557 s
 k6_a-8-3i_A.stop: (1, 12000000000] 24 chunks, contiguous True, starts 4712389107, fails 0, cycles 0, longest 410 at (34126, 52035), excursion 12.07 at (16744, 34631), cpu 157 s
 k6_a-8-3i_C.stop: (1, 12000000000] 24 chunks, contiguous True, starts 4712389107, fails 0, cycles 0, longest 482 at (31476, 101769), excursion 12.45 at (79536, 65647), cpu 162 s
 k6_a-9-2i_D.stop: (1, 4200000000] 14 chunks, contiguous True, starts 1649336173, fails 0, cycles 0, longest 816 at (45840, 38095), excursion 21.56 at (32158, 5291), cpu 73 s
-k7_a-11_4.stop: (1000000000, 11000000000] 20 chunks, contiguous True, starts 3926990793, fails 0, cycles 0, longest 324 at (11474, 73437), excursion 10.04 at (27140, 30007), cpu 143 s
+k7_a-11_4.stop: (1000000000, 14000000000] 26 chunks, contiguous True, starts 5105088212, fails 0, cycles 0, longest 357 at (87119, 63472), excursion 10.24 at (70250, 82003), cpu 186 s
 k7_a-11_8.stop: (1000000000, 93000000000] 92 chunks, contiguous True, starts 36128315551, fails 0, cycles 0, longest 2014 at (146576, 133851), excursion 37.45 at (7744, 210193), cpu 2077 s
-k7_a-12_3.stop: (1000000000, 4600000000] 8 chunks, contiguous True, starts 1413716705, fails 0, cycles 0, longest 529 at (32208, 29657), excursion 15.10 at (33369, 39102), cpu 54 s
+k7_a-12_3.stop: (1000000000, 15500000000] 30 chunks, contiguous True, starts 5694136536, fails 0, cycles 0, longest 595 at (100281, 65792), excursion 15.58 at (97960, 30775), cpu 220 s
 k7_a-12_7.stop: (1000000000, 16000000000] 30 chunks, contiguous True, starts 5890486447, fails 0, cycles 0, longest 2595 at (45011, 102968), excursion 39.31 at (89533, 21138), cpu 377 s

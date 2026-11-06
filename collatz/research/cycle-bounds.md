@@ -259,3 +259,74 @@ Proven, with certified arithmetic and the cited verifications as the only comput
 4. Section 5.1, the ceiling n ≲ 1/r for the basic method, and Theorem B1 (almost everywhere, not for the specific constants).
 
 Not proven: the exponents 1/4 and 1/3 for the specific maps (observed over B = 10^3 to 10^20 and n ≤ 2·10^7, with the finite-range constants of Section 5.4); the threshold tables of Sections 2.5 and 3.4 are double-precision or 80-digit planning numbers, exact only at the B or X listed. Not attempted: the averaged refinement (prior art, Section 6.1, item 3), circuit structure and Baker bounds.
+
+## 7. Extended verification and the new bounds (6 Nov, second run)
+
+This section raises the verification bounds behind Theorem A2 and the bounds of Section 4.2, recomputes the exact bounds at the new verification bounds, and costs the next steps, including a further verification of 7x ± 1. Nothing in Sections 1 to 6 was changed; where this section gives a larger bound, it supersedes the one there, under the same trusted base plus the new runs.
+
+### 7.1 Programs and checks
+
+1. `gstopf.c` is `gstop.c` with one loop iteration per odd step. After z ↦ αz + d it removes the whole power of 1 + i at once: with m = min(v_2(x), v_2(y)), x + yi = 2^m(x' + y'i), z/(1+i)^(2m) = (-i)^m (x + yi)/2^m, and one more division if x' and y' are both odd. The norm only falls along a run of divisions, so a run ends below the start's norm exactly when some raw step of T does. The step count is corrected to the first raw step of smaller norm, so the output line is that of `gstop`. Coordinates stay in int64 below 2^56, with exact norms in 128 bits; above that the program uses 128 bits with escape at 2^110, where no comparison is needed. The program refuses any rule file whose odd classes are not z ↦ AL z + BE or whose even classes are not z ↦ z/(1+i). With a fifth argument `all` the starts are all odd z in all four quadrants and a cycle is a return to z itself, as in `gstopall.c` (catalog V2). On the logged chunks (10^7, 1.1·10^8] and (3.1·10^8, 4.1·10^8] of the 5+2i map it reproduces `gstop` exactly, including the stopping-time maxima, the means and the 122.85-bit excursion. It also matches `gstop` on (10^3, 10^5] for a (1+i)^6 map and a (1+i)^7 map, `gstopall` on (1, 10^6] for two E_2 maps, and the G6 lines for 2-i and -2+i on (1, 10^7]. Throughput for the 5+2i map: 6.2·10^6 starts per second per core, against 1.2·10^6 for `gstop`.
+2. `gstopcone.c` is the stage-2 test of `fdsearch.c` for a map at (1+i)^2 on the cone C (fundamental-domain.md, Sections 6 and 7.3): the same starts, the same S = rep_C((αz + d)/(1+i)^v) and the same exact norm comparison, without the O(B) memory of `fdsearch`. On (10^6, 10^7] it reproduces `logs/fd_examples_1e7.txt` (3,534,327 starts, 65 odd steps at 1800+1731i, 3.83 bits).
+3. `gstop_ext.py` runs a checker in chunks with two workers and appends one line per finished chunk to the log; a restart skips the chunks already logged. A run was in fact killed by a time limit and resumed this way. `gstop_big.py` follows the starts that a C program reported as FAIL (an escape) in Python integers until their norm drops. `summarize_ext.py` checks that the chunks of each log cover the range without gaps and sums them (`logs/ext_summary.txt`). Every log has contiguous chunks, no cycle and no unresolved failure.
+4. Rule files: `mk_k6_rules.py` writes `k6_a<α>_<set>.rule` for the single-cycle maps at (1+i)^6, one per mirror pair (the maps of logs/k6_1e6.txt with one cycle and Im α < 0, digit sets named as in catalog D5). The E_2 maps are `E2_a<α>.rule` (D = {1, i}, from `rules.digit_rule`). `gcz` to 10^5 on each k6 file finds only the unit cycle (for 11 ± 2i with escapes past gcz's limit, which the runs below resolve), and the E_2 files reproduce the G6 log. The (1+i)^7 maps use the existing k7_*.rule files.
+5. Bounds: `cyclebound_ext.py` (`logs/cyclebound_ext.txt`) applies the routine of Sections 3 and 4 at the old and new B. `cyclebound_next.py` (`logs/cyclebound_next.txt`) gives the next two jumps of each map from the thresholds of Section 3.4. Logs of the runs: `logs/alpha5p2i_k4_ext.stop` and `logs/ext2/*.stop`, each with a `.progress` file, and `logs/ext2/k6_a-11-2i_*.big`.
+
+### 7.2 The 5+2i map to 1.3·10^11
+
+`gstopf` checked every odd z with a > 0, b ≥ 0 and 3·10^9 < N(z) ≤ 1.3·10^11 in 169 chunks. That is 49,872,783,514 starts, each falling below its own norm, with no failure and no return to an associate of the start. It took 7771 CPU seconds (77 minutes on two cores, part of it shared with another job). The longest stopping time is 18,231 steps of T, at 163920+84109i, and the largest excursion is 137.61 bits, at 235335+215044i. The mean stopping time is 53.84 to 53.92 per chunk, as before (H10, H12). With H8 and H9 (`H_sound` applied with N_0 = 10^7, B = 1.3·10^11), every nonzero z with N(z) ≤ 1.3·10^11 reaches ±1 or ±i.
+
+The exact bound at B = 7.6·10^9 is 2190 (V = 10,639, W = 1061). At B = 1.3·10^11 it is 8696 (V = 42,245, W = 4213), with size alone 683, angle alone 1224 and the disc 8696; all are attained.
+
+Theorem A2'. A non-trivial cycle up to units of the 5+2i map has at least 8696 odd steps and at least 42,245 divisions by 1 + i, so at least 50,941 steps of T.
+
+The proof is that of Theorem A2 with B = 1.3·10^11, r^2 = 5/(29(B + 1)). The next jump comes at B ≈ 1.32·10^13 (Section 3.4: 8696 is an unusually good joint approximation), 100 times further. That is 5.1·10^12 starts, 8·10^5 core-seconds at the measured rate, or 4.6 days on two cores, so the run stopped at 1.3·10^11.
+
+### 7.3 The further Gaussian maps
+
+For each map of Section 4.1 the next jump of the bound (Section 3.4 thresholds; `logs/cyclebound_next.txt`) sits between 1.0 and 90 times its old B. Every map ran at about 10^7 to 3.5·10^7 starts per second per core (slowest 10+3i, fastest the E_2 maps), except 11 ± 2i at 2·10^6. So every jump up to about 10^11 was cheap, and each map was run to a B just past the jump that the cost allowed. The (1+i)^6 maps were checked from norm 1, so their verification no longer rests on the census run; there are several single-cycle maps per multiplier (G41), and every one of them was checked, one per mirror pair (the mirror has conjugate orbits). The (1+i)^7 maps continue G45 from 10^9. The cone map continues from 10^5, the end of stage 1 of fundamental-domain.md. The E_2 maps were rechecked from norm 1 over all quadrants. In the table, the cost is the CPU time of the new range. The bounds are the box bounds, all attained; the disc bound is the same except for 10+i (13,672), -11+8i (7217) and 1+2i (8629). The last column is the B up to which the new bound holds (planning value).
+
+| map | old B | old bound | new B | new bound | starts | CPU | holds to |
+|---|---|---|---|---|---|---|---|
+| 7+4i, sets A, B, C | 10^6 | 251 | 4.4·10^10 | 5230 | 1.73·10^10 each | 560 s each | 6.5·10^10 |
+| 8+3i, sets A, C | 10^6 | 105 | 1.2·10^10 | 3461 | 4.71·10^9 each | 160 s each | 4.8·10^10 |
+| 9+2i, set D | 10^6 | 61 | 4.2·10^9 | 2367 | 1.65·10^9 | 73 s | 1.1·10^10 |
+| 10+i, set C | 10^6 | 79 | 8.2·10^10 | 7171 | 3.22·10^10 | 2218 s | 8.9·10^10 |
+| 10+3i, sets A, B | 10^6 | 116 | 8.2·10^9 | 3037 | 3.22·10^9 each | 328 s each | 1.9·10^10 |
+| 11+2i, sets B, D | 10^6 | 144 | 1.35·10^8 | 703 | 5.30·10^7 each | 29 s each, plus the escapes | 2.9·10^8 |
+| -11+4i | 10^9 | 1153 | 1.4·10^10 | 3254 | 5.11·10^9 | 186 s | 2.4·10^12 |
+| -12+3i | 10^9 | 1449 | 1.55·10^10 | 2568 | 5.69·10^9 | 220 s | 2.2·10^10 |
+| -11+8i | 10^9 | 988 | 9.3·10^10 | 6229 | 3.61·10^10 | 2077 s | 1.4·10^11 |
+| -12+7i | 10^9 | 876 | 1.6·10^10 | 3391 | 5.89·10^9 | 377 s | 5.1·10^10 |
+| cone 2+i | 10^7 | 388 | 1.7·10^11 | 7511 | 6.68·10^10 | 2498 s | 3.75·10^12 |
+| E_2, 2-i | 10^7 | 813 | 10^10 | 4821 | 1.57·10^10 | 451 s | 1.6·10^11 |
+| E_2, -1-2i | 10^7 | 671 | 1.7·10^10 | 6371 | 2.67·10^10 | 765 s | 3.0·10^10 |
+| E_2, -2-i | 10^7 | 388 | 1.4·10^10 | 4821 | 2.20·10^10 | 628 s | 1.6·10^11 |
+| E_2, 1+2i | 10^7 | 693 | 1.6·10^10 | 8480 | 2.51·10^10 | 720 s | 1.8·10^10 |
+| E_2, -2+i | 10^7 | 515 | 1.9·10^10 | 8502 | 2.98·10^10 | 858 s | 4.2·10^10 |
+
+For the 11 ± 2i maps (drift -0.034 bits, G42), 2550 and 2494 starts escaped past 2^110 in `gstopf`. All of them fell below their norm in Python integers, after up to 201,208 steps of T, with excursions up to about 377 bits in the norm. The other starts have stopping times up to 166,318 steps and excursions up to 202.6 bits. Below 10^6 this repeats G42 in full. Statistics of the other maps (`logs/ext_summary.txt`): longest stopping times 225 to 239 steps of T for 7+4i, 410 and 482 for 8+3i, 816 for 9+2i, 3676 for 10+i, 7038 and 7101 for 10+3i, 357, 595, 2014 and 2595 for -11+4i, -12+3i, -11+8i and -12+7i, 111 odd steps for the cone map, and 313 to 349 steps for the E_2 maps.
+
+Three batches were run (`run_ext2.sh`, `run_ext3.sh`, `run_ext4.sh`, plus the 10+i run by hand). The second and third took several maps one jump further whenever that cost minutes. What remains, at the measured rates:
+
+1. Cheap (minutes to an hour on two cores): 10+i to 8.9·10^10 (13,924); 1+2i to 1.8·10^10 (8629); -12+3i to 2.2·10^10 (2879); 9+2i to 1.14·10^10 (2428); 10+3i to 1.9·10^10 (3425); -1-2i to 3.0·10^10 (7511); 8+3i to 4.8·10^10 (3993); 7+4i to 6.5·10^10 (5587); -12+7i to 5.1·10^10 (4856); -2+i to 4.2·10^10 (9061); -11+8i to 1.38·10^11 (7217); 11 ± 2i to 2.9·10^8 (1083). The figures in parentheses are the first n past the plateau, from the planning table, and are not certified.
+2. Hours: 2-i and -2-i to 1.64·10^11 (about 2 core-hours each).
+3. Hours to days: -11+4i to 2.4·10^12 (an unusually long plateau, 9.5·10^11 starts, about 10 core-hours); the cone map to 3.75·10^12 (1.4·10^12 starts, about 15 core-hours); the 5+2i map to 1.32·10^13 (Section 7.2, about 9 core-days).
+
+### 7.4 7x ± 1
+
+Search (6 November 2026). Barina's paper in its current arXiv version (1807.00908v7) and in the published version (CMST 28(4) (2022), 143 to 147, doi:10.12921/cmst.2022.0000025) still states verification "for all numbers up to 10^15". Barina's project page for 3x+1 (pcbarina.fit.vutbr.cz, verification to 2^71, January 2025) and his GitHub repository xbarin02/collatz do not mention 7x ± 1. The OEIS wiki page "7x±1 problem" states no bound. Oliveira e Silva's page on px+1 (sweet.ua.pt/tos/px+1.html) verifies a different 7x+1 map (with divisions by 2, 3 and 5) to 10^16, which is not Barina's map. Matthews's page on Barina's map could not be read (redirect loop). No verification of Barina's 7x ± 1 beyond 10^15 was found, so Theorem A1 stands at 27,855,251 odd elements.
+
+The companion -7x ± 1. With the minimal symmetric digits at modulus 4, g(x) = -7x - 1 for x ≡ 1 and -7x + 1 for x ≡ 3 (mod 4), x/2 for even x. So g(x) = -f(x) on odd x and g(x) = f(x) on even x, and since f is odd and positive on positives, |g(x)| = f(|x|). The absolute value maps g-orbits to f-orbits. Barina's verification therefore gives that every |x| ≤ 10^15 reaches the loop 1 ↔ -1 of g. A cycle of g avoiding ±1 maps onto a cycle of f avoiding 1, whose length divides its own. The interval condition is identical (2^V = Π|-7 + d_j/x_j|), so Theorem A1 holds for -7x ± 1 as stated. Nothing needed computing.
+
+Cost of 5.09·10^15. Raising the bound to 465,645,424 needs every positive integer up to X ≈ 5.087·10^15 (Section 2.5), that is, a drop-below-start check of the odd n in (10^15, 5.09·10^15] on top of Barina's run. `z7stop.c` does this with two exact exclusions. First, n ≡ 2 or 5 (mod 7) is skipped: then m = (4n ∓ 1)/7 is odd, f^3(m) = n and m < n, and the orbit of m first goes below m after it passes n. Second, there is a sieve modulo 2^k: classes whose iterate M t + x, fixed by the residue, falls below 2^k t + r for every t in range are skipped, and survivors are iterated from that state, in 64 bits below 2^60 and then in 128 bits. `z7test.py` checked the sieve independently in Python integers on 3·10^5 random n above 10^15 at k = 24, with no error, and the mod-7 identity on the same sample. On one core, over a window of 2^31 integers above 10^15 (`logs/z7stop_bench.txt`), it handles 6.5·10^7, 6.8·10^7 and 6.7·10^7 odd numbers per second at k = 20, 24, 26. About 11 to 13 percent of the odd numbers need iterating, 21 odd steps each after the sieve on average. About 7 integers per 10^9 have an iterate above 2^120 (15 in the window), and these need three-word arithmetic. At 6.8·10^7 per second the 2.05·10^15 odd numbers of (10^15, 5.09·10^15] take 3.0·10^7 core-seconds. That is 350 core-days, 8400 core-hours or 175 days on this two-core machine, plus the multiword follow-up of about 3·10^7 large orbits, negligible in C. Reaching 10^16 (bound 604,921,679) costs 2.2 times as much. Barina's GPU code for 3x+1 checks 2^40 numbers in about 5 seconds per GPU, according to his project page. If a 7x ± 1 port came within a factor of 10 of that (the drift of 7x ± 1 is weaker), 5.09·10^15 would be a matter of days on one GPU, so the extension is best asked of him.
+
+### 7.5 Summary of the new statements
+
+With the runs of this section as the only new computational input:
+
+1. The 5+2i map: every nonzero z with N(z) ≤ 1.3·10^11 reaches a unit, and a non-trivial cycle up to units has at least 8696 odd steps and 50,941 steps of T (Theorem A2'). The bound is attained and holds to B ≈ 1.32·10^13.
+2. The bounds of Section 4.2 are replaced by those of the table in Section 7.3, each conditional on that map's run listed there. The (1+i)^6 maps are checked from norm 1. The cone map 2+i is checked on Z[i]/U to norm 1.7·10^11.
+3. 7x ± 1 and -7x ± 1: 27,855,251 odd elements (no further verification found). Reaching 465,645,424 costs about 350 core-days with `z7stop`.
+
+The verification bounds of catalog V7 and the statements of V10 to V12 are therefore out of date. This note does not change the catalog.

@@ -90,4 +90,21 @@ Build output goes to `.lake/` (ignored by `.gitignore`).
   corollary `E2_sound`: if every odd `z` with `1 < N z ≤ B` has a `T`-iterate of smaller norm
   (the `gstopall` check with `B1 = 1`, `B2 = B`), every nonzero `z` with `N z ≤ B` reaches
   `1`, `-i` or `-1`.
+- `GaussianCollatz/Quotient.lean` (`quotient.md`): associates `Assoc`, the setoid and the quotient
+  `Cls = ℤ[i]/U` (`cls`, `cls_eq_iff`, `cls_one_iff`: `[z] = [1] ↔ IsUnit z`), `RespectsAssoc`,
+  `Commutes.respects`, the induced map `descend` with `descend_cls`, `descent_iff` (a quotient map
+  with `F [z] = [f z]` exists iff `f` respects associates), `descend_unique`, `sq_respects` and
+  `sq_not_commutes` (strictly weaker), `exists_commuting_same_descend` (every quotient map comes
+  from a commuting map, if `f 0 = 0`), `qiter`, `descend_iter`, `pigeon`.
+  Transfer (Theorem 3.2): `CollatzOn P f`, `QCollatzOn P F` (every class reaches `[1]`, `[1]`
+  periodic), `transfer`, `Expr.rule_iff_quotient`, `transfer_nonzero`. Lifts (Theorems 4.1, 4.2):
+  `lift_cycle`, `qperiod_dvd`, `lift_period_dvd`, `commuting_lift`, `commuting_lift_periodic`,
+  `commuting_stab` (the cycle of `z` contains `v z` iff `v ∈ ⟨ε⟩`), and the example `ex3`,
+  `ex3_respects`, `ex3_cycle` (a lift of length 3). Corollaries 6.1 and 6.2 without symmetry:
+  `Expr.rotate_respects`, `Expr.rotate_descend`, `Expr.rotate_rule_of_respects`, `qconj`,
+  `Expr.mirror_respects`, `Expr.mirror_descend`, `Expr.mirror_rule_of_respects`. Theorem 5.1:
+  `Expr.big_point` (Lemma 5.0'), `Expr.symmetric_of_T_respects`, `Expr.symmetric_of_S_respects`,
+  `Expr.respects_iff_symmetric`, `Expr.symmetric_of_twisted`. Integers (`IntCollatz`):
+  `C3_not_respects`, `level_one_not_respects`, `B7_commutes`, `B7_quotient`, `pm3_commutes`,
+  `tw3_respects`, `tw3_not_commutes`, `tw3_pm3`, `lifts_differ`.
 - `CheckAxioms.lean`: `#print axioms` for every main theorem (not part of the library).

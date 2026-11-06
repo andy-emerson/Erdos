@@ -602,6 +602,177 @@ theorem big_point (E : Expr) {z0 : GInt} (hz0 : Odd z0) {u : GInt} (hu : IsUnit 
     · apply lt_N_of_re; simp only [add_re, mul_re, neg_re, neg_im, one_re, one_im]; omega
     · apply lt_N_of_im; simp only [add_im, mul_im, neg_re, neg_im, I_re, I_im]; omega
 
+theorem _root_.GInt.eq_of_sub_eq_zero {a b : GInt} (h : a - b = 0) : a = b := by
+  have r := congrArg GInt.re h
+  have i := congrArg GInt.im h
+  simp at r i
+  ext <;> omega
+
+/-- The basic identity `w(u z) = u w(z) + e` with `e = d(u z₀) - u d(z₀)`. -/
+theorem lin_identity (E : Expr) (u z : GInt) (a b : GInt) :
+    E.α * (u * z) + a = u * (E.α * z + b) + (a - u * b) := by
+  ext <;> simp <;> grind
+
+/-- **Theorem 5.1 for `T`.** If `T` sends associates to associates (on odd points), the table
+commutes with the units. -/
+theorem symmetric_of_T_respects (E : Expr)
+    (h : ∀ u z, IsUnit u → Odd z → Assoc (E.T z) (E.T (u * z))) : E.Symmetric := by
+  intro u z0 hu hz0
+  obtain ⟨e, he⟩ : ∃ e, e = E.d (u * z0) - u * E.d z0 := ⟨_, rfl⟩
+  obtain ⟨z, hz, hd, hdu, hW, -⟩ := E.big_point hz0 hu (N e)
+  have hT1 : E.T z = E.α * z + E.d z := by simp [T, show ¬ pi ∣ z from hz]
+  have hT2 : E.T (u * z) = E.α * (u * z) + E.d (u * z) := by
+    simp [T, show ¬ pi ∣ u * z from odd_unit_mul hu hz]
+  obtain ⟨ε, hε, heq⟩ := h u z hu hz
+  rw [hT1, hT2] at heq
+  have hlin : E.α * (u * z) + E.d (u * z) = u * (E.α * z + E.d z) + e := by
+    rw [he, hdu, hd]; exact lin_identity E u z _ _
+  rw [hlin] at heq
+  generalize E.α * z + E.d z = W at heq hW
+  have hce : (ε - u) * W = e := by
+    have r := congrArg GInt.re heq
+    have i := congrArg GInt.im heq
+    simp at r i
+    ext <;> simp <;> grind
+  by_cases hεu : ε = u
+  · subst hεu
+    have h0 : e = 0 := by rw [← hce]; ext <;> simp
+    exact eq_of_sub_eq_zero (he.symm.trans h0)
+  · exfalso
+    have hc : ε - u ≠ 0 := fun h0 => hεu (eq_of_sub_eq_zero h0)
+    have := N_le_of_mul_eq hc hce
+    omega
+
+/-- **Theorem 5.1 for `S`.** If `S` sends associates to associates (on odd points), the table
+commutes with the units. -/
+theorem symmetric_of_S_respects (E : Expr)
+    (h : ∀ u z, IsUnit u → Odd z → Assoc (E.S z) (E.S (u * z))) : E.Symmetric := by
+  intro u z0 hu hz0
+  obtain ⟨e, he⟩ : ∃ e, e = E.d (u * z0) - u * E.d z0 := ⟨_, rfl⟩
+  obtain ⟨z, hz, hd, hdu, hW, hW'⟩ := E.big_point hz0 hu (N e)
+  have hS1 : E.S z = oddPart (E.α * z + E.d z) := by simp [S, show ¬ pi ∣ z from hz]
+  have hS2 : E.S (u * z) = oddPart (E.α * (u * z) + E.d (u * z)) := by
+    simp [S, show ¬ pi ∣ u * z from odd_unit_mul hu hz]
+  obtain ⟨ε, hε, heq⟩ := h u z hu hz
+  rw [hS1, hS2] at heq
+  have hlin : E.α * (u * z) + E.d (u * z) = u * (E.α * z + E.d z) + e := by
+    rw [he, hdu, hd]; exact lin_identity E u z _ _
+  generalize E.α * (u * z) + E.d (u * z) = W' at heq hW' hlin
+  generalize E.α * z + E.d z = W at heq hW hlin
+  have hN0 : N (0 : GInt) = 0 := by decide
+  have hW0 : W ≠ 0 := by intro h0; rw [h0, hN0] at hW; omega
+  have hW'0 : W' ≠ 0 := by intro h0; rw [h0, hN0] at hW'; omega
+  obtain ⟨-, hWa⟩ := oddPart_spec W hW0
+  obtain ⟨-, hWb⟩ := oddPart_spec W' hW'0
+  generalize val W = a at hWa
+  generalize val W' = b at hWb
+  generalize oddPart W = o at hWa heq
+  generalize oddPart W' = o' at hWb heq
+  subst heq
+  rcases Nat.lt_or_ge b a with hab | hab
+  · -- `a = b + t + 1`: then `(ε - u π^{t+1}) W' = ε e`, impossible
+    exfalso
+    obtain ⟨t, rfl⟩ : ∃ t, a = b + (t + 1) := ⟨a - b - 1, by omega⟩
+    have hrel : pow pi (t + 1) * W' = ε * W := by
+      rw [hWb, hWa, pow_add pi b (t + 1)]
+      generalize pow pi b = X; generalize pow pi (t + 1) = Y
+      ext <;> simp <;> grind
+    have hc : (ε - u * pow pi (t + 1)) * W' = ε * e := by
+      have e1 : (ε - u * pow pi (t + 1)) * W' = ε * W' - u * (pow pi (t + 1) * W') := by
+        ext <;> simp <;> grind
+      rw [e1, hrel, hlin]; ext <;> simp <;> grind
+    have hne : ε - u * pow pi (t + 1) ≠ 0 := fun h0 =>
+      unit_mul_pow_pi_ne hu hε t (eq_of_sub_eq_zero h0).symm
+    have := N_le_of_mul_eq hne hc
+    rw [N_unit_mul hε] at this
+    omega
+  · obtain ⟨t, rfl⟩ : ∃ t, b = a + t := ⟨b - a, by omega⟩
+    have hrel : W' = (ε * pow pi t) * W := by
+      rw [hWb, hWa, pow_add pi a t]
+      generalize pow pi a = X; generalize pow pi t = Y
+      ext <;> simp <;> grind
+    have hc : (ε * pow pi t - u) * W = e := by
+      have e1 : (ε * pow pi t - u) * W = (ε * pow pi t) * W - u * W := by
+        ext <;> simp <;> grind
+      rw [e1, ← hrel, hlin]; ext <;> simp <;> grind
+    by_cases hcu : ε * pow pi t = u
+    · rw [hcu] at hc
+      have h0 : e = 0 := by rw [← hc]; ext <;> simp
+      exact eq_of_sub_eq_zero (he.symm.trans h0)
+    · exfalso
+      have := N_le_of_mul_eq (fun h0 => hcu (eq_of_sub_eq_zero h0)) hc
+      omega
+
+/-- **Theorem 5.1.** For an expression, `S` respects associates iff it commutes with the
+units iff the table commutes with the units; likewise for `T`. -/
+theorem respects_iff_symmetric (E : Expr) :
+    RespectsAssoc E.S ↔ E.Symmetric :=
+  ⟨fun h => E.symmetric_of_S_respects (fun u z hu _ => h u z hu),
+   fun hs => (E.S_commutes hs).respects⟩
+
+/-- **Corollary 5.2(2).** No twisted commuting: if `S(u z) = χ(u) u S(z)` with `χ` unit-valued,
+the table commutes with the units. -/
+theorem symmetric_of_twisted (E : Expr) (χ : GInt → GInt) (hχ : ∀ u, IsUnit u → IsUnit (χ u))
+    (h : ∀ u z, IsUnit u → E.S (u * z) = χ u * u * E.S z) : E.Symmetric :=
+  E.symmetric_of_S_respects (fun u z hu _ => ⟨χ u * u, unit_mul (hχ u hu) hu, h u z hu⟩)
+
 end Expr
 
 end GInt
+
+/-! ## The integers (Section 7) -/
+namespace IntCollatz
+
+/-- Associates in `ℤ`. -/
+def AssocZ (x y : Int) : Prop := y = x ∨ y = -x
+
+/-- Collatz's map. -/
+def C3 (z : Int) : Int := if z % 2 = 0 then z / 2 else 3 * z + 1
+
+/-- `3x+1` does not respect associates: `5 ↦ 16`, `-5 ↦ -14`. -/
+theorem C3_not_respects : C3 5 = 16 ∧ C3 (-5) = -14 ∧ ¬ AssocZ (C3 5) (C3 (-5)) := by
+  refine ⟨by decide, by decide, ?_⟩
+  unfold AssocZ; decide
+
+/-- No odd map `z ↦ m z + d` at modulus `2` (one digit for all odd `z`, `m, d` odd) respects
+associates: already `T(1) = m + d` and `T(-1) = -m + d` are not associates. -/
+theorem level_one_not_respects (m d : Int) (hm : m % 2 = 1) (hd : d % 2 = 1) :
+    ¬ AssocZ (m * 1 + d) (m * (-1) + d) := by
+  unfold AssocZ; omega
+
+/-- Barina's `7x ± 1`. -/
+def B7 (z : Int) : Int := if z % 2 = 0 then z / 2 else if z % 4 = 1 then 7 * z + 1 else 7 * z - 1
+
+theorem B7_commutes (z : Int) : B7 (-z) = - B7 z := by
+  unfold B7; split <;> split <;> (try split) <;> (try split) <;> omega
+
+theorem B7_pos (n : Int) (hn : 0 < n) : 0 < B7 n := by
+  unfold B7; split <;> (try split) <;> omega
+
+/-- The induced map on `ℕ = (ℤ \ 0)/±1`, read on positive representatives, is `B7` itself. -/
+theorem B7_quotient (n : Int) (hn : 0 < n) : ((B7 n).natAbs : Int) = B7 n ∧
+    (B7 (-n)).natAbs = (B7 n).natAbs := by
+  refine ⟨by have := B7_pos n hn; omega, by rw [B7_commutes]; omega⟩
+
+/-- The commuting `3x ± 1` and its twisted version (Example 5.4). -/
+def pm3 (z : Int) : Int := if z % 2 = 0 then z / 2 else if z % 4 = 1 then 3 * z + 1 else 3 * z - 1
+def tw3 (z : Int) : Int := if z % 2 = 0 then z / 2 else if z % 4 = 1 then 3 * z + 1 else -3 * z + 1
+
+theorem pm3_commutes (z : Int) : pm3 (-z) = - pm3 z := by
+  unfold pm3; split <;> split <;> (try split) <;> (try split) <;> omega
+
+theorem tw3_respects (z : Int) : AssocZ (tw3 z) (tw3 (-z)) := by
+  unfold AssocZ tw3; split <;> split <;> (try split) <;> (try split) <;> omega
+
+theorem tw3_not_commutes : tw3 (-1) ≠ - tw3 1 := by decide
+
+/-- Same map on `ℕ`: `|tw3 z| = |pm3 z|`. -/
+theorem tw3_pm3 (z : Int) : (tw3 z).natAbs = (pm3 z).natAbs := by
+  unfold tw3 pm3; split <;> (try split) <;> omega
+
+/-- The lifts of `[1]` differ: `-1` is fixed by the accelerated commuting map
+(`pm3 (-1) = -4`, then `-2`, `-1`) but `tw3 (-1) = 4` lies on the cycle `4 → 2 → 1 → 4`. -/
+theorem lifts_differ : pm3 (-1) = -4 ∧ pm3 (-4) = -2 ∧ pm3 (-2) = -1 ∧
+    tw3 (-1) = 4 ∧ tw3 4 = 2 ∧ tw3 2 = 1 ∧ tw3 1 = 4 := by decide
+
+end IntCollatz

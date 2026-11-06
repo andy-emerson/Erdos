@@ -8,3 +8,4 @@ import GaussianCollatz.Expr
 import GaussianCollatz.Variants
 import GaussianCollatz.Window
 import GaussianCollatz.TwoMinusI
+import GaussianCollatz.Quotient

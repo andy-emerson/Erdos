@@ -1,0 +1,36 @@
+# Collatz-type maps on Zi, F=C , modulus pi^2 (table read mod pi^2), each digit among the 22 smallest; full classification to |N| <= 100000
+maps tested 968; Collatz at 100000: 32; failures {'cycle': 579, 'orbit of 1 escapes': 68, '1 not periodic': 256, 'escape/cap/zero': 33}
+  alpha 1+2i (|N| 5): tables 484 (smallest 4), Collatz 16 (smallest 1)
+  alpha 2+i (|N| 5): tables 484 (smallest 4), Collatz 16 (smallest 1)
+  PASS a1+2i_2 alpha=1+2i smallest=True total digit size 2 table [1]->-1, [i]->-i | cycle of [1] len 1: 1+0 | max odd steps to cycle 34
+  PASS a2+i_1 alpha=2+i smallest=True total digit size 2 table [1]->-i, [i]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 34
+  PASS a1+2i_14 alpha=1+2i smallest=False total digit size 6 table [1]->1-2i, [i]->-i | cycle of [1] len 1: 1+0 | max odd steps to cycle 32
+  PASS a2+i_19 alpha=2+i smallest=False total digit size 6 table [1]->-2+i, [i]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 32
+  PASS a1+2i_20 alpha=1+2i smallest=False total digit size 10 table [1]->1, [i]->-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 32
+  PASS a1+2i_22 alpha=1+2i smallest=False total digit size 10 table [1]->-1, [i]->-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 25
+  PASS a2+i_21 alpha=2+i smallest=False total digit size 10 table [1]->-i, [i]->-3 | cycle of [1] len 1: 1+0 | max odd steps to cycle 25
+  PASS a2+i_23 alpha=2+i smallest=False total digit size 10 table [1]->i, [i]->-3 | cycle of [1] len 1: 1+0 | max odd steps to cycle 32
+  PASS a1+2i_45 alpha=1+2i smallest=False total digit size 14 table [1]->1, [i]->2-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 31
+  PASS a1+2i_46 alpha=1+2i smallest=False total digit size 14 table [1]->1, [i]->2+3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a1+2i_56 alpha=1+2i smallest=False total digit size 14 table [1]->1+2i, [i]->-3i | cycle of [1] len 2: 1+0 2-1 | max odd steps to cycle 31
+  PASS a2+i_50 alpha=2+i smallest=False total digit size 14 table [1]->i, [i]->3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a2+i_51 alpha=2+i smallest=False total digit size 14 table [1]->i, [i]->-3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 31
+  PASS a2+i_57 alpha=2+i smallest=False total digit size 14 table [1]->2+i, [i]->-3 | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 31
+  PASS a1+2i_122 alpha=1+2i smallest=False total digit size 18 table [1]->1-4i, [i]->-i | cycle of [1] len 1: 1+0 | max odd steps to cycle 25
+  PASS a1+2i_90 alpha=1+2i smallest=False total digit size 18 table [1]->1-2i, [i]->2+3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 38
+  PASS a2+i_127 alpha=2+i smallest=False total digit size 18 table [1]->-4+i, [i]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 25
+  PASS a2+i_98 alpha=2+i smallest=False total digit size 18 table [1]->-2+i, [i]->3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 38
+  PASS a1+2i_212 alpha=1+2i smallest=False total digit size 26 table [1]->-1-4i, [i]->-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a1+2i_216 alpha=1+2i smallest=False total digit size 26 table [1]->1+4i, [i]->-3i | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 26
+  PASS a2+i_213 alpha=2+i smallest=False total digit size 26 table [1]->-4-i, [i]->-3 | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a2+i_217 alpha=2+i smallest=False total digit size 26 table [1]->4+i, [i]->-3 | cycle of [1] len 2: 1+0 2-1 | max odd steps to cycle 26
+  PASS a1+2i_277 alpha=1+2i smallest=False total digit size 30 table [1]->1-4i, [i]->2-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 35
+  PASS a2+i_287 alpha=2+i smallest=False total digit size 30 table [1]->-4+i, [i]->-3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 35
+  PASS a1+2i_340 alpha=1+2i smallest=False total digit size 34 table [1]->-3-4i, [i]->-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 23
+  PASS a1+2i_342 alpha=1+2i smallest=False total digit size 34 table [1]->3-4i, [i]->-3i | cycle of [1] len 2: 1+0 2-1 | max odd steps to cycle 34
+  PASS a2+i_341 alpha=2+i smallest=False total digit size 34 table [1]->-4-3i, [i]->-3 | cycle of [1] len 1: 1+0 | max odd steps to cycle 23
+  PASS a2+i_351 alpha=2+i smallest=False total digit size 34 table [1]->-4+3i, [i]->-3 | cycle of [1] len 2: 1+0 2+1 | max odd steps to cycle 34
+  PASS a1+2i_377 alpha=1+2i smallest=False total digit size 38 table [1]->-3-4i, [i]->2-3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a1+2i_378 alpha=1+2i smallest=False total digit size 38 table [1]->-3-4i, [i]->2+3i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a2+i_378 alpha=2+i smallest=False total digit size 38 table [1]->-4-3i, [i]->3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30
+  PASS a2+i_379 alpha=2+i smallest=False total digit size 38 table [1]->-4-3i, [i]->-3+2i | cycle of [1] len 1: 1+0 | max odd steps to cycle 30

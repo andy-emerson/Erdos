@@ -1,0 +1,11 @@
+# Barina-type maps on Zi at pi^4: commuting tables, each orbit digit among the 1 smallest; checked on R/U through F=Q, full classification to |N| <= 100000
+maps tested 14; Collatz at 100000: 2; failures {'cycle': 12}
+  alpha 1+4i (|N| 17): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 4+i (|N| 17): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 3+4i (|N| 25): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 4+3i (|N| 25): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 5 (|N| 25): tables 2 (smallest 2), Collatz 0 (smallest 0)
+  alpha 2+5i (|N| 29): tables 2 (smallest 2), Collatz 1 (smallest 1)
+  alpha 5+2i (|N| 29): tables 2 (smallest 2), Collatz 1 (smallest 1)
+  PASS a2+5i_1 alpha=2+5i smallest=True total digit size 24 table [1]->2-i, [2+i]->1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 718
+  PASS a5+2i_1 alpha=5+2i smallest=True total digit size 24 table [1]->-1+2i, [2+i]->-i | cycle of [1] len 1: 1+0 | max odd steps to cycle 718

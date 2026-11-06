@@ -1,0 +1,13 @@
+# Barina-type maps on Z at pi^3: commuting tables, each orbit digit among the 8 smallest; checked on R/U through F=O, full classification to |N| <= 10000000000
+maps tested 256; Collatz at 10000000000: 7; failures {'cycle': 180, 'orbit of 1 escapes': 33, '1 not periodic': 30, 'escape/cap/zero': 6}
+  alpha 9 (|N| 9): tables 64 (smallest 1), Collatz 0 (smallest 0)
+  alpha 11 (|N| 11): tables 64 (smallest 1), Collatz 4 (smallest 0)
+  alpha 13 (|N| 13): tables 64 (smallest 1), Collatz 3 (smallest 0)
+  alpha 15 (|N| 15): tables 64 (smallest 1), Collatz 0 (smallest 0)
+  PASS a11_7 alpha=11 smallest=False total digit size 28 table [1]->13, [3]->-1 | cycle of [1] len 2: 1+0 3+0 | max odd steps to cycle 58
+  PASS a11_10 alpha=11 smallest=False total digit size 40 table [1]->-3, [3]->-17 | cycle of [1] len 1: 1+0 | max odd steps to cycle 51
+  PASS a11_31 alpha=11 smallest=False total digit size 60 table [1]->29, [3]->-1 | cycle of [1] len 4: 1+0 5+0 7+0 3+0 | max odd steps to cycle 61
+  PASS a11_32 alpha=11 smallest=False total digit size 68 table [1]->-3, [3]->31 | cycle of [1] len 1: 1+0 | max odd steps to cycle 58
+  PASS a13_1 alpha=13 smallest=False total digit size 12 table [1]->-5, [3]->1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 193
+  PASS a13_18 alpha=13 smallest=False total digit size 52 table [1]->3, [3]->-23 | cycle of [1] len 1: 1+0 | max odd steps to cycle 153
+  PASS a13_33 alpha=13 smallest=False total digit size 68 table [1]->11, [3]->-23 | cycle of [1] len 2: 1+0 3+0 | max odd steps to cycle 161

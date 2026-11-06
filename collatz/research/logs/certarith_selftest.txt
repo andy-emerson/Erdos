@@ -1,0 +1,22 @@
+ln 2           True width 9.55e-95
+ln 5           True width 2.40e-94
+ln 7           True width 3.27e-94
+ln 29          True width 5.14e-94
+ln 65          True width 5.96e-94
+ln 137         True width 7.01e-94
+ln 193         True width 8.18e-94
+ln(7-1e-15)    True width 3.27e-94
+pi             True width 5.92e-94
+arg(5,2)       True width 9.83e-95
+arg(2,1)       True width 7.58e-95
+arg(2,-1)      True width 7.58e-95
+arg(-1,-2)     True width 9.64e-94
+arg(-2,1)      True width 6.68e-94
+arg(7,4)       True width 9.55e-95
+arg(-11,4)     True width 6.93e-94
+arg(-12,3)     True width 6.31e-94
+arg(-11,8)     True width 6.99e-94
+arg(-12,7)     True width 6.88e-94
+arg(10,1)      True width 2.43e-95
+sqrt(5/29e9)   True width 4.68e-97
+simplest in [3.14, 3.15]: 22/7

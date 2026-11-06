@@ -1,0 +1,17 @@
+# Z[sqrt2]: pair test against units -1, eps, eps^2, eps^4 (digits a^2+2b^2 <= 30, test points <= 300)
+k=1 u=-1 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=1 u=eps (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=1 u=eps^2 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=1 u=eps^4 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=2 u=-1 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=2 u=eps (u = 1 mod pi^k: False): pairs 1120, commuting pairs 32 (passing 32), non-commuting passing 0
+k=2 u=eps^2 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=2 u=eps^4 (u = 1 mod pi^k: True): pairs 68, commuting pairs 0 (passing 0), non-commuting passing 0
+k=3 u=-1 (u = 1 mod pi^k: False): pairs 298, commuting pairs 34 (passing 34), non-commuting passing 0
+k=3 u=eps (u = 1 mod pi^k: False): pairs 280, commuting pairs 16 (passing 16), non-commuting passing 0
+k=3 u=eps^2 (u = 1 mod pi^k: False): pairs 298, commuting pairs 8 (passing 8), non-commuting passing 0
+k=3 u=eps^4 (u = 1 mod pi^k: True): pairs 34, commuting pairs 0 (passing 0), non-commuting passing 0
+k=4 u=-1 (u = 1 mod pi^k: False): pairs 450, commuting pairs 102 (passing 102), non-commuting passing 0
+k=4 u=eps (u = 1 mod pi^k: False): pairs 420, commuting pairs 48 (passing 48), non-commuting passing 0
+k=4 u=eps^2 (u = 1 mod pi^k: False): pairs 444, commuting pairs 24 (passing 24), non-commuting passing 0
+k=4 u=eps^4 (u = 1 mod pi^k: True): pairs 102, commuting pairs 0 (passing 0), non-commuting passing 0

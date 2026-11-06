@@ -1,0 +1,5 @@
+# Barina-type maps on Z at pi^2: commuting tables, each orbit digit among the 8 smallest; checked on R/U through F=O, full classification to |N| <= 10000000000
+maps tested 16; Collatz at 10000000000: 1; failures {'cycle': 12, 'orbit of 1 escapes': 2, '1 not periodic': 1}
+  alpha 5 (|N| 5): tables 8 (smallest 1), Collatz 0 (smallest 0)
+  alpha 7 (|N| 7): tables 8 (smallest 1), Collatz 1 (smallest 1)
+  PASS a7_0 alpha=7 smallest=True total digit size 2 table [1]->1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 326

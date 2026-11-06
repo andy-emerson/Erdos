@@ -212,3 +212,22 @@ def convergents(cf):
         p0, q0, p1, q1 = p1, q1, a * p1 + p0, a * q1 + q0
         res.append((p1, q1))
     return res
+
+
+if __name__ == "__main__":
+    # self-test against mpmath at 110 digits (a test of the code; no decision uses it)
+    import mpmath as m
+    m.mp.dps = 110
+
+    def chk(name, iv, val):
+        lo, hi = iv_frac(iv)
+        ok = m.mpf(lo.numerator) / lo.denominator <= val <= m.mpf(hi.numerator) / hi.denominator
+        print("%-14s %s width %.2e" % (name, ok, float(hi - lo)))
+    for a in [2, 5, 7, 29, 65, 137, 193]:
+        chk("ln %d" % a, ln_rat(a, 1), m.log(a))
+    chk("ln(7-1e-15)", ln_rat(7 * 10**15 - 1, 10**15), m.log(m.mpf(7) - m.mpf(10)**-15))
+    chk("pi", pi_iv(), m.pi)
+    for a, b in [(5, 2), (2, 1), (2, -1), (-1, -2), (-2, 1), (7, 4), (-11, 4), (-12, 3), (-11, 8), (-12, 7), (10, 1)]:
+        chk("arg(%d,%d)" % (a, b), arg_iv(a, b), m.atan2(b, a))
+    chk("sqrt(5/29e9)", sqrt_frac_iv(5, 29 * (3 * 10**9 + 1)), m.sqrt(m.mpf(5) / (29 * (3 * 10**9 + 1))))
+    print("simplest in [3.14, 3.15]:", simplest_in(Fraction(314, 100), Fraction(315, 100)))

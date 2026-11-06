@@ -1,0 +1,19 @@
+# Collatz-type maps on Z7, F=R , modulus pi^2 (table read mod pi^2), each digit among the 40 smallest; full classification to |N| <= 100000
+maps tested 1600; Collatz at 100000: 16; failures {'cycle': 766, '1 not periodic': 692, 'orbit of 1 escapes': 86, 'escape/cap/zero': 40}
+  alpha -1+2t (|N| 7): tables 1600 (smallest 1), Collatz 16 (smallest 0)
+  PASS a-1+2t_2 alpha=-1+2t smallest=False total digit size 3 table [1]->-1+t, [3]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 354
+  PASS a-1+2t_5 alpha=-1+2t smallest=False total digit size 5 table [1]->-1-t, [3]->-1 | cycle of [1] len 1: 1+0 | max odd steps to cycle 443
+  PASS a-1+2t_29 alpha=-1+2t smallest=False total digit size 13 table [1]->-1+t, [3]->-1-2t | cycle of [1] len 1: 1+0 | max odd steps to cycle 492
+  PASS a-1+2t_47 alpha=-1+2t smallest=False total digit size 16 table [1]->-3, [3]->-1+2t | cycle of [1] len 4: 1+0 1-1 -1+2 3+1 | max odd steps to cycle 345
+  PASS a-1+2t_70 alpha=-1+2t smallest=False total digit size 20 table [1]->-3, [3]->-1-2t | cycle of [1] len 2: 1+0 1-1 | max odd steps to cycle 414
+  PASS a-1+2t_94 alpha=-1+2t smallest=False total digit size 24 table [1]->1, [3]->3+2t | cycle of [1] len 4: 1+0 1-1 3+0 3-1 | max odd steps to cycle 537
+  PASS a-1+2t_259 alpha=-1+2t smallest=False total digit size 38 table [1]->-3+4t, [3]->3 | cycle of [1] len 4: 1+0 1-1 1+2 7-1 | max odd steps to cycle 359
+  PASS a-1+2t_263 alpha=-1+2t smallest=False total digit size 39 table [1]->-1+t, [3]->-1-4t | cycle of [1] len 1: 1+0 | max odd steps to cycle 806
+  PASS a-1+2t_264 alpha=-1+2t smallest=False total digit size 39 table [1]->-1+t, [3]->-5+4t | cycle of [1] len 1: 1+0 | max odd steps to cycle 435
+  PASS a-1+2t_336 alpha=-1+2t smallest=False total digit size 44 table [1]->-7+2t, [3]->-1 | cycle of [1] len 4: 1+0 1+1 3+0 1-1 | max odd steps to cycle 482
+  PASS a-1+2t_471 alpha=-1+2t smallest=False total digit size 52 table [1]->-3, [3]->-5-2t | cycle of [1] len 2: 1+0 1-1 | max odd steps to cycle 327
+  PASS a-1+2t_479 alpha=-1+2t smallest=False total digit size 52 table [1]->1-4t, [3]->-5+2t | cycle of [1] len 2: 1+0 1-1 | max odd steps to cycle 438
+  PASS a-1+2t_728 alpha=-1+2t smallest=False total digit size 65 table [1]->-1-3t, [3]->-5-2t | cycle of [1] len 1: 1+0 | max odd steps to cycle 562
+  PASS a-1+2t_1257 alpha=-1+2t smallest=False total digit size 90 table [1]->-7+4t, [3]->-1-4t | cycle of [1] len 8: 1+0 5-1 3-2 1+1 1+2 3-1 3+0 1-1 | max odd steps to cycle 371
+  PASS a-1+2t_1279 alpha=-1+2t smallest=False total digit size 92 table [1]->-7, [3]->-5-2t | cycle of [1] len 10: 1+0 3+1 7+0 9-3 7-6 3-3 -1+2 5-1 5-2 5-3 | max odd steps to cycle 353
+  PASS a-1+2t_1440 alpha=-1+2t smallest=False total digit size 104 table [1]->1-6t, [3]->-5+4t | cycle of [1] len 2: 1+0 1+1 | max odd steps to cycle 410

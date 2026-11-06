@@ -155,8 +155,33 @@ def cmd_mirror(R, k, B, nsmall, seed=1):
     RT.log(R, f'mirror_k{k}', L)
 
 
+def cmd_split(k, seed=2):
+    """Z7: sigma conjugates the theta family to the theta-bar family: S'_(sigma alpha, sigma d sigma)(z) = sigma(S_(alpha,d)(sigma z)),
+    where S divides by theta and S' by theta-bar; residue classes mod theta^k go to classes mod theta-bar^k."""
+    R = Q.Ring('Z7'); Rb = Q.Ring('Z7b'); rnd = random.Random(seed)
+    zs = [z for z in R.elements(600) if R.odd(z)]
+    nchk = nbad = 0
+    for a in RT.multipliers(R, k):
+        cl = RT.cand_lists(R, a, k, 6)
+        for _ in range(6):
+            tab = {i: rnd.choice(cl[i][0]) for i in R.odd_classes(k)}
+            sa = R.conj(a)
+            tb = {}
+            for i in Rb.odd_classes(k):
+                z = Rb.classrep(i, k)
+                tb[i] = R.conj(tab[R.idx(R.conj(z), k)])
+            for z in zs:
+                zb = R.conj(z)          # odd for theta-bar
+                lhs = RR.apply_S(Rb, sa, tb, k, zb)[0]
+                rhs = R.conj(RR.apply_S(R, a, tab, k, z)[0])
+                nchk += 1; nbad += lhs != rhs
+    L = [f"# Z7: sigma S_theta sigma = S_theta-bar on random tables at modulus {k}: {nchk} checks, {nbad} mismatches"]
+    RT.log(R, f'split_k{k}', L)
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
+    if a[0] == 'split': cmd_split(int(a[1])); sys.exit()
     R = Q.Ring(a[1])
     if a[0] == 'forced': cmd_forced(R, int(a[2]))
     elif a[0] == 'assoc': cmd_assoc(R, int(a[2]), int(a[3]), int(a[4]))

@@ -1,0 +1,6 @@
+# rotated and mirrored maps in Z7 at pi^2
+sigma(pi) = eta pi with eta = None
+one-step identities S_(u alpha)(z) = S_alpha(uz) and S_(sigma alpha)(z) = eta^v sigma(S_alpha(sigma z)): 4760 checks, rotation mismatches 0, mirror mismatches 0
+literal verdicts to |N| <= 100000 over 4 tables (digits among the 2 smallest): {'all fail': 2, ('non-commuting', 'rotations differ', 'mirror n/a'): 2}
+alpha=-1+2t digits [1]->1, [3]->1-t commuting=False: rotations {'1': False, '-1': True} mirror None
+alpha=-1+2t digits [1]->-1+t, [3]->-1 commuting=False: rotations {'1': False, '-1': True} mirror None

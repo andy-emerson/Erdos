@@ -1,0 +1,8 @@
+# Collatz-type maps on Z7, F=P z mod pi^2 in {1} (subgroup complement), modulus pi^3 (table read mod pi^3), each digit among the 4 smallest; full classification to |N| <= 100000
+maps tested 64; Collatz at 100000: 1; failures {'cycle': 44, 'orbit of 1 escapes': 12, '1 not periodic': 7}
+  alpha 3 (|N| 9): tables 16 (smallest 1), Collatz 0 (smallest 0)
+  alpha 1+2t (|N| 11): tables 16 (smallest 1), Collatz 0 (smallest 0)
+  alpha 3-2t (|N| 11): tables 16 (smallest 1), Collatz 1 (smallest 0)
+  alpha 3+t (|N| 14): tables 16 (smallest 1), Collatz 0 (smallest 0)
+  PASS a3-2t_2 alpha=3-2t smallest=False total digit size 8 table [1]->1, [5]->1-2t | cycle of [1] len 2: 1+0 -1+1 | max odd steps to cycle 50
+  (on P the commuting extension D(uf) = u d(f) is a residue-class table mod pi^3)

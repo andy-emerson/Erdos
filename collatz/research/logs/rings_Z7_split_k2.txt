@@ -1,0 +1,1 @@
+# Z7: sigma S_theta sigma = S_theta-bar on random tables at modulus 2: 4272 checks, 0 mismatches

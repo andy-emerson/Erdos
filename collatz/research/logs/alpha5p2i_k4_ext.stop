@@ -45,3 +45,4 @@ range (7300000000,7400000000] starts 39270028 fails 0 cycles 0 maxstop 10914 at 
 range (7400000000,7500000000] starts 39269781 fails 0 cycles 0 maxstop 10703 at 86036 3057 meanstop 53.91 maxexc_log2 97.59 at 29924 80881 cpu 6.2
 range (7500000000,7600000000] starts 39269740 fails 0 cycles 0 maxstop 12753 at 67247 55044 meanstop 53.86 maxexc_log2 105.40 at 61558 61003 cpu 6.1
 range (8600000000,9600000000] starts 392699100 fails 0 cycles 0 maxstop 13778 at 27042 89557 meanstop 53.89 maxexc_log2 104.20 at 95640 5405 cpu 60.2
+range (7600000000,8600000000] starts 392699295 fails 0 cycles 0 maxstop 12004 at 69368 59011 meanstop 53.88 maxexc_log2 118.30 at 55450 68621 cpu 60.9

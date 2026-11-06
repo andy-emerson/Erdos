@@ -1,4 +1,4 @@
-# Lean 4 proofs for `collatz/papers/gaussian-collatz.md` and `theorems.md`
+# Lean 4 proofs for `collatz/papers/gaussian-collatz.md`, `theorems.md`, `quotient.md` and `general-theory.md`
 
 Core Lean 4 only (toolchain `leanprover/lean4:v4.35.0`). No Mathlib or other dependencies,
 no `sorry`/`admit`, no `native_decide`/`bv_decide`, no new axioms. Tactics used: `omega`,
@@ -13,7 +13,9 @@ lake env lean CheckAxioms.lean   # prints the axioms of every main theorem
 ```
 
 Expected axioms: at most `propext`, `Classical.choice`, `Quot.sound`. A clean build of all
-files takes about 12 s.
+files takes about 16 to 30 s. `CheckAxioms.lean` prints 157 theorems (6 November 2026: 122 with
+all three axioms, 20 with `propext` and `Quot.sound`, 5 with `propext` only, 10 with none; no
+`sorryAx`).
 Build output goes to `.lake/` (ignored by `.gitignore`).
 
 ## Files
@@ -108,3 +110,36 @@ Build output goes to `.lake/` (ignored by `.gitignore`).
   `C3_not_respects`, `level_one_not_respects`, `B7_commutes`, `B7_quotient`, `pm3_commutes`,
   `tw3_respects`, `tw3_not_commutes`, `tw3_pm3`, `lifts_differ`.
 - `CheckAxioms.lean`: `#print axioms` for every main theorem (not part of the library).
+- `GaussianCollatz/Abstract.lean` (`general-theory.md`, Sections 7, 8 and 15; no imports): the
+  abstract layer, namespace `Abstract`. `FinAction G X`: a finite group (operations, the group
+  axioms, a duplicate-free list `elems` of all elements) acting on a type `X`; `Orb`, `Respects`,
+  `Equivariant`, `Free`, `gpow`, the orbit space `Q` with `cls`; `iter`, `Periodic`, `Reaches`,
+  `OnTrivial A e f x` (periodic, cycle meeting `G e`), `CollatzOn A e P f`, `QCollatzOn`.
+  Descent: `descent_iff`, `descend_unique`, `descend_iter`. Pigeonhole: `orb_mem`, `pigeon_list`,
+  `pigeon`. Transfer: `transfer_orbit`, `transfer`. Trivial cycles: `trivial_cycles_le` (any map,
+  at most `|G|`), `trivial_cycle_eq`, `exists_cycle_reps`, `exists_stab_list`,
+  `trivial_cycle_count` (`|L| · |H| = |G|` for equivariant maps, `H` the stabilizer),
+  `trivial_cycles_dvd`. Unit cycles: `orbit_iter`, `orbit_iter_period`, `gpow_eq_one`. Lifts:
+  `lift_cycle`, `qperiod_dvd`, `lift_period_dvd`, `equivariant_lift`,
+  `equivariant_lift_periodic`, `equivariant_stab`, `equivariant_stab_free`. Rotation and
+  conjugation: `agree_respects`, `agree_descend`, `agree_collatz`, `equivariant_agree_collatz`
+  (the transfer lemma R4), `conj_collatz` (the mirror).
+- `GaussianCollatz/AbstractNorm.lean` (`general-theory.md`, Section 9; no imports): Theorem 9.1
+  over any commutative ring (`Lean.Grind.CommRing`). `NormData` (multiplicative `N : R → ℕ`,
+  `N 1 = 1`, `N 0 = 0`, positive off `0`, `1` on the units, `N π ≥ 2`); `core_T`, `core_S`
+  (Lemma 5.0 of `quotient.md`), `commutes_of_T_respects`, `commutes_of_S_respects` (respecting
+  associates at large points of every class forces the table to commute; the big-point property
+  is a hypothesis).
+- `GaussianCollatz/AbstractGInt.lean`: the instances. `U4 : FinAction (Fin 4) GInt` (`i^a` acting
+  by multiplication) with the bridges `U4_orb_iff` (orbits are associates), `U4_respects_iff`,
+  `U4_equivariant_iff`, `U4_free`, `iter_eq`, `periodic_iff`, `reaches_iff`, `onTrivial_iff`,
+  `collatzOn_iff`. Corollaries proved from the abstract layer only, with the statements of the
+  earlier theorems (checked by `example : @transfer = @transfer_of_abstract := rfl` and so on):
+  `transfer_of_abstract`, `trivial_cycles_le_four_of_abstract`, `trivial_transfer_of_abstract`,
+  `lift_cycle_of_abstract`, `commuting_stab_of_abstract`, `Expr.rotate_rule_of_respects'`,
+  `Expr.mirror_rule_of_respects'`, `Expr.symmetric_of_T_respects'`,
+  `Expr.symmetric_of_S_respects'` (through the instance `instCommRingGInt` and `gaussNorm`),
+  and `unit_iter_of_abstract` (`f^n u = u w^n`). New: `trivial_cycles_dvd_four` (the number of
+  trivial cycles of a commuting map divides 4). Integers: `IntCollatz.Z2 : FinAction (Fin 2) Int`,
+  `B7_equivariant`, and `barina_iff` (every positive orbit of `7x ± 1` reaches 1 iff `7x ± 1` is
+  a Collatz map on `ℤ \ {0}`).

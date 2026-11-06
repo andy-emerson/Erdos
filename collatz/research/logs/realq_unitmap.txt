@@ -1,0 +1,93 @@
+# Part 1. trivial cycles of literal maps, found by following +-eps^n, |n| <= 40
+
+Zr2 k=4 alpha=1+3r D=(-0.110,-0.803) tables C (commute with -1): 500
+  number of trivial cycles: 0: 2, 1: 4, 2: 25, 3: 36, 4: 110, 5: 53, 6: 103, 7: 52, 8: 54, 9: 24, 10: 25, 11: 6, 12: 6
+  (cycle types, {units per trivial cycle: count}): 64x unit cycles only {1: 4}; 46x unit cycles only {1: 6}; 35x some mixed cycles {1: 6, 2: 1}; 29x some mixed cycles {1: 8}; 26x unit cycles only {1: 4, 2: 1}; 25x unit cycles only {1: 2, 2: 1}; 22x some mixed cycles {1: 4, 2: 1}; 22x unit cycles only {1: 2, 2: 2}
+  example with 0 trivial cycles: [1]->3+r, [3]->-3-r, [1+r]->5, [3+r]->-1+2r, [1+2r]->-1+3r, [3+2r]->1-3r, [1+3r]->1-2r, [3+3r]->-5; periodic units []; units escaping: 0; units |n| <= 200 with S(u) a unit: 10
+  example with 12 trivial cycles: [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->3-2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->-3+2r, [3+3r]->-1; periodic units ['-e^-1', '-e^0', '-e^1', '-e^2', '-e^3', '-e^4', 'e^-1', 'e^0', 'e^1', 'e^2', 'e^3', 'e^4']; units escaping: 0; units |n| <= 200 with S(u) a unit: 16
+
+Zr2 k=4 alpha=1+3r D=(-0.110,-0.803) tables N (do not commute with -1): 597
+  number of trivial cycles: 2: 7, 3: 43, 4: 102, 5: 151, 6: 122, 7: 91, 8: 57, 9: 19, 10: 3, 11: 2
+  (cycle types, {units per trivial cycle: count}): 88x some mixed cycles {1: 5}; 72x some mixed cycles {1: 6}; 56x some mixed cycles {1: 7}; 51x some mixed cycles {1: 4}; 37x some mixed cycles {1: 5, 2: 1}; 33x some mixed cycles {1: 6, 2: 1}; 31x some mixed cycles {1: 4, 2: 1}; 28x some mixed cycles {1: 8}
+  example with 2 trivial cycles: [1]->-1-3r, [3]->-3-r, [1+r]->1, [3+r]->-1-2r, [1+2r]->3-r, [3+2r]->1-3r, [1+3r]->1-2r, [3+3r]->-5; periodic units ['-e^3', 'e^1']; units escaping: 1; units |n| <= 200 with S(u) a unit: 9
+  example with 11 trivial cycles: [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->3-2r, [1+2r]->-1-r, [3+2r]->-3+r, [1+3r]->-3-2r, [3+3r]->-1; periodic units ['-e^0', '-e^1', '-e^2', '-e^3', '-e^4', '-e^5', 'e^-1', 'e^0', 'e^1', 'e^3', 'e^5', 'e^6']; units escaping: 0; units |n| <= 200 with S(u) a unit: 15
+
+Zr2 k=3 alpha=3 D=(-0.415,-0.415) tables C (commute with -1): 36
+  number of trivial cycles: 1: 1, 2: 7, 3: 2, 4: 2, 5: 16, 6: 1, 7: 1, 10: 6
+  (cycle types, {units per trivial cycle: count}): 16x unit cycles only {1: 4, 2: 1}; 6x unit cycles only {1: 8, 2: 2}; 5x unit cycles only {2: 2}; 2x some mixed cycles {1: 2, 2: 1}; 2x some mixed cycles {1: 4}; 2x some mixed cycles {2: 2}; 1x unit cycles only {4: 1}; 1x some mixed cycles {1: 4, 2: 2}
+  example with 1 trivial cycles: [1]->1-2r, [3]->-1+2r, [1+r]->1+3r, [3+r]->-1-3r; periodic units ['-e^-1', '-e^0', 'e^-1', 'e^0']; units escaping: 0; units |n| <= 200 with S(u) a unit: 8
+  example with 10 trivial cycles: [1]->1, [3]->-1, [1+r]->1-r, [3+r]->-1+r; periodic units ['-e^-3', '-e^-2', '-e^-1', '-e^0', '-e^1', '-e^2', 'e^-3', 'e^-2', 'e^-1', 'e^0', 'e^1', 'e^2']; units escaping: 0; units |n| <= 200 with S(u) a unit: 12
+
+Zr2 k=3 alpha=3 D=(-0.415,-0.415) tables N (do not commute with -1): 240
+  number of trivial cycles: 2: 38, 3: 48, 4: 60, 5: 46, 6: 26, 7: 18, 8: 2, 9: 2
+  (cycle types, {units per trivial cycle: count}): 34x unit cycles only {1: 2, 2: 1}; 28x unit cycles only {1: 4}; 20x unit cycles only {1: 4, 2: 1}; 18x unit cycles only {1: 6, 2: 1}; 16x some mixed cycles {1: 5}; 16x some mixed cycles {1: 3, 2: 1}; 14x unit cycles only {1: 2}; 12x unit cycles only {1: 6}
+  example with 2 trivial cycles: [1]->-3, [3]->-1-2r, [1+r]->-3-r, [3+r]->-1-r; periodic units ['-e^1', 'e^3']; units escaping: 16; units |n| <= 200 with S(u) a unit: 9
+  example with 9 trivial cycles: [1]->1, [3]->-1, [1+r]->1-r, [3+r]->-1-r; periodic units ['-e^-2', '-e^-1', '-e^0', '-e^1', '-e^2', 'e^-2', 'e^0', 'e^1', 'e^2', 'e^3']; units escaping: 0; units |n| <= 200 with S(u) a unit: 12
+
+Zr3 k=1 alpha=3+2s D=(-0.208,-0.208) tables N (do not commute with -1): 60
+  number of trivial cycles: 0: 22, 1: 22, 2: 8, 3: 2, 5: 6
+  (cycle types, {units per trivial cycle: count}): 22x unit cycles only {}; 12x some mixed cycles {1: 1}; 6x some mixed cycles {1: 5}; 6x some mixed cycles {1: 1, 2: 1}; 4x some mixed cycles {3: 1}; 4x some mixed cycles {2: 1}; 2x some mixed cycles {1: 2}; 2x unit cycles only {1: 1}
+  example with 0 trivial cycles: [1]->-s; periodic units []; units escaping: 1; units |n| <= 200 with S(u) a unit: 0
+  example with 5 trivial cycles: [1]->-1; periodic units ['-e^-6', '-e^-4', '-e^-2', '-e^0', 'e^-1']; units escaping: 0; units |n| <= 200 with S(u) a unit: 6
+
+Zr3 k=3 alpha=21+12s D=(-0.415,-0.415) tables C (commute with -1): 36
+  number of trivial cycles: 0: 8, 1: 4, 2: 1, 3: 6, 4: 2, 5: 8, 6: 4, 7: 1, 8: 2
+  (cycle types, {units per trivial cycle: count}): 8x unit cycles only {}; 4x some mixed cycles {1: 2, 2: 3}; 3x unit cycles only {1: 2, 2: 1}; 3x some mixed cycles {1: 4, 2: 1}; 2x some mixed cycles {1: 6, 2: 2}; 2x some mixed cycles {1: 2, 2: 1}; 2x some mixed cycles {1: 4, 2: 2}; 2x unit cycles only {2: 1}
+  example with 0 trivial cycles: [1]->3, [3]->-3, [s]->-s, [2+s]->s; periodic units []; units escaping: 2; units |n| <= 200 with S(u) a unit: 0
+  example with 8 trivial cycles: [1]->-1, [3]->1, [s]->-2+s, [2+s]->2-s; periodic units ['-e^-5', '-e^-4', '-e^-3', '-e^-2', '-e^1', 'e^-5', 'e^-4', 'e^-3', 'e^-2', 'e^1']; units escaping: 0; units |n| <= 200 with S(u) a unit: 12
+
+Zr3 k=3 alpha=21+12s D=(-0.415,-0.415) tables N (do not commute with -1): 380
+  number of trivial cycles: 0: 6, 1: 28, 2: 70, 3: 110, 4: 88, 5: 46, 6: 20, 7: 12
+  (cycle types, {units per trivial cycle: count}): 60x some mixed cycles {1: 3}; 40x some mixed cycles {1: 3, 2: 1}; 36x some mixed cycles {1: 2}; 28x some mixed cycles {1: 4}; 24x some mixed cycles {1: 2, 2: 1}; 20x some mixed cycles {1: 4, 2: 1}; 20x unit cycles only {1: 2}; 20x unit cycles only {1: 1}
+  example with 0 trivial cycles: [1]->3, [3]->-3, [s]->-s, [2+s]->-4+s; periodic units []; units escaping: 15; units |n| <= 200 with S(u) a unit: 1
+  example with 7 trivial cycles: [1]->-1, [3]->1, [s]->2+s, [2+s]->-4+s; periodic units ['-e^-4', '-e^-2', 'e^-5', 'e^-4', 'e^-2', 'e^-1', 'e^1', 'e^2']; units escaping: 0; units |n| <= 200 with S(u) a unit: 10
+
+Zg5 k=1 alpha=-1+2g D=(-0.172,-0.172) tables N (do not commute with -1): 640
+  number of trivial cycles: 0: 8, 1: 24, 2: 70, 3: 76, 4: 174, 5: 158, 6: 78, 7: 36, 8: 12, 9: 4
+  (cycle types, {units per trivial cycle: count}): 52x some mixed cycles {1: 3, 2: 1}; 50x some mixed cycles {1: 4, 2: 1}; 40x some mixed cycles {1: 2}; 32x some mixed cycles {1: 4}; 32x some mixed cycles {1: 2, 2: 1}; 28x some mixed cycles {1: 2, 2: 2}; 26x some mixed cycles {1: 3, 2: 2}; 26x unit cycles only {1: 3, 2: 2}
+  example with 0 trivial cycles: [1]->-1+2g, [g]->-2-g, [1+g]->-3+g; periodic units []; units escaping: 3; units |n| <= 200 with S(u) a unit: 0
+  example with 9 trivial cycles: [1]->-3, [g]->-2+g, [1+g]->1+g; periodic units ['-e^-6', '-e^-4', '-e^-2', '-e^-1', '-e^0', '-e^1', '-e^2', '-e^3', '-e^5', 'e^-9', 'e^-4', 'e^-1', 'e^0', 'e^1', 'e^4']; units escaping: 0; units |n| <= 200 with S(u) a unit: 16
+
+Zg5 k=2 alpha=5 D=(-0.011,-0.011) tables C (commute with -1): 601
+  number of trivial cycles: 2: 2, 4: 12, 6: 70, 8: 133, 10: 171, 12: 110, 14: 65, 16: 30, 18: 6, 20: 2
+  (cycle types, {units per trivial cycle: count}): 78x some mixed cycles {1: 8, 2: 2}; 64x some mixed cycles {1: 8}; 53x some mixed cycles {1: 10, 2: 2}; 52x some mixed cycles {1: 10}; 34x some mixed cycles {1: 6}; 32x some mixed cycles {1: 8, 2: 4}; 30x unit cycles only {1: 8}; 30x some mixed cycles {1: 12, 2: 2}
+  example with 2 trivial cycles: [1]->-1+4g, [3]->1-4g, [g]->4-g, [1+g]->3-g, [2+g]->-2-g, [3+g]->-3-g, [1+2g]->3-2g, [3+2g]->-3+2g, [3g]->-4+g, [1+3g]->3+g, [2+3g]->2+g, [3+3g]->-3+g; periodic units ['-e^-3', 'e^-3']; units escaping: 0; units |n| <= 200 with S(u) a unit: 12
+  example with 20 trivial cycles: [1]->3, [3]->-3, [g]->-g, [1+g]->-1+3g, [2+g]->2-g, [3+g]->-3+3g, [1+2g]->3-2g, [3+2g]->-3+2g, [3g]->g, [1+3g]->3-3g, [2+3g]->-2+g, [3+3g]->1-3g; periodic units ['-e^-7', '-e^-3', '-e^-2', '-e^-1', '-e^0', '-e^1', '-e^2', '-e^3', '-e^6', '-e^7', '-e^8', '-e^9', 'e^-7', 'e^-3', 'e^-2', 'e^-1', 'e^0', 'e^1', 'e^2', 'e^3', 'e^6', 'e^7', 'e^8', 'e^9']; units escaping: 0; units |n| <= 200 with S(u) a unit: 24
+
+Zg5 k=2 alpha=5 D=(-0.011,-0.011) tables N (do not commute with -1): 596
+  number of trivial cycles: 5: 1, 6: 4, 7: 23, 8: 84, 9: 101, 10: 95, 11: 111, 12: 86, 13: 45, 14: 36, 15: 5, 16: 3, 17: 2
+  (cycle types, {units per trivial cycle: count}): 48x some mixed cycles {1: 9, 2: 2}; 43x some mixed cycles {1: 10, 2: 1}; 41x some mixed cycles {1: 8, 2: 1}; 41x some mixed cycles {1: 9, 2: 1}; 37x some mixed cycles {1: 8}; 34x some mixed cycles {1: 9}; 28x some mixed cycles {1: 11, 2: 1}; 28x some mixed cycles {1: 7, 2: 1}
+  example with 5 trivial cycles: [1]->3, [3]->-3, [g]->4-g, [1+g]->3-g, [2+g]->-2-g, [3+g]->-3-g, [1+2g]->3-2g, [3+2g]->1+2g, [3g]->-3g, [1+3g]->3+g, [2+3g]->2+g, [3+3g]->-3+g; periodic units ['-e^0', '-e^1', '-e^3', 'e^-3', 'e^0']; units escaping: 7; units |n| <= 200 with S(u) a unit: 12
+  example with 17 trivial cycles: [1]->-1, [3]->-3, [g]->3g, [1+g]->-1-g, [2+g]->2-g, [3+g]->-3+3g, [1+2g]->-1+2g, [3+2g]->-3+2g, [3g]->-3g, [1+3g]->-1+g, [2+3g]->-2+g, [3+3g]->1+g; periodic units ['-e^-10', '-e^-8', '-e^-4', '-e^-3', '-e^-2', '-e^-1', '-e^0', '-e^1', '-e^2', '-e^7', '-e^8', 'e^-11', 'e^-10', 'e^-7', 'e^-3', 'e^-2', 'e^-1', 'e^0', 'e^1', 'e^2', 'e^7', 'e^8']; units escaping: 45; units |n| <= 200 with S(u) a unit: 25
+
+Zr2 k=2 alpha=3+r D=(+0.642,-0.835) tables N (do not commute with -1): 144
+  number of trivial cycles: 0: 12, 1: 22, 2: 28, 3: 36, 4: 24, 5: 16, 6: 6
+  (cycle types, {units per trivial cycle: count}): 26x unit cycles only {1: 2}; 22x unit cycles only {1: 1}; 16x some mixed cycles {1: 5}; 16x some mixed cycles {1: 3}; 12x unit cycles only {1: 3}; 12x unit cycles only {}; 10x some mixed cycles {1: 4}; 6x unit cycles only {1: 3, 2: 1}
+  example with 0 trivial cycles: [1]->-3-r, [1+r]->-1+2r; periodic units []; units escaping: 138; units |n| <= 200 with S(u) a unit: 0
+  example with 6 trivial cycles: [1]->-1-r, [1+r]->3; periodic units ['-e^1', '-e^3', 'e^0', 'e^1', 'e^2', 'e^6']; units escaping: 147; units |n| <= 200 with S(u) a unit: 9
+
+# Part 2. S on units for the Collatz maps on R at sqrt2^4
+alpha=1+3r [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->3-2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->-3+2r, [3+3r]->-1
+  eta = pi^4 - alpha = 3-3r, N = -9
+  eta = pi^5 - alpha = -1+r, N = -1 (a unit: e^-1)
+  eta = pi^6 - alpha = 7-3r, N = 31
+  eta = pi^7 - alpha = -1+5r, N = -49
+  e^-8->331-234r(v=5), e^-7->-137+97r(v=5), e^-6->57-40r(v=5), e^-5->e^-4(v=6), e^-4->e^-3(v=6), e^-3->e^-2(v=6), e^-2->e^-1(v=6), e^-1->e^-1(v=5), e^0->1(v=5), e^1->e^1(v=5), e^2->e^2(v=5), e^3->5+3r(v=6), e^4->11+8r(v=6), e^5->27+19r(v=6), e^6->65+46r(v=6), e^7->221+157r(v=5), e^8->535+378r(v=5)
+alpha=1+3r [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->3+2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->-3-2r, [3+3r]->-1
+  eta = pi^4 - alpha = 3-3r, N = -9
+  eta = pi^5 - alpha = -1+r, N = -1 (a unit: e^-1)
+  eta = pi^6 - alpha = 7-3r, N = 31
+  eta = pi^7 - alpha = -1+5r, N = -49
+  e^-8->331-234r(v=5), e^-7->-137+97r(v=5), e^-6->57-40r(v=5), e^-5->-23+17r(v=5), e^-4->e^-3(v=6), e^-3->e^-2(v=6), e^-2->e^-1(v=6), e^-1->1(v=6), e^0->1(v=5), e^1->e^1(v=5), e^2->e^2(v=5), e^3->e^3(v=5), e^4->11+8r(v=6), e^5->27+19r(v=6), e^6->65+46r(v=6), e^7->157+111r(v=6), e^8->535+378r(v=5)
+alpha=-1+3r [1]->1+r, [3]->-1-r, [1+r]->3-2r, [3+r]->1, [1+2r]->1-r, [3+2r]->-1+r, [1+3r]->-1, [3+3r]->-3+2r
+  eta = pi^4 - alpha = 5-3r, N = 7
+  eta = pi^5 - alpha = 1+r, N = -1 (a unit: e^1)
+  eta = pi^6 - alpha = 9-3r, N = 63
+  eta = pi^7 - alpha = 1+5r, N = -49
+  e^-8->535-378r(v=5), e^-7->157-111r(v=6), e^-6->-65+46r(v=6), e^-5->27-19r(v=6), e^-4->-11+8r(v=6), e^-3->e^-3(v=5), e^-2->e^-2(v=5), e^-1->e^-1(v=5), e^0->1(v=5), e^1->1(v=6), e^2->e^1(v=6), e^3->e^2(v=6), e^4->e^3(v=6), e^5->23+17r(v=5), e^6->57+40r(v=5), e^7->137+97r(v=5), e^8->331+234r(v=5)
+alpha=-1+3r [1]->1+r, [3]->-1-r, [1+r]->3+2r, [3+r]->1, [1+2r]->1-r, [3+2r]->-1+r, [1+3r]->-1, [3+3r]->-3-2r
+  eta = pi^4 - alpha = 5-3r, N = 7
+  eta = pi^5 - alpha = 1+r, N = -1 (a unit: e^1)
+  eta = pi^6 - alpha = 9-3r, N = 63
+  eta = pi^7 - alpha = 1+5r, N = -49
+  e^-8->535-378r(v=5), e^-7->-221+157r(v=5), e^-6->-65+46r(v=6), e^-5->27-19r(v=6), e^-4->-11+8r(v=6), e^-3->5-3r(v=6), e^-2->e^-2(v=5), e^-1->e^-1(v=5), e^0->1(v=5), e^1->e^1(v=5), e^2->e^1(v=6), e^3->e^2(v=6), e^4->e^3(v=6), e^5->e^4(v=6), e^6->57+40r(v=5), e^7->137+97r(v=5), e^8->331+234r(v=5)

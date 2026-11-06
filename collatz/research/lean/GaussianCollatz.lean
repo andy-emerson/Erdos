@@ -9,3 +9,6 @@ import GaussianCollatz.Variants
 import GaussianCollatz.Window
 import GaussianCollatz.TwoMinusI
 import GaussianCollatz.Quotient
+import GaussianCollatz.Abstract
+import GaussianCollatz.AbstractNorm
+import GaussianCollatz.AbstractGInt

@@ -15,3 +15,12 @@
 15:20:47 done (6500000001,7000000001]  58.3%  5.79e+07 starts/s  elapsed 47 s  ETA 34 s  bad chunks 0
 15:20:53 done (7000000001,7500000001]  62.5%  5.43e+07 starts/s  elapsed 54 s  ETA 33 s  bad chunks 0
 15:20:54 done (7500000001,8000000001]  66.7%  5.77e+07 starts/s  elapsed 54 s  ETA 27 s  bad chunks 0
+15:21:00 done (8000000001,8500000001]  70.8%  5.46e+07 starts/s  elapsed 61 s  ETA 25 s  bad chunks 0
+15:21:01 done (8500000001,9000000001]  75.0%  5.75e+07 starts/s  elapsed 61 s  ETA 20 s  bad chunks 0
+15:21:07 done (9000000001,9500000001]  79.2%  5.5e+07 starts/s  elapsed 68 s  ETA 18 s  bad chunks 0
+15:21:07 done (9500000001,10000000001]  83.3%  5.76e+07 starts/s  elapsed 68 s  ETA 14 s  bad chunks 0
+15:21:14 done (10000000001,10500000001]  87.5%  5.52e+07 starts/s  elapsed 75 s  ETA 11 s  bad chunks 0
+15:21:14 done (10500000001,11000000001]  91.7%  5.74e+07 starts/s  elapsed 75 s  ETA 7 s  bad chunks 0
+15:21:21 done (11000000001,11500000001]  95.8%  5.52e+07 starts/s  elapsed 82 s  ETA 4 s  bad chunks 0
+15:21:21 done (11500000001,12000000000]  100.0%  5.74e+07 starts/s  elapsed 82 s  ETA 0 s  bad chunks 0
+15:21:21 finished, 4712389107 starts in 82 s, bad chunks 0

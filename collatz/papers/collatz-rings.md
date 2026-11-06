@@ -26,11 +26,15 @@ the last of length $18$, and these are conjectured to be all [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-The formula for $C$ also defines a map on $\mathbb{Z}$. From $-5$ it gives
+The formula for $C$ also defines a map on $\mathbb{Z}$. On the negative integers it has the three cycles
 
-$$-5 \to -14 \to -7 \to -20 \to -10 \to -5,$$
+$$\begin{aligned}
+&{-1} \to -2 \to -1, \\
+&{-5} \to -14 \to -7 \to -20 \to -10 \to -5, \\
+&{-17} \to -50 \to -25 \to -74 \to -37 \to \cdots \to -136 \to -68 \to -34 \to -17,
+\end{aligned}$$
 
-the second cycle of $C_{-1}$ with the signs reversed: $C(-5) = -14 = -C_{-1}(5)$. More generally, for odd $n$,
+which are the cycles of $C_{-1}$ on $\mathbb{N}$ with the signs reversed. In the same way, $C_{-1}$ on the negative integers has the cycle $-1 \to -4 \to -2 \to -1$, the cycle of $C$ on $\mathbb{N}$ with the signs reversed. The reason is that for odd $n$,
 
 $$C(-n) = 3(-n) + 1 = -(3n - 1) = -C_{-1}(n),$$
 
@@ -38,11 +42,7 @@ and halving commutes with negation, which gives the identity
 
 $$C(-n) = -C_{-1}(n) \quad \text{for all } n \in \mathbb{Z}.$$
 
-So the cycles of $C_{-1}$ through $1$, $5$ and $17$ become cycles of $C$ through $-1$, $-5$ and $-17$. Since $C_{-1}(n) \neq C(n)$ for odd $n$,
-
-$$C(-n) = -C_{-1}(n) \neq -C(n) \quad \text{for odd } n,$$
-
-and $C$ is not an odd function.
+Since $C_{-1}(n) \neq C(n)$ for odd $n$, $C(-n) \neq -C(n)$ for odd $n$, and therefore $C$ is not an odd function.
 
 Barina's map [Barina 2018] is odd. It is
 
@@ -57,7 +57,11 @@ $$\begin{aligned}
 
 and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the latter below $10^{15}$.
 
-The same device applies to multiplier $3$. The map sending odd $n$ to $3n + 1$ if $n \equiv 1 \pmod 4$ and to $3n - 1$ if $n \equiv 3 \pmod 4$ is also odd. But at modulus $4$ every odd step multiplies by $3$ and is followed by at least two halvings, and $(3n + 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. For an odd step at modulus $4$ to expand in the worst case and contract on average, the multiplier must lie between $4$ and $8$ (Section 3). Of the two candidates, $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
+The same construction can be applied to the multiplier $3$:
+
+$$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \pmod 4, \\ 3n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
+
+For the same reason as $B$, $C_{\pm 1}$ is odd. But every odd step of $C_{\pm 1}$ is followed by at least two halvings, and $(3n \pm 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. For an odd step at modulus $4$ to expand in the worst case and contract on average, the multiplier must lie between $4$ and $8$ (Section 3). Of the two candidates, $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
 The identity $B(-n) = -B(n)$ has a cleaner reading. The positive integers are the nonzero integers modulo the units,
 

@@ -1,0 +1,5 @@
+2026-11-06 15:41:39 start ./gstopf E2_a-1-2i.rule {lo} {hi} 10000000 all (1,10000000000] chunk 500000000 jobs 2: 20 chunks to do, 0 already logged
+15:42:01 done (1,500000001]  5.0%  3.6e+07 starts/s  elapsed 22 s  ETA 414 s  bad chunks 0
+15:42:01 done (500000001,1000000001]  10.0%  7.13e+07 starts/s  elapsed 22 s  ETA 198 s  bad chunks 0
+15:42:24 done (1000000001,1500000001]  15.0%  5.3e+07 starts/s  elapsed 44 s  ETA 252 s  bad chunks 0
+15:42:24 done (1500000001,2000000001]  20.0%  7.04e+07 starts/s  elapsed 45 s  ETA 178 s  bad chunks 0

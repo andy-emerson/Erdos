@@ -5,3 +5,9 @@
 3x+1   bound 2.361e+21  eta = 1/2048, U = 32: bins 7101, edge ranges 25463, iterations 6000, 17.1 s
         certified: mean of 1/u over any cycle <= c = 800842536056/2^40 = 0.728362   (graph value >= 0.728361, float)
         best closed walk found: 53 bins, mean weight 0.728362, u from 1.0000 to 1.9691
+3x+1   bound 2.361e+21  eta = 1/4096, U = 64: bins 17038, edge ranges 69608, iterations 6000, 88.4 s
+        certified: mean of 1/u over any cycle <= c = 799643215994/2^40 = 0.727271   (graph value >= 0.727271, float)
+        best closed walk found: 53 bins, mean weight 0.727271, u from 1.0000 to 1.9712
+7x+-1  bound 1.000e+15  eta = 1/512, U = 32: bins 1778, edge ranges 6777, iterations 3351, 1.5 s
+        certified: mean of 1/u over any cycle <= c = 807906498158/2^40 = 0.734787   (graph value >= 0.734787, float)
+        best closed walk found: 26 bins, mean weight 0.734787, u from 1.0000 to 1.9414

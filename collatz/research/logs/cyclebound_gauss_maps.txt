@@ -1,0 +1,171 @@
+# cyclebound_gauss.py maps; certarith P = 320 bits, scan endpoints dyadic 2^-200
+
+5+2i, (1+i)^4, commuting: alpha = (5, 2), N = 29, B = 3000000000, dmax^2 = 5, eps any unit
+  r = 7.580980e-06, theta1 = log2 N = 4.857980995128, beta = 4 arg/pi = 0.484475766363
+  size alone : n >= 169 (V = 821), attained True
+  angle alone: n >= 161 (W = 78), attained True
+  both (box) : n >= 1901 (V = 9235, W = 921), attained True
+  disc       : n >= 1901 (V = 9235, W = 921)
+  verdict: joint exceeds both; joint/max(single) = 11.25
+  heuristic first n: size 214, angle 322, box 1922, disc 2084
+  divisions V >= 9235 at the box bound; steps of T >= n + V = 11136   [0.0 s]
+
+7+4i, (1+i)^6, commuting: alpha = (7, 4), N = 65, B = 1000000, dmax^2 = 25, eps any unit
+  r = 6.201734e-04, theta1 = log2 N = 6.022367813028, beta = 4 arg/pi = 0.660997362154
+  size alone : n >= 42 (V = 253), attained True
+  angle alone: n >= 53 (W = 35), attained True
+  both (box) : n >= 251 (V = 1512, W = 166), attained True
+  disc       : n >= 251 (V = 1512, W = 166)
+  verdict: joint exceeds both; joint/max(single) = 4.74
+  heuristic first n: size 24, angle 36, box 102, disc 111
+  divisions V >= 1512 at the box bound; steps of T >= n + V = 1763   [0.0 s]
+
+8+3i, (1+i)^6, commuting: alpha = (8, 3), N = 73, B = 1000000, dmax^2 = 25, eps any unit
+  r = 5.852054e-04, theta1 = log2 N = 6.189824558880, beta = 4 arg/pi = 0.456801004880
+  size alone : n >= 21 (V = 130), attained True
+  angle alone: n >= 35 (W = 16), attained True
+  both (box) : n >= 105 (V = 650, W = 48), attained True
+  disc       : n >= 105 (V = 650, W = 48)
+  verdict: joint exceeds both; joint/max(single) = 3.00
+  heuristic first n: size 24, angle 37, box 106, disc 115
+  divisions V >= 650 at the box bound; steps of T >= n + V = 755   [0.0 s]
+
+9+2i, (1+i)^6, commuting: alpha = (9, 2), N = 85, B = 1000000, dmax^2 = 25, eps any unit
+  r = 5.423259e-04, theta1 = log2 N = 6.409390936138, beta = 4 arg/pi = 0.278417949092
+  size alone : n >= 22 (V = 141), attained True
+  angle alone: n >= 18 (W = 5), attained True
+  both (box) : n >= 61 (V = 391, W = 17), attained True
+  disc       : n >= 61 (V = 391, W = 17)
+  verdict: joint exceeds both; joint/max(single) = 2.77
+  heuristic first n: size 25, angle 38, box 112, disc 121
+  divisions V >= 391 at the box bound; steps of T >= n + V = 452   [0.0 s]
+
+10+i, (1+i)^6, commuting: alpha = (10, 1), N = 101, B = 1000000, dmax^2 = 25, eps any unit
+  r = 4.975183e-04, theta1 = log2 N = 6.658211482752, beta = 4 arg/pi = 0.126902069722
+  size alone : n >= 35 (V = 233), attained True
+  angle alone: n >= 55 (W = 7), attained True
+  both (box) : n >= 79 (V = 526, W = 10), attained True
+  disc       : n >= 79 (V = 526, W = 10)
+  verdict: joint exceeds both; joint/max(single) = 1.44
+  heuristic first n: size 26, angle 40, box 118, disc 128
+  divisions V >= 526 at the box bound; steps of T >= n + V = 605   [0.0 s]
+
+10+3i, (1+i)^6, commuting: alpha = (10, 3), N = 109, B = 1000000, dmax^2 = 25, eps any unit
+  r = 4.789129e-04, theta1 = log2 N = 6.768184324777, beta = 4 arg/pi = 0.371094316311
+  size alone : n >= 13 (V = 88), attained True
+  angle alone: n >= 35 (W = 13), attained True
+  both (box) : n >= 116 (V = 785, W = 43), attained True
+  disc       : n >= 116 (V = 785, W = 43)
+  verdict: joint exceeds both; joint/max(single) = 3.31
+  heuristic first n: size 27, angle 40, box 121, disc 131
+  divisions V >= 785 at the box bound; steps of T >= n + V = 901   [0.0 s]
+
+11+2i, (1+i)^6, commuting: alpha = (11, 2), N = 125, B = 1000000, dmax^2 = 25, eps any unit
+  r = 4.472134e-04, theta1 = log2 N = 6.965784284662, beta = 4 arg/pi = 0.228996588195
+  size alone : n >= 29 (V = 202), attained True
+  angle alone: n >= 35 (W = 8), attained True
+  both (box) : n >= 144 (V = 1003, W = 33), attained True
+  disc       : n >= 144 (V = 1003, W = 33)
+  verdict: joint exceeds both; joint/max(single) = 4.11
+  heuristic first n: size 28, angle 42, box 127, disc 137
+  divisions V >= 1003 at the box bound; steps of T >= n + V = 1147   [0.0 s]
+
+-11+4i, (1+i)^7, commuting: alpha = (-11, 4), N = 137, B = 1000000000, dmax^2 = 49, eps any unit
+  r = 1.891201e-05, theta1 = log2 N = 7.098032082961, beta = 4 arg/pi = 3.555930966180
+  size alone : n >= 51 (V = 362), attained True
+  angle alone: n >= 286 (W = 1017), attained True
+  both (box) : n >= 1153 (V = 8184, W = 4100), attained True
+  disc       : n >= 1153 (V = 8184, W = 4100)
+  verdict: joint exceeds both; joint/max(single) = 4.03
+  heuristic first n: size 135, angle 204, box 1045, disc 1133
+  divisions V >= 8184 at the box bound; steps of T >= n + V = 9337   [0.0 s]
+
+-12+3i, (1+i)^7, commuting: alpha = (-12, 3), N = 153, B = 1000000000, dmax^2 = 49, eps any unit
+  r = 1.789585e-05, theta1 = log2 N = 7.257387842693, beta = 4 arg/pi = 3.688083478491
+  size alone : n >= 101 (V = 733), attained True
+  angle alone: n >= 109 (W = 402), attained True
+  both (box) : n >= 1449 (V = 10516, W = 5344), attained True
+  disc       : n >= 1760 (V = 12773, W = 6491)
+  verdict: joint exceeds both; joint/max(single) = 13.29
+  heuristic first n: size 139, angle 209, box 1084, disc 1175
+  divisions V >= 10516 at the box bound; steps of T >= n + V = 11965   [0.0 s]
+
+-11+8i, (1+i)^7, commuting: alpha = (-11, 8), N = 185, B = 1000000000, dmax^2 = 49, eps any unit
+  r = 1.627467e-05, theta1 = log2 N = 7.531381460516, beta = 4 arg/pi = 3.199391702553
+  size alone : n >= 207 (V = 1559), attained True
+  angle alone: n >= 321 (W = 1027), attained True
+  both (box) : n >= 988 (V = 7441, W = 3161), attained True
+  disc       : n >= 988 (V = 7441, W = 3161)
+  verdict: joint exceeds both; joint/max(single) = 3.08
+  heuristic first n: size 146, angle 220, box 1155, disc 1252
+  divisions V >= 7441 at the box bound; steps of T >= n + V = 8429   [0.0 s]
+
+-12+7i, (1+i)^7, commuting: alpha = (-12, 7), N = 193, B = 1000000000, dmax^2 = 49, eps any unit
+  r = 1.593380e-05, theta1 = log2 N = 7.592457037268, beta = 4 arg/pi = 3.327634729699
+  size alone : n >= 211 (V = 1602), attained True
+  angle alone: n >= 293 (W = 975), attained True
+  both (box) : n >= 876 (V = 6651, W = 2915), attained True
+  disc       : n >= 876 (V = 6651, W = 2915)
+  verdict: joint exceeds both; joint/max(single) = 2.99
+  heuristic first n: size 147, angle 222, box 1172, disc 1270
+  divisions V >= 6651 at the box bound; steps of T >= n + V = 7527   [0.0 s]
+
+2+i, (1+i)^2, cone C (on Z[i]/U): alpha = (2, 1), N = 5, B = 10000000, dmax^2 = 1, eps any unit
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = 0.590334470602
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = 36), attained True
+  both (box) : n >= 388 (V = 901, W = 229), attained True
+  disc       : n >= 388 (V = 901, W = 229)
+  verdict: joint exceeds both; joint/max(single) = 6.36
+  heuristic first n: size 50, angle 75, box 273, disc 296
+  divisions V >= 901 at the box bound; steps of T >= n + V = 1289   [0.0 s]
+
+2-i, (1+i)^2, D={1,i}, eps=1: alpha = (2, -1), N = 5, B = 10000000, dmax^2 = 1, eps = 1
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = -0.590334470602
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = -36), attained True
+  both (box) : n >= 813 (V = 1888, W = -480), attained True
+  disc       : n >= 813 (V = 1888, W = -480)
+  verdict: joint exceeds both; joint/max(single) = 13.33
+  heuristic first n: size 50, angle 75, box 434, disc 470
+  divisions V >= 1888 at the box bound; steps of T >= n + V = 2701   [0.0 s]
+
+-1-2i, (1+i)^2, D={1,i}, eps=1: alpha = (-1, -2), N = 5, B = 10000000, dmax^2 = 1, eps = 1
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = -2.590334470602
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = -158), attained True
+  both (box) : n >= 671 (V = 1558, W = -1738), attained True
+  disc       : n >= 671 (V = 1558, W = -1738)
+  verdict: joint exceeds both; joint/max(single) = 11.00
+  heuristic first n: size 50, angle 75, box 434, disc 470
+  divisions V >= 1558 at the box bound; steps of T >= n + V = 2229   [0.0 s]
+
+-2-i, (1+i)^2, D={1,i}, eps=1: alpha = (-2, -1), N = 5, B = 10000000, dmax^2 = 1, eps = 1
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = -3.409665529398
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = -208), attained True
+  both (box) : n >= 388 (V = 901, W = -1323), attained True
+  disc       : n >= 388 (V = 901, W = -1323)
+  verdict: joint exceeds both; joint/max(single) = 6.36
+  heuristic first n: size 50, angle 75, box 434, disc 470
+  divisions V >= 901 at the box bound; steps of T >= n + V = 1289   [0.0 s]
+
+1+2i, (1+i)^2, D={1,i}, eps=1: alpha = (1, 2), N = 5, B = 10000000, dmax^2 = 1, eps = 1
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = 1.409665529398
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = 86), attained True
+  both (box) : n >= 693 (V = 1609, W = 977), attained True
+  disc       : n >= 693 (V = 1609, W = 977)
+  verdict: joint exceeds both; joint/max(single) = 11.36
+  heuristic first n: size 50, angle 75, box 434, disc 470
+  divisions V >= 1609 at the box bound; steps of T >= n + V = 2302   [0.0 s]
+
+-2+i, (1+i)^2, D={1,i}, eps=1: alpha = (-2, 1), N = 5, B = 10000000, dmax^2 = 1, eps = 1
+  r = 1.414213e-04, theta1 = log2 N = 2.321928094887, beta = 4 arg/pi = 3.409665529398
+  size alone : n >= 59 (V = 137), attained True
+  angle alone: n >= 61 (W = 208), attained True
+  both (box) : n >= 515 (V = 1196, W = 1756), attained True
+  disc       : n >= 537 (V = 1247, W = 1831)
+  verdict: joint exceeds both; joint/max(single) = 8.44
+  heuristic first n: size 50, angle 75, box 434, disc 470
+  divisions V >= 1196 at the box bound; steps of T >= n + V = 1711   [0.0 s]

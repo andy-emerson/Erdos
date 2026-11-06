@@ -1,0 +1,64 @@
+# cyclebound_gauss.py scale: 5+2i map and cone map as functions of B
+
+5+2i
+  B      size       angle      box        disc       pred box    verdict
+  1e3    6          2          6          21         13          joint = size (size binding)
+  1e4    7          25         27         27         29          joint exceeds both
+  1e5    7          31         64         64         62          joint exceeds both
+  1e6    7          33         161        161        133         joint exceeds both
+  1e7    120        64         225        225        287         joint exceeds both
+  1e8    155        161        514        514        619         joint exceeds both
+  1e9    169        161        1676       1676       1333        joint exceeds both
+  1e10   169        161        2190       2190       2872        joint exceeds both
+  1e11   683        1224       6281       6506       6187        joint exceeds both
+  1e12   852        1546       8696       8696       13329       joint exceeds both
+  1e13   852        1707       8696       41065      28717       joint exceeds both
+  1e14   4091       4960       58457      58457      61868       joint exceeds both
+  1e15   4943       6667       222942     222942     133291      joint exceeds both
+  1e16   4943       15041      298791     298791     287167      joint exceeds both
+  1e17   15681      15041      673431     673431     618683      joint exceeds both
+  1e18   15681      15041      673431     673431     1332912     joint exceeds both
+  1e19   51986      15041      3375851    3375851    2871672     joint exceeds both
+  1e20   67667      382692     4049282    4049282    6186830     joint exceeds both
+
+cone 2+i
+  B      size       angle      box        disc       pred box    verdict
+  1e3    3          5          15         15         13          joint exceeds both
+  1e4    3          17         22         22         27          joint exceeds both
+  1e5    22         22         22         22         59          joint = size = angle
+  1e6    28         61         127        127        127         joint exceeds both
+  1e7    59         61         388        388        273         joint exceeds both
+  1e8    59         83         559        559        589         joint exceeds both
+  1e9    146        310        1140       1140       1269        joint exceeds both
+  1e10   146        393        2690       2690       2733        joint exceeds both
+  1e11   497        476        4821       4821       5888        joint exceeds both
+  1e12   643        1345       7511       7511       12686       joint exceeds both
+  1e13   643        1345       46206      46206      27331       joint exceeds both
+  1e14   3361       4904       63918      63918      58882       joint exceeds both
+  1e15   4004       6249       71429      71429      126857      joint exceeds both
+  1e16   8651       7594       469959     480160     273306      joint exceeds both
+  1e17   12655      29031      686936     686936     588820      joint exceeds both
+  1e18   21306      29031      1580648    1580648    1268573     joint exceeds both
+
+2-i eps=1
+  B      size       angle      box        disc       pred box    verdict
+  1e3    3          5          22         22         20          joint exceeds both
+  1e4    3          17         22         22         43          joint exceeds both
+  1e5    22         22         22         22         93          joint = size = angle
+  1e6    28         61         217        217        201         joint exceeds both
+  1e7    59         61         813        813        434         joint exceeds both
+  1e8    59         83         1118       1118       935         joint exceeds both
+  1e9    146        310        1140       1140       2014        joint exceeds both
+  1e10   146        393        4821       4821       4338        joint exceeds both
+  1e11   497        476        4821       4821       9347        joint exceeds both
+  1e12   643        1345       20402      20402      20137       joint exceeds both
+  1e13   643        1345       51586      56407      43385       joint exceeds both
+  1e14   3361       4904       81630      138037     93469       joint exceeds both
+  1e15   4004       6249       142858     142858     201373      joint exceeds both
+  1e16   8651       7594       480160     480160     433846      joint exceeds both
+  1e17   12655      29031      822283     822283     934693      joint exceeds both
+  1e18   21306      29031      2267584    2267584    2013734     joint exceeds both
+
+real	0m3.678s
+user	0m3.589s
+sys	0m0.004s

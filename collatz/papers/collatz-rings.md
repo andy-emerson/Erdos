@@ -1,79 +1,74 @@
 # Invariants of Collatz maps across rings of integers
 
-*Draft, 6 November 2026. Code, logs and Lean proofs: `collatz/research/`. Results and their status: `collatz/catalog.md`. Each claim carries its status: proved (on paper), Lean (proved in Lean 4), computed to a stated bound, computer-assisted, heuristic, literature, or open. Citations are markers; the bibliography is written last, from a review of the finished text.*
+*Draft, 6 November 2026. Code, logs and Lean proofs: `collatz/research/`. Results and their status: `collatz/catalog.md`. Citations are markers; the bibliography is written last, from a review of the finished text.*
 
 ## Abstract
 
-[Placeholder: written last.]
+*(Placeholder: written last.)*
 
 ## 1. Introduction
 
-### 1.1 The lineage
+Start with a positive whole number. If it is even, halve it. If it is odd, multiply it by 3 and add 1. Then do the same to the result, and keep going. From 3 the numbers run
 
-The $3x+1$ map sends an even positive integer $x$ to $x/2$ and an odd one to $3x+1$. The Collatz conjecture says that every positive integer reaches $1$ [Lagarias 1985; Lagarias 2010]. The same formula makes sense on $\mathbb{Z}$, where it has more cycles: besides $0$ and $1 \to 4 \to 2 \to 1$ there are cycles through $-1$, $-5$ and $-17$, and these are conjectured to be all [Lagarias 1985]. Since $-(3x+1) = 3(-x) - 1$, the map acts on the negative integers as $3x - 1$ acts on the positive ones.
+$$3 \to 10 \to 5 \to 16 \to 8 \to 4 \to 2 \to 1,$$
 
-Generalized maps on $\mathbb{Z}$ multiply by a fixed number on each residue class, add a digit that makes the result divisible by the modulus, and divide. Heppner showed that for Hasse's maps almost all iterates decrease when the multiplier $m$ and the divisor $d$ satisfy $m < d^{d/(d-1)}$ and increase when $m > d^{d/(d-1)}$ [Heppner 1978]. Matthews and Watts conjectured the corresponding growth criterion for maps with a multiplier on each class, from a weighted product of the ratios $m_i/d$ [Matthews and Watts 1985, Conjectures 1 and 2], and Leigh built the Markov chain on residue classes behind the weights, for any nonzero multipliers [Leigh 1986]. Their criterion, written with norms, is the window used in every ring of this paper.
+and from 1 they cycle, $1 \to 4 \to 2 \to 1$. The **Collatz conjecture** says that every positive whole number eventually reaches 1 [Lagarias 1985]. It has been checked beyond $10^{20}$, and it is not proved.
 
-Barina's map $7x \pm 1$ divides an even integer by $2$ and sends $n$ to $7n + 1$ if $n \equiv 1 \pmod 4$ and to $7n - 1$ if $n \equiv 3 \pmod 4$. Barina conjectured that every positive orbit reaches $1$, verified it to $10^{15}$, and noted that the orbits of negative integers are the negatives of those of positive ones [Barina 2018]. So for $7x \pm 1$ the problem on $\mathbb{Z}$ is the problem on $\mathbb{N}$, which is not true of $3x+1$.
+An instruction of this kind, which divides even numbers by 2 and sends an odd number $n$ to $mn + d$ for a fixed multiplier $m$ and a digit $d$ chosen by the remainder of $n$, is a **map**. The one above is the $3x+1$ map.
 
-Rings other than $\mathbb{Z}$ appear in a few lines of work. Matthews treats generalized maps on rings of integers of number fields, with examples on $\mathbb{Z}[\sqrt 2]$ and $\mathbb{Z}[\sqrt 3]$, and remarks that these rings invite a systematic investigation [Matthews 2010, Sections 10 and 11]; the first such example is attributed to Leigh [Siegel 2024, Section 1.1.2]. On the Gaussian integers, Joseph extended $3x+1$ to $\mathbb{Z}_2[i]$ [Joseph 1998], Kucinski found cycles of that map and symmetries between them [Kucinski 2000], and Alvarado and a 2017 REU studied a map that divides by $1+i$ and otherwise multiplies by $2+i$ and adds a unit [Alvarado 2025]. Kionke and Siegel give general frameworks on lattices and on rings of integers [Kionke 2017; Siegel 2024].
+### 1.1 Negative numbers
 
-Restating the conjecture on a quotient by a symmetry is not new. Monks and Yazinski showed that the $3x+1$ map $T$ has exactly one nontrivial autoconjugacy, an involution $\Omega$ of the $2$-adic integers that complements parity vectors, and restated the conjecture on the quotient by $\Omega$: it holds if and only if the orbit of the class of every positive integer under the induced map $[x] \mapsto [T(x)]$ contains the class of $1$ [Monks and Yazinski 2004; Monks, survey slides]. We make the same kind of restatement for a different and simpler symmetry, multiplication by the units, which every ring has.
+Nothing in this instruction needs the number to be positive. Applied to $-5$ it gives
 
-### 1.2 The question and the thread
+$$-5 \to -14 \to -7 \to -20 \to -10 \to -5,$$
 
-This paper is a search for invariants. Each ring has its own values of a few quantities: the size of the residue field, the number of units, how close a unit other than $1$ comes to $1$, how $2$ factors, the shape of the lattice, and its automorphisms. When the behaviour of Collatz maps changes from one ring to another, the quantities that changed are the candidates for the cause. We ask which quantities keep controlling the maps as the ring grows, what stops mattering, and what becomes important, including questions that make no sense in $\mathbb{N}$.
+a second cycle, and there are two more, through $-1$ and through $-17$ [Lagarias 1985]. So on all the integers the $3x+1$ map does something different from what it does on the positive ones. The reason is visible in the first step. From $5$ the map goes to $16$, and from $-5$ it goes to $-14$. The orbit of $-5$ is not the orbit of $5$ with the signs flipped.
 
-The thread is one observation. The positive integers are the nonzero integers with $x$ and $-x$ identified:
+Other maps behave better. Barina's map [Barina 2018] halves even numbers, and sends an odd $n$ to $7n + 1$ if $n$ leaves remainder 1 on division by 4, and to $7n - 1$ if it leaves remainder 3. From $5$ and from $-5$ it gives
 
-$$\mathbb{N} = (\mathbb{Z} \setminus \{0\})/\{\pm 1\}.$$
+$$5 \to 36 \to 18 \to 9 \to 64 \to \cdots \to 1, \qquad -5 \to -36 \to -18 \to -9 \to -64 \to \cdots \to -1.$$
 
-In any ring $R$ with unit group $U$, the corresponding object is $R/U$, the nonzero elements up to associates, where two elements are associates if one is a unit times the other. In $\mathbb{Z}[i]$ the class of $z$ is $\{z, iz, -z, -iz\}$. A problem posed on $\mathbb{N}$ can be posed on $R/U$, and a map on $R$ gives a map on $R/U$ exactly when it sends associates to associates. Studying Collatz maps this way does not depend on the ring, and the rest of the paper follows from doing so.
+Here the negative orbit is the positive one with the signs flipped, for every starting number. Barina checked that every positive number up to $10^{15}$ reaches 1, and noted that the negative numbers then take care of themselves.
 
-The first consequence is a distinction between two kinds of map. A **Collatz-type map** applies a formula to one chosen representative of each class: $3x+1$ applies its formula to the positive representative. A **Barina-type map** reads its digit from the residue class of the element itself, on all of $R$, and respects associates: $7x \pm 1$ is one. On $\mathbb{Z}$ the difference is easy to miss, because there is one natural choice of representatives, the positive integers. It is a difference in kind. No map that reads its digit from a residue class, at any modulus, induces $3x+1$ on $\mathbb{N}$; $3x+1$ is the quotient of $3z + \text{sgn}(z)$, whose digit depends on the sign, while $7x \pm 1$ induces itself. In $\mathbb{Z}[i]$ the representatives can be chosen geometrically, by angle, or arithmetically, by residue class, and the two choices give different first Collatz maps: $2+i$ of norm $5$ on a cone of angles, and $5+2i$ of norm $29$ on the residue-class choice. The distinction that is visible there explains, looking back, why $3x+1$ and $7x \pm 1$ behave differently on $\mathbb{Z}$.
+The positive integers can be thought of as the nonzero integers with each number glued to its negative: $5$ and $-5$ are one object, and the positive number $5$ is the name we give it. Barina's map respects the gluing. It sends $5$ and $-5$ to $36$ and $-36$, which are glued to each other, so it makes sense as a map on the glued objects, and that map is the one on the positive integers. The $3x+1$ map does not respect the gluing, since $16$ and $-14$ are not glued.
 
-The paper follows the path of an observation, a general statement and a test. Part I takes the step from $\mathbb{N}$ to $\mathbb{Z}$ and records what it shows, with proofs for $\mathbb{Z}$ only. In $\mathbb{Z}$ some of these facts look more complicated than they need to be; their value appears in Part II, which states them once for any ring of integers. Part III tests the general statements: on $\mathbb{Z}[i]$, the running example of a ring larger than $\mathbb{Z}$, and then in two rings that differ from $\mathbb{Z}[i]$ in the ways the statements care about, $\mathbb{Z}[\sqrt 2]$ for the statements about units and a ring in which $2$ splits for the statements about cycle lengths.
+### 1.2 Two kinds of map
 
-### 1.3 What we find
+The two maps choose what to add in different ways. Barina's map looks at the number's remainder on division by 4. A map of this kind is defined on all the integers at once, and when it respects the gluing it is a map on the positive integers too. We call such a map a **Barina-type map**.
 
-Cycles split into two kinds. A cycle that contains a unit is a **trivial cycle**; a cycle made only of units is a **unit cycle**. A **Collatz map** is a map in which every nonzero orbit reaches a trivial cycle. The results about trivial and unit cycles, and the results about cycles that miss the units, use different tools.
+The $3x+1$ map cannot be written this way. On the positive integers it adds 1 to every odd number. To extend it to all the integers so that it respects the gluing, it has to add $-1$ to the negative odd numbers, $3z + 1$ for $z > 0$ and $3z - 1$ for $z < 0$. What it adds then depends on the sign of $z$, and no remainder, on division by 4 or by any power of 2, tells the sign. What the $3x+1$ map actually does is pick one member of each glued pair, the positive one, and apply a formula to it. We call a map of this kind a **Collatz-type map**.
 
-Results on cycles through the units, all proved and most in Lean:
+On the integers the difference is easy to miss, because there is only one sensible choice of member, the positive one. It becomes visible when there are more than two numbers to glue.
 
-1. A map induces a map on $R/U$ exactly when it respects associates, and then it is a Collatz map on $R$ exactly when the induced map sends every class to the class of $1$ and that class is periodic (transfer). For maps that read their digits from residue classes, respecting associates is the same as commuting with the units.
-2. A map has at most $|U|$ trivial cycles. For a Collatz map that commutes with the units their number divides $|U|$, and every unit lies on one.
-3. Every map that commutes with the units comes in a family of up to $2|U|$ rotated and mirrored maps that are Collatz maps together and induce the same map on $R/U$ up to conjugation. The number of trivial cycles changes across the family in a way the theory predicts: $2, 1, 4, 1$ for the four rotations of $5+2i$.
-4. Whether a variant of a map has a unit cycle, and whether a rotation has a single trivial cycle through all the units, is decided by the class of $1$ on $R/U$.
-5. Maps that commute with the units exist at modulus $\pi^k$ exactly when $k > \kappa$, where $\kappa$ measures how close the units come to $1$. In $\mathbb{Z}[i]$, $\kappa = 2$.
+### 1.3 Other number systems
 
-Results on cycles that miss the units. A cycle that contains no unit must satisfy a cycle equation, and the equation imposes one condition for each way of measuring size in the ring: size and sign in $\mathbb{Z}$, size and angle in $\mathbb{Z}[i]$. Combined with a verification that every start up to a bound reaches a unit, the conditions give lower bounds on the length of such a cycle.
+The **Gaussian integers** are the numbers $a + bi$ with $a$ and $b$ whole numbers and $i^2 = -1$. They form a square grid in the plane. Four of them have inverses, $1, i, -1, -i$; these are the **units**, the counterparts of $1$ and $-1$ in the integers. Multiplying by $i$ turns a number a quarter turn about $0$, so gluing each number to its unit multiples puts four numbers together. The class of $2 + i$ is
 
-1. A non-trivial cycle of $7x \pm 1$ has at least $27{,}855{,}251$ odd steps (proved, from Barina's verification to $10^{15}$). We know of no earlier bound for this map.
-2. A non-trivial cycle of the $5+2i$ map, up to units, has at least $2190$ odd steps (proved, from our verification to norm $7.6 \cdot 10^9$). The size condition alone gives $169$ and the angle condition alone $161$; together they give more than ten times either. [To update after the run to norm $1.3 \cdot 10^{11}$.]
-3. Neither map has a non-trivial cycle of the simplest shape, the analogue of Steiner's $1$-cycles for $3x+1$ [Steiner 1977]. This needs no verification.
+$$\{\, 2 + i,\ -1 + 2i,\ -2 - i,\ 1 - 2i \,\},$$
 
-The general statements hold where the rings are least like $\mathbb{Z}[i]$. In $\mathbb{Z}[\sqrt 2]$, with infinitely many units, a map can reach the units and then walk through them forever; the theorems about units still hold, with walks in place of cycles. In the ring where $2$ splits, the multiplier $5$ has no angle of its own, and the angle condition still decides its cycles.
+one number in each quarter of the plane. Numbers glued in this way are called **associates**, and the glued classes play the part that the positive integers play for the integers.
 
-We also report the profile of each map we study: how far it is verified, the cycle-length bound, and the expected length of its trajectories from its drift.
+A Collatz-type map needs one member of each class. There are now two natural ways to choose. A geometric choice takes the member in a fixed quarter of the plane, for example the one whose angle lies between $-45^\circ$ and $45^\circ$, which for the class above is $2 + i$. An arithmetic choice takes the member with a fixed remainder, for example the one that leaves remainder 1 on division by $2 + 2i$, which for the class above is $-1 + 2i$. Barina-type maps behave like the arithmetic choice, because they read remainders.
 
-### 1.4 Terms
+The two choices give different answers to a simple question: what is the smallest multiplier for which a map of this kind appears to send every nonzero number to a unit? With the geometric choice the answer is $2 + i$, whose size, measured by the **norm** $a^2 + b^2$, is $5$. With the arithmetic choice, and for Barina-type maps, it is $5 + 2i$, of norm $29$. Both answers rest on computer checks of every start up to a large norm; that nothing smaller works is proved for Barina-type maps. Seen from the Gaussian integers, the difference between the $3x+1$ map and Barina's map is the difference between a geometric and an arithmetic way of naming the glued classes. It was there in the integers all along.
 
-These are the paper's terms in brief, with the invariants in plain words. Section 6 gives the formal definitions.
+The same constructions work in other number systems of the same kind, the **rings of integers** of number theory, each with its own units and its own way of gluing. They differ in a few quantities: how many units there are, how close the units come to 1, how the number 2 breaks into primes, and how many ways there are to measure size. This paper asks which of these quantities control the behaviour of Collatz-type and Barina-type maps, and which stop mattering as the ring grows. A quantity that keeps controlling the maps from ring to ring is an **invariant** of the problem.
 
-- A **unit** is an element with a multiplicative inverse. The units of $\mathbb{Z}$ are $\pm 1$ and those of $\mathbb{Z}[i]$ are $\pm 1, \pm i$. In $\mathbb{N}$ the only unit is $1$. Two elements are **associates** if one is a unit times the other, and $R/U$ is the set of nonzero elements up to associates.
-- The **norm** $N(z)$ measures size: $N(x) = |x|$ on $\mathbb{Z}$ and $N(a + bi) = a^2 + b^2$ on $\mathbb{Z}[i]$. It is multiplicative, equals $1$ exactly on the units, and counts the classes modulo $z$.
-- The **prime above $2$** is a prime $\pi$ dividing $2$: $\pi = 2$ in $\mathbb{Z}$ and $\pi = 1+i$ in $\mathbb{Z}[i]$. An element is **odd** if $\pi$ does not divide it.
-- The **residue field size** $q = N(\pi)$ is the number of classes modulo $\pi$. Dividing by $\pi$ divides the norm by $q$.
-- **How $2$ factors.** In $\mathbb{Z}[i]$, $2 = -i(1+i)^2$: $2$ is **ramified**. In some rings $2$ stays prime (**inert**), and in others it is a product of two different primes (it **splits**).
-- **How close the units come to $1$.** For a unit $u \neq 1$, the exponent of $\pi$ in $u - 1$ says how fine the classes modulo powers of $\pi$ must be before $u$ and $1$ fall into different classes. The largest of these exponents is $\kappa$: $1$ in $\mathbb{Z}$, $2$ in $\mathbb{Z}[i]$.
-- **Ways of measuring size.** A ring of integers sits inside the real or complex numbers in one or more ways, its **archimedean places**. $\mathbb{Z}$ and $\mathbb{Z}[i]$ have one; $\mathbb{Z}[\sqrt 2]$ has two, since $a + b\sqrt 2$ has the two sizes $|a + b\sqrt 2|$ and $|a - b\sqrt 2|$. By Dirichlet's unit theorem the unit group is finite exactly when there is one place.
-- An **automorphism** is a bijection of the ring that preserves sums and products. On $\mathbb{Z}[i]$ complex conjugation is one.
-- A **map** is a multiplier $\alpha$, a modulus $\pi^k$ and a **digit table**, which gives the number added after multiplying, for each odd class modulo $\pi^k$. The map $T$ divides by $\pi$ when it can and otherwise multiplies by $\alpha$ and adds the digit; the accelerated map $S$ does one multiplication and all the divisions that follow.
-- A **Collatz-type map** is a formula applied to one chosen representative of each class of $R/U$. A **Barina-type map** reads its digit from the residue class of the element, on all of $R$, and respects associates. A Collatz map can be of either type.
-- A map **respects associates** if $T(uz)$ is an associate of $T(z)$, and **commutes with the units** if $T(uz) = uT(z)$, for every unit $u$. In $\mathbb{Z}$ commuting says that $T$ is an odd function.
-- A **trivial cycle** contains a unit, a **unit cycle** contains only units, and a **Collatz map** is one in which every nonzero orbit reaches a trivial cycle.
-- **Rotated** maps replace $\alpha$ by $u\alpha$ for a unit $u$; the **mirrored** map applies an automorphism such as conjugation to $\alpha$ and the digits.
-- The **window** is the range of multipliers for which a map expands in the worst case and contracts on average. The **drift** is the mean change of $\log_2 N$ per odd step if an orbit visits residue classes as a random element would.
+### 1.4 Earlier work
+
+Maps that multiply on each remainder class and then divide go back to Hasse, and their growth was studied by Heppner, by Matthews and Watts, and by Leigh [Heppner 1978; Matthews and Watts 1985; Leigh 1986]. Their criterion for a map that grows in the worst case and shrinks on average, rewritten with norms, decides which multipliers are worth studying in every ring of this paper. Matthews treated such maps on rings of integers and suggested a systematic study [Matthews 2010, Sections 10 and 11]. On the Gaussian integers, Joseph, Kucinski and a 2017 research group studied particular maps [Joseph 1998; Kucinski 2000; Alvarado 2025].
+
+Gluing by a symmetry has one clear precedent. Monks and Yazinski found a hidden symmetry of the $3x+1$ map on the 2-adic numbers, and restated the conjecture on the classes it glues together [Monks and Yazinski 2004]. We do the same with a simpler symmetry, multiplication by the units, which every ring has.
+
+### 1.5 This paper
+
+The paper follows the order in which a reader meets the ideas. Part I stays in the integers. It moves from the positive integers to all the integers, records what changes, and proves each observation for the integers only. Some of these facts look heavier than they need to be when there are only two units. Part II states them once, for any ring of integers, where they earn their weight. Part III tests the general statements: first in the Gaussian integers, then in two rings chosen because they differ from the Gaussian integers in the ways the statements care about, one with infinitely many units and one in which 2 splits into two different primes.
+
+The results come in two groups, because cycles come in two kinds. A cycle that passes through a unit is **trivial**, like $1 \to 4 \to 2 \to 1$. Every other cycle, like the one through $-5$, misses the units. A map is a **Collatz map** if every nonzero starting number eventually falls into a trivial cycle.
+
+For cycles through the units the gluing does most of the work. A map on the ring that respects the gluing is a Collatz map exactly when the map it induces on the glued classes sends every class to the class of 1. A map has at most as many trivial cycles as the ring has units, and if it commutes with multiplication by the units their number divides the number of units. Turning the multiplier by a unit, or reflecting the map, gives a family of maps that are Collatz maps together or not at all.
+
+For cycles that miss the units the tool is older. Such a cycle forces a power of the multiplier to come very close to a power of the divisor, and how close it can come bounds the cycle's length from below. In the integers this condition has a size part and a sign part. In the Gaussian integers it has a size part and an angle part, and the two together give a much stronger bound than either alone. For Barina's map a cycle that misses the units needs at least 27,855,251 odd steps. For the map with multiplier $5 + 2i$ it needs at least 2190 odd steps, where the size part alone would give 169 and the angle part alone 161. *(To update after the verification run to norm $1.3 \cdot 10^{11}$.)* Neither map has a cycle of the simplest shape that misses the units, with no computer check needed.
 
 # Part I. From N to Z
 

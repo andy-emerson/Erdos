@@ -1,0 +1,105 @@
+
+== 2. Moduli that carry multipliers
+Z k=0 window (1,2) holds an odd integer: False
+Z k=1 window (2,4) holds an odd integer: True
+Z k=2 window (4,8) holds an odd integer: True
+Z k=3 window (8,16) holds an odd integer: True
+Z k=4 window (16,32) holds an odd integer: True
+Z k=5 window (32,64) holds an odd integer: True
+Z k=6 window (64,128) holds an odd integer: True
+Z k=7 window (128,256) holds an odd integer: True
+Z k=8 window (256,512) holds an odd integer: True
+Z k=9 window (512,1024) holds an odd integer: True
+Z k=10 window (1024,2048) holds an odd integer: True
+Z k=11 window (2048,4096) holds an odd integer: True
+Z[i] k=0: odd norms in window: []
+Z[i] k=1: odd norms in window: []
+Z[i] k=2: 1 odd norms in window, all 1 mod 4; witness (2, 1) norm 5 in window: True
+Z[i] k=3: 2 odd norms in window, all 1 mod 4; witness (3, 2) norm 13 in window: True
+Z[i] k=4: 3 odd norms in window, all 1 mod 4; witness (4, 1) norm 17 in window: True
+Z[i] k=5: 6 odd norms in window, all 1 mod 4; witness (5, 4) norm 41 in window: True
+Z[i] k=6: 12 odd norms in window, all 1 mod 4; witness (8, 1) norm 65 in window: True
+Z[i] k=7: 18 odd norms in window, all 1 mod 4; witness (9, 8) norm 145 in window: True
+Z[i] k=8: 40 odd norms in window, all 1 mod 4; witness (16, 1) norm 257 in window: True
+Z[i] k=9: 74 odd norms in window, all 1 mod 4; witness (17, 16) norm 545 in window: True
+Z[i] k=10: 139 odd norms in window, all 1 mod 4; witness (32, 1) norm 1025 in window: True
+Z[i] k=11: 268 odd norms in window, all 1 mod 4; witness (33, 32) norm 2113 in window: True
+Z[i] k=12: 519 odd norms in window, all 1 mod 4; witness (64, 1) norm 4097 in window: True
+Z[i] k=13: 994 odd norms in window, all 1 mod 4; witness (65, 64) norm 8321 in window: True
+Z[i] k=14: 1929 odd norms in window, all 1 mod 4; witness (128, 1) norm 16385 in window: True
+Z[w] k=0 window (1, 1.587): 0 odd norms (smallest []); witness 2^k - w norm 3 in window: False
+Z[w] k=1 window (4, 6.350): 0 odd norms (smallest []); witness 2^k - w norm 7 in window: False
+Z[w] k=2 window (16, 25.398): 3 odd norms (smallest [19, 21, 25]); witness 2^k - w norm 21 in window: True
+Z[w] k=3 window (64, 101.594): 8 odd norms (smallest [67, 73, 75]); witness 2^k - w norm 73 in window: True
+Z[w] k=4 window (256, 406.375): 30 odd norms (smallest [259, 271, 273]); witness 2^k - w norm 273 in window: True
+Z[w] k=5 window (1024, 1625.499): 105 odd norms (smallest [1027, 1029, 1033]); witness 2^k - w norm 1057 in window: True
+Z[w] k=6 window (4096, 6501.995): 389 odd norms (smallest [4099, 4107, 4111]); witness 2^k - w norm 4161 in window: True
+Z[w] k=7 window (16384, 26007.979): 1445 odd norms (smallest [16387, 16389, 16393]); witness 2^k - w norm 16513 in window: True
+Z[w] k=8 window (65536, 104031.915): 5421 odd norms (smallest [65539, 65541, 65551]); witness 2^k - w norm 65793 in window: True
+5 a norm in Z[w]: False
+bound 2^k + 1 < (4^(1/3) - 1) 4^k for k = 2..20: True ; fails at k = 1: True
+
+== 3. Mirror when sigma fixes pi (Z[omega], conjugation, pi = 2)
+S_conj(alpha) = conj o S_alpha o conj on odd z with |a|,|b| <= 30, random tables: 138000 points, no mismatch
+conj(5+2w) = (3, -2) ; -w(5+3w) = (3, -2)
+
+== 4. Markov matrix of T' (Lemma 2.5)
+Z[i] alpha=(2, 1) at (1+i)^2: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4', '1/2'], product 0.7906
+Z[i] alpha=(2, -1) at (1+i)^2: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4', '1/2'], product 0.7906
+Z[i] alpha=(3, 0) at (1+i)^3: 8 classes, 8 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/8', '1/2'], product 0.7500
+Z[i] alpha=(3, 2) at (1+i)^3: 8 classes, 8 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/8', '1/2'], product 0.9014
+Z[i] alpha=(5, 2) at (1+i)^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.9520
+Z[i] alpha=(3, 0) at (1+i)^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.5303
+Z[i] alpha=(1, 4) at (1+i)^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.7289
+Z[i] alpha=(4, 3) at (1+i)^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.8839
+Z[w] alpha=(1, 1) at 2^1: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4'], product 0.2500
+Z[w] alpha=(3, 0) at 2^1: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4'], product 1.2990
+Z[w] alpha=(5, 2) at 2^2: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/4'], product 0.8044
+Z[w] alpha=(5, 1) at 2^2: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/4'], product 0.8671
+Z[w] alpha=(5, 0) at 2^2: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/4'], product 0.9882
+Z[w] alpha=(9, 0) at 2^3: 64 classes, 64 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/64', '1/4'], product 0.8438
+Z[w] alpha=(11, 5) at 2^3: 64 classes, 64 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/64', '1/4'], product 0.9207
+Z m=3 at 2^1: 2 classes, 2 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/2'], product 0.8660
+Z m=5 at 2^2: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4', '1/2'], product 0.7906
+Z m=7 at 2^2: 4 classes, 4 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/4', '1/2'], product 0.9354
+Z m=11 at 2^3: 8 classes, 8 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/8', '1/2'], product 0.8292
+Z m=13 at 2^3: 8 classes, 8 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/8', '1/2'], product 0.9014
+Z m=21 at 2^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.8101
+Z m=29 at 2^4: 16 classes, 16 subclasses each, rows sum to 1: True, columns sum to 1: True, irreducible: True, entries ['1/16', '1/2'], product 0.9520
+all doubly stochastic and irreducible: True
+
+== 5. Multiplier 3 at modulus 2
+3x+1: S(1) = 1 (3*d + d = 4)
+3x-1: S(-1) = -1 (3*d + d = -4)
+3x+3: S(3) = 3 (3*d + d = 12)
+3x-3: S(-3) = -3 (3*d + d = -12)
+3x+5: S(5) = 5 (3*d + d = 20)
+3x-5: S(-5) = -5 (3*d + d = -20)
+3x+7: S(7) = 7 (3*d + d = 28)
+3x+9: S(9) = 9 (3*d + d = 36)
+3x-11: S(-11) = -11 (3*d + d = -44)
+3x+1, odd |x| <= 201, accelerated cycles: [(-1,), (1,), (-7, -5), (-91, -61, -55, -41, -37, -25, -17)]
+3x-1, odd |x| <= 201, accelerated cycles: [(-1,), (1,), (5, 7), (17, 25, 37, 41, 55, 61, 91)]
+3x+1 cycle through -5: 5 steps of T: [-5, -14, -7, -20, -10]
+3x+1 cycle through -17: 18 steps of T: [-17, -50, -25, -74, -37, -110, -55, -164, -82, -41, -122, -61, -182, -91, -272, -136, -68, -34]
+
+== 6. Least positive digits on Z
+k = 1..8, every odd m in (2^k, 2^(k+1)): 255 maps, fixed points as predicted, no S(x) = -x, 3 fixed iff m > (5/3)2^k, -3 fixed iff m < (4/3)2^k; mismatches: 0
+
+== 7. Score and drift of 5+2w at modulus 4
+N(5+2w) = 19, M = N(4) = 16, score = 3/304 = 0.0099, drift = -0.4187 bits = -0.2902 natural
+upper end of score range 1/M - 4^(-k-1/3) at k = 2: 0.0231
+
+== 8. Unit-table cycles at (1+i)^3
+pi^3 = (-2, 2)  pi^4 = (-4, 0)
+pi^4 - (-3) = (-1, 0) ; pi^3 - (-3+2i) = (1, 0) ; pi^3 - (-2+3i) = (0, -1)
+alpha=(-3, 0): cycle of 8 elements from (2, 1): [(2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1)]
+   exponents [3, 3, 3, 3, 3, 3, 3, 3], norms [5], units on cycle: [], U*cycle has 8 elements, invariant: True
+alpha=(-2, 3): cycle of 8 elements from (3, 0): [(3, 0), (4, -1), (5, -2), (-2, -3), (-3, 0), (-4, 1), (-5, 2), (2, 3)]
+   exponents [3, 3, 5, 4, 3, 3, 5, 4], norms [9, 13, 17, 29], units on cycle: [], U*cycle has 16 elements, invariant: True
+alpha=(-3, 2): cycle of 16 elements from (3, 0): [(3, 0), (4, 1), (5, 2), (2, -3), (0, -3), (1, -4), (2, -5), (-3, -2), (-3, 0), (-4, -1), (-5, -2), (-2, 3), (0, 3), (-1, 4), (-2, 5), (3, 2)]
+   exponents [3, 3, 5, 4, 3, 3, 5, 4, 3, 3, 5, 4, 3, 3, 5, 4], norms [9, 13, 17, 29], units on cycle: [], U*cycle has 16 elements, invariant: True
+alpha=-3+2i: cycle set equals the unit multiples of 3, 4+i, 5+2i, 2-3i: True
+alpha=(3, 0) from (-2, -1): [(-2, -1), (1, 2), (1, -2), (-2, 1), (2, 1)]
+alpha=(3, 2) from (-3, 0): [(-3, 0), (1, 4), (5, -2), (-3, 2), (3, 0)]
+alpha=(3, -2) from (-3, 0): [(-3, 0), (4, 1), (-5, -2), (2, -3), (0, 3)]

@@ -147,3 +147,5 @@
 14:54:24 done (104600000000,105600000000]  80.1%  1.11e+07 starts/s  elapsed 3465 s  ETA 863 s  bad chunks 0
 14:55:43 done (105600000000,106600000000]  80.9%  1.1e+07 starts/s  elapsed 3545 s  ETA 838 s  bad chunks 0
 14:55:51 done (106600000000,107600000000]  81.7%  1.11e+07 starts/s  elapsed 3553 s  ETA 796 s  bad chunks 0
+14:57:45 done (107600000000,108600000000]  82.5%  1.08e+07 starts/s  elapsed 3666 s  ETA 777 s  bad chunks 0
+14:57:54 done (108600000000,109600000000]  83.3%  1.09e+07 starts/s  elapsed 3675 s  ETA 735 s  bad chunks 0

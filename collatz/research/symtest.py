@@ -1,4 +1,4 @@
-"""Does symmetry follow from the cycle criterion?  (research/collatz/symmetry-test.md)
+"""Does symmetry follow from the cycle criterion?  (collatz/research/symmetry-test.md)
 
 Criterion: every nonzero orbit reaches a cycle that contains a unit (literal cycles, not up to
 units).  Rules: Collatz-like alpha at level k, digit set with one element per odd class mod

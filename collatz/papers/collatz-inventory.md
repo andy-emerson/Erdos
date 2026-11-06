@@ -2,7 +2,7 @@
 
 Compiled 5 November 2026 from the two drafts and the working notes. Nothing here is new mathematics except where an item says "this inventory". Each item gives the content, its status, and its source.
 
-Source key. D1 = `papers/gaussian-collatz.md` (draft 1). D2 = `papers/gaussian-collatz-2.md` (draft 2). The rest are in `research/collatz/`: COL = `collatz.md`, LIT = `literature.md`, LAG = `lagarias2016.md`, FAM = `families.md`, CONV = `convergents.md`, SLIT = `symmetric-literature.md`, IC = `integer-census.md`, ST = `symmetry-test.md`, TH = `theorems.md`, LEAN = `lean/README.md` and the files in `lean/GaussianCollatz/`, LOG = `logs/`. A section is written as D2 5.4 or TH Thm 5.4.
+Source key. D1 = `collatz/papers/gaussian-collatz.md` (draft 1). D2 = `collatz/papers/gaussian-collatz-2.md` (draft 2). The rest are in `collatz/research/`: COL = `collatz.md`, LIT = `literature.md`, LAG = `lagarias2016.md`, FAM = `families.md`, CONV = `convergents.md`, SLIT = `symmetric-literature.md`, IC = `integer-census.md`, ST = `symmetry-test.md`, TH = `theorems.md`, LEAN = `lean/README.md` and the files in `lean/GaussianCollatz/`, LOG = `logs/`. A section is written as D2 5.4 or TH Thm 5.4.
 
 Status labels. Lean: proved in Lean 4, axioms at most `propext`, `Classical.choice`, `Quot.sound`. Paper: proved on paper, not formalized. Computer-assisted: a proof that rests on stated program runs. Computed to X: an observation checked for all starts up to the bound X. Heuristic. Literature: a statement taken from a cited source. Open. Superseded: replaced by the item named.
 

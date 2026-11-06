@@ -1,6 +1,6 @@
 # Collatz maps on the Gaussian integers
 
-*Draft research note, 4 November 2026. Code and outputs: `research/collatz/`. Items marked [unverified] have not been checked against their source or by computation.*
+*Draft research note, 4 November 2026. Code and outputs: `collatz/research/`. Items marked [unverified] have not been checked against their source or by computation.*
 
 ## Abstract
 
@@ -285,7 +285,7 @@ The program `gcz.c` classifies every $z$ with $N(z) \le B$. It stores one entry 
 
 For rules that commute with units, `gstop.c` checks a larger range by induction. For one associate of each odd $z$ with $10^7 < N(z) \le B$ (those with $a > 0$, $b \ge 0$), it iterates $T$ until the norm falls below $N(z)$, and it reports any orbit that returns to an associate of its start instead. Even $z$ need no check, since $N(z/(1+i)) < N(z)$. If every start in the range falls below its own norm, then by induction every orbit with $N(z) \le B$ ends in a cycle whose least element has norm at most $10^7$, and those cycles are known completely from `gcz`. For $H$ the run covered $B = 3 \cdot 10^9$ in $30$ chunks, $1.18 \cdot 10^9$ starts, with no failures and no new cycle; it took about $15$ minutes on one core. Comparisons of norms use exact 128-bit arithmetic while coordinates stay below about $2^{60}$, and the escape bound is $2^{110}$. The largest coordinates met were below $2^{80}$.
 
-The Python module `exact.py` iterates the same rules in unbounded integer arithmetic, choosing each digit directly from the congruence instead of from the table. It re-derives every cycle reported here and agrees with `gcz` and `gstop` on the extreme orbits. For this draft we re-ran the cycle search of Section 5 for $k \le 5$, the orbits quoted in Sections 4 and 9, and the Joseph runs of Section 10, and computed $\theta$ and $C$ of Section 9. We also re-ran the sweeps behind Section 5.1 for $k = 3$ to $6$ at $N(z) \le 10^5$ and $10^6$ (`sweep_eq2.py`). We extended $G_3$ and $G_{3+2i}$ to $10^9$ with `gstop`, finding $3.92 \cdot 10^8$ starts each, no failures and no new cycle, with logs in `research/collatz/logs/`.
+The Python module `exact.py` iterates the same rules in unbounded integer arithmetic, choosing each digit directly from the congruence instead of from the table. It re-derives every cycle reported here and agrees with `gcz` and `gstop` on the extreme orbits. For this draft we re-ran the cycle search of Section 5 for $k \le 5$, the orbits quoted in Sections 4 and 9, and the Joseph runs of Section 10, and computed $\theta$ and $C$ of Section 9. We also re-ran the sweeps behind Section 5.1 for $k = 3$ to $6$ at $N(z) \le 10^5$ and $10^6$ (`sweep_eq2.py`). We extended $G_3$ and $G_{3+2i}$ to $10^9$ with `gstop`, finding $3.92 \cdot 10^8$ starts each, no failures and no new cycle, with logs in `collatz/research/logs/`.
 
 ## 13. Open problems
 

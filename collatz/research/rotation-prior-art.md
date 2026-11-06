@@ -1,6 +1,6 @@
 # Prior art for rotated and mirrored maps
 
-Search done 5 November 2026, for Proposition 6.3 and Theorem 6.4 of `papers/collatz-rings.md` (paper 1), which are Proposition 4.2, Theorem 4.4, Proposition 4.6 and Theorem 4.7 of `theorems.md`. It extends row 8 of `invariants-prior-art.md` and does not repeat the access notes of `literature.md` except where they changed.
+Search done 5 November 2026, for Proposition 6.3 and Theorem 6.4 of `collatz/papers/collatz-rings.md` (paper 1), which are Proposition 4.2, Theorem 4.4, Proposition 4.6 and Theorem 4.7 of `theorems.md`. It extends row 8 of `invariants-prior-art.md` and does not repeat the access notes of `literature.md` except where they changed.
 
 ## 1. The result, and how it splits
 

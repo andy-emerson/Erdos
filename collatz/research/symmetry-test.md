@@ -1,6 +1,6 @@
 # Does symmetry follow from the cycle criterion?
 
-Working notes for `papers/gaussian-collatz-2.md` (Sections 3 to 5) and `integer-census.md`. Nothing here is in the paper. Scripts: `symtest.py`, `eistest.py`, `gstopall.c`, `zany.c`, together with the existing `gcz`, `gstop` and `rules.py`. Logs are in `logs/symtest_*` and `logs/eistest_*`.
+Working notes for `collatz/papers/gaussian-collatz-2.md` (Sections 3 to 5) and `integer-census.md`. Nothing here is in the paper. Scripts: `symtest.py`, `eistest.py`, `gstopall.c`, `zany.c`, together with the existing `gcz`, `gstop` and `rules.py`. Logs are in `logs/symtest_*` and `logs/eistest_*`.
 
 ## 1. Summary
 

@@ -1,6 +1,6 @@
 # Cycle families of the many-cycle rules (4 Nov)
 
-Working notes on the minimal unit-equivariant rules with many cycles: at level 7, alpha = 13, 15, 11 +- 10i and 15 +- 2i; at level 6, alpha = 9 and 11 with all four minimal digit sets. Notation follows the draft (papers/gaussian-collatz.md, Section 2). S is the accelerated map on odd z, and a cycle is counted up to units. A cycle has n odd steps with valuations v_0, ..., v_{n-1}, total V. Its unit eps is defined by S^n(z_0) = eps z_0 (S commutes with units, so after n odd steps the orbit returns to an associate of its start). The data of a cycle is (n, V, eps). Nothing here is committed, and the paper is unchanged.
+Working notes on the minimal unit-equivariant rules with many cycles: at level 7, alpha = 13, 15, 11 +- 10i and 15 +- 2i; at level 6, alpha = 9 and 11 with all four minimal digit sets. Notation follows the draft (collatz/papers/gaussian-collatz.md, Section 2). S is the accelerated map on odd z, and a cycle is counted up to units. A cycle has n odd steps with valuations v_0, ..., v_{n-1}, total V. Its unit eps is defined by S^n(z_0) = eps z_0 (S commutes with units, so after n odd steps the orbit returns to an associate of its start). The data of a cycle is (n, V, eps). Nothing here is committed, and the paper is unchanged.
 
 ## 1. Summary
 
@@ -20,7 +20,7 @@ Working notes on the minimal unit-equivariant rules with many cycles: at level 7
 
 ## 2. Data
 
-Tools, all in research/collatz:
+Tools, all in collatz/research:
 - families.py runs gcz non-quiet on one rule, groups the raw cycles up to units by exact iteration (exact.make_S), and writes one line per cycle. The fields are: the canonical element (the least-norm element of the cycle, first-quadrant associate x > 0, y >= 0), n, V, eps, the least and largest norm on the cycle, the basin size within the table, and the valuation vector read from the canonical element (an entry (10) means v = 10). The .json file also holds the S-orbit of the canonical element.
 - gcz copy. For more than 4096 raw cycles, gcz needs a larger MAXC. A copy was built as `sed 's/#define MAXC 4096/#define MAXC 65536/' gcz.c > gczbig.c; gcc -O2 -o gczbig gczbig.c -lm` in the scratchpad. gcz.c itself is unchanged.
 
@@ -200,7 +200,7 @@ The values are the same for all digit sets of a rule. The sign of the drift agre
 
 ## 8. Commands and files
 
-From research/collatz. G7 is "0,1;0,3;0,5;0,7;1,2;1,4;1,6;1,-6;1,-4;1,-2;2,3;2,5;2,-5;2,-3;3,4;3,-4" and GB is the scratchpad gczbig of Section 2. Times are on this machine, one job at a time.
+From collatz/research. G7 is "0,1;0,3;0,5;0,7;1,2;1,4;1,6;1,-6;1,-4;1,-2;2,3;2,5;2,-5;2,-3;3,4;3,-4" and GB is the scratchpad gczbig of Section 2. Times are on this machine, one job at a time.
 
 - python3 families.py 7 -13,0 "$G7" B logs/families_k7_a13_X --gcz $GB for B = 10^6, 10^7, 1.3 * 10^7 (X = 1e6, 1e7, 1.3e7; 18 and 22 s at the larger bounds), and the same for -15,0 (a15; 1.65e7 in 62 s), -11,-10 (a11p10i), -11,10 (a11m10i, 10^6 only) and -15,-2 (a15p2i; 2.85e7 in 122 s).
 - python3 families.py 6 -9,0 "<set>" 1000000 logs/families_k6_a9_<S>_1e6 --gcz $GB for the four sets S = A, B, C, D, and the same for -11,0 (all eight in 69 s).

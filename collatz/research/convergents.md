@@ -1,6 +1,6 @@
 # Cycle lengths and best approximations (5 Nov)
 
-A toy test and a short literature survey, about an hour of work. Notation follows families.md and papers/gaussian-collatz-2.md, Sections 3 and 5.6. A cycle up to units has n odd steps, total valuation V, and unit eps with S^n(z) = eps z. Its relative denominator is rel(n, V, eps) = |eps (1+i)^V - alpha^n| / 2^(V/2), and best(n) is the minimum of rel over V and the four units. Call n a record if best(n) < best(m) for every m < n. For real alpha only even V can be close, and the records are the denominators of the convergents of log2|alpha|, apart from an occasional extra record at very small n, where rel = |1 - 2^x| is not symmetric in x (n = 2 for alpha = 5, n = 3 for m = 19). For complex alpha they are the best simultaneous approximations to the modulus condition V/n close to log2 N(alpha) and the angle condition n arg(alpha)/(pi/4) - V close to an even integer. Nothing here is committed, and no paper was edited.
+A toy test and a short literature survey, about an hour of work. Notation follows families.md and collatz/papers/gaussian-collatz-2.md, Sections 3 and 5.6. A cycle up to units has n odd steps, total valuation V, and unit eps with S^n(z) = eps z. Its relative denominator is rel(n, V, eps) = |eps (1+i)^V - alpha^n| / 2^(V/2), and best(n) is the minimum of rel over V and the four units. Call n a record if best(n) < best(m) for every m < n. For real alpha only even V can be close, and the records are the denominators of the convergents of log2|alpha|, apart from an occasional extra record at very small n, where rel = |1 - 2^x| is not symmetric in x (n = 2 for alpha = 5, n = 3 for m = 19). For complex alpha they are the best simultaneous approximations to the modulus condition V/n close to log2 N(alpha) and the angle condition n arg(alpha)/(pi/4) - V close to an even integer. Nothing here is committed, and no paper was edited.
 
 ## 1. Question and answer
 
@@ -108,7 +108,7 @@ As for novelty, for 3x+1 the use of convergents of log2 3 to constrain cycle len
 
 ## 8. Files and commands
 
-From research/collatz:
+From collatz/research:
 - python3 convrun.py OUTDIR 1000000 runs families.py on the 54 census rules (2 minutes). The outputs went to the scratchpad and are not kept in the repository. The rule list is reproducible from the census logs.
 - python3 convergents.py gauss 3000 FILES > logs/convergents_families.txt (families files at their final bounds) and > logs/convergents_census.txt (the 54 census files). Each takes about 1 second.
 - python3 convergents.py modonly k ax,ay 600 > logs/convergents_modonly.txt.

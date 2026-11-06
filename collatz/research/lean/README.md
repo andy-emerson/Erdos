@@ -1,4 +1,4 @@
-# Lean 4 proofs for `papers/gaussian-collatz.md` and `theorems.md`
+# Lean 4 proofs for `collatz/papers/gaussian-collatz.md` and `theorems.md`
 
 Core Lean 4 only (toolchain `leanprover/lean4:v4.35.0`). No Mathlib or other dependencies,
 no `sorry`/`admit`, no `native_decide`/`bv_decide`, no new axioms. Tactics used: `omega`,
@@ -7,7 +7,7 @@ no `sorry`/`admit`, no `native_decide`/`bv_decide`, no new axioms. Tactics used:
 ## Build
 
 ```
-cd research/collatz/lean
+cd collatz/research/lean
 lake build                       # builds the library, a few seconds to ~20 s
 lake env lean CheckAxioms.lean   # prints the axioms of every main theorem
 ```

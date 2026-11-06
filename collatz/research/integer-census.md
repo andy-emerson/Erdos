@@ -1,6 +1,6 @@
 # Symmetric Collatz rules: when they exist, and the integer census
 
-Working notes accompanying `papers/gaussian-collatz-2.md` (Sections 3 to 5). Nothing here is in the paper yet. Scripts and logs are in this directory and in `logs/`. Section 8 lists what is proven, what is computed, and to what bound.
+Working notes accompanying `collatz/papers/gaussian-collatz-2.md` (Sections 3 to 5). Nothing here is in the paper yet. Scripts and logs are in this directory and in `logs/`. Section 8 lists what is proven, what is computed, and to what bound.
 
 ## 1. Summary
 

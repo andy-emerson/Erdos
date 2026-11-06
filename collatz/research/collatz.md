@@ -193,7 +193,7 @@ What would be publishable:
 
 10. Caveats. A "cycle" is a cycle reached from some start with N(z) <= B, so the counts are lower bounds on the number of cycles of each rule. Cycles are found by gcz with T-steps capped at 50000 and escape at coordinates 2^100. At level 7 neither limit was reached, so every start up to 10^6 is accounted for. Every cycle was re-iterated in exact Python integers by exact.make_S, which picks the digit from the congruence and not from the table, before grouping up to units. The single-cycle claims are computational up to 10^9 (gstop) and are not proofs.
 
-11. Commands (from research/collatz; logs in logs/):
+11. Commands (from collatz/research; logs in logs/):
     - python3 sweep_eq2.py 6 1 --setup ; python3 sweep_eq2.py 7 1 --setup
     - python3 sweep_eq2.py 6 100000 > logs/k6_1e5_rerun.txt (57 s)
     - python3 sweep_eq2.py 7 100000 > logs/k7_1e5.txt (21 s)
@@ -202,4 +202,4 @@ What would be publishable:
     - ./gstop k7_a{-11_4,-12_3,-11_8,-12_7}.rule 1000000 1000000000 > logs/k7_single_gstop_1e9.txt (9 min 39 s)
     - python3 sweep_eq2.py 6 1000000 --only (alpha = 9, 11 rules) > logs/k6_1e6_alpha9_11_rerun.txt (69 s)
     - python3 sweep_eq2.py k 1000000 for k = 3, 4, 5 > logs/k345_1e6_rerun.txt (57 s)
-    The rule files k7_a-11_4.rule, k7_a-12_3.rule, k7_a-11_8.rule and k7_a-12_7.rule are in research/collatz.
+    The rule files k7_a-11_4.rule, k7_a-12_3.rule, k7_a-11_8.rule and k7_a-12_7.rule are in collatz/research.

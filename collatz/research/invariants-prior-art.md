@@ -1,6 +1,6 @@
-# Prior art for the general principles of `papers/collatz-rings.md`
+# Prior art for the general principles of `collatz/papers/collatz-rings.md`
 
-Search done 5 November 2026. It follows `literature.md` (Gaussian search, 4 November) and `symmetric-literature.md` (symmetric integer maps, 5 November), and does not repeat what they established unless a row needs it. The rows are the eleven principles listed in the request, numbered as there. Paper references (Proposition 2.4, Lemma 3.3 and so on) are to the draft `papers/collatz-rings.md` of 5 November.
+Search done 5 November 2026. It follows `literature.md` (Gaussian search, 4 November) and `symmetric-literature.md` (symmetric integer maps, 5 November), and does not repeat what they established unless a row needs it. The rows are the eleven principles listed in the request, numbered as there. Paper references (Proposition 2.4, Lemma 3.3 and so on) are to the draft `collatz/papers/collatz-rings.md` of 5 November.
 
 ## 1. Method and access
 

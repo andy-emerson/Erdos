@@ -9,11 +9,11 @@ studies/playground/divvec_t
 studies/playground/gcdfair
 studies/playground/*
 !studies/playground/*.*
-research/collatz/gcz
-research/collatz/gstop
+collatz/research/gcz
+collatz/research/gstop
 **/.lake/
-research/collatz/zcz
-research/collatz/gstopall
-research/collatz/zany
+collatz/research/zcz
+collatz/research/gstopall
+collatz/research/zany
 __pycache__/
-research/collatz/m3search
+collatz/research/m3search

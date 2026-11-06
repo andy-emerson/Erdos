@@ -1,6 +1,6 @@
 # Collatz maps on the Gaussian integers
 
-*Second draft, 4 November 2026. Code, logs and Lean proofs: `research/collatz/`. Items marked [unverified] have not been checked against their source or by computation.*
+*Second draft, 4 November 2026. Code, logs and Lean proofs: `collatz/research/`. Items marked [unverified] have not been checked against their source or by computation.*
 
 ## Abstract
 
@@ -371,7 +371,7 @@ Other runs of `gstop` cover $G_3$ and $G_{3+2i}$ to $N(z) \le 10^9$, $3.93 \cdot
 
 ## 8. Formal verification
 
-The Lean 4 development in `research/collatz/lean/` proves the following, with Gaussian integers as pairs of integers and $\pi = 1+i$.
+The Lean 4 development in `collatz/research/lean/` proves the following, with Gaussian integers as pairs of integers and $\pi = 1+i$.
 
 | statement | Lean theorems |
 |---|---|
@@ -403,7 +403,7 @@ What is trusted is the computation. `H_sound` turns the bound $3 \cdot 10^9$ int
 
 ## 10. Code and data availability
 
-Everything is in `research/collatz/`. The C programs are `gcz.c` (full classification) and `gstop.c` (drop-below-start check), with the rule files `alpha5p2i_k4.rule` ($H$), `G3_k3.rule`, `G3p2i_k3.rule` and `k7_a-11_4.rule`, `k7_a-12_3.rule`, `k7_a-11_8.rule`, `k7_a-12_7.rule`. The Python files are `rules.py` (rule tables and digit rules), `exact.py` (exact iteration and cycle checks), `sweep_eq.py` and `sweep_eq2.py` (symmetric sweeps), `sweep_gen.py` (non-symmetric sweeps), `joseph.py` (Joseph-type maps), `bigrun.py` and `run_stop.sh` (driving the large runs), `zsym.py` (the integer rules of Section 3.6), `below_window.py` (Section 3.8), and the scripts of the cycle-family study, `families.py`, `famtheory.py` (Lemma 1 and the heuristic count), `famcover.py`, `famheur.py`, `famstruct.py`, `famverify.py` (exact check of every cycle), `famlines.py`, `famline1d.py` (invariance of $L$ and the drift along it), `famlinerun.py` and `famescape.py`; the study itself is written up in `families.md`. Logs of the runs are in `logs/`, among them `alpha5p2i_k4.stop` (the $3 \cdot 10^9$ check of $H$, chunk by chunk), `G3_k3.stop`, `G3p2i_k3.stop`, `k345_1e6_rerun.txt`, `k6_1e6.txt`, `k6_1e6_alpha9_11_rerun.txt`, `k7_1e6.txt`, `k7_single_gstop_1e9.txt`, and the files `families_*` of the cycle-family study, among them `families_gstop_k7_summary_1e9.txt`, `families_cover.txt` and `families_line_drift.txt`. The Lean proofs are in `lean/`, built with `lake build`, with axioms printed by `lake env lean CheckAxioms.lean`.
+Everything is in `collatz/research/`. The C programs are `gcz.c` (full classification) and `gstop.c` (drop-below-start check), with the rule files `alpha5p2i_k4.rule` ($H$), `G3_k3.rule`, `G3p2i_k3.rule` and `k7_a-11_4.rule`, `k7_a-12_3.rule`, `k7_a-11_8.rule`, `k7_a-12_7.rule`. The Python files are `rules.py` (rule tables and digit rules), `exact.py` (exact iteration and cycle checks), `sweep_eq.py` and `sweep_eq2.py` (symmetric sweeps), `sweep_gen.py` (non-symmetric sweeps), `joseph.py` (Joseph-type maps), `bigrun.py` and `run_stop.sh` (driving the large runs), `zsym.py` (the integer rules of Section 3.6), `below_window.py` (Section 3.8), and the scripts of the cycle-family study, `families.py`, `famtheory.py` (Lemma 1 and the heuristic count), `famcover.py`, `famheur.py`, `famstruct.py`, `famverify.py` (exact check of every cycle), `famlines.py`, `famline1d.py` (invariance of $L$ and the drift along it), `famlinerun.py` and `famescape.py`; the study itself is written up in `families.md`. Logs of the runs are in `logs/`, among them `alpha5p2i_k4.stop` (the $3 \cdot 10^9$ check of $H$, chunk by chunk), `G3_k3.stop`, `G3p2i_k3.stop`, `k345_1e6_rerun.txt`, `k6_1e6.txt`, `k6_1e6_alpha9_11_rerun.txt`, `k7_1e6.txt`, `k7_single_gstop_1e9.txt`, and the files `families_*` of the cycle-family study, among them `families_gstop_k7_summary_1e9.txt`, `families_cover.txt` and `families_line_drift.txt`. The Lean proofs are in `lean/`, built with `lake build`, with axioms printed by `lake env lean CheckAxioms.lean`.
 
 ## References
 

@@ -1,5 +1,5 @@
 """Collatz maps on Z[i] at modulus (1+i)^3 with digit tables that need not commute with the units.
-(research/collatz/modulus3-search.md)
+(collatz/research/modulus3-search.md)
 
 usage:
   m3search.py prune maxnorm               candidate digits per class, and what the fixed-point lemma removes

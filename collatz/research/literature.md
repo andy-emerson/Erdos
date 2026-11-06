@@ -1,6 +1,6 @@
 # Literature search: Collatz maps on the Gaussian integers
 
-Search done 4 November 2026 for the draft `papers/gaussian-collatz.md`. It covers what was looked at, what each relevant work does, how it bears on the draft's claims 1 to 5, and what could not be reached. Claims are numbered as in the request:
+Search done 4 November 2026 for the draft `collatz/papers/gaussian-collatz.md`. It covers what was looked at, what each relevant work does, how it bears on the draft's claims 1 to 5, and what could not be reached. Claims are numbered as in the request:
 
 1. The family T (divide by 1+i on evens, αz + d(z) on odds, digit set D of 2^(k-1) odd residues modulo (1+i)^k) and the accelerated map S.
 2. The window 2^k < N(α) < 2^(k+1); no rule at level 1 (3 is not a norm); no rule at levels 1 or 2 commutes with units.

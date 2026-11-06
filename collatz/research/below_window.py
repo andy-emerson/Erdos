@@ -3,7 +3,7 @@
 For alpha in {1+2i, 2+i, 1-2i, 2-i}: every odd start with N(z) <= 10^5 is followed under the
 exact accelerated map (exact.make_S); checks that every odd step lowers the norm, counts odd steps
 to a unit, and lists the cycles up to units.
-Usage: python3 below_window.py   (from research/collatz)
+Usage: python3 below_window.py   (from collatz/research)
 """
 import rules as R, exact as E
 

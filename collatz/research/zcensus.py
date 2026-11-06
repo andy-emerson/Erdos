@@ -1,4 +1,4 @@
-"""Integer census driver (research/collatz/integer-census.md).
+"""Integer census driver (collatz/research/integer-census.md).
 
 For each level k and each odd m with 2^k < m < 2^(k+1), run `zcz census` for the digit
 set given (sym: minimal symmetric, odd |d| < 2^(k-1); pos: odd 0 < d < 2^k) and write

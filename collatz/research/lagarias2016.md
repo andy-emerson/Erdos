@@ -1,6 +1,6 @@
 # Lagarias 2016: Erdős, Klarner, and the 3x+1 problem
 
-Notes written 4 November 2026 for the draft `papers/gaussian-collatz.md`. Source: the PDF of 24 JSTOR screenshots supplied by the user, all read. Page numbers below are the journal page numbers printed on each page.
+Notes written 4 November 2026 for the draft `collatz/papers/gaussian-collatz.md`. Source: the PDF of 24 JSTOR screenshots supplied by the user, all read. Page numbers below are the journal page numbers printed on each page.
 
 The citation, confirmed from the first page and the running footers: Jeffrey C. Lagarias, "Erdős, Klarner, and the 3x + 1 Problem", *American Mathematical Monthly* 123, no. 8 (October 2016), 753-776, doi:10.4169/amer.math.monthly.123.08.753. MSC: Primary 11B05, Secondary 11B75, 20M20. The issue number 8 is taken from the DOI ("123.08") and the footer "October 2016"; the pages run from 753 (title) to 776 (end of references and author note).
 
@@ -72,7 +72,7 @@ The fifth is the affine semigroup form of Section 10, which carries over to the 
 
 ## 3. References in the paper that the literature search missed and that bear on the draft
 
-The literature search (`research/collatz/literature.md`) mentions none of Lagarias 2016, Conway, Coxeter, Klarner, Coppersmith or the matrix-semigroup papers. Of the paper's 43 references, these bear on the draft. Citations are copied from the paper's list (pp. 775-776).
+The literature search (`collatz/research/literature.md`) mentions none of Lagarias 2016, Conway, Coxeter, Klarner, Coppersmith or the matrix-semigroup papers. Of the paper's 43 references, these bear on the draft. Citations are copied from the paper's list (pp. 775-776).
 
 1. J. C. Lagarias, Erdős, Klarner, and the 3x + 1 problem, *Amer. Math. Monthly* 123 no. 8 (2016) 753-776. This is the source of the affine semigroup form of the conjecture (p. 774), which carries over to H (Section 2 above). It is also a recent survey by the author of the draft's references 3, 4 and 13.
 2. J. H. Conway, Unpredictable iterations, in Proc. 1972 Number Theory Conference, Univ. of Colorado, Boulder, CO, 1972, 49-52. [Reprinted in [40].] This proves that a generalization of 3x+1 is undecidable. It bears on the draft's open question in Section 7 and open problem 6. Rules whose multiplier or level depends on the class are residue-class-wise affine maps, and Conway's class of maps contains undecidable instances. So any positive result about such rules has to use the specific rule. The draft's Section 11 cites Matthews and Kohl for that framework but not Conway, who started it.

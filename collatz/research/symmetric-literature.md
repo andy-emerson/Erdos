@@ -1,6 +1,6 @@
 # Literature search: symmetric Collatz-type rules on Z, 5x ± 1 and 7x ± 1
 
-Search done 5 November 2026 for Section 3.6 of `papers/gaussian-collatz-2.md`. It follows the Gaussian search in `literature.md`. The questions were:
+Search done 5 November 2026 for Section 3.6 of `collatz/papers/gaussian-collatz-2.md`. It follows the Gaussian search in `literature.md`. The questions were:
 
 1. Are 7x ± 1, 5x ± 1, or odd-symmetric generalized Collatz maps (with T(−x) = −T(x)) studied anywhere? Is the 5x ± 1 cycle 7, 9, 11 recorded? Is it recorded that 3x+1 on Z is not odd-symmetric, and that 3x−1 on the positive integers is its mirror image?
 2. Has anyone proposed symmetry under the units as a natural requirement, or classified such rules by level?

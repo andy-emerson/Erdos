@@ -1,6 +1,6 @@
 # The 5+2i problem: Collatz maps on the Gaussian integers
 
-*Draft, 5 November 2026. Code, logs and Lean proofs: `research/collatz/`. Each result carries its status: proved on paper, proved in Lean 4, computer-assisted (a proof that rests on stated program runs), computed to a bound (an observation for every start up to that bound), or heuristic.*
+*Draft, 5 November 2026. Code, logs and Lean proofs: `collatz/research/`. Each result carries its status: proved on paper, proved in Lean 4, computer-assisted (a proof that rests on stated program runs), computed to a bound (an observation for every start up to that bound), or heuristic.*
 
 ## Abstract
 
@@ -89,7 +89,7 @@ The mirrored map of the $2-i$ map has multiplier $2+i$ and digit set $\bar D = \
 
 At modulus $\pi^3$ the four odd classes each contain exactly one unit, since two distinct units differ by an element of norm $2$ or $4$ and a nonzero multiple of $\pi^3$ has norm at least $8$. A digit table is therefore a list $(d_1, d_i, d_{-1}, d_{-i})$, where $d_u$ is the digit of the class of $u$ and lies in the class of $-\alpha u$. The unit table $D = U$ commutes with the units. The multipliers inside the window are the twelve associates of $3$, $3+2i$ and $3-2i$, and Theorem 4 will show that none of them gives a Collatz map with a digit set closed under units. The question here is whether other tables do.
 
-The search (`m3search.c`, `m3search.py`; `research/collatz/modulus3-search.md`) took, for each class, the six elements of least norm (norms $1, 5, 5, 9, 13, 13$), so $1296$ tables per multiplier, and removed digits that force failure on their own. Two kinds force it. A digit $-\alpha z$ with $z$ odd sends $z$ to $0$. A digit of the form $(\pi^v - \alpha)z$ with $v \ge 3$ and $z$ an odd non-unit makes $z$ a fixed point, by the following lemma, which is the case $\varepsilon = 1$ of Lemma 4.1 and needs no criterion.
+The search (`m3search.c`, `m3search.py`; `collatz/research/modulus3-search.md`) took, for each class, the six elements of least norm (norms $1, 5, 5, 9, 13, 13$), so $1296$ tables per multiplier, and removed digits that force failure on their own. Two kinds force it. A digit $-\alpha z$ with $z$ odd sends $z$ to $0$. A digit of the form $(\pi^v - \alpha)z$ with $v \ge 3$ and $z$ an odd non-unit makes $z$ a fixed point, by the following lemma, which is the case $\varepsilon = 1$ of Lemma 4.1 and needs no criterion.
 
 *Lemma 2.2 (Lean).* Let $(\alpha, k, d)$ be a map, $v \ge k$, and $z$ odd with $\delta = (\pi^v - \alpha)z \in D$. Then $S(z) = z$. If $z$ is not a unit, the map is not a Collatz map.
 
@@ -542,7 +542,7 @@ The values do not depend on the digit set, and the sign matches the observed beh
 
 ### 7.2 What Lean proves
 
-The development in `research/collatz/lean/` uses core Lean 4 (toolchain `v4.35.0`) without Mathlib, with no `sorry`, `admit`, `native_decide` or `bv_decide`, so every `decide` proof is checked by the kernel. `CheckAxioms.lean` prints the axioms of every main theorem: at most `propext`, `Classical.choice` and `Quot.sound`. A clean build takes about $12$ seconds. The Lean names keep older words: `Expr` is a map, `Expr.IsRule` a Collatz map, and `Symmetric` means commuting with the units. Proved in Lean:
+The development in `collatz/research/lean/` uses core Lean 4 (toolchain `v4.35.0`) without Mathlib, with no `sorry`, `admit`, `native_decide` or `bv_decide`, so every `decide` proof is checked by the kernel. `CheckAxioms.lean` prints the axioms of every main theorem: at most `propext`, `Classical.choice` and `Quot.sound`. A clean build takes about $12$ seconds. The Lean names keep older words: `Expr` is a map, `Expr.IsRule` a Collatz map, and `Symmetric` means commuting with the units. Proved in Lean:
 
 1. the definitions of map, $T$, $S$, periodic point, trivial cycle and Collatz map, and Lemmas 2.2, 4.1 and Corollaries 2.3, 4.2;
 2. the bound of four trivial cycles, Proposition 3.4, Proposition 3.2, Lemma 3.3 and Theorem 3;
@@ -583,11 +583,11 @@ Theorem 1 and the bound $3 \cdot 10^9$ for the 5+2i map are theorems given the r
 
 ## 10. Code and data
 
-Everything is in `research/collatz/`. C programs: `gcz.c`, `gstop.c`, `gstopall.c`, `m3search.c`. Rule files: `alpha5p2i_k4.rule` (the 5+2i map), `G3_k3.rule`, `G3p2i_k3.rule`, `k7_a-11_4.rule`, `k7_a-12_3.rule`, `k7_a-11_8.rule`, `k7_a-12_7.rule`. Python: `rules.py`, `exact.py`, `sweep_eq2.py`, `sweep_gen.py`, `symtest.py`, `m3search.py`, `variants29.py`, `mirror29.py`, `entry2mi.py`, `below_window.py`, `joseph.py`, `bigrun.py`, `run_stop.sh`, and for Section 6 `families.py`, `famtheory.py`, `famcover.py`, `famheur.py`, `famstruct.py`, `famverify.py`, `famlines.py`, `famline1d.py`, `famlinerun.py`, `famescape.py`, `convergents.py`, `convrun.py`. Logs are in `logs/`, among them `alpha5p2i_k4.stop`, `G3_k3.stop`, `G3p2i_k3.stop`, `k345_1e6_rerun.txt`, `k6_1e6.txt`, `k7_1e6.txt`, `k7_single_gstop_1e9.txt`, `symtest_*`, `m3search_*`, `variants29_1e5.txt` and `families_*`. The working notes are `theorems.md`, `symmetry-test.md`, `modulus3-search.md`, `families.md`, `convergents.md` and `score.md`. The outputs of `convrun.py` and the enlarged `gcz` used for Theorem 5 (cycle limit raised to $65536$) were kept only in a scratchpad and are not reproducible from the repository as it stands. The Lean proofs are built with `lake build` in `lean/`, and their axioms are printed by `lake env lean CheckAxioms.lean`.
+Everything is in `collatz/research/`. C programs: `gcz.c`, `gstop.c`, `gstopall.c`, `m3search.c`. Rule files: `alpha5p2i_k4.rule` (the 5+2i map), `G3_k3.rule`, `G3p2i_k3.rule`, `k7_a-11_4.rule`, `k7_a-12_3.rule`, `k7_a-11_8.rule`, `k7_a-12_7.rule`. Python: `rules.py`, `exact.py`, `sweep_eq2.py`, `sweep_gen.py`, `symtest.py`, `m3search.py`, `variants29.py`, `mirror29.py`, `entry2mi.py`, `below_window.py`, `joseph.py`, `bigrun.py`, `run_stop.sh`, and for Section 6 `families.py`, `famtheory.py`, `famcover.py`, `famheur.py`, `famstruct.py`, `famverify.py`, `famlines.py`, `famline1d.py`, `famlinerun.py`, `famescape.py`, `convergents.py`, `convrun.py`. Logs are in `logs/`, among them `alpha5p2i_k4.stop`, `G3_k3.stop`, `G3p2i_k3.stop`, `k345_1e6_rerun.txt`, `k6_1e6.txt`, `k7_1e6.txt`, `k7_single_gstop_1e9.txt`, `symtest_*`, `m3search_*`, `variants29_1e5.txt` and `families_*`. The working notes are `theorems.md`, `symmetry-test.md`, `modulus3-search.md`, `families.md`, `convergents.md` and `score.md`. The outputs of `convrun.py` and the enlarged `gcz` used for Theorem 5 (cycle limit raised to $65536$) were kept only in a scratchpad and are not reproducible from the repository as it stands. The Lean proofs are built with `lake build` in `lean/`, and their axioms are printed by `lake env lean CheckAxioms.lean`.
 
 ## References
 
-- [Paper 1] Collatz maps across rings of integers, companion paper, in preparation (`papers/collatz-rings.md`).
+- [Paper 1] Collatz maps across rings of integers, companion paper, in preparation (`collatz/papers/collatz-rings.md`).
 - [Alvarado 2025] A. Alvarado, The Collatz conjecture over the Gaussian integers, talk slides, University of Colima, 2 April 2025, on work of a 2017 REU at CSU Channel Islands. https://fefoaranda.com/wp-content/uploads/2025/04/colima-alvarado-2025.pdf [slides only; the paper was not found].
 - [Bernstein 1994] D. J. Bernstein, A non-iterative 2-adic statement of the 3N+1 conjecture, Proceedings of the American Mathematical Society 121 (1994), 405–408 [not checked against the publication].
 - [Cassaigne, Harju and Karhumäki 1999] J. Cassaigne, T. Harju and J. Karhumäki, On the undecidability of freeness of matrix semigroups, International Journal of Algebra and Computation 9(3–4) (1999), 295–305 [cited through Lagarias 2016; not seen].

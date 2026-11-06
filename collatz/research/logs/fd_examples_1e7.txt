@@ -1,0 +1,13 @@
+drop-below-start on (1e6, 1e7] (stage 1 full to 1e5 and drop to 1e6 in fd_*.txt)
+F=C k=2 alpha=2,1 digits -1,0 0,-1
+ex PASS drop 3534327 starts, max odd steps 65 at 1800+1731i, max excursion 3.83 bits
+F=Q k=2 alpha=2,1 digits -1,-2 0,-1
+ex PASS drop 3534327 starts, max odd steps 56 at 1367+966i, max excursion 3.36 bits
+F=Q k=3 alpha=3,0 digits 0,1 -2,1 -1,2 -1,0
+ex PASS drop 3534327 starts, max odd steps 34 at 1686+1679i, max excursion 2.21 bits
+F=C k=3 alpha=3,2 digits 0,-1 0,1 -1,0 -1,-2
+ex PASS drop 3534327 starts, max odd steps 344 at 2932+365i, max excursion 14.13 bits
+F=C k=4 alpha=4,1 digits 1,0 -1,0 0,-1 -2,-1 1,2 -1,2 0,1 2,1
+ex PASS drop 3534327 starts, max odd steps 24 at 1278+1207i, max excursion 0.88 bits
+F=Q k=4 alpha=4,1 digits 1,0 -1,0 0,-1 -2,-1 1,2 -1,-2 0,1 2,1
+ex PASS drop 3534327 starts, max odd steps 27 at 972+1291i, max excursion 0.92 bits

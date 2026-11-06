@@ -1,0 +1,5 @@
+F=P k=3 digits of norm <= 25 per class; stage 1 full to N <= 100000; stage 2 drop-below-start to 1000000
+maps tested 33; pass stage 1 0; failures {'cycle': 30, 'escape/cap/zero': 3}
+  alpha 3+0i (norm 9): tested 11, pass 0 at 100000, pass 0 at 1000000
+  alpha 3+2i (norm 13): tested 11, pass 0 at 100000, pass 0 at 1000000
+  alpha 3-2i (norm 13): tested 11, pass 0 at 100000, pass 0 at 1000000

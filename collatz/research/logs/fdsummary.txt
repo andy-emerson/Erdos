@@ -1,0 +1,80 @@
+F=Q k=2 digits norm <= 25:
+  alpha 2+1i N=5: tables 484, Collatz to 1e6: 7, commuting among them 0, smallest-digit tables passing 0, least total digit norm 6: -1-2i -1-2i 0-1i 0-1i -1-2i -1-2i 0-1i 0-1i
+  alpha 2-1i N=5: tables 484, Collatz to 1e6: 9, commuting among them 0, smallest-digit tables passing 0, least total digit norm 6: 1+0i 1+0i 2+1i 2+1i 1+0i 1+0i 2+1i 2+1i
+F=R k=2 digits norm <= 25:
+  alpha 2+1i N=5: tables 484, Collatz to 1e6: 9, commuting among them 0, smallest-digit tables passing 0, least total digit norm 6: 1+2i 1+2i 0+1i 0+1i 1+2i 1+2i 0+1i 0+1i
+  alpha 2-1i N=5: tables 484, Collatz to 1e6: 7, commuting among them 0, smallest-digit tables passing 0, least total digit norm 6: -1+0i -1+0i -2-1i -2-1i -1+0i -1+0i -2-1i -2-1i
+F=C k=2 digits norm <= 25:
+  alpha 2+1i N=5: tables 484, Collatz to 1e6: 15, commuting among them 0, smallest-digit tables passing 1, least total digit norm 2: -1+0i -1+0i 0-1i 0-1i -1+0i -1+0i 0-1i 0-1i
+  alpha 2-1i N=5: tables 484, Collatz to 1e6: 15, commuting among them 0, smallest-digit tables passing 1, least total digit norm 2: -1+0i -1+0i 0+1i 0+1i -1+0i -1+0i 0+1i 0+1i
+  mirror check (alpha,d) passes iff (conj alpha, conj d conj) passes: 30 passing maps, 0 without passing mirror
+F=P k=2 digits norm <= 25:
+  alpha 2+1i N=5: tables 22, Collatz to 1e6: 1, smallest-digit tables passing 1, least total digit norm 1: 1+0i 1+0i 0+1i 0+1i 1+0i 1+0i 0+1i 0+1i
+  alpha 2-1i N=5: tables 22, Collatz to 1e6: 1, smallest-digit tables passing 1, least total digit norm 1: 1+0i 1+0i 0-1i 0-1i 1+0i 1+0i 0-1i 0-1i
+F=Q k=3 digits norm <= 25:
+  alpha 3+0i N=9: tables 14641, Collatz to 1e6: 113, commuting among them 0, smallest-digit tables passing 0, least total digit norm 12: 0+1i -2+1i -1+2i -1+0i -2+1i 0+1i -1+0i -1+2i
+  alpha 3+2i N=13: tables 14641, Collatz to 1e6: 99, commuting among them 0, smallest-digit tables passing 0, least total digit norm 12: 0-1i 2-1i 1-2i 1+0i 2-1i 0-1i 1+0i 1-2i
+  alpha 3-2i N=13: tables 14641, Collatz to 1e6: 33, commuting among them 0, smallest-digit tables passing 0, least total digit norm 24: -2+1i -4+1i -1+0i 1+0i -4+1i -2+1i 1+0i -1+0i
+F=R k=3 digits norm <= 25:
+  alpha 3+0i N=9: tables 14641, Collatz to 1e6: 113, commuting among them 0, smallest-digit tables passing 0, least total digit norm 12: 0+1i -2+1i -1+2i -1+0i -2+1i 0+1i -1+0i -1+2i
+  alpha 3+2i N=13: tables 14641, Collatz to 1e6: 33, commuting among them 0, smallest-digit tables passing 0, least total digit norm 24: 0-1i 0+1i 1-2i 1-4i 0+1i 0-1i 1-4i 1-2i
+  alpha 3-2i N=13: tables 14641, Collatz to 1e6: 99, commuting among them 0, smallest-digit tables passing 0, least total digit norm 12: -2+1i 0+1i -1+0i -1+2i 0+1i -2+1i -1+2i -1+0i
+F=C k=3 digits norm <= 25:
+  alpha 3+0i N=9: tables 14641, Collatz to 1e6: 106, commuting among them 0, smallest-digit tables passing 0, least total digit norm 16: 0+1i -2+1i -1+2i 1+2i -2+1i 0+1i 1+2i -1+2i
+  alpha 3+2i N=13: tables 14641, Collatz to 1e6: 52, commuting among them 0, smallest-digit tables passing 0, least total digit norm 8: 0-1i 0+1i -1+0i -1-2i 0+1i 0-1i -1-2i -1+0i
+  alpha 3-2i N=13: tables 14641, Collatz to 1e6: 52, commuting among them 0, smallest-digit tables passing 0, least total digit norm 8: 0-1i 0+1i -1+0i -1+2i 0+1i 0-1i -1+2i -1+0i
+  mirror check (alpha,d) passes iff (conj alpha, conj d conj) passes: 210 passing maps, 0 without passing mirror
+F=P k=3 digits norm <= 25:
+  alpha 3+0i N=9: tables 11, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 3+2i N=13: tables 11, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 3-2i N=13: tables 11, Collatz to 1e6: 0, smallest-digit tables passing 0
+F=Q k=4 digits norm <= 5:
+  alpha 4+1i N=17: tables 16, Collatz to 1e6: 3, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: 1+0i -1+0i 0-1i -2-1i 1+2i -1-2i 0+1i 2+1i
+  alpha 4-1i N=17: tables 16, Collatz to 1e6: 3, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: -1+0i 1+0i 0+1i 2+1i -1-2i 1-2i 0-1i 2-1i
+  alpha 5+0i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4-3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 5+2i N=29: tables 16, Collatz to 1e6: 4, commuting among them 1, smallest-digit tables passing 4, least total digit norm 24: -2-1i 2+1i -1+2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 16, Collatz to 1e6: 3, commuting among them 1, smallest-digit tables passing 3, least total digit norm 24: 2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1+2i 1+0i
+F=R k=4 digits norm <= 5:
+  alpha 4+1i N=17: tables 16, Collatz to 1e6: 3, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: 1+0i -1+0i 0-1i -2-1i 1+2i -1-2i 0+1i 2+1i
+  alpha 4-1i N=17: tables 16, Collatz to 1e6: 3, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: -1+0i 1+0i 0+1i 2+1i -1-2i 1-2i 0-1i 2-1i
+  alpha 5+0i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4-3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 5+2i N=29: tables 16, Collatz to 1e6: 3, commuting among them 1, smallest-digit tables passing 3, least total digit norm 24: -2-1i 2+1i -1+2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 16, Collatz to 1e6: 4, commuting among them 1, smallest-digit tables passing 4, least total digit norm 24: -2-1i 2+1i -1+2i -1+0i 0-1i 0+1i 1+2i 1+0i
+F=C k=4 digits norm <= 5:
+  alpha 4+1i N=17: tables 16, Collatz to 1e6: 4, commuting among them 0, smallest-digit tables passing 4, least total digit norm 24: 1+0i -1+0i 0-1i -2-1i 1+2i -1+2i 0+1i 2+1i
+  alpha 4-1i N=17: tables 16, Collatz to 1e6: 4, commuting among them 0, smallest-digit tables passing 4, least total digit norm 24: -1+0i 1+0i 0+1i 2+1i -1-2i 1-2i 0-1i -2-1i
+  alpha 5+0i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4-3i N=25: tables 16, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 5+2i N=29: tables 16, Collatz to 1e6: 5, commuting among them 1, smallest-digit tables passing 5, least total digit norm 24: -2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 16, Collatz to 1e6: 5, commuting among them 1, smallest-digit tables passing 5, least total digit norm 24: -2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  mirror check (alpha,d) passes iff (conj alpha, conj d conj) passes: 18 passing maps, 0 without passing mirror
+F=P k=4 digits norm <= 5:
+  alpha 4+1i N=17: tables 2, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 4-1i N=17: tables 2, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 5+0i N=25: tables 2, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 2, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 4-3i N=25: tables 2, Collatz to 1e6: 0, smallest-digit tables passing 0
+  alpha 5+2i N=29: tables 2, Collatz to 1e6: 1, smallest-digit tables passing 1, least total digit norm 6: -2-1i 2+1i -1+2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 2, Collatz to 1e6: 1, smallest-digit tables passing 1, least total digit norm 6: -2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1-2i 1+0i
+F=Q k=4 digits norm <= 13:
+  alpha 4+1i N=17: tables 4096, Collatz to 1e6: 252, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: 1+0i -1+0i 0-1i -2-1i 1+2i -1-2i 0+1i 2+1i
+  alpha 4-1i N=17: tables 4096, Collatz to 1e6: 231, commuting among them 0, smallest-digit tables passing 3, least total digit norm 24: -1+0i 1+0i 0+1i 2+1i -1-2i 1-2i 0-1i 2-1i
+  alpha 5+0i N=25: tables 4096, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 4096, Collatz to 1e6: 19, commuting among them 0, smallest-digit tables passing 0, least total digit norm 40: -1+0i 1+0i 0+1i 2+1i 3-2i 1-2i 0-1i 2+3i
+  alpha 4-3i N=25: tables 4096, Collatz to 1e6: 26, commuting among them 0, smallest-digit tables passing 0, least total digit norm 40: 1+0i -1+0i 0-1i 2+3i -3+2i -1+2i 0+1i 2+1i
+  alpha 5+2i N=29: tables 4096, Collatz to 1e6: 347, commuting among them 1, smallest-digit tables passing 4, least total digit norm 24: -2-1i 2+1i -1+2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 4096, Collatz to 1e6: 368, commuting among them 1, smallest-digit tables passing 3, least total digit norm 24: 2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1+2i 1+0i
+F=C k=4 digits norm <= 13:
+  alpha 4+1i N=17: tables 4096, Collatz to 1e6: 250, commuting among them 0, smallest-digit tables passing 4, least total digit norm 24: 1+0i -1+0i 0-1i -2-1i 1+2i -1+2i 0+1i 2+1i
+  alpha 4-1i N=17: tables 4096, Collatz to 1e6: 250, commuting among them 0, smallest-digit tables passing 4, least total digit norm 24: -1+0i 1+0i 0+1i 2+1i -1-2i 1-2i 0-1i -2-1i
+  alpha 5+0i N=25: tables 4096, Collatz to 1e6: 0, commuting among them 0, smallest-digit tables passing 0
+  alpha 4+3i N=25: tables 4096, Collatz to 1e6: 32, commuting among them 0, smallest-digit tables passing 0, least total digit norm 32: -1+0i 1+0i 0+1i 2+1i 3+2i 1-2i 0-1i -2-1i
+  alpha 4-3i N=25: tables 4096, Collatz to 1e6: 32, commuting among them 0, smallest-digit tables passing 0, least total digit norm 32: 1+0i -1+0i 0-1i 2-1i 1+2i 3-2i 0+1i -2+1i
+  alpha 5+2i N=29: tables 4096, Collatz to 1e6: 389, commuting among them 1, smallest-digit tables passing 5, least total digit norm 24: -2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  alpha 5-2i N=29: tables 4096, Collatz to 1e6: 389, commuting among them 1, smallest-digit tables passing 5, least total digit norm 24: -2-1i 2+1i -1-2i -1+0i 0-1i 0+1i 1-2i 1+0i
+  mirror check (alpha,d) passes iff (conj alpha, conj d conj) passes: 1342 passing maps, 0 without passing mirror

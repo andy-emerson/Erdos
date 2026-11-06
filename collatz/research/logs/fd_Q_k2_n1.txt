@@ -1,0 +1,4 @@
+F=Q k=2 digits of norm <= 1 per class; stage 1 full to N <= 100000; stage 2 drop-below-start to 1000000
+maps tested 8; pass stage 1 0; failures {'cycle': 8}
+  alpha 2+1i (norm 5): tested 4, pass 0 at 100000, pass 0 at 1000000
+  alpha 2-1i (norm 5): tested 4, pass 0 at 100000, pass 0 at 1000000

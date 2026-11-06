@@ -1,0 +1,36 @@
+F=C k=2 digits of norm <= 25 per class; stage 1 full to N <= 100000; stage 2 drop-below-start to 1000000
+maps tested 968; pass stage 1 32; failures {'cycle': 579, 'escape/cap/zero': 101, '1 not periodic': 256}
+  alpha 2+1i (norm 5): tested 484, pass 16 at 100000, pass 15 at 1000000
+  alpha 2-1i (norm 5): tested 484, pass 16 at 100000, pass 15 at 1000000
+a2+1i_22 alpha=2+1i total digit norm 2 table [0+1i]->-1+0i, [1+0i]->0-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 34 | stage2: PASS drop 353410 starts, max odd steps 52 at 781-372i, max excursion 3.54 bits
+a2-1i_23 alpha=2-1i total digit norm 2 table [0+1i]->-1+0i, [1+0i]->0+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 34 | stage2: PASS drop 353410 starts, max odd steps 52 at 781+372i, max excursion 3.54 bits
+a2+1i_27 alpha=2+1i total digit norm 6 table [0+1i]->-1+0i, [1+0i]->-2+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 32 | stage2: PASS drop 353410 starts, max odd steps 49 at 742+529i, max excursion 2.96 bits
+a2-1i_24 alpha=2-1i total digit norm 6 table [0+1i]->-1+0i, [1+0i]->-2-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 32 | stage2: PASS drop 353410 starts, max odd steps 49 at 742-529i, max excursion 2.96 bits
+a2+1i_154 alpha=2+1i total digit norm 10 table [0+1i]->-3+0i, [1+0i]->0-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 25 | stage2: PASS drop 353410 starts, max odd steps 36 at 433-96i, max excursion 3.02 bits
+a2+1i_155 alpha=2+1i total digit norm 10 table [0+1i]->-3+0i, [1+0i]->0+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 32 | stage2: PASS drop 353410 starts, max odd steps 50 at 666-445i, max excursion 3.68 bits
+a2-1i_154 alpha=2-1i total digit norm 10 table [0+1i]->-3+0i, [1+0i]->0-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 32 | stage2: PASS drop 353410 starts, max odd steps 50 at 666+445i, max excursion 3.68 bits
+a2-1i_155 alpha=2-1i total digit norm 10 table [0+1i]->-3+0i, [1+0i]->0+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 25 | stage2: PASS drop 353410 starts, max odd steps 36 at 433+96i, max excursion 3.02 bits
+a2+1i_158 alpha=2+1i total digit norm 14 table [0+1i]->-3+0i, [1+0i]->2+1i | cycle of [1] len 2: 1+0i 2+1i | max odd steps to cycle 31 | stage2: PASS drop 353410 starts, max odd steps 49 at 792+469i, max excursion 2.90 bits
+a2+1i_221 alpha=2+1i total digit norm 14 table [0+1i]->3+2i, [1+0i]->0+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 48 at 414-77i, max excursion 3.22 bits
+a2+1i_243 alpha=2+1i total digit norm 14 table [0+1i]->-3+2i, [1+0i]->0+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 31 | stage2: PASS drop 353410 starts, max odd steps 42 at 535-472i, max excursion 3.18 bits
+a2-1i_157 alpha=2-1i total digit norm 14 table [0+1i]->-3+0i, [1+0i]->2-1i | cycle of [1] len 2: 1+0i 2-1i | max odd steps to cycle 31 | stage2: PASS drop 353410 starts, max odd steps 49 at 792-469i, max excursion 2.90 bits
+a2-1i_176 alpha=2-1i total digit norm 14 table [0+1i]->-3-2i, [1+0i]->0-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 31 | stage2: PASS drop 353410 starts, max odd steps 42 at 535+472i, max excursion 3.18 bits
+a2-1i_198 alpha=2-1i total digit norm 14 table [0+1i]->3-2i, [1+0i]->0-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 48 at 414+77i, max excursion 3.22 bits
+a2+1i_225 alpha=2+1i total digit norm 18 table [0+1i]->3+2i, [1+0i]->-2+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 38 | stage2: PASS drop 353410 starts, max odd steps 41 at 496+241i, max excursion 2.90 bits
+a2+1i_37 alpha=2+1i total digit norm 18 table [0+1i]->-1+0i, [1+0i]->-4+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 25 | stage2: PASS drop 353410 starts, max odd steps 37 at 720-145i, max excursion 3.01 bits
+a2-1i_200 alpha=2-1i total digit norm 18 table [0+1i]->3-2i, [1+0i]->-2-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 38 | stage2: PASS drop 353410 starts, max odd steps 41 at 496-241i, max excursion 2.90 bits
+a2-1i_34 alpha=2-1i total digit norm 18 table [0+1i]->-1+0i, [1+0i]->-4-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 25 | stage2: PASS drop 353410 starts, max odd steps 37 at 720+145i, max excursion 3.01 bits
+a2+1i_166 alpha=2+1i total digit norm 26 table [0+1i]->-3+0i, [1+0i]->-4-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 45 at 600-139i, max excursion 3.17 bits
+a2+1i_168 alpha=2+1i total digit norm 26 table [0+1i]->-3+0i, [1+0i]->4+1i | cycle of [1] len 2: 1+0i 2-1i | max odd steps to cycle 26 | stage2: PASS drop 353410 starts, max odd steps 36 at 565+250i, max excursion 2.74 bits
+a2-1i_167 alpha=2-1i total digit norm 26 table [0+1i]->-3+0i, [1+0i]->4-1i | cycle of [1] len 2: 1+0i 2+1i | max odd steps to cycle 26 | stage2: PASS drop 353410 starts, max odd steps 36 at 565-250i, max excursion 2.74 bits
+a2-1i_169 alpha=2-1i total digit norm 26 table [0+1i]->-3+0i, [1+0i]->-4+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 45 at 600+139i, max excursion 3.17 bits
+a2+1i_257 alpha=2+1i total digit norm 30 table [0+1i]->-3+2i, [1+0i]->-4+1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 35 | stage2: PASS drop 353410 starts, max odd steps 43 at 553+254i, max excursion 3.27 bits
+a2-1i_188 alpha=2-1i total digit norm 30 table [0+1i]->-3-2i, [1+0i]->-4-1i | cycle of [1] len 1: 1+0i | max odd steps to cycle 35 | stage2: PASS drop 353410 starts, max odd steps 43 at 553-254i, max excursion 3.27 bits
+a2+1i_170 alpha=2+1i total digit norm 34 table [0+1i]->-3+0i, [1+0i]->-4-3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 23 | stage2: PASS drop 353410 starts, max odd steps 49 at 676+293i, max excursion 2.70 bits
+a2+1i_175 alpha=2+1i total digit norm 34 table [0+1i]->-3+0i, [1+0i]->-4+3i | cycle of [1] len 2: 1+0i 2+1i | max odd steps to cycle 34 | stage2: PASS drop 353410 starts, max odd steps 42 at 747-246i, max excursion 4.11 bits
+a2-1i_170 alpha=2-1i total digit norm 34 table [0+1i]->-3+0i, [1+0i]->-4-3i | cycle of [1] len 2: 1+0i 2-1i | max odd steps to cycle 34 | stage2: PASS drop 353410 starts, max odd steps 42 at 747+246i, max excursion 4.11 bits
+a2-1i_175 alpha=2-1i total digit norm 34 table [0+1i]->-3+0i, [1+0i]->-4+3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 23 | stage2: PASS drop 353410 starts, max odd steps 49 at 676-293i, max excursion 2.70 bits
+a2+1i_236 alpha=2+1i total digit norm 38 table [0+1i]->3+2i, [1+0i]->-4-3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 56 at 691-276i, max excursion 2.90 bits
+a2+1i_258 alpha=2+1i total digit norm 38 table [0+1i]->-3+2i, [1+0i]->-4-3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: FAIL drop start 403+304i code 3
+a2-1i_197 alpha=2-1i total digit norm 38 table [0+1i]->-3-2i, [1+0i]->-4+3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: FAIL drop start 403-304i code 3
+a2-1i_219 alpha=2-1i total digit norm 38 table [0+1i]->3-2i, [1+0i]->-4+3i | cycle of [1] len 1: 1+0i | max odd steps to cycle 30 | stage2: PASS drop 353410 starts, max odd steps 56 at 691+276i, max excursion 2.90 bits

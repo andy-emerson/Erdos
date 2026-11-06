@@ -1,0 +1,74 @@
+F = positives, digits |d| <= 15 (31 at modulus 2), stage 1 odd n <= 100000, stage 2 drop to 1000000
+  modulus 2, 3x-31: cycle of 1 odd steps, min 31; cycle of 1: [1, 7, 5]
+  modulus 2, 3x-29: cycle of 1 odd steps, min 29; cycle of 1: [1, 13, 5, 7]
+  modulus 2, 3x-27: orbit of 1 reaches 0
+  modulus 2, 3x-25: cycle of 1 odd steps, min 5; cycle of 1: [1, 11]
+  modulus 2, 3x-23: cycle of 1 odd steps, min 23; cycle of 1: [1, 5]
+  modulus 2, 3x-21: 1 not periodic
+  modulus 2, 3x-19: cycle of 1 odd steps, min 19; cycle of 1: [1]
+  modulus 2, 3x-17: cycle of 1 odd steps, min 17; cycle of 1: [1, 7]
+  modulus 2, 3x-15: 1 not periodic
+  modulus 2, 3x-13: cycle of 1 odd steps, min 13; cycle of 1: [1, 5]
+  modulus 2, 3x-11: cycle of 1 odd steps, min 11; cycle of 1: [1]
+  modulus 2, 3x-9: orbit of 1 reaches 0
+  modulus 2, 3x-7: cycle of 1 odd steps, min 7; cycle of 1: [1]
+  modulus 2, 3x-5: cycle of 1 odd steps, min 5; cycle of 1: [1]
+  modulus 2, 3x-3: orbit of 1 reaches 0
+  modulus 2, 3x-1: cycle of 2 odd steps, min 5; cycle of 1: [1]
+  modulus 2, 3x+1: PASS; cycle of 1: [1]
+  modulus 2, 3x+3: 1 not periodic
+  modulus 2, 3x+5: cycle of 3 odd steps, min 19; cycle of 1: [1]
+  modulus 2, 3x+7: 1 not periodic
+  modulus 2, 3x+9: 1 not periodic
+  modulus 2, 3x+11: cycle of 8 odd steps, min 13; cycle of 1: [1, 7]
+  modulus 2, 3x+13: cycle of 1 odd steps, min 13; cycle of 1: [1]
+  modulus 2, 3x+15: 1 not periodic
+  modulus 2, 3x+17: cycle of 18 odd steps, min 23; cycle of 1: [1, 5]
+  modulus 2, 3x+19: 1 not periodic
+  modulus 2, 3x+21: 1 not periodic
+  modulus 2, 3x+23: 1 not periodic
+  modulus 2, 3x+25: 1 not periodic
+  modulus 2, 3x+27: 1 not periodic
+  modulus 2, 3x+29: cycle of 9 odd steps, min 11; cycle of 1: [1]
+  modulus 2, 3x+31: 1 not periodic
+modulus 2, m = 3: 32 tables, 1 Collatz maps on N to 1000000, of which 0 commute with -1 (quotients of residue-class maps)
+    digits by class [1]: [1]; cycle of 1: [1]
+modulus 4, m = 5: 64 tables, 0 Collatz maps on N to 1000000, of which 0 commute with -1 (quotients of residue-class maps)
+modulus 4, m = 7: 64 tables, 1 Collatz maps on N to 1000000, of which 1 commute with -1 (quotients of residue-class maps)
+    digits by class [1, 3]: [1, -1] (commutes); cycle of 1: [1]
+modulus 8, m = 9: 256 tables, 8 Collatz maps on N to 1000000, of which 0 commute with -1 (quotients of residue-class maps)
+    digits by class [1, 3, 5, 7]: [7, 5, 3, 1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-1, 5, 3, 9]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-1, 5, 11, 1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [7, 5, 11, 1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [15, 5, 3, 1]; cycle of 1: [1, 3]
+    digits by class [1, 3, 5, 7]: [-1, 13, 11, 1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [7, 5, 11, 9]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [15, 5, 11, 9]; cycle of 1: [1, 3]
+modulus 8, m = 11: 256 tables, 9 Collatz maps on N to 1000000, of which 1 commute with -1 (quotients of residue-class maps)
+    digits by class [1, 3, 5, 7]: [-3, -1, 1, -5]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-3, -1, -7, 3]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-3, -1, -7, -5]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [5, -1, -7, 3]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-3, -1, 1, -13]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [5, -1, -7, -5]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [5, -1, -7, -13]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [13, -1, 1, -13] (commutes); cycle of 1: [1, 3]
+    digits by class [1, 3, 5, 7]: [13, -1, -7, -13]; cycle of 1: [1, 3]
+modulus 8, m = 13: 256 tables, 4 Collatz maps on N to 1000000, of which 1 commute with -1 (quotients of residue-class maps)
+    digits by class [1, 3, 5, 7]: [-5, 1, -1, 5] (commutes); cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [11, -7, -1, 5]; cycle of 1: [1, 3]
+    digits by class [1, 3, 5, 7]: [11, -7, 7, -3]; cycle of 1: [1, 3]
+    digits by class [1, 3, 5, 7]: [11, -7, 7, 5]; cycle of 1: [1, 3]
+modulus 8, m = 15: 256 tables, 4 Collatz maps on N to 1000000, of which 0 commute with -1 (quotients of residue-class maps)
+    digits by class [1, 3, 5, 7]: [-7, -5, -3, -1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [1, -5, -11, -1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [1, -13, -11, -1]; cycle of 1: [1]
+    digits by class [1, 3, 5, 7]: [-7, -13, -3, -9]; cycle of 1: [1]
+F = {n = 1 mod 4} (2-adic primary), modulus 2, all n = 1 mod 4 with |n| <= 1e5:
+  3x+1: PASS; cycle of [1]: [1]
+  3x-1: start -99999 unresolved; cycle of [1]: [1]
+  3x+3: 1 not periodic
+  3x-3: orbit of 1 reaches 0
+  3x+5: cycle of 1 odd steps, min 5; cycle of [1]: [1]
+  3x-5: start -99999 unresolved; cycle of [1]: [1]

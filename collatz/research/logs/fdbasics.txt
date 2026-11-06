@@ -1,0 +1,8 @@
+3x+1 = fundamental-domain map (F = positives, m = 3, d = 1) on odd n <= 2e5: True
+3z+sgn(z) commutes with -1 and |lift(n)| = C(n) on odd |n| <= 2e5: True
+digit of the lift at 1 and 1-2^j (j=1..20): True
+3x+1 by formula on Z: 3*5+1 = 16, 3*(-5)+1 = -14 (not associates)
+primary integer domain (n = 1 mod 4): 3n+1 always divisible by 4: True; map = 3x+-1 on classes: True
+(alpha,d) vs (u alpha, u d) on F in Q,C,P: 885600 comparisons, 0 differences
+(Q,d) vs (uQ,d^u) on R/U: 147600 comparisons, 0 differences
+commuting extension is a residue-class table (random tables, k = 3, 4): P: 40/40, Q: 0/40, C: 0/40

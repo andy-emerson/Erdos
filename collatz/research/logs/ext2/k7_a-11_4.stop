@@ -1,0 +1,4 @@
+range (1000000000,1500000000] starts 196349558 fails 0 cycles 0 maxstop 308 at 34649 1326 meanstop 17.01 maxexc_log2 9.63 at 34649 1326 cpu 7.0
+range (1500000000,2000000000] starts 196349580 fails 0 cycles 0 maxstop 292 at 25279 31010 meanstop 17.01 maxexc_log2 10.04 at 27140 30007 cpu 7.3
+range (2000000000,2500000000] starts 196349425 fails 0 cycles 0 maxstop 308 at 45051 3760 meanstop 17.01 maxexc_log2 9.84 at 48822 4769 cpu 7.0
+range (2500000000,3000000000] starts 196349682 fails 0 cycles 0 maxstop 292 at 33190 41469 meanstop 17.01 maxexc_log2 9.74 at 52713 2202 cpu 7.1

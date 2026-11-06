@@ -6,3 +6,5 @@
 15:13:22 done (3000000000,3500000000]  69.4%  4.34e+07 starts/s  elapsed 23 s  ETA 10 s  bad chunks 0
 15:13:22 done (3500000000,4000000000]  83.3%  5.11e+07 starts/s  elapsed 23 s  ETA 5 s  bad chunks 0
 15:13:24 done (4500000000,4600000000]  86.1%  4.95e+07 starts/s  elapsed 25 s  ETA 4 s  bad chunks 0
+15:13:30 done (4000000000,4500000000]  100.0%  4.66e+07 starts/s  elapsed 30 s  ETA 0 s  bad chunks 0
+15:13:30 finished, 1413716705 starts in 30 s, bad chunks 0

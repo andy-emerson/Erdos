@@ -5,3 +5,4 @@ range (2500000000,3000000000] starts 196349682 fails 0 cycles 0 maxstop 512 at 2
 range (3000000000,3500000000] starts 196349436 fails 0 cycles 0 maxstop 529 at 12041 53780 meanstop 18.41 maxexc_log2 14.84 at 9289 55428 cpu 7.5
 range (3500000000,4000000000] starts 196349543 fails 0 cycles 0 maxstop 512 at 57192 18963 meanstop 18.41 maxexc_log2 14.58 at 57189 22470 cpu 7.5
 range (4500000000,4600000000] starts 39269977 fails 0 cycles 0 maxstop 479 at 55512 37943 meanstop 18.41 maxexc_log2 14.33 at 40975 53234 cpu 1.6
+range (4000000000,4500000000] starts 196349504 fails 0 cycles 0 maxstop 504 at 65577 13504 meanstop 18.41 maxexc_log2 15.04 at 50445 43584 cpu 7.6

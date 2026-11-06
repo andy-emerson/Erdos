@@ -1,0 +1,2 @@
+Z[sqrt2], alpha = 3+2sqrt2, modulus 2, smallest digits, 200 odd starts |a|,|b| <= 30
+escaped past 10^40: 182; periodic: 17; reached 0: 1; capped: 0

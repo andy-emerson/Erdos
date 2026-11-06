@@ -133,7 +133,7 @@ class Ring:
     def classrep(self, i, K):
         A, c, g = self.hnf(K)
         y, x = divmod(i, A)
-        return (x + y * c, y) if self.dim == 2 else (x, 0)
+        return (x, y) if self.dim == 2 else (x, 0)
     def odd_classes(self, K):
         return [i for i in range(self.nclasses(K)) if self.odd(self.classrep(i, K))]
     # ---- elements by size

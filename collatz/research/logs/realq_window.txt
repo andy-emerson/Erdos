@@ -1,0 +1,164 @@
+# per-embedding window test: smallest-digit tables read literally on R; 60 starts with embeddings near 2^40; slopes = mean change of log2|sigma_j| per odd step while both embeddings exceed 2^12; fates after up to 3000 odd steps
+# columns: alpha (assoc. exponent m relative to the cone representative), |N|, norm drift, predicted D1 D2, measured slope1 slope2, mean v (predicted k + 1/(q-1)), fates
+
+## Zr2: pi = r, q = 2, log2|sigma(pi)| = (0.500, 0.500), eps = 1+r, log2 eps = 1.272
+k=1: norm window (2, 4.00)
+  above 3-r (m=-1) |N|=7 normdrift=+0.807 D=(-0.335,+1.142) slope=(-0.318,+1.159) [4853 steps] v=1.995 (2.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 1+2r (m=+0) |N|=7 normdrift=+0.807 D=(+0.937,-0.129) slope=(+0.945,-0.121) [12138 steps] v=1.996 (2.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 5+3r (m=+1) |N|=7 normdrift=+0.807 D=(+2.208,-1.401) slope=(+2.241,-1.368) [1128 steps] v=1.998 (2.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=2: norm window (4, 8.00)
+  in    3-r (m=-1) |N|=7 normdrift=-0.193 D=(-0.835,+0.642) slope=(-0.826,+0.651) [1872 steps] v=2.998 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    1+2r (m=+0) |N|=7 normdrift=-0.193 D=(+0.437,-0.629) slope=(+0.462,-0.604) [2564 steps] v=3.006 (3.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    5+3r (m=+1) |N|=7 normdrift=-0.193 D=(+1.708,-1.901) slope=(+1.719,-1.890) [813 steps] v=2.976 (3.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    5-3r (m=-2) |N|=7 normdrift=-0.193 D=(-1.901,+1.708) slope=(-1.911,+1.698) [795 steps] v=3.025 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -1+2r (m=-1) |N|=7 normdrift=-0.193 D=(-0.629,+0.437) slope=(-0.611,+0.455) [2508 steps] v=2.998 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    3+r (m=+0) |N|=7 normdrift=-0.193 D=(+0.642,-0.835) slope=(+0.662,-0.815) [1910 steps] v=3.010 (3.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above -3+3r (m=-1) |N|=9 normdrift=+0.170 D=(-1.187,+1.357) slope=(-1.169,+1.374) [1333 steps] v=3.015 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 3 (m=+0) |N|=9 normdrift=+0.170 D=(+0.085,+0.085) slope=(+0.085,+0.085) [24000 steps] v=3.003 (3.000) fates {'cap': 60}  | expands in an embedding
+  above 3+3r (m=+1) |N|=9 normdrift=+0.170 D=(+1.357,-1.187) slope=(+1.377,-1.166) [1327 steps] v=3.000 (3.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=3: norm window (8, 16.00)
+  in    -3+3r (m=-1) |N|=9 normdrift=-0.830 D=(-1.687,+0.857) slope=(-1.681,+0.862) [907 steps] v=4.012 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    3 (m=+0) |N|=9 normdrift=-0.830 D=(-0.415,-0.415) slope=(-0.359,-0.359) [4373 steps] v=3.751 (4.000) fates {'trivial': 33, 'other': 27}  | per-emb window holds
+  in    3+3r (m=+1) |N|=9 normdrift=-0.830 D=(+0.857,-1.687) slope=(+0.884,-1.659) [920 steps] v=4.004 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 5-3r (m=-2) |N|=7 normdrift=-1.193 D=(-2.401,+1.208) slope=(-2.399,+1.210) [634 steps] v=4.023 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below -1+2r (m=-1) |N|=7 normdrift=-1.193 D=(-1.129,-0.063) slope=(-1.118,-0.052) [1392 steps] v=4.020 (4.000) fates {'trivial': 60}  | per-emb window holds
+  below 3+r (m=+0) |N|=7 normdrift=-1.193 D=(+0.142,-1.335) slope=(+0.166,-1.311) [1181 steps] v=4.003 (4.000) fates {'esc': 57, 'cap': 3} escape in {'sigma1': 57} | expands in an embedding
+  above 5-2r (m=-1) |N|=17 normdrift=+0.087 D=(-0.881,+0.969) slope=(-0.852,+0.998) [1822 steps] v=4.021 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 1+3r (m=+0) |N|=17 normdrift=+0.087 D=(+0.390,-0.303) slope=(+0.394,-0.300) [5220 steps] v=4.009 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 7+4r (m=+1) |N|=17 normdrift=+0.087 D=(+1.662,-1.574) slope=(+1.676,-1.560) [986 steps] v=3.990 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=4: norm window (16, 32.00)
+  in    5-2r (m=-1) |N|=17 normdrift=-0.913 D=(-1.381,+0.469) slope=(-1.354,+0.496) [1137 steps] v=5.000 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    1+3r (m=+0) |N|=17 normdrift=-0.913 D=(-0.110,-0.803) slope=(-0.105,-0.798) [1948 steps] v=4.998 (5.000) fates {'other': 24, 'trivial': 36}  | per-emb window holds
+  in    7+4r (m=+1) |N|=17 normdrift=-0.913 D=(+1.162,-2.074) slope=(+1.188,-2.048) [748 steps] v=5.004 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    7-4r (m=-2) |N|=17 normdrift=-0.913 D=(-2.074,+1.162) slope=(-2.070,+1.166) [739 steps] v=4.991 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -1+3r (m=-1) |N|=17 normdrift=-0.913 D=(-0.803,-0.110) slope=(-0.812,-0.118) [1950 steps] v=5.004 (5.000) fates {'trivial': 31, 'other': 29}  | per-emb window holds
+  in    5+2r (m=+0) |N|=17 normdrift=-0.913 D=(+0.469,-1.381) slope=(+0.437,-1.413) [1099 steps] v=4.998 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -7+6r (m=-2) |N|=23 normdrift=-0.476 D=(-1.929,+1.453) slope=(-1.904,+1.478) [806 steps] v=5.012 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    5-r (m=-1) |N|=23 normdrift=-0.476 D=(-0.658,+0.181) slope=(-0.620,+0.219) [2496 steps] v=5.005 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    3+4r (m=+0) |N|=23 normdrift=-0.476 D=(+0.614,-1.090) slope=(+0.653,-1.051) [1463 steps] v=4.995 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -3+4r (m=-1) |N|=23 normdrift=-0.476 D=(-1.090,+0.614) slope=(-1.061,+0.643) [1439 steps] v=4.996 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    5+r (m=+0) |N|=23 normdrift=-0.476 D=(+0.181,-0.658) slope=(+0.211,-0.628) [2467 steps] v=5.000 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    7+6r (m=+1) |N|=23 normdrift=-0.476 D=(+1.453,-1.929) slope=(+1.462,-1.920) [796 steps] v=4.984 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below -3+3r (m=-1) |N|=9 normdrift=-1.830 D=(-2.187,+0.357) slope=(-2.152,+0.391) [706 steps] v=4.998 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 3 (m=+0) |N|=9 normdrift=-1.830 D=(-0.915,-0.915) slope=(-0.872,-0.872) [1773 steps] v=4.552 (5.000) fates {'trivial': 37, 'other': 23}  | per-emb window holds
+  below 3+3r (m=+1) |N|=9 normdrift=-1.830 D=(+0.357,-2.187) slope=(+0.397,-2.146) [707 steps] v=5.006 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above -11+9r (m=-2) |N|=41 normdrift=+0.358 D=(-1.711,+2.069) slope=(-1.698,+2.082) [905 steps] v=5.008 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 7-2r (m=-1) |N|=41 normdrift=+0.358 D=(-0.439,+0.797) slope=(-0.401,+0.836) [3852 steps] v=4.992 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 3+5r (m=+0) |N|=41 normdrift=+0.358 D=(+0.832,-0.475) slope=(+0.853,-0.454) [3388 steps] v=5.006 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=5: norm window (32, 64.00)
+  in    -11+9r (m=-2) |N|=41 normdrift=-0.642 D=(-2.211,+1.569) slope=(-2.188,+1.591) [684 steps] v=6.019 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    7-2r (m=-1) |N|=41 normdrift=-0.642 D=(-0.939,+0.297) slope=(-0.893,+0.343) [1729 steps] v=5.994 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    3+5r (m=+0) |N|=41 normdrift=-0.642 D=(+0.332,-0.975) slope=(+0.343,-0.963) [1612 steps] v=5.997 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -3+5r (m=-1) |N|=41 normdrift=-0.642 D=(-0.975,+0.332) slope=(-0.942,+0.365) [1638 steps] v=5.996 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    7+2r (m=+0) |N|=41 normdrift=-0.642 D=(+0.297,-0.939) slope=(+0.345,-0.892) [1750 steps] v=5.999 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    11+9r (m=+1) |N|=41 normdrift=-0.642 D=(+1.569,-2.211) slope=(+1.518,-2.261) [664 steps] v=5.997 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -9+8r (m=-2) |N|=47 normdrift=-0.445 D=(-1.790,+1.344) slope=(-1.797,+1.337) [845 steps] v=6.003 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    7-r (m=-1) |N|=47 normdrift=-0.445 D=(-0.518,+0.073) slope=(-0.523,+0.068) [2963 steps] v=6.000 (6.000) fates {'cap': 60}  | expands in an embedding
+  in    5+6r (m=+0) |N|=47 normdrift=-0.445 D=(+0.753,-1.199) slope=(+0.806,-1.146) [1334 steps] v=5.993 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -5+6r (m=-1) |N|=47 normdrift=-0.445 D=(-1.199,+0.753) slope=(-1.143,+0.809) [1373 steps] v=5.990 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    7+r (m=+0) |N|=47 normdrift=-0.445 D=(+0.073,-0.518) slope=(+0.098,-0.493) [3133 steps] v=5.994 (6.000) fates {'cap': 60}  | expands in an embedding
+  in    9+8r (m=+1) |N|=47 normdrift=-0.445 D=(+1.344,-1.790) slope=(+1.360,-1.774) [866 steps] v=5.991 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 7-3r (m=-1) |N|=31 normdrift=-1.046 D=(-1.537,+0.491) slope=(-1.552,+0.476) [986 steps] v=5.999 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 1+4r (m=+0) |N|=31 normdrift=-1.046 D=(-0.265,-0.781) slope=(-0.276,-0.791) [1943 steps] v=6.004 (6.000) fates {'trivial': 18, 'other': 42}  | per-emb window holds
+  below 9+5r (m=+1) |N|=31 normdrift=-1.046 D=(+1.006,-2.052) slope=(+1.052,-2.006) [764 steps] v=6.002 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 11-5r (m=-1) |N|=71 normdrift=+0.150 D=(-1.026,+1.176) slope=(-0.992,+1.209) [1551 steps] v=6.000 (6.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 1+6r (m=+0) |N|=71 normdrift=+0.150 D=(+0.246,-0.096) slope=(+0.253,-0.088) [16483 steps] v=5.999 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 13+7r (m=+1) |N|=71 normdrift=+0.150 D=(+1.517,-1.367) slope=(+1.536,-1.349) [1148 steps] v=6.013 (6.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+
+## Zr3: pi = 1+s, q = 2, log2|sigma(pi)| = (1.450, -0.450), eps = 2+s, log2 eps = 1.900
+k=1: norm window (2, 4.00)
+  in    s (m=+0) |N|=3 normdrift=-0.415 D=(-2.107,+1.692) slope=(-1.919,+1.634) [752 steps] v=1.995 (2.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    3+2s (m=+1) |N|=3 normdrift=-0.415 D=(-0.208,-0.208) slope=(-0.203,-0.209) [4709 steps] v=2.002 (2.000) fates {'other': 12, 'trivial': 48}  | per-emb window holds
+  in    12+7s (m=+2) |N|=3 normdrift=-0.415 D=(+1.692,-2.107) slope=(+1.721,-2.116) [721 steps] v=2.002 (2.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 3 (m=+0) |N|=9 normdrift=+1.170 D=(-1.315,+2.485) slope=(-1.115,+2.423) [1315 steps] v=1.969 (2.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 6+3s (m=+1) |N|=9 normdrift=+1.170 D=(+0.585,+0.585) slope=(+0.600,+0.580) [24000 steps] v=1.990 (2.000) fates {'esc': 60} escape in {'sigma2': 22, 'sigma1': 38} | expands in an embedding
+  above 21+12s (m=+2) |N|=9 normdrift=+1.170 D=(+2.485,-1.315) slope=(+2.480,-1.313) [1190 steps] v=1.980 (2.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=2: norm window (4, 8.00)
+  below s (m=+0) |N|=3 normdrift=-1.415 D=(-3.557,+2.142) slope=(-3.432,+2.103) [426 steps] v=2.980 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 3+2s (m=+1) |N|=3 normdrift=-1.415 D=(-1.658,+0.242) slope=(-1.548,+0.208) [951 steps] v=3.001 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 12+7s (m=+2) |N|=3 normdrift=-1.415 D=(+0.242,-1.658) slope=(+0.249,-1.659) [929 steps] v=3.006 (3.000) fates {'esc': 57, 'other': 1, 'trivial': 2} escape in {'sigma1': 57} | expands in an embedding
+  above 3 (m=+0) |N|=9 normdrift=+0.170 D=(-2.765,+2.935) slope=(-2.540,+2.865) [580 steps] v=2.987 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 6+3s (m=+1) |N|=9 normdrift=+0.170 D=(-0.865,+1.035) slope=(-0.800,+1.015) [1816 steps] v=3.008 (3.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 21+12s (m=+2) |N|=9 normdrift=+0.170 D=(+1.035,-0.865) slope=(+1.014,-0.859) [1808 steps] v=2.988 (3.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=3: norm window (8, 16.00)
+  in    6+3s (m=+1) |N|=9 normdrift=-0.830 D=(-2.315,+1.485) slope=(-2.146,+1.433) [688 steps] v=3.974 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    21+12s (m=+2) |N|=9 normdrift=-0.830 D=(-0.415,-0.415) slope=(-0.375,-0.427) [2746 steps] v=3.983 (4.000) fates {'other': 41, 'trivial': 19}  | per-emb window holds
+  in    78+45s (m=+3) |N|=9 normdrift=-0.830 D=(+1.485,-2.315) slope=(+1.563,-2.339) [649 steps] v=4.003 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    8+5s (m=+1) |N|=11 normdrift=-0.541 D=(-1.742,+1.201) slope=(-1.672,+1.179) [877 steps] v=4.008 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    31+18s (m=+2) |N|=11 normdrift=-0.541 D=(+0.158,-0.699) slope=(+0.216,-0.717) [2114 steps] v=4.002 (4.000) fates {'esc': 50, 'cap': 9, 'trivial': 1} escape in {'sigma1': 50} | expands in an embedding
+  in    116+67s (m=+3) |N|=11 normdrift=-0.541 D=(+2.058,-2.599) slope=(+1.906,-2.552) [591 steps] v=4.038 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    4+3s (m=+0) |N|=11 normdrift=-0.541 D=(-2.599,+2.058) slope=(-2.449,+2.012) [592 steps] v=4.005 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    17+10s (m=+1) |N|=11 normdrift=-0.541 D=(-0.699,+0.158) slope=(-0.587,+0.124) [2443 steps] v=3.997 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    64+37s (m=+2) |N|=11 normdrift=-0.541 D=(+1.201,-1.742) slope=(+1.264,-1.761) [874 steps] v=4.003 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    11+6s (m=+1) |N|=13 normdrift=-0.300 D=(-1.381,+1.081) slope=(-1.211,+1.029) [1211 steps] v=3.986 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    40+23s (m=+2) |N|=13 normdrift=-0.300 D=(+0.519,-0.819) slope=(+0.377,-0.775) [1995 steps] v=4.007 (4.000) fates {'esc': 59, 'trivial': 1} escape in {'sigma1': 59} | expands in an embedding
+  in    149+86s (m=+3) |N|=13 normdrift=-0.300 D=(+2.419,-2.719) slope=(+2.580,-2.768) [541 steps] v=4.004 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 3+2s (m=+1) |N|=3 normdrift=-2.415 D=(-3.107,+0.692) slope=(-2.966,+0.648) [501 steps] v=4.002 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 12+7s (m=+2) |N|=3 normdrift=-2.415 D=(-1.208,-1.208) slope=(-1.200,-1.210) [1088 steps] v=3.985 (4.000) fates {'zero': 36, 'other': 15, 'trivial': 9}  | per-emb window holds
+  below 45+26s (m=+3) |N|=3 normdrift=-2.415 D=(+0.692,-3.107) slope=(+0.633,-3.089) [490 steps] v=4.017 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 5+4s (m=+0) |N|=23 normdrift=+0.524 D=(-2.224,+2.747) slope=(-2.179,+2.733) [677 steps] v=3.986 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 22+13s (m=+1) |N|=23 normdrift=+0.524 D=(-0.324,+0.847) slope=(-0.341,+0.853) [4128 steps] v=4.001 (4.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 83+48s (m=+2) |N|=23 normdrift=+0.524 D=(+1.576,-1.053) slope=(+1.551,-1.045) [1489 steps] v=4.012 (4.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=4: norm window (16, 32.00)
+  in    13+8s (m=+1) |N|=23 normdrift=-0.476 D=(-2.503,+2.026) slope=(-2.308,+1.966) [642 steps] v=4.983 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    50+29s (m=+2) |N|=23 normdrift=-0.476 D=(-0.603,+0.126) slope=(-0.452,+0.080) [3205 steps] v=4.998 (5.000) fates {'esc': 42, 'cap': 18} escape in {'sigma2': 42} | expands in an embedding
+  in    187+108s (m=+3) |N|=23 normdrift=-0.476 D=(+1.297,-1.774) slope=(+1.220,-1.750) [859 steps] v=5.015 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    22+13s (m=+1) |N|=23 normdrift=-0.476 D=(-1.774,+1.297) slope=(-1.657,+1.261) [880 steps] v=5.008 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    83+48s (m=+2) |N|=23 normdrift=-0.476 D=(+0.126,-0.603) slope=(+0.189,-0.622) [2489 steps] v=4.994 (5.000) fates {'esc': 43, 'cap': 17} escape in {'sigma1': 43} | expands in an embedding
+  in    310+179s (m=+3) |N|=23 normdrift=-0.476 D=(+2.026,-2.503) slope=(+2.036,-2.506) [606 steps] v=5.005 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    10+5s (m=+1) |N|=25 normdrift=-0.356 D=(-3.028,+2.672) slope=(-2.747,+2.585) [541 steps] v=4.982 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    35+20s (m=+2) |N|=25 normdrift=-0.356 D=(-1.128,+0.772) slope=(-1.016,+0.737) [1448 steps] v=5.007 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    130+75s (m=+3) |N|=25 normdrift=-0.356 D=(+0.772,-1.128) slope=(+0.767,-1.126) [1385 steps] v=5.003 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    9+6s (m=+1) |N|=27 normdrift=-0.245 D=(-2.973,+2.727) slope=(-2.742,+2.656) [535 steps] v=4.996 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    36+21s (m=+2) |N|=27 normdrift=-0.245 D=(-1.073,+0.827) slope=(-1.085,+0.831) [1317 steps] v=5.002 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    135+78s (m=+3) |N|=27 normdrift=-0.245 D=(+0.827,-1.073) slope=(+0.878,-1.088) [1444 steps] v=5.001 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 16+9s (m=+1) |N|=13 normdrift=-1.300 D=(-2.269,+0.969) slope=(-2.100,+0.917) [706 steps] v=4.981 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below 59+34s (m=+2) |N|=13 normdrift=-1.300 D=(-0.369,-0.931) slope=(-0.364,-0.932) [1568 steps] v=5.001 (5.000) fates {'trivial': 56, 'other': 4}  | per-emb window holds
+  below 220+127s (m=+3) |N|=13 normdrift=-1.300 D=(+1.531,-2.831) slope=(+1.534,-2.832) [531 steps] v=4.998 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 30+17s (m=+1) |N|=33 normdrift=+0.044 D=(-1.356,+1.401) slope=(-1.207,+1.354) [1213 steps] v=4.989 (5.000) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 111+64s (m=+2) |N|=33 normdrift=+0.044 D=(+0.544,-0.499) slope=(+0.525,-0.493) [3170 steps] v=4.992 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 414+239s (m=+3) |N|=33 normdrift=+0.044 D=(+2.443,-2.399) slope=(+2.437,-2.397) [639 steps] v=5.013 (5.000) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+
+## Zg5: pi = 2, q = 4, log2|sigma(pi)| = (1.000, 1.000), eps = g, log2 eps = 0.694
+k=1: norm window (4, 6.35)
+  in    3-g (m=-1) |N|=5 normdrift=-0.345 D=(-0.867,+0.522) slope=(-0.841,+0.548) [1822 steps] v=1.334 (1.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -1+2g (m=+0) |N|=5 normdrift=-0.345 D=(-0.172,-0.172) slope=(-0.161,-0.161) [9562 steps] v=1.307 (1.333) fates {'other': 60}  | per-emb window holds
+  in    2+g (m=+1) |N|=5 normdrift=-0.345 D=(+0.522,-0.867) slope=(+0.557,-0.831) [1864 steps] v=1.334 (1.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above -3+3g (m=-1) |N|=9 normdrift=+0.503 D=(-0.443,+0.946) slope=(-0.436,+0.953) [3584 steps] v=1.334 (1.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 3 (m=+0) |N|=9 normdrift=+0.503 D=(+0.252,+0.252) slope=(+0.256,+0.256) [24000 steps] v=1.335 (1.333) fates {'esc': 60} escape in {'sigma1': 33, 'sigma2': 27} | expands in an embedding
+  above 3g (m=+1) |N|=9 normdrift=+0.503 D=(+0.946,-0.443) slope=(+0.954,-0.434) [3567 steps] v=1.335 (1.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=2: norm window (16, 25.40)
+  in    5-g (m=-1) |N|=19 normdrift=-0.419 D=(-0.575,+0.157) slope=(-0.563,+0.170) [2799 steps] v=2.333 (2.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -1+4g (m=+0) |N|=19 normdrift=-0.419 D=(+0.119,-0.538) slope=(+0.125,-0.531) [2940 steps] v=2.333 (2.333) fates {'esc': 26, 'cap': 34} escape in {'sigma1': 26} | expands in an embedding
+  in    4+3g (m=+1) |N|=19 normdrift=-0.419 D=(+0.813,-1.232) slope=(+0.814,-1.230) [1250 steps] v=2.338 (2.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    7-3g (m=-2) |N|=19 normdrift=-0.419 D=(-1.232,+0.813) slope=(-1.222,+0.823) [1282 steps] v=2.335 (2.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -3+4g (m=-1) |N|=19 normdrift=-0.419 D=(-0.538,+0.119) slope=(-0.529,+0.127) [2931 steps] v=2.332 (2.333) fates {'esc': 27, 'cap': 33} escape in {'sigma2': 27} | expands in an embedding
+  in    4+g (m=+0) |N|=19 normdrift=-0.419 D=(+0.157,-0.575) slope=(+0.156,-0.577) [2673 steps] v=2.335 (2.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -5+5g (m=-1) |N|=25 normdrift=-0.023 D=(-0.706,+0.683) slope=(-0.686,+0.702) [2243 steps] v=2.334 (2.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    5 (m=+0) |N|=25 normdrift=-0.023 D=(-0.011,-0.011) slope=(-0.001,-0.001) [23516 steps] v=2.239 (2.333) fates {'esc': 27, 'cap': 33} escape in {'sigma2': 27} | per-emb window holds
+  in    5g (m=+1) |N|=25 normdrift=-0.023 D=(+0.683,-0.706) slope=(+0.700,-0.688) [2259 steps] v=2.340 (2.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 5-2g (m=-2) |N|=11 normdrift=-1.207 D=(-1.515,+0.307) slope=(-1.475,+0.347) [1033 steps] v=2.337 (2.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below -2+3g (m=-1) |N|=11 normdrift=-1.207 D=(-0.820,-0.387) slope=(-0.805,-0.371) [1921 steps] v=2.326 (2.333) fates {'trivial': 60}  | per-emb window holds
+  below 3+g (m=+0) |N|=11 normdrift=-1.207 D=(-0.126,-1.081) slope=(-0.118,-1.073) [1444 steps] v=2.343 (2.333) fates {'trivial': 60}  | per-emb window holds
+  above -4+5g (m=-1) |N|=29 normdrift=+0.191 D=(-0.301,+0.492) slope=(-0.284,+0.510) [5449 steps] v=2.334 (2.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 5+g (m=+0) |N|=29 normdrift=+0.191 D=(+0.393,-0.202) slope=(+0.394,-0.201) [7668 steps] v=2.339 (2.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 1+6g (m=+1) |N|=29 normdrift=+0.191 D=(+1.087,-0.896) slope=(+1.099,-0.884) [1763 steps] v=2.329 (2.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+k=3: norm window (64, 101.59)
+  in    -10+9g (m=-2) |N|=71 normdrift=-0.517 D=(-1.144,+0.627) slope=(-1.117,+0.653) [1406 steps] v=3.330 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    9-g (m=-1) |N|=71 normdrift=-0.517 D=(-0.449,-0.068) slope=(-0.441,-0.059) [3531 steps] v=3.324 (3.333) fates {'other': 32, 'trivial': 28}  | per-emb window holds
+  in    -1+8g (m=+0) |N|=71 normdrift=-0.517 D=(+0.245,-0.762) slope=(+0.246,-0.761) [2035 steps] v=3.335 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    -7+8g (m=-1) |N|=71 normdrift=-0.517 D=(-0.762,+0.245) slope=(-0.719,+0.287) [2115 steps] v=3.336 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    8+g (m=+0) |N|=71 normdrift=-0.517 D=(-0.068,-0.449) slope=(-0.086,-0.467) [3324 steps] v=3.328 (3.333) fates {'trivial': 30, 'other': 30}  | per-emb window holds
+  in    1+9g (m=+1) |N|=71 normdrift=-0.517 D=(+0.627,-1.144) slope=(+0.632,-1.138) [1372 steps] v=3.340 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    11-3g (m=-1) |N|=79 normdrift=-0.363 D=(-0.714,+0.351) slope=(-0.731,+0.334) [2143 steps] v=3.335 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -3+8g (m=+0) |N|=79 normdrift=-0.363 D=(-0.019,-0.343) slope=(-0.002,-0.326) [4742 steps] v=3.335 (3.333) fates {'other': 24, 'trivial': 30, 'cap': 6}  | per-emb window holds
+  in    8+5g (m=+1) |N|=79 normdrift=-0.363 D=(+0.675,-1.038) slope=(+0.709,-1.003) [1536 steps] v=3.334 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  in    13-5g (m=-2) |N|=79 normdrift=-0.363 D=(-1.038,+0.675) slope=(-1.030,+0.682) [1516 steps] v=3.328 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  in    -5+8g (m=-1) |N|=79 normdrift=-0.363 D=(-0.343,-0.019) slope=(-0.327,-0.003) [4784 steps] v=3.334 (3.333) fates {'other': 17, 'trivial': 36, 'cap': 7}  | per-emb window holds
+  in    8+3g (m=+0) |N|=79 normdrift=-0.363 D=(+0.351,-0.714) slope=(+0.348,-0.717) [2168 steps] v=3.333 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  below 10-3g (m=-1) |N|=61 normdrift=-0.736 D=(-0.970,+0.234) slope=(-0.943,+0.261) [1667 steps] v=3.336 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  below -3+7g (m=+0) |N|=61 normdrift=-0.736 D=(-0.276,-0.460) slope=(-0.244,-0.429) [3587 steps] v=3.323 (3.333) fates {'other': 6, 'trivial': 54}  | per-emb window holds
+  below 7+4g (m=+1) |N|=61 normdrift=-0.736 D=(+0.419,-1.155) slope=(+0.436,-1.137) [1377 steps] v=3.335 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above -9+10g (m=-1) |N|=109 normdrift=+0.102 D=(-0.489,+0.591) slope=(-0.473,+0.607) [3304 steps] v=3.332 (3.333) fates {'esc': 60} escape in {'sigma2': 60} | expands in an embedding
+  above 10+g (m=+0) |N|=109 normdrift=+0.102 D=(+0.205,-0.103) slope=(+0.215,-0.093) [15979 steps] v=3.335 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding
+  above 1+11g (m=+1) |N|=109 normdrift=+0.102 D=(+0.899,-0.798) slope=(+0.909,-0.788) [1985 steps] v=3.329 (3.333) fates {'esc': 60} escape in {'sigma1': 60} | expands in an embedding

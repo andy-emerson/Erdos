@@ -1,0 +1,2 @@
+# respects associates iff commutes, Zw at pi^2: 126 multipliers (all associates, windows k-1..k+1), digits of size <= 20, test points odd |N| <= 150
+pairs 154980; commuting pairs 34020 (passing 34020); non-commuting pairs passing: S 0, T 0

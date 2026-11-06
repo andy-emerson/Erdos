@@ -189,7 +189,7 @@ def commuting_tables(R, alpha, k, nsmall, nsample=0, seed=1):
     lists = [cl[o[0][1]][0] for o in orbs]
     leasts = [cl[o[0][1]][1] for o in orbs]
     res = []
-    if nsample:
+    if nsample and math.prod(len(l) for l in lists) > nsample:
         import random
         rnd = random.Random(seed)
         chs = set(itertools.product(*leasts))
@@ -260,7 +260,7 @@ def fd_tables(R, F, alpha, k, nsmall, flags=None, K=None, nsample=0, seed=1):
     lists = [cl[i][0] for i in meet]
     leasts = [cl[i][1] for i in meet]
     res = []
-    if nsample:
+    if nsample and math.prod(len(l) for l in lists) > nsample:
         import random
         rnd = random.Random(seed)
         chs = set(itertools.product(*leasts)); n0 = len(chs)

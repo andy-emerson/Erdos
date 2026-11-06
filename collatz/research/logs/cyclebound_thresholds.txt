@@ -1,0 +1,120 @@
+# cyclebound_thresholds.py (double precision planning numbers, then exact checks)
+
+5+2i: n with r*(n) below all earlier r*; the bound is >= the next listed n once B > B*
+  n = 58        r* = 1.4168e-03   B* = 8.5895e+04   (bound >= this n needs B > 3.1175e+04)
+  n = 64        r* = 4.8313e-04   B* = 7.3867e+05   (bound >= this n needs B > 8.5895e+04)
+  n = 134       r* = 4.7034e-04   B* = 7.7937e+05   (bound >= this n needs B > 7.3867e+05)
+  n = 161       r* = 2.9048e-04   B* = 2.0434e+06   (bound >= this n needs B > 7.7937e+05)
+  n = 225       r* = 7.0430e-05   B* = 3.4758e+07   (bound >= this n needs B > 2.0434e+06)
+  n = 289       r* = 5.2157e-05   B* = 6.3380e+07   (bound >= this n needs B > 3.4758e+07)
+  n = 514       r* = 3.1391e-05   B* = 1.7497e+08   (bound >= this n needs B > 6.3380e+07)
+  n = 739       r* = 2.9324e-05   B* = 2.0051e+08   (bound >= this n needs B > 1.7497e+08)
+  n = 1162      r* = 2.6468e-05   B* = 2.4611e+08   (bound >= this n needs B > 2.0051e+08)
+  n = 1387      r* = 1.8184e-05   B* = 5.2145e+08   (bound >= this n needs B > 2.4611e+08)
+  n = 1451      r* = 1.6618e-05   B* = 6.2430e+08   (bound >= this n needs B > 5.2145e+08)
+  n = 1612      r* = 1.4053e-05   B* = 8.7304e+08   (bound >= this n needs B > 6.2430e+08)
+  n = 1676      r* = 8.7235e-06   B* = 2.2656e+09   (bound >= this n needs B > 8.7304e+08)
+  n = 1901      r* = 4.7794e-06   B* = 7.5480e+09   (bound >= this n needs B > 2.2656e+09)
+  n = 2190      r* = 3.4215e-06   B* = 1.4728e+10   (bound >= this n needs B > 7.5480e+09)
+  n = 4091      r* = 1.8507e-06   B* = 5.0340e+10   (bound >= this n needs B > 1.4728e+10)
+  n = 6281      r* = 1.1791e-06   B* = 1.2401e+11   (bound >= this n needs B > 5.0340e+10)
+  n = 8696      r* = 1.1419e-07   B* = 1.3223e+13   (bound >= this n needs B > 1.2401e+11)
+  n = 38875     r* = 9.9720e-08   B* = 1.7338e+13   (bound >= this n needs B > 1.3223e+13)
+  n = 41065     r* = 8.8068e-08   B* = 2.2230e+13   (bound >= this n needs B > 1.7338e+13)
+  n = 49761     r* = 5.3639e-08   B* = 5.9926e+13   (bound >= this n needs B > 2.2230e+13)
+  n = 58457     r* = 2.9453e-08   B* = 1.9876e+14   (bound >= this n needs B > 5.9926e+13)
+  n = 67153     r* = 1.3317e-08   B* = 9.7226e+14   (bound >= this n needs B > 1.9876e+14)
+  n = 222942    r* = 1.3019e-08   B* = 1.0173e+15   (bound >= this n needs B > 9.7226e+14)
+  n = 231638    r* = 8.2430e-09   B* = 2.5375e+15   (bound >= this n needs B > 1.0173e+15)
+  n = 240334    r* = 6.4647e-09   B* = 4.1255e+15   (bound >= this n needs B > 2.5375e+15)
+  n = 298791    r* = 3.3975e-09   B* = 1.4937e+16   (bound >= this n needs B > 4.1255e+15)
+  n = 307487    r* = 2.5346e-09   B* = 2.6837e+16   (bound >= this n needs B > 1.4937e+16)
+  n = 374640    r* = 2.3278e-09   B* = 3.1819e+16   (bound >= this n needs B > 2.6837e+16)
+  n = 606278    r* = 1.7110e-09   B* = 5.8897e+16   (bound >= this n needs B > 3.1819e+16)
+  n = 664735    r* = 1.7090e-09   B* = 5.9032e+16   (bound >= this n needs B > 5.8897e+16)
+  n = 673431    r* = 2.4201e-10   B* = 2.9439e+18   (bound >= this n needs B > 5.9032e+16)
+  n = 2327780   r* = 1.9389e-10   B* = 4.5861e+18   (bound >= this n needs B > 2.9439e+18)
+  n = 2702420   r* = 1.5569e-10   B* = 7.1129e+18   (bound >= this n needs B > 4.5861e+18)
+  n = 3375851   r* = 8.2257e-11   B* = 2.5482e+19   (bound >= this n needs B > 7.1129e+18)
+  n = 4049282   r* = 3.3248e-11   B* = 1.5597e+20   (bound >= this n needs B > 2.5482e+19)
+  n = 8771995   r* = 2.5519e-11   B* = 2.6475e+20   (bound >= this n needs B > 1.5597e+20)
+  n = 10426344  r* = 2.2018e-11   B* = 3.5565e+20   (bound >= this n needs B > 2.6475e+20)
+  n = 12821277  r* = 2.0343e-11   B* = 4.1661e+20   (bound >= this n needs B > 3.5565e+20)
+  n = 14475626  r* = 1.3756e-11   B* = 9.1113e+20   (bound >= this n needs B > 4.1661e+20)
+  n = 15149057  r* = 1.2576e-11   B* = 1.0901e+21   (bound >= this n needs B > 9.1113e+20)
+  n = 18524908  r* = 9.1058e-12   B* = 2.0794e+21   (bound >= this n needs B > 1.0901e+21)
+  n = 19198339  r* = 2.9113e-12   B* = 2.0342e+22   (bound >= this n needs B > 2.0794e+21)
+ exact checks:
+  B = 3.0e+09 : box bound n >= 1901
+  B = 4.0e+09 : box bound n >= 1901
+  B = 5.0e+09 : box bound n >= 1901
+  B = 1.0e+10 : box bound n >= 2190
+  B = 3.0e+10 : box bound n >= 4091
+  B = 1.0e+11 : box bound n >= 6281
+  B = 1.0e+12 : box bound n >= 8696
+  B = 1.0e+13 : box bound n >= 8696
+  B = 1.0e+14 : box bound n >= 58457
+  B = 1.0e+15 : box bound n >= 222942
+
+cone 2+i: n with r*(n) below all earlier r*; the bound is >= the next listed n once B > B*
+  n = 83        r* = 1.1690e-03   B* = 1.4635e+05   (bound >= this n needs B > 1.1864e+05)
+  n = 90        r* = 1.1354e-03   B* = 1.5515e+05   (bound >= this n needs B > 1.4635e+05)
+  n = 105       r* = 6.5205e-04   B* = 4.7040e+05   (bound >= this n needs B > 1.5515e+05)
+  n = 127       r* = 3.1419e-04   B* = 2.0261e+06   (bound >= this n needs B > 4.7040e+05)
+  n = 149       r* = 2.1171e-04   B* = 4.4622e+06   (bound >= this n needs B > 2.0261e+06)
+  n = 276       r* = 1.9261e-04   B* = 5.3910e+06   (bound >= this n needs B > 4.4622e+06)
+  n = 283       r* = 1.7943e-04   B* = 6.2118e+06   (bound >= this n needs B > 5.3910e+06)
+  n = 366       r* = 1.6506e-04   B* = 7.3404e+06   (bound >= this n needs B > 6.2118e+06)
+  n = 388       r* = 1.0075e-04   B* = 1.9701e+07   (bound >= this n needs B > 7.3404e+06)
+  n = 410       r* = 7.1132e-05   B* = 3.9527e+07   (bound >= this n needs B > 1.9701e+07)
+  n = 432       r* = 5.8514e-05   B* = 5.8413e+07   (bound >= this n needs B > 3.9527e+07)
+  n = 559       r* = 2.6160e-05   B* = 2.9224e+08   (bound >= this n needs B > 5.8413e+07)
+  n = 581       r* = 2.3994e-05   B* = 3.4741e+08   (bound >= this n needs B > 2.9224e+08)
+  n = 991       r* = 1.7008e-05   B* = 6.9139e+08   (bound >= this n needs B > 3.4741e+08)
+  n = 1140      r* = 1.2886e-05   B* = 1.2045e+09   (bound >= this n needs B > 6.9139e+08)
+  n = 1550      r* = 9.3384e-06   B* = 2.2935e+09   (bound >= this n needs B > 1.2045e+09)
+  n = 2109      r* = 8.8160e-06   B* = 2.5733e+09   (bound >= this n needs B > 2.2935e+09)
+  n = 2131      r* = 4.6790e-06   B* = 9.1352e+09   (bound >= this n needs B > 2.5733e+09)
+  n = 2690      r* = 1.7296e-06   B* = 6.6855e+10   (bound >= this n needs B > 9.1352e+09)
+  n = 4821      r* = 1.1032e-06   B* = 1.6434e+11   (bound >= this n needs B > 6.6855e+10)
+  n = 7511      r* = 2.3095e-07   B* = 3.7495e+12   (bound >= this n needs B > 1.6434e+11)
+  n = 17712     r* = 1.8752e-07   B* = 5.6877e+12   (bound >= this n needs B > 3.7495e+12)
+  n = 38695     r* = 1.5548e-07   B* = 8.2736e+12   (bound >= this n needs B > 5.6877e+12)
+  n = 41385     r* = 1.5057e-07   B* = 8.8214e+12   (bound >= this n needs B > 8.2736e+12)
+  n = 46206     r* = 9.2661e-08   B* = 2.3293e+13   (bound >= this n needs B > 8.8214e+12)
+  n = 48896     r* = 9.1966e-08   B* = 2.3647e+13   (bound >= this n needs B > 2.3293e+13)
+  n = 53717     r* = 7.4022e-08   B* = 3.6501e+13   (bound >= this n needs B > 2.3647e+13)
+  n = 56407     r* = 4.8967e-08   B* = 8.3412e+13   (bound >= this n needs B > 3.6501e+13)
+  n = 63918     r* = 1.6073e-08   B* = 7.7416e+14   (bound >= this n needs B > 8.3412e+13)
+  n = 71429     r* = 9.9027e-09   B* = 2.0395e+15   (bound >= this n needs B > 7.7416e+14)
+  n = 135347    r* = 4.7595e-09   B* = 8.8289e+15   (bound >= this n needs B > 2.0395e+15)
+  n = 469959    r* = 4.2290e-09   B* = 1.1183e+16   (bound >= this n needs B > 8.8289e+15)
+  n = 487671    r* = 2.8698e-09   B* = 2.4284e+16   (bound >= this n needs B > 1.1183e+16)
+  n = 551589    r* = 2.5567e-09   B* = 3.0596e+16   (bound >= this n needs B > 2.4284e+16)
+  n = 615507    r* = 2.3087e-09   B* = 3.7523e+16   (bound >= this n needs B > 3.0596e+16)
+  n = 623018    r* = 1.5195e-09   B* = 8.6621e+16   (bound >= this n needs B > 3.7523e+16)
+  n = 686936    r* = 1.1152e-09   B* = 1.6081e+17   (bound >= this n needs B > 8.6621e+16)
+  n = 758365    r* = 8.2633e-10   B* = 2.9291e+17   (bound >= this n needs B > 1.6081e+17)
+  n = 822283    r* = 4.8731e-10   B* = 8.4221e+17   (bound >= this n needs B > 2.9291e+17)
+  n = 1580648   r* = 1.4745e-10   B* = 9.1992e+18   (bound >= this n needs B > 8.4221e+17)
+  n = 3296643   r* = 5.4011e-11   B* = 6.8559e+19   (bound >= this n needs B > 9.1992e+18)
+  n = 5699574   r* = 3.1039e-11   B* = 2.0759e+20   (bound >= this n needs B > 6.8559e+19)
+  n = 8996217   r* = 9.8924e-12   B* = 2.0437e+21   (bound >= this n needs B > 2.0759e+20)
+ exact checks:
+  B = 3.0e+09 : box bound n >= 2131
+  B = 4.0e+09 : box bound n >= 2131
+  B = 5.0e+09 : box bound n >= 2131
+  B = 1.0e+10 : box bound n >= 2690
+  B = 3.0e+10 : box bound n >= 2690
+  B = 1.0e+11 : box bound n >= 4821
+  B = 1.0e+12 : box bound n >= 7511
+  B = 1.0e+13 : box bound n >= 46206
+  B = 1.0e+14 : box bound n >= 63918
+  B = 1.0e+15 : box bound n >= 71429
+
+# Diophantine constants on 10 <= n <= 2*10^7 (double precision)
+  5+2i       c_size = 0.0036  c_angle = 0.0221  c_joint = 0.0926
+  cone 2+i   c_size = 0.0176  c_angle = 0.0513  c_joint = 0.1340
+  2-i eps=1  c_size = 0.0176  c_angle = 0.0513  c_joint = 0.1340
+  -12+3i     c_size = 0.0014  c_angle = 0.0205  c_joint = 0.1096
+  7+4i       c_size = 0.0191  c_angle = 0.0172  c_joint = 0.0756

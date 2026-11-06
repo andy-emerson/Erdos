@@ -206,5 +206,31 @@ def run_scale():
             sys.stdout.flush()
 
 
+def run_counts():
+    """Number of n <= M admissible for size, angle, both, against the counts
+    sum 2 n a (single) and sum (2 n a_s)(2 n a_a)/m (both) of the equidistribution model."""
+    print("# cyclebound_gauss.py counts: admissible n <= M (outer enclosures)")
+    for M_, Mmax in [(MAPS[0], 10**5), (MAPS[11], 10**5), (MAPS[12], 10**5)]:
+        slo, shi = dy_floor(M_.s_lo_out), dy_ceil(M_.s_hi_out)
+        alo, ahi = dy_floor(M_.a_lo_out), dy_ceil(M_.a_hi_out)
+        cs = ca = cj = 0
+        marks = {10**3, 3 * 10**3, 10**4, 3 * 10**4, 10**5}
+        r = float(M_.r[1])
+        a_s, a_a = 2 * r / 0.6931471805599453, 4 * r / 3.141592653589793
+        print("\n%s (B = %d)" % (M_.name, M_.B))
+        print("  %-8s %-8s %-10s %-8s %-10s %-8s %-10s" % ("M", "size", "model", "angle", "model", "both", "model"))
+        for n in range(1, Mmax + 1):
+            v0, v1 = -((-n * slo) >> Q), (n * shi) >> Q
+            w0, w1 = -((-n * alo) >> Q), (n * ahi) >> Q
+            s_ok, a_ok = v0 <= v1, w0 <= w1
+            cs += s_ok
+            ca += a_ok
+            if s_ok and a_ok and any((W - V) % M_.m == 0 for V in range(v0, v1 + 1) for W in range(w0, w1 + 1)):
+                cj += 1
+            if n in marks:
+                print("  %-8d %-8d %-10.1f %-8d %-10.1f %-8d %-10.2f" % (
+                    n, cs, a_s * n * n, ca, a_a * n * n, cj, 4 * a_s * a_a * n**3 / (3 * M_.m)))
+
+
 if __name__ == "__main__":
-    {"maps": run_maps, "scale": run_scale}[sys.argv[1]]()
+    {"maps": run_maps, "scale": run_scale, "counts": run_counts}[sys.argv[1]]()

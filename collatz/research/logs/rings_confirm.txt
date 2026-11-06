@@ -1,0 +1,47 @@
+# drop below start (1e5, 1e6] for the first maps, ringconfirm.py; Z with |a| <= 1e6 (B in a^2)
+a1+s_1 [1]->-1
+a1-s_1 [1]->-1
+a1+s_1 PASS drop 499844 starts, max odd steps 135 at 649+302, max excursion 8.82 bits
+a1-s_1 PASS drop 499844 starts, max odd steps 135 at 649-302, max excursion 8.82 bits
+a3+s_0 [1]->1-s, [1+s]->-1
+a3+s_1 [1]->1+s, [1+s]->-1
+a3-s_0 [1]->1-s, [1+s]->-1
+a3+s_0 PASS drop 499844 starts, max odd steps 79 at 915+145, max excursion 5.04 bits
+a3+s_1 PASS drop 499844 starts, max odd steps 76 at 105+287, max excursion 4.97 bits
+a3-s_0 PASS drop 499844 starts, max odd steps 76 at 105-287, max excursion 4.97 bits
+a1+3s_1 [1]->-1+s, [1+s]->1, [3+s]->-1+2s, [1+2s]->-1-s
+a1+3s_1 PASS drop 499844 starts, max odd steps 40 at 37-309, max excursion 2.60 bits
+a-1+2t_2 [1]->-1+t, [3]->-1
+a-1+2t_5 [1]->-1-t, [3]->-1
+a-1+2t_2 PASS drop 534315 starts, max odd steps 608 at 605+148, max excursion 23.77 bits
+a-1+2t_5 PASS drop 534315 starts, max odd steps 654 at 821-17, max excursion 23.53 bits
+a3-2t_2 [1]->1, [3]->-1+2t
+a3-2t_24 [1]->3+t, [3]->-1-2t
+a3-2t_2 PASS drop 534315 starts, max odd steps 72 at 389-246, max excursion 4.93 bits
+a3-2t_24 PASS drop 534315 starts, max odd steps 84 at 425+261, max excursion 6.18 bits
+a1+3t_0 [1]->3-t, [3]->1+t, [5]->1, [7]->1-t
+a5-3t_0 [1]->3-t, [3]->1+t, [5]->1, [7]->1-t
+a1+3t_0 PASS drop 534315 starts, max odd steps 84 at 487-440, max excursion 4.81 bits
+a5-3t_0 PASS drop 534315 starts, max odd steps 606 at 39+525, max excursion 21.39 bits
+a4+f_2 [1]->-f, [f]->-1-f, [1+f]->-1-2f, [2+f]->-1+f, [3+f]->-1, [1+2f]->-2+f
+a5-f_4 [1]->-1+f, [f]->1, [1+f]->f, [2+f]->3-2f, [3+f]->2-f, [1+2f]->1+f
+a4+f_2 PASS drop 639391 starts, max odd steps 927 at 641+187, max excursion 27.14 bits
+a5-f_4 PASS drop 639391 starts, max odd steps 927 at 828-187, max excursion 27.14 bits
+a1+f_3 [1]->1-f, [f]->-1, [1+f]->f
+a1+f_3 PASS drop 639391 starts, max odd steps 153 at 515+371, max excursion 9.75 bits
+a5+w_33 [1]->-1-w, [3]->1+w, [w]->1, [1+w]->-w, [2+w]->3+2w, [3+w]->-2+w, [1+2w]->1+3w, [3+2w]->3+w, [3w]->-1, [1+3w]->-2-w, [2+3w]->1+2w, [3+3w]->w
+a5+w_33 PASS drop 408096 starts, max odd steps 244 at 799+691, max excursion 10.23 bits
+a9+2w_10 [1]->-1-2w, [3]->5+2w, [2+w]->5w, [3+w]->-1+3w, [4+w]->6+w, [5+w]->-3-w, [6+w]->-4-3w, [5+2w]->-1
+a9+2w_10 PASS drop 408096 starts, max odd steps 44 at 745+195, max excursion 1.25 bits
+a9+2w_71 [1]->-1-2w, [3]->5+2w, [5]->3-2w, [7]->1-6w, [w]->2+w, [1+w]->1-w, [2+w]->5w, [3+w]->-1+3w, [4+w]->-2+w, [5+w]->-3-w, [6+w]->-4-3w, [7+w]->-5-5w, [1+2w]->-5, [3+2w]->1+4w, [5+2w]->7, [7+2w]->-3-4w, [3w]->-2+3w, [1+3w]->-3+w, [2+3w]->4-w, [3+3w]->-5-3w, [4+3w]->2+3w, [5+3w]->1+w, [6+3w]->7w, [7+3w]->-1-3w, [1+4w]->-1+2w, [3+4w]->-3-2w, [5+4w]->-5-6w, [7+4w]->1-2w, [5w]->2-3w, [1+5w]->1+3w, [2+5w]->w, [3+5w]->-1-w, [4+5w]->6+5w, [5+5w]->-3-5w, [6+5w]->4+w, [7+5w]->3-w, [1+6w]->-5-4w, [3+6w]->1, [5+6w]->-1+4w, [7+6w]->5, [7w]->6+7w, [1+7w]->5+5w, [2+7w]->-4-5w, [3+7w]->-5+w, [4+7w]->2-w, [5+7w]->1-3w, [6+7w]->3w, [7+7w]->-1+w
+a9+2w_71 PASS drop 408096 starts, max odd steps 51 at 325+307, max excursion 1.45 bits
+a1+2r_6 [1]->1, [1+r]->1-r
+a3+r_30 [1]->1+r, [1+r]->1+2r
+a1+2r_6 PASS drop 280460 starts, max odd steps 639 at 1233+539, max excursion 21.42 bits
+a3+r_30 PASS drop 280460 starts, max odd steps 612 at 921+153, max excursion 22.73 bits
+a3_1 [1]->1, [3]->-1, [1+r]->1-r, [3+r]->-1+r
+a3_1 PASS drop 280460 starts, max odd steps 28 at 609+201, max excursion 1.62 bits
+a1+3r_0 [1]->-1+r, [3]->1-r, [1+r]->1, [3+r]->-1-2r, [1+2r]->-1-r, [3+2r]->1+r, [1+3r]->1-2r, [3+3r]->-1
+a1+3r_0 PASS drop 280460 starts, max odd steps 19 at 403+123, max excursion 0.66 bits
+a5_105 [1]->-1, [3]->29
+a5_105 PASS drop 450000 starts, max odd steps 43 at 162427+0, max excursion 6.34 bits

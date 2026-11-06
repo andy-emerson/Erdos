@@ -1,0 +1,13 @@
+# Z11 modulus 4: multipliers inside and above the window 4^2 < N < 4^(7/3) = 25.4; smallest commuting table
+N=23 alpha=4+f: predicted drift -0.143 bits, measured -0.005; starts past 2^200: 0
+N=25 alpha=-1+3f: predicted drift -0.023 bits, measured -0.002; starts past 2^200: 1
+N=27 alpha=3f: predicted drift +0.088 bits, measured +0.089; starts past 2^200: 137
+N=31 alpha=1+3f: predicted drift +0.288 bits, measured +0.268; starts past 2^200: 152
+N=33 alpha=5+f: predicted drift +0.378 bits, measured +0.317; starts past 2^200: 152
+N=37 alpha=2+3f: predicted drift +0.543 bits, measured +0.542; starts past 2^200: 152
+N=45 alpha=-1+4f: predicted drift +0.825 bits, measured +0.820; starts past 2^200: 151
+N=47 alpha=5+2f: predicted drift +0.888 bits, measured +0.891; starts past 2^200: 154
+N=49 alpha=7: predicted drift +0.948 bits, measured +0.903; starts past 2^200: 157
+N=53 alpha=1+4f: predicted drift +1.061 bits, measured +1.058; starts past 2^200: 147
+N=55 alpha=4+3f: predicted drift +1.115 bits, measured +1.119; starts past 2^200: 147
+N=59 alpha=7+f: predicted drift +1.216 bits, measured +1.116; starts past 2^200: 150

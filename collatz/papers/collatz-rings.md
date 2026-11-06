@@ -8,19 +8,25 @@
 
 ## 1. Introduction
 
-The $3x+1$ map $T \colon \mathbb{N} \to \mathbb{N}$ is
+The $3x+1$ map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
-$$T(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
+$$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
 
-From $5$ its orbit is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, and $1 \to 4 \to 2 \to 1$ is a cycle. The Collatz conjecture asserts that every orbit reaches $1$ [Lagarias 1985]. It has been verified beyond $10^{20}$ and remains open.
+From $5$ its orbit is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, and $1 \to 4 \to 2 \to 1$ is a cycle. Collatz conjectured that every orbit reaches $1$ [Collatz 1986]. The conjecture has been verified for every start below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
+
+The nearby map $C'$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has three cycles,
+
+$$1 \to 2 \to 1, \qquad 5 \to 14 \to 7 \to 20 \to 10 \to 5,$$
+
+and one of length $18$ through $17$, and these are conjectured to be all [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-The same formula defines a map on $\mathbb{Z}$. There $T(-5) = -14$, and $-5$ lies on the cycle
+The formula for $C$ defines a map on $\mathbb{Z}$. For odd $n$, $-C(-n) = -(3(-n) + 1) = 3n - 1$, and halving commutes with negation, so
 
-$$-5 \to -14 \to -7 \to -20 \to -10 \to -5.$$
+$$C(-n) = -C'(n) \quad \text{for all } n \in \mathbb{Z}.$$
 
-On the negative integers $T$ has two further cycles, through $-1$ and $-17$, and these three are conjectured to be all [Lagarias 1985]. The orbit of $-5$ is not the negative of the orbit of $5$: $T(5) = 16$ while $T(-5) = -14$. Equivalently, $-T(-n) = 3n - 1$ for odd $n$, so on the negative integers $T$ acts as the $3x - 1$ map acts on the positive ones.
+On the negative integers $C$ is therefore $C'$ with the signs reversed, and it has the three cycles of $C'$ through $-1$, $-5$ and $-17$. The orbit of $-5$ is not the negative of the orbit of $5$: $C(5) = 16$ while $C(-5) = -14$.
 
 Barina's map [Barina 2018] is
 
@@ -30,13 +36,15 @@ Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, it satisfies $B(-
 
 $$5 \to 36 \to 18 \to 9 \to 64 \to \cdots \to 1, \qquad -5 \to -36 \to -18 \to -9 \to -64 \to \cdots \to -1,$$
 
-and the conjecture that every orbit reaches a unit on $\mathbb{Z} \setminus \{0\}$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the latter up to $10^{15}$ and made this observation.
+and the conjecture that every orbit in $\mathbb{Z} \setminus \{0\}$ reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the latter below $10^{15}$ and made this observation.
+
+The same device applies to multiplier $3$. The map sending odd $n$ to $3n + 1$ if $n \equiv 1 \pmod 4$ and to $3n - 1$ if $n \equiv 3 \pmod 4$ also satisfies $f(-n) = -f(n)$. But at modulus $4$ every odd step multiplies by $3$ and is followed by at least two halvings, and $(3n + 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. For an odd step at modulus $4$ to expand in the worst case and contract on average, the multiplier must lie between $4$ and $8$ (Section 3). Of the two candidates, $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
 The identity $B(-n) = -B(n)$ has a cleaner reading. The positive integers are the nonzero integers modulo the units,
 
 $$\mathbb{N} = (\mathbb{Z} \setminus \{0\})/\{\pm 1\},$$
 
-each class $\{n, -n\}$ represented by its positive member. A map on $\mathbb{Z}$ induces a map on this quotient exactly when it sends $\pm n$ into one class, and $B$ does; the induced map is $B$ on $\mathbb{N}$. The $3x+1$ map on $\mathbb{Z}$ induces no map on the quotient, since $16$ and $-14$ lie in different classes.
+each class $\{n, -n\}$ represented by its positive member. A map on $\mathbb{Z}$ induces a map on this quotient exactly when it sends $n$ and $-n$ into one class, and $B$ does; the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on the quotient, since $16$ and $-14$ lie in different classes.
 
 ### 1.2 Two kinds of map
 
@@ -44,7 +52,7 @@ The maps considered here have the following form. Fix a prime $\pi$ dividing $2$
 
 Such a map reads its digit from the residue class of $z$ and is defined on the whole ring. When it also respects associates, it induces a map on the quotient by the units, and we call it a **Barina-type map**.
 
-The $3x+1$ map on $\mathbb{N}$ is of a different kind. A map on $\mathbb{Z}$ that respects the classes $\{n, -n\}$ and induces $3x+1$ on $\mathbb{N}$ must send odd $z$ to $3z + \text{sgn}(z)$, and the digit $\text{sgn}(z)$ is not a function of $z \bmod 2^j$ for any $j$. So no map that reads its digit from a residue class, at any modulus, induces $3x+1$. What $3x+1$ does is choose a representative of each class, the positive one, and apply a formula to it. We call a map defined by a choice of representatives and a formula on them a **Collatz-type map**.
+The map $C$ on $\mathbb{N}$ is of a different kind. A map on $\mathbb{Z}$ that respects the classes $\{n, -n\}$ and induces $C$ on $\mathbb{N}$ must send odd $z$ to $3z + \text{sgn}(z)$, and the digit $\text{sgn}(z)$ is not a function of $z \bmod 2^j$ for any $j$. So no map that reads its digit from a residue class, at any modulus, induces $C$. What $C$ does is choose a representative of each class, the positive one, and apply a formula to it. We call a map defined by a choice of representatives and a formula on them a **Collatz-type map**.
 
 On $\mathbb{Z}$ the distinction is easy to overlook, since the positive integers are the only natural choice of representatives. It becomes visible in larger rings.
 
@@ -66,7 +74,7 @@ The constructions make sense in any ring of integers $\mathcal{O}_K$ of a number
 
 Maps that multiply on each residue class and divide go back to Hasse. Heppner showed that almost all iterates of Hasse's maps decrease when $m < d^{d/(d-1)}$ and increase when $m > d^{d/(d-1)}$ [Heppner 1978]; Matthews and Watts conjectured the criterion for a multiplier on each class [Matthews and Watts 1985, Conjectures 1 and 2]; Leigh built the underlying Markov chain for arbitrary nonzero multipliers [Leigh 1986]. Written with norms, their criterion becomes the window $q^k < N(\alpha) < q^{k + 1/(q-1)}$ used here in every ring. Matthews treated such maps on rings of integers, with examples on $\mathbb{Z}[\sqrt 2]$ and $\mathbb{Z}[\sqrt 3]$, and proposed a systematic study [Matthews 2010, Sections 10 and 11]. On $\mathbb{Z}[i]$, Joseph and Kucinski studied an extension of $3x+1$ [Joseph 1998; Kucinski 2000], and Alvarado and a 2017 REU studied the multiplier $2 + i$ with division by $1 + i$ [Alvarado 2025].
 
-Restating the conjecture on a quotient by a symmetry has a precedent. Monks and Yazinski showed that $T$ has exactly one nontrivial autoconjugacy, an involution $\Omega$ of $\mathbb{Z}_2$, and restated the conjecture on $\mathbb{Z}_2/\langle \Omega \rangle$: it holds if and only if the orbit of the class of every positive integer under $[x] \mapsto [T(x)]$ contains $[1]$ [Monks and Yazinski 2004]. We make the same kind of restatement for a different and simpler symmetry, multiplication by the units, which every ring has.
+Restating the conjecture on a quotient by a symmetry has a precedent. Monks and Yazinski showed that $C$ has exactly one nontrivial autoconjugacy, an involution $\Omega$ of $\mathbb{Z}_2$, and restated the conjecture on $\mathbb{Z}_2/\langle \Omega \rangle$: it holds if and only if the orbit of the class of every positive integer under $[x] \mapsto [C(x)]$ contains $[1]$ [Monks and Yazinski 2004]. We make the same kind of restatement for a different and simpler symmetry, multiplication by the units, which every ring has.
 
 ### 1.5 Results and plan
 

@@ -47,3 +47,4 @@
 13:56:35 done (7500000000,7600000000]  100.0%  1.24e+07 starts/s  elapsed 145 s  ETA 0 s  bad chunks 0
 13:56:35 finished, 1806415521 starts in 145 s, bad chunks 0
 2026-11-06 13:56:39 start alpha5p2i_k4.rule (7600000000,130000000000] chunk 1000000000 jobs 2: 123 chunks to do, 46 already logged
+13:57:40 done (8600000000,9600000000]  0.8%  6.38e+06 starts/s  elapsed 62 s  ETA 7468 s  bad chunks 0

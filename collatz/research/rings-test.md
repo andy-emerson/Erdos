@@ -1,0 +1,275 @@
+# Ring-level findings tested across seven rings
+
+Working notes, 6 November 2026 (research direction 5). Nothing here is in the papers or the catalog. Vocabulary is that of `catalog.md` (F2, F5, F8, A1, R1, W5): map, Collatz map, trivial cycle, unit cycle, commutes with the units, respects associates, Barina-type map (a map of our form, $(\alpha, k, d)$ with digits by residue class modulo $\pi^k$), Collatz-type map (a fundamental-domain map $S_F(z) = \mathrm{rep}_F((\alpha z + d(z))/\pi^v)$ with the digit read from the class of the representative, `fundamental-domain.md`), fundamental domain, modulus, window. Code: `qring.py` (arithmetic in any of the rings), `ringfd.c` (the engine, a generalization of `fdsearch.c` to any quadratic ring and any domain), `ringrun.py` (its Python side), `ringtest.py` (invariants, windows, Barina-type and Collatz-type searches, literal maps), `ringchecks.py` (forced fixed points, associates pair test, rotated and mirrored maps, the split-ring conjugacy), `ringconfirm.py` (drop below start to $10^6$), `ringfdforced.py`, `ringfive.py`, `ringlift.py`, `ringreal.py`, `ringassoc_r2.py`, `ringwin.py`. Logs: `logs/rings_<ring>_<what>.txt`, with ring names Z, Zi, Zw, Zs2, Z7 (prime $\theta$), Z7b (prime $\bar\theta$), Z11, Zr2. Runs were kept light: full classification to norm $10^5$, drop below start to $10^6$ only for the first examples (`logs/rings_confirm.txt`, 23 maps, all pass).
+
+Notation in the logs and below: $s = \sqrt{-2}$, $\theta = (1+\sqrt{-7})/2$ (written t in the logs), $\phi = (1+\sqrt{-11})/2$ (f), $r = \sqrt 2$, $\varepsilon = 1 + \sqrt 2$. Digit tables are written $[c] \to d$: the class of $z$ (by a representative) and the digit used for it.
+
+## 1. Summary
+
+1. Every structural prediction that follows from a theorem held in every ring: the existence threshold $k > \kappa$ (and its failure for an infinite unit group), the representable-norm principle for which moduli carry multipliers, the window exponent $1/(q-1)$, at most $|U|$ trivial cycles, the count $|U|/\mathrm{ord}(\varepsilon)$ for maps that commute with the units (every case predicted correctly), respects associates iff commutes for residue-class maps (no exception in any pair test), the one-step rotation and mirror identities (no mismatch), and the forced fixed points (no forced map passed, in a Barina-type or a Collatz-type search).
+2. Z[√-2]. The modulus $\pi$ carries the norm-3 multipliers $\pm 1 \pm \sqrt{-2}$, $\pi^2$ carries none (odd norms are $1$ or $3 \bmod 8$). The Barina-type maps at $\pi$ (one digit, the shape of 3x+1) are Collatz maps on the whole ring for $\alpha = 1 - \sqrt{-2}$ and $-1 - \sqrt{-2}$ with digit $\pm 1$, and fail for the two multipliers with $\pi - \alpha$ a unit, exactly as in Z3. On the right half-plane, $\alpha = 1 + \sqrt{-2}$ with digit $-1$ is a Collatz map on $R/U$ at the first modulus: the exact counterpart of 3x+1. Commuting Collatz maps exist at the threshold modulus $\pi^3$ itself ($\alpha = 3 \pm \sqrt{-2}$, norm 11, smallest digits). So the Z[i] gap between the threshold $(1+i)^3$ and the first commuting Collatz map at $(1+i)^4$ does not recur; it is a forced-fixed-point effect (every multiplier at $(1+i)^3$ and every norm-9 multiplier at $\pi^3$ is within a unit of $\pm\pi^v$), not an effect of ramification.
+3. Z[(1+√-7)/2], 2 split. "Odd" means not divisible by $\theta$; $\bar\theta$ and its powers are odd non-units of norm $2^j$, so odd elements and multipliers can have even norm (14, 18, 22, 28), the smallest digits are $\pm\bar\theta^j$, and $\bar\theta$ (norm 2) is the smallest odd non-unit, which makes forced fixed points more frequent. The two choices of prime give conjugate families: $\sigma S_\theta \sigma = S_{\bar\theta}$ (no mismatch in 59,808 one-step checks) and every count agrees under $\alpha \mapsto \bar\alpha$, while inside one family conjugate multipliers get different counts. No commuting Collatz map at $\theta^2$; the first is at $\theta^3$ ($3 - 2\theta$, non-minimal digits), and at $\theta^4$ a smallest-digit commuting Collatz map has the multiplier $1 + 3\theta = \bar\theta(-3 + 2\theta)$, of norm 22. Because $\arg\theta$ is not a rational multiple of $\pi$, rational multipliers face two conditions in the cycle equation, and the multiplier 5, which fails in every other ring by 3-cycles from $5^3 \approx 2^7$, has here only three fixed classes and Collatz-type maps.
+4. Z[(1+√-11)/2], 2 inert, two units. Modulus 2 carries multipliers ($5 = N(1+\phi)$), unlike Z[ω]. Commuting Collatz maps exist at the first commuting modulus 4 ($4 + \phi$, norm 23), but the smallest table fails; smallest-digit commuting Collatz maps appear at modulus 8. So the early appearance in Z[ω] is reproduced with two units, and the success of the smallest digits for $5 + 2\omega$ is better explained by its norm 19, which is not a norm in this ring. The window exponent $1/3$ is confirmed directly: multipliers in $(4^{7/3}, 64)$ diverge with the predicted drift.
+5. Z[ω], extended. Collatz-type maps on two sectors at modulus 4: the first by norm is the 5+2ω map; norm 21, where every Barina-type map is forced to fail, has Collatz-type maps. At modulus 8, where no smallest-digit commuting map is a Collatz map (E6), commuting tables with non-minimal digits are.
+6. Z[√2]. No Barina-type map induces a map on $R/U$ (no table commutes with all units, and the pair test confirms that none respects associates). Read literally on $R$, the |N| window is the wrong criterion: a multiplier that expands in one real embedding diverges in that embedding although $|N(\alpha)|$ is in the window, and the number of trivial cycles is unbounded. On $R/U$ with the cone fundamental domain, Collatz-type maps exist at the first modulus with multipliers ($\alpha = 1 + 2\sqrt2$, $|N| = 7$, smallest digits), with the |N| window; but their lifts to $R$ can have no periodic unit at all ($S(1) = \varepsilon$), so the transfer theorem A4 needs a finite unit group in both directions.
+7. Arithmetic fundamental domains reproduce the Barina-type counts exactly at every modulus $k \ge \kappa + 1$ in Z[√-2], Z[θ], Z[φ] and Z[ω], as in Z[i]. Below $\kappa + 1$ they give maps whose commuting extension reads digits at the finer modulus, the exponent is not geometric, and the window moves. Z[√2] has no arithmetic fundamental domain for its full unit group.
+8. Two new facts on the controls. On N, the Collatz-type map $5n - 1$ ($n \equiv 1$), $5n + 29$ ($n \equiv 3 \bmod 4$) is a Collatz map to $10^6$, outside the digit range $|d| \le 15$ of `fdint.py`. And a forced-fixed-point lemma for Collatz-type maps (Section 10.4) holds without exception in six searches.
+
+Summary of invariants and outcomes (B = Barina-type, C = Collatz-type; "first" is the first Collatz map by modulus, then norm).
+
+| ring | q | U | 2 | κ | η | empty moduli | first B (commuting) Collatz map | first C Collatz map | literal non-commuting Collatz at first modulus | arithmetic F |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Z | 2 | ±1 | prime | 1 | 1 | $1$ | 4: $7x \pm 1$, smallest | positives, 2: 3x+1 | none (Z3) | reproduces from 4 |
+| Z[i] | 2 | 4 | ramified | 2 | $-i$ | $1$, $1+i$ | $(1+i)^4$: 5+2i, smallest | cone, $(1+i)^2$: 2+i, smallest | 5 of 8 multipliers (G5) | reproduces from $(1+i)^3$ |
+| Z[√-2] | 2 | ±1 | ramified | 2 | $-1$ | $1$, $\pi^2$ | $\pi^3$: $3 \pm s$ (11), smallest | right half-plane, $\pi$: $1+s$, digit $-1$ | $1 - s$, $-1 - s$, digits ±1 | reproduces from $\pi^3$ |
+| Z[θ] | 2 | ±1 | split | 1 | none | $1$, $\theta$ | $\theta^3$: $3 - 2\theta$ (11); smallest from $\theta^4$ | right half-plane, $\theta^2$: $\sqrt{-7}$ | $1 - 2\theta$ | reproduces from $\theta^2$ |
+| Z[φ] | 4 | ±1 | inert | 1 | 1 | $1$ | 4: $4 + \phi$ (23); smallest from 8 | both half-planes, 2: $1 + \phi$, smallest | 40 of 256 tables | reproduces from 4 |
+| Z[ω] | 4 | 6 | inert | 1 | 1 | $1$, $2$ | 4: 5+2ω (19), smallest | both sectors, 4: 5+2ω | none at 4 is non-commuting and passes (E5) | reproduces from 4 |
+| Z[√2] | 2 | infinite | ramified | (2 for ±1) | $-1$ | $1$, $\sqrt2$ | none (no map commutes with $U$) | cone, $\sqrt2^2$: $1 + 2\sqrt2$, smallest | none tested passes | does not exist |
+
+## 2. Method
+
+### 2.1 The engine
+
+`ringfd.c` represents $z = a + b\tau$ with $\tau^2 = t\tau - n$ in 128-bit integers. Division by $\pi$ is exact: $z/\pi = z\bar\pi/N(\pi)$ when both coordinates of $z\bar\pi$ are divisible by $|N(\pi)|$. The class of $z$ modulo $\pi^K$ is read from the Hermite basis $(A, 0), (c, g)$ of $\pi^K R$, computed in `qring.py`. Fundamental domains: R (right half-plane, $\mathrm{Re}\,z > 0$ or $\mathrm{Re}\,z = 0 < \mathrm{Im}\,z$), H (upper half-plane, $\mathrm{Im}\,z > 0$ or $\mathrm{Im}\,z = 0 < \mathrm{Re}\,z$), Q and C on Z[i], S ($0 \le \arg < 60^\circ$) and T ($-30^\circ < \arg \le 30^\circ$) on Z[ω], O (positives of Z), P (arithmetic, a union of residue classes, Section 2.3), E (the cone of Z[√2], Section 9.1), and A (all of $R$, for maps read literally). Mode 0 is the full classification of every odd start in $F$ of norm at most $B$ (the cycle of $\mathrm{rep}_F(1)$ is found first; every start must reach it), mode 1 the drop below start, mode 2 the literal classification on all of $R$ (every cycle met must contain a unit; the trivial cycles are counted and their units listed). Memoization is by a hash set; the escape bound is $2^{60}$ per coordinate. Z is run as the $b = 0$ part of Z[i] with $\pi = 2$.
+
+For a Barina-type map that commutes with the units, running it on any fundamental domain gives the induced map on $R/U$, so mode 0 on $F$ is the Collatz property on $R/U$, which by A4 is the Collatz property on $R$ for a finite unit group.
+
+### 2.2 Validation
+
+Before the new rings, the engine reproduced recorded results: 7x ± 1 (two trivial cycles, fixed units), 3x+1 on the positives and its failure on Z (the 2-cycle through $-5$), the cone map $2+i$, the 5+2i map (trivial cycles $\{1,-1\}$, $\{i,-i\}$), 5+2ω (six fixed units). The Z[i] fundamental-domain counts of `fundamental-domain.md` at $(1+i)^2$ were reproduced exactly at $10^5$ (Q: 7 and 9, C: 16 and 16), as were G26 (no commuting Collatz map at $(1+i)^3$), G27 (only the 5+2i map and its mirror among the smallest tables at $(1+i)^4$), G5 (literal maps at $(1+i)^2$: 20 of 32 tables, five multipliers with four tables each), E2 to E5 for Z[ω], and the integer results Z9, Z14, Z24 and Z27 (`logs/rings_Z*`, `rings_Zi*`, `rings_Zw*`).
+
+Two corrections were made during the work. Digit lists cut at the $n$-th smallest element split ties and broke conjugation symmetry (counts 9 and 19 for conjugate multipliers of Z[√-2]); the cut now keeps every element of the size of the $n$-th. The pair test at a modulus with one odd class counted "pairs" with two different digits in one class; such pairs are not tables and are now excluded.
+
+### 2.3 Arithmetic fundamental domains
+
+With $m = \kappa + 1$, the units act freely on the odd classes modulo $\pi^m$, so the image $\bar U$ of $U$ in $(R/\pi^m)^\times$ has $|U|$ elements. An arithmetic fundamental domain is $P = \{z : z \bmod \pi^m \in H\}$ for a transversal $H$ of the cosets of $\bar U$; `ringtest.py` takes a subgroup complement when one exists. This is the primary normalization of Z[i] ($z \equiv 1 \bmod (1+i)^3$) and $n \equiv 1 \bmod 4$ on Z. Proposition 4.4 of `fundamental-domain.md` generalizes verbatim: every odd $z$ is $uf$ with $f \in P$ and $u$ determined by $z \bmod \pi^m$, so the commuting extension $D(uf) = u\,d(f)$ is a residue-class table modulo $\pi^{\max(k, m)}$, and for $k \ge m$ the Collatz-type maps on $P$ are exactly the Barina-type maps that commute with the units.
+
+### 2.4 Searches
+
+Multipliers: one per class of associates (for Collatz-type maps, $(\alpha, d)$ and $(u\alpha, ud)$ are the same map on $F$; for commuting Barina-type maps, rotations induce the same map on $R/U$, A11), conjugates listed separately. Digits: for each class, the elements of the required class ordered by size (norm; $a^2 + 2b^2$ on Z[√2]), cut after the $n$-th with ties kept; "smallest" means every digit of least size. Where the full product was too large (Z[ω] and Z[φ] at moduli 4 and 8, Z[√2] at $\sqrt2^4$), all smallest tables plus a stated number of random tables per multiplier were run; counts from samples are not comparable across conjugates.
+
+## 3. Z (control)
+
+### 3.1 Invariants
+
+$q = 2$, $U = \{\pm 1\}$, 2 prime, $\kappa = v_2(-2) = 1$, $\sigma$ the identity ($\eta = 1$), the lattice a line, smallest digits unique for $k \ge 2$ (D6).
+
+### 3.2 Window
+
+Every modulus $2^k$, $k \ge 1$, carries multipliers: 3; 5, 7; 9 to 15 (`logs/rings_Z_window.txt`).
+
+### 3.3 Barina-type maps
+
+From modulus 4: $7x \pm 1$ is the only commuting Collatz map at 4 among digits up to the eighth smallest per orbit; at 8, none with smallest digits, seven with non-minimal digits (four for 11, three for 13), as in Z24 (`logs/rings_Z_barina_k2_n8.txt`, `_k3_n8.txt`).
+
+### 3.4 Collatz-type maps
+
+On the positives: at modulus 2 only 3x+1 among 16 digits; at 4, $7x \pm 1$ and one new map with multiplier 5, $d = -1$ on $n \equiv 1$ and $d = 29$ on $n \equiv 3 \pmod 4$, which never leaves N and reaches 1 from every odd $n \le 10^6$ (drop below start; an independent Python check to $2\cdot 10^5$, at most 72 odd steps); `fdint.py` used $|d| \le 15$ and so missed it, and its statement that no $5x + d$ map on N is a Collatz map holds only in that range. At 8, 2760 of 262,144 tables (digits among the 16 smallest per class), the first being the least-positive-digit map $9n + (8 - (n \bmod 8))$ of Z28; none for 15 (`logs/rings_Z_fd_O_k*.txt`).
+
+### 3.5 Checks
+
+Trivial cycles: at most two; for commuting maps $S(1) = 1$ gives two fixed units. The cycle equation $z_0(\varepsilon 2^V - \alpha^n) = \cdots$ imposes two conditions on Z, size ($|\alpha|^n \approx 2^V$) and sign ($\alpha^n$ of the sign of $\varepsilon$, and $\varepsilon = 1$ for literal cycles of a map that does not commute).
+
+## 4. Z[i] (control)
+
+The recorded results stand and were reproduced (Section 2.2). In the present terms: $q = 2$, $|U| = 4$, $2 = -i(1+i)^2$ ramified, $\kappa = 2$, $\sigma(\pi) = -i\pi$; moduli $1$ and $1+i$ carry nothing (odd norms are $1 \bmod 4$); commuting maps from $(1+i)^3$, the first commuting Collatz map the 5+2i map at $(1+i)^4$; the first Collatz-type map on the cone at $(1+i)^2$ with smallest digits; the primary domain reproduces the Barina-type answer. The cycle equation imposes size and angle; $\arg\pi = 45^\circ$, so for rational $\alpha$ the angle condition reduces to a congruence on $V$ modulo the unit group, and one real condition remains.
+
+## 5. Z[√-2]
+
+### 5.1 Invariants
+
+$N(a + bs) = a^2 + 2b^2$, $\pi = s$, $q = 2$, $2 = -\pi^2$ ramified ($e = 2$), $U = \{\pm 1\}$, $\kappa = v_\pi(-2) = 2$; the units act freely on odd classes from $\pi^3$. $z$ is odd exactly when $a$ is odd. Lattice rectangular with ratio $\sqrt2$; ties among smallest digits: at $\pi$ the single class holds $\pm 1$; at $\pi^2$ two tied classes; at $\pi^3$ two tied classes, each holding a conjugate pair of norm 3 ($1 \pm s$ in one class, $-1 \pm s$ in the other), so four smallest tables, two of them commuting ($U \cup \{1+s, -1-s\}$ and $U \cup \{1-s, -1+s\}$, conjugate); at $\pi^4$ two tied classes (norm 9), four tables, two commuting (`logs/rings_Zs2_inv.txt`). Conjugation sends $s$ to $-s$: $\sigma(\pi) = \eta\pi$ with $\eta = -1$.
+
+### 5.2 Window
+
+$k = 1$: $(2, 4)$, norm 3, multipliers $1 \pm s$ up to units. $k = 2$: $(4, 8)$ holds no norm of an odd element, since $a^2 + 2b^2$ with $a$ odd is $1$ or $3 \bmod 8$ and the window holds only 5, 6, 7. $k = 3$: norms 9, 11 ($3$, $1 \pm 2s$, $3 \pm s$). $k = 4$: 17, 19, 25, 27 (nine multipliers). $k = 5$: 19 multipliers. So the representable-norm principle produces an empty modulus inside the range, not only at the bottom: $\pi^2$ carries no multiplier while $\pi$ does (`logs/rings_Zs2_window.txt`).
+
+### 5.3 Barina-type maps
+
+Threshold $\pi^3$ ($\kappa = 2$), as predicted. At $\pi^3$ (two orbits of the units, digits among the four smallest per orbit, 80 tables): 6 Collatz maps, 3 each for $3 + s$ and $3 - s$, among them both smallest tables of each; the first, $\alpha = 3 + s$ with $[1] \to 1 - s$, $[1+s] \to -1$ (and the commuting extension), fixes $[1]$ and is confirmed to $10^6$ (79 odd steps). The norm-9 multipliers fail in every table (`logs/rings_Zs2_barina_k3_n4.txt`). At $\pi^4$ (four orbits, three smallest per orbit, 972 tables): 136 Collatz maps, 19, 12, 21, 16 per multiplier of norm 17, 19, 27 ($3 \pm 3s$) and 27 ($5 \pm s$), none for 5; smallest-digit ones only for $1 \pm 3s$ (norm 19), confirmed to $10^6$; the counts of conjugate multipliers agree, as the mirror theorem for commuting maps requires (`_k4_n3.txt`).
+
+### 5.4 Collatz-type maps
+
+At $\pi$ (one odd class, one digit; 34 digits per multiplier): on the right half-plane exactly two Collatz maps, $\alpha = 1 + s$ and $1 - s$, each with the digit $-1$ (smallest), $[1]$ fixed ($(1+s) - 1 = s$), confirmed to $10^6$ (135 odd steps, excursion 8.8 bits). This is the counterpart of 3x+1 on N: first modulus, least norm, one odd class, smallest digit, a fundamental domain cut by a sign ($\mathrm{Re}\,z > 0$). On the upper half-plane none of 68 maps is a Collatz map at $\pi$ (`logs/rings_Zs2_fd_*_k1_n30.txt`). At $\pi^3$: R 82 of 1280 (norm 9 multipliers $1 \pm 2s$ with 6 each, none for 3, 35 each for $3 \pm s$), H 57; at $\pi^4$ with two digits per class: R 288 and H 292 of 2304, none for 5 on either. R is closed under conjugation on odd elements (the imaginary axis holds no odd element), and its counts for conjugate multipliers agree; H is not (on the odd real axis $\sigma H$ and $H$ differ), and its counts differ (8 and 9, 22 and 18), as for the quadrant of Z[i].
+
+Arithmetic domain: $(R/\pi^3)^\times$ is cyclic of order 4, generated by $1 + s$ with $(1+s)^2 \equiv -1$, so $\{\pm 1\}$ has no complement and P uses the transversal $\{1, 1+s\}$. At $\pi^3$ and $\pi^4$ P reproduces the Barina-type counts exactly (6 of 80; 136 of 972). At $\pi$ the P maps are commuting maps reading the digit modulo $\pi^3$ with only $\pi \mid \alpha z + d$; the exponent on P is not geometric (for $\alpha = 1 + s$: mean $v$ 2.50 with the digit 1, 1.50 with $-1$, against 2.00 on R), so the digit 1 gives a strongly contracting map (drift $\log_2 3 - 2.5 = -0.92$ bits) and the digit $-1$ an expanding one; the two Collatz maps on P at $\pi$ are the contracting ones, the analogue of G48.
+
+### 5.5 Checks
+
+Literal maps at $\pi$ (all four associates, digits among the 12 smallest): four Collatz maps on the whole ring, $\alpha = 1 - s$ and $\alpha = -1 - s$ with digit $1$ or $-1$, each with one trivial cycle (for $1 - s$ with digit 1 the cycle $1 \to -1 - s \to 1$, a mixed cycle, which T5 allows because $S(1)$ is not a unit). For $\alpha = 1 + s$ and $-1 + s$, $\pi - \alpha = -1$ and $+1$, so K2 forces unit digits, and the digits $\pm 1$ fail by an 8-cycle with least element of norm 81 or by 2-cycles of norm 9: the exact analogue of Z3, where $4 - 3 = 1$ forces $\pm 1$ and $3x \pm 1$ fail by their negative cycles. Here the other two multipliers escape the forcing because their unit $\varepsilon\pi - \alpha$ needs $\varepsilon = -1$, which applies only to commuting maps (`logs/rings_Zs2_literal_k1_n12.txt`, `_forced_k1.txt`).
+
+Trivial cycles at $\pi^3$ and $\pi^4$ (smallest tables of all associates, 112 maps): counts 1 or 2, never more than $|U|$; for the 12 commuting Collatz maps the count $|U|/\mathrm{ord}(\varepsilon)$ with $\varepsilon = S^p(1)$ was predicted correctly in every case, including $S(1)$ not a unit (a 6-cycle through $1$ and $-1$ for $3 + s$ with the other tie-break, one trivial cycle). Forced fixed points: at $\pi^3$ every norm-9 multiplier has a unit $\varepsilon\pi^v - \alpha$ ($\pm\pi^3 - (1 \pm 2s) = \pm 1$, $\pi^4 - 3 = 1$), the norm-11 ones none, matching the Barina-type outcome; at $\pi^4$ only 5 ($4 - 5 = -1$). Associates: pair test at $\pi$, $\pi^3$, $\pi^4$ (multipliers of three windows with all associates, digits of norm at most 40, test points of norm at most 300): no non-commuting pair passes, every commuting pair passes (`_assoc_k*.txt`). Rotated and mirrored maps: the one-step identities $S_{u\alpha}(z) = S_\alpha(uz)$ and $S_{\sigma\alpha}(z) = (-1)^v\sigma(S_\alpha(\sigma z))$ held in 13,320, 33,300 and more checks; for commuting tables rotations and mirror always agree; for non-commuting tables (digits among the two smallest) at $\pi^3$, of 64 groups with some passing variant, 54 have rotations that differ and 36 a mirror that differs, and at $\pi^4$, 524 of 800 have a mirror that differs (`_mirror_k*.txt`). So with $\eta = -1$ the mirror relation is lost after one step, as predicted.
+
+Cycle equation: size and angle; $\arg\pi = 90^\circ$, so rational multipliers again satisfy the angle condition by a congruence on $V$ (here $V$ even, $\pi^V = (-2)^{V/2}$), one real condition.
+
+## 6. Z[(1+√-7)/2]: the split ring
+
+### 6.1 Invariants
+
+$N(a + b\theta) = a^2 + ab + 2b^2$, $\theta^2 = \theta - 2$, $2 = \theta\bar\theta$ with $\bar\theta = 1 - \theta$, not an associate of $\theta$: 2 splits, $q = 2$, $e = 1$, $U = \{\pm 1\}$, $\kappa = v_\theta(-2) = 1$ ($\bar\theta$ is a unit modulo $\theta$). Conjugation sends $\theta$ to $\bar\theta$, so no $\eta$ exists. $R/\theta^K \cong \mathbb{Z}/2^K$, and the class of $a + b\theta$ is $a + b\rho \bmod 2^K$ with $\rho$ the 2-adic root of $x^2 - x + 2$ that is even.
+
+What "odd" means. We choose $\pi = \theta$; odd means $\theta \nmid z$. An element divisible by $\bar\theta$ but not by $\theta$ is odd: $\bar\theta$, $\bar\theta^2$, ... are odd non-units of norm $2, 4, \ldots$. The map divides only by $\theta$; a factor $\bar\theta$ never divides out. Three consequences, none of which occurs in a ring with one prime above 2. (1) Odd elements, and so multipliers and digits, can have even norm, and the window must be read with the norms of odd elements, not with odd integers. (2) The smallest digits at $\theta^3$ and $\theta^4$ are $\pm 1$ and $\pm\bar\theta^j$ (least norms 1, 2, 4, 8), and every class has a unique least element from $\theta^2$ on (no ties at all at $K = 2$ to $5$). (3) The smallest odd non-unit has norm 2, against 3 in Z, 3 in Z[√-2], 5 in Z[i], so K1 bites at small elements: at $\theta^2$ four of the 13 commuting tables fail by a fixed point at $\pm\bar\theta$, and at $\theta^4$ the smallest Collatz-type table for 5 fails by a fixed class of norm 2.
+
+The other prime gives the ring Z7b (π = $\bar\theta$). Sections 6.2 to 6.5 are for $\theta$; Section 6.5 compares the two.
+
+### 6.2 Window
+
+$k = 1$: $(2, 4)$ holds 3, not a norm (3 is inert), so $\theta$ carries nothing. $k = 2$: norm 7 only, $\pm\sqrt{-7} = \pm(2\theta - 1)$, with $\sigma(\sqrt{-7}) = -\sqrt{-7}$. $k = 3$: 9 (3), 11 ($1 + 2\theta$, $3 - 2\theta$, conjugate), 14 ($3 + \theta = \bar\theta\cdot(\ldots)$, even norm). $k = 4$: 18, 22, 23, 25, 28, 29, nine multipliers, four of even norm. $k = 5$: 17 multipliers (`logs/rings_Z7_window.txt`).
+
+### 6.3 Barina-type maps
+
+Threshold $\theta^2$, which is also the first modulus with multipliers (as in Z[ω]). At $\theta^2$ (one orbit, 80 digits): no Collatz map; the failures are cycles (a 62-cycle for the digit 1), fixed points at $\bar\theta$, and 2-cycles through norms 9 and 11. No forced fixed point exists ($\varepsilon\theta^v + 1 - 2\theta$ is never a unit). At $\theta^3$ (two orbits, six smallest): 2 Collatz maps, both for $3 - 2\theta$ (norm 11) with non-minimal digits, the first with $[1] \to 1$, $[3] \to -1 + 2\theta$, confirmed to $10^6$ (72 odd steps); none for its conjugate $1 + 2\theta$ in this family. At $\theta^4$ (three smallest per orbit, 729 tables): 35 Collatz maps, at norms 22 (7, all for $1 + 3\theta$), 23 (13 and 11), 25 (2, $\alpha = 5$), 28 (2); smallest-digit Collatz maps for $1 + 3\theta$ and $5 - 3\theta$, both multiples of $\bar\theta$ ($1 + 3\theta = \bar\theta(-3 + 2\theta)$, $5 - 3\theta = \bar\theta(3 + \theta)$), confirmed to $10^6$. So a Collatz map can have a multiplier divisible by the other prime above 2.
+
+### 6.4 Collatz-type maps
+
+At $\theta^2$ (40 digits per class): on R, 16 of 1600 maps, the first $\alpha = \sqrt{-7}$ with $[1] \to -1 + \theta$ (norm 2), $[3] \to -1$, confirmed to $10^6$ (608 odd steps, excursion 23.8 bits, drift $\log_2(7/8) = -0.19$ bits); on H, 12; on P ($z \equiv 1 \bmod \theta^2$, the only transversal, as for Z), none, matching the Barina-type answer. At $\theta^3$ (four per class): R 51 of 1024, H 36, P 1 of 64, equal to the Barina-type count at the same digit bound. At $\theta^4$ (two per class): R 165, H 149 of 2304, including 10 and 7 for $\alpha = 5$; P with three digits per class gives 35 of 729, the Barina-type count. Neither half-plane is closed under conjugation on odd elements (the imaginary axis holds the odd elements $a\sqrt{-7}$, $a$ odd), and in any case conjugation leaves the family.
+
+### 6.5 Checks, and the two primes
+
+The conjugation $\sigma$ carries the map $(\alpha, d)$ dividing by $\theta$ to the map $(\bar\alpha, \sigma d \sigma)$ dividing by $\bar\theta$, with $\sigma S_{\theta} \sigma = S_{\bar\theta}$ exactly (no unit factor): 4272, 17088 and 38448 one-step checks at moduli 2, 3, 4 on random tables, no mismatch (`logs/rings_Z7_split_k*.txt`). Every computed count agrees under $\alpha \mapsto \bar\alpha$: Barina-type at $\theta^3$ (2 for $3 - 2\theta$ in Z7, 2 for $1 + 2\theta = \sigma(3 - 2\theta)$ in Z7b), literal maps at $\theta^2$, $\theta^3$, $\theta^4$ (2 of 8, 22 of 128, 542 of 4608 in both). Inside one family the conjugate multipliers $1 + 2\theta$ and $3 - 2\theta$ get 0 and 2 Barina-type Collatz maps. So the two choices of prime differ as families but are conjugate as a whole, which is prediction O2; there is no mirrored map within a family.
+
+Literal maps at $\theta^2$: two non-commuting Collatz maps on the whole ring, $\alpha = 1 - 2\theta$ with digits $[1] \to -1$, $[3] \to -1 + \theta$ or $[1] \to 1 - \theta$, $[3] \to 1$, one trivial cycle each (a fixed unit), although no commuting map at $\theta^2$ is a Collatz map. Trivial-cycle counts 1 or 2 at all moduli; the 22 commuting cases match $|U|/\mathrm{ord}(\varepsilon)$. Forced points only for the norm-14 multiplier $3 + \theta$ at $\theta^3$ ($\pm\theta^3 - \alpha = \pm 1$). Pair test at $\theta^2$, $\theta^3$: no non-commuting pair passes. Rotations of non-commuting tables differ in verdict in 18 of 20 groups with a passing variant.
+
+Cycle equation: size and angle, but $\arg\theta = \arctan\sqrt7 = 69.30^\circ$ is not a rational multiple of $180^\circ$ ($\theta/\bar\theta = \theta^2/2$ is not an algebraic integer, so not a root of unity). Hence for a rational multiplier the angle condition $V\arg\theta \equiv 0 \pmod{180^\circ}$ is a genuine second condition, not a congruence. Section 11 shows the effect on $\alpha = 5$.
+
+## 7. Z[(1+√-11)/2]
+
+### 7.1 Invariants
+
+$N(a + b\phi) = a^2 + ab + 3b^2$, $x^2 - x + 3 \equiv x^2 + x + 1 \pmod 2$ irreducible: 2 inert, $\pi = 2$, $q = 4$, $e = 1$, $U = \{\pm 1\}$, $\kappa = 1$, $\sigma(2) = 2$ ($\eta = 1$). Smallest digits: at modulus 2 the three odd classes ($\mathbb{F}_4^\times$) are all tied (the class of 1 holds $\pm 1$, the others $\pm\phi$ and $\pm\bar\phi$, norm 3); at 4, twelve classes with unique least elements (norms 1, 3, 5, 11), one commuting smallest table; at 8, two tied classes (norm 27), two commuting tables; at 16, four tied classes (`logs/rings_Z11_inv.txt`).
+
+### 7.2 Window
+
+$k = 1$: $(4, 4^{4/3}) = (4, 6.35)$ holds 5 $= N(1 + \phi)$; multipliers $1 + \phi$ and $2 - \phi = \sigma(1+\phi)$. In Z[ω] the same window is empty because 5 is not of the form $a^2 - ab + b^2$; here it is of the form $a^2 + ab + 3b^2$. $k = 2$: $(16, 25.40)$ holds only 23 and 25 (19 and 21 are not norms), five multipliers ($4 + \phi$, $5 - \phi$; $-1 + 3\phi$, $2 - 3\phi$, 5). $k = 3$: 30 multipliers, norms 67 to 99. $k = 4$: 109 (`_window.txt`).
+
+The exponent of the window was tested directly at modulus 4 with the smallest commuting table of one multiplier per norm in $(16, 64)$: for norms 27 to 59, above $4^{7/3}$, the measured mean change of $\log_2 N$ per odd step agrees with $\log_2 N(\alpha) - 14/3$ to within 0.1 bits (for example $+0.089$ against $+0.088$ for 27) and essentially every start passes norm $2^{200}$ (137 to 157 of the odd starts among 200 random ones); for 23 and 25 no or one start escapes (`_window_test.txt`). So the integer-style window $(16, 64)$ would admit expanding maps, and the exponent $1/(q-1) = 1/3$ is the right one.
+
+### 7.3 Barina-type maps
+
+Threshold modulus 4, which here is the second modulus with multipliers. At 4 (six orbits, three smallest per orbit, 3645 tables): 40 Collatz maps, 20 each for $4 + \phi$ and $5 - \phi$ (norm 23), none for norm 25. The unique smallest table of $4 + \phi$ fails by an 18-cycle through $\phi$ (norm 3); changing the digit of one orbit ($[1 + \phi] \to -1 - 2\phi$ instead of $-1 + 2\phi$) gives a Collatz map, confirmed to $10^6$ (927 odd steps, excursion 27 bits, consistent with the drift $-0.14$ bits). With two digits per orbit, 4 of 480 (`_barina_k2_n*.txt`). Forced points at 4: only for 5 ($4 - 5 = -1$). At 8 (24 orbits; every smallest table plus 100 random tables with digits among the two smallest per orbit, 3060 maps): 267 Collatz maps, smallest-digit ones at norms 71 ($-1 + 5\phi$, $4 - 5\phi$), 81 ($1 + 5\phi$, $6 - 5\phi$) and 97 ($10 - 3\phi$, $7 + 3\phi$); none for 9, forced by $8 - 9 = -1$ (`_barina_k3_n2_s100.txt`).
+
+### 7.4 Collatz-type maps
+
+At modulus 2 (six digits per class): R 44 of 432, H 58, P 39; on all three the smallest tables pass, for instance on R $\alpha = 1 + \phi$ with $[1] \to 1 - \phi$, $[\phi] \to -1$, $[1 + \phi] \to \phi$, $[1]$ fixed, confirmed to $10^6$ (153 odd steps). So the first modulus with multipliers carries Collatz maps on $R/U$ with the least norm and the smallest digits, the analogue of 3x+1 and of the cone map of Z[i]. On P at modulus 2 ($H$ = the subgroup of order 6 of $(R/4)^\times$ complementing $\pm 1$) the exponent is not geometric: for the first map $P(v \ge 2) = 0.34$ and the mean of $v$ is 1.44, against 0.25 and 1.33 on R, so the P maps contract faster (24 odd steps at most against 92) and the window there is not that of modulus 2. At modulus 4 (two digits per class, 46,080 tables): R 392, H 365, none for norm 25 on either; P with two digits reproduces the Barina-type count, 4 of 480.
+
+### 7.5 Checks
+
+Literal maps at 2 (digits among the three smallest, 256 maps): 40 Collatz maps on the whole ring, none commuting (none can), with one or two trivial cycles. At 4 no smallest table of any associate passes; at 8, 32 of 240, with trivial-cycle counts 1 and 2 and the 16 commuting cases predicted correctly. Pair test at 2 and 4: no non-commuting pair passes. Mirror ($\eta = 1$): in every group with a passing variant the mirrored map has the same verdict (16 groups at 2, 14 sampled groups at 4), while rotations differ in 12 of 16 and 14 of 14; the one-step identity $S_{\bar\alpha}(z) = \sigma(S_\alpha(\sigma z))$ held in 58,590 checks. Cycle equation: size and angle, $\pi = 2$ real, so a rational multiplier has the angle condition for free.
+
+## 8. Z[ω] (extended)
+
+### 8.1 to 8.2 Invariants and window
+
+As recorded (E1, E2, IC 7): $q = 4$, six units, $\kappa = 1$, $\eta = 1$, triangular lattice, unique smallest digits at 4, one tied orbit at 8; modulus 2 empty, 4 holds 19, 21, 25. Reproduced in `logs/rings_Zw_inv.txt` and `_window.txt`.
+
+### 8.3 Barina-type maps
+
+At 4 the engine reproduces E3 and E4: with smallest digits only $5 + 2\omega$ and $5 + 3\omega$ pass; with up to six digits per orbit, 3 tables each, none for norms 21 and 25. New at 8: none of the 32 smallest-digit commuting maps passes (E6), but with digits among the two smallest per orbit (every smallest table plus 100 random tables per multiplier, 1632 maps) 47 Collatz maps appear, at norms 67 ($9 + 2\omega$, $9 + 7\omega$), 79, 91, 93 and 97, none at 73, 75, 81; the first, $9 + 2\omega$ with a non-minimal table, is confirmed to $10^6$ (44 odd steps) (`_barina_k3_n2_s100.txt`).
+
+### 8.4 Collatz-type maps
+
+Sectors S ($0 \le \arg < 60^\circ$, the canonical representatives of E1) and T ($-30^\circ < \arg \le 30^\circ$), and P ($z \bmod 4 \in \{1, 1 + 2\omega\}$, a subgroup complement of the six units in $(R/4)^\times$; the other complement $\{1, -1 - 2\omega\}$ is its conjugate). At 4 (smallest table plus 2000 random tables with digits among the two smallest per class, 10,005 maps per domain): S 527, T 541 Collatz maps. The first by norm on both is the 5+2ω map itself (smallest digits), and $5 + 3\omega$ likewise. Norm 21 ($5 + \omega$, $5 + 4\omega$), for which every Barina-type map is forced to fail ($4 - (5 + \omega) = \omega^2$, K2), has 14 to 24 Collatz-type maps per multiplier and domain; the first on S, with digits of norm up to 7, is confirmed to $10^6$ (244 odd steps). The multiplier 5 has none. On P with six digits, 6 of 180, exactly the Barina-type count. At 8 (smallest tables plus 300 random per multiplier): S 251, T 280 of 5824, Collatz maps at every norm except 73, 75 and 81; smallest-digit tie-breaks pass only at norm 91 ($11 + 5\omega$, $11 + 6\omega$: 37 to 39 of the 64), which matches E7 for literal maps; a non-minimal map for $9 + 2\omega$ on S is confirmed to $10^6$.
+
+### 8.5 Checks
+
+Literal maps at 4: 12 of 30 pass, trivial-cycle counts 1, 2, 3, 6 as in E5, and all 12 match $|U|/\mathrm{ord}(\varepsilon)$. Pair test at 4: 120,960 non-commuting pairs, none passes; 34,020 commuting pairs, all pass. Mirror: in 166 sampled groups with a passing variant the mirror always agrees, rotations differ for every non-commuting one. Forced points at 4: all twelve associates of the norm-21 multipliers ($\varepsilon \cdot 4 - \alpha$ a unit for a suitable unit $\varepsilon$; for $5 + \omega$ already with $\varepsilon = 1$), matching E3. Cycle equation: size and angle, $\pi = 2$ real.
+
+## 9. Z[√2]: the contrast case
+
+### 9.1 Invariants and the fundamental domain
+
+$N(a + b\sqrt2) = a^2 - 2b^2$ (signed), $\pi = \sqrt2$, $q = 2$, $2 = \pi^2$ ramified, $U = \{\pm\varepsilon^n\}$ with $\varepsilon = 1 + \sqrt2$, $N(\varepsilon) = -1$. For every $k$ some $\varepsilon^n \ne 1$ is $\equiv 1 \pmod{\pi^k}$ ($\varepsilon \equiv 1 \bmod \pi$, $\varepsilon^2 \bmod \pi^2$, $\varepsilon^4 \bmod \pi^3$ to $\pi^5$, $\varepsilon^8 \bmod \pi^6$, $\pi^7$; `logs/rings_Zr2_inv.txt`), so no residue-class table commutes with all units at any modulus (U2); commuting with $\pm 1$ alone is possible from $\pi^3$ ($v_\pi(-2) = 2$). Conjugation sends $\sqrt2$ to $-\sqrt2$, $\eta = -1$.
+
+The quotient $R/U$ has a fundamental domain cut by the real embeddings $\sigma_1, \sigma_2$: $E = \{\sigma_1(z) > 0,\ 1 \le |\sigma_1(z)/\sigma_2(z)| < \varepsilon^2\}$, since $-1$ changes both signs and $\varepsilon$ multiplies the ratio by $\varepsilon^2$. Membership is exact in integers: $|\sigma_1| \ge |\sigma_2|$ iff $ab \ge 0$, and the upper bound is the same test for $z\varepsilon^{-1}$. Every class has finitely many classes of each $|N|$, so on $R/U$ the size $|N|$ behaves as the norm does in the imaginary rings, and the drop-below-start soundness argument (V1) goes through with $|N|$. The representative was checked on 20,000 random elements (rep in $E$, invariant under $\pm\varepsilon^{\pm1}$, $|N|$ preserved) and the start count of the engine against Python (3110 odd classes with $|N| \le 10^4$). There is no arithmetic fundamental domain for $U$: a union of residue classes modulo $\pi^m$ is invariant under the units $\equiv 1 \bmod \pi^m$, so it contains whole infinite classes of associates. Digits are ordered by $a^2 + 2b^2 = (\sigma_1^2 + \sigma_2^2)/2$, the lattice of Z[√-2] up to scale; ties at $\pi$ to $\pi^4$ as there.
+
+### 9.2 Window
+
+$|N|$ of an odd element is $\equiv \pm 1 \pmod 8$, so $(2, 4)$ is empty, $(4, 8)$ holds 7 ($3 + \sqrt2$ and $1 + 2\sqrt2$, which are conjugate up to a unit), $(8, 16)$ only 9 (3), $(16, 32)$ 17, 23, 25, 31 (seven classes), $(32, 64)$ 41, 47, 49, 63. For a residue-class map read on $R$ the relevant sizes are $|\sigma_1(\alpha)|$ and $|\sigma_2(\alpha)|$ separately: the mean change of $\log_2|\sigma_i|$ per odd step is $\log_2|\sigma_i(\alpha)| - (k+1)/2$, and both are negative only if each $|\sigma_i(\alpha)| < 2^{(k+1)/2}$. Up to multiplication by units this holds for no associate at $|N| = 7$, for 3 at $\pi^3$, for $\pm 1 + 3\sqrt2$ and 5 at $\pi^4$, and among the nine classes at $\pi^5$ only for 7 (`_window.txt`). The ratio $|\sigma_1/\sigma_2|$ of the associates of $\alpha$ runs through a geometric progression of ratio $\varepsilon^2 = 5.83$, and the balanced range has width $(2^{k+1}/|N(\alpha)|)^2 < 4$, so most classes have no balanced member.
+
+### 9.3 Barina-type maps
+
+None induces a map on $R/U$: by the argument of A8, which goes through with $|N|$ (nonzero elements have $|N| \ge 1$, Lemma 5.0' with an integer shift), respecting associates under a unit $u$ forces $d(uc) = u\,d(c)$, impossible for $u \equiv 1 \bmod \pi^k$, $u \ne 1$. The pair test (`logs/rings_Zr2_assoc.txt`, $k = 1$ to $4$, units $-1, \varepsilon, \varepsilon^2, \varepsilon^4$) agrees: for units $\equiv 1$ modulo $\pi^k$ no pair passes; for the others exactly the commuting pairs pass, but a full table cannot be consistent with them and with a unit in the kernel at the same time.
+
+Read literally on $R$ (`ringreal.py`, starts with $|a|, |b| \le 30$, cap 3000 odd steps; `logs/rings_Zr2_real_literal.txt`):
+
+1. Multipliers expanding in one embedding diverge in that embedding. For $3 + \sqrt2$ and $1 + 2\sqrt2$ at $\pi^2$ (drifts $+0.64$, $-0.84$ and $+0.44$, $-0.63$ bits) and $5 + \sqrt2$ at $\pi^4$ ($+0.18$, $-0.66$), in every smallest table 30 to 270 of the starts escape, always with $|\sigma_1|$ the larger, and $|N|$ grows too (median $10^{30}$ at escape): $\sigma_2$ cannot shrink below the size of the digits, so the expanding embedding wins. These multipliers are inside the $|N|$ window, which is therefore the wrong criterion for residue-class maps here.
+2. Trivial cycles are unbounded in number. Cycles through units such as $-7 - 5\sqrt2$, $17 + 12\sqrt2$, $-41 - 29\sqrt2$ occur; the box holds 4 to 12 trivial cycles per map, growing with the box. T1 has no content with an infinite unit group, and T2, T3 hold only for the finite subgroup $\pm 1$.
+3. Balanced multipliers do not give Collatz maps either: 3 at $\pi^3$ has 12 to 15 other cycles in the box, $\pm 1 + 3\sqrt2$ at $\pi^4$ three to six cycles through elements of norm $\pm 7$, and 5 at $\pi^4$ 92 to 96 cycles and 26 escapes.
+
+### 9.4 Collatz-type maps on $R/U$
+
+On $E$ (`logs/rings_Zr2_fd_E_*.txt`): at $\pi^2$, the first modulus with multipliers (twelve digits per class): 8 of 288, among them the smallest table of $1 + 2\sqrt2$, $[1] \to 1$, $[1 + \sqrt2] \to 1 - \sqrt2$, with $[1]$ fixed, confirmed to $10^6$ (639 odd steps, excursion 21 bits, drift $\log_2(7/8)$), and a map for $3 + \sqrt2$ (612 odd steps). The two norm-7 classes are conjugate, but $E$ is not closed under conjugation (it exchanges the roles of $\sigma_1$ and $\sigma_2$), and the counts differ (6 and 2). At $\pi^3$ (five per class): 16 of 1296 for $\alpha = 3$, the smallest table among them (28 odd steps). At $\pi^4$ (smallest tables plus 300 random): 326 of 1792, at every norm except 25 ($\alpha = 5$) and one of the two norm-31 classes; the smallest table of $1 + 3\sqrt2$ is confirmed to $10^6$. So on $R/U$ the window is the $|N|$ window: the representative absorbs the imbalance between the embeddings, which the unit lattice moves freely.
+
+The lifts. A Collatz-type map is the quotient of its commuting extension $L(uf) = u(\alpha f + d(f))/\pi^v$, $f \in E$. With $p$ the period of $[1]$ and $u = L^p(1)$, the lift has a periodic unit only if $u = \pm 1$; if $u = \pm\varepsilon^m$ with $m \ne 0$, $L^{np}(1) = u^n$ is never periodic and no unit is (all units lie on one orbit up to sign, carried to infinity). For the first map at $\pi^2$, $S(1) = ((1 + 2\sqrt2) + 1)/2 = \varepsilon$: every orbit of $L$ reaches a unit and then runs off along $\varepsilon^n$. Of the Collatz-type maps found, at $\pi^2$ four have $u = \pm 1$ and four $u = \pm\varepsilon^{\pm 1}$; at $\pi^3$ fifteen and one; at $\pi^4$ the two kinds are about equally common (`logs/rings_Zr2_lift.txt`). So the converse half of the transfer theorem A4 (a Collatz map on $R/U$ lifts to a Collatz map on $R$) fails without finite $U$, exactly at the pigeonhole step that QUO Section 3 identified.
+
+### 9.5 Checks
+
+At most $|U|$ trivial cycles: empty (Section 9.3). Unit cycles under $\pm 1$: no commuting Barina-type map was a Collatz map, so nothing to check. Forced fixed points: $\pi^4 - 5 = -1$, so 5 at $\pi^4$ is forced (with $\varepsilon = 1$), and indeed fails on $E$ as well. Rotation by a unit: for Collatz-type maps $(\alpha, d)$ and $(u\alpha, ud)$ are the same map on $E$ for every unit, including $\varepsilon^n$ (Proposition 2.3(1) of `fundamental-domain.md` uses nothing about $U$). Mirror: $\eta = -1$, and $E$ is not conjugation-symmetric. Cycle equation: on $R$, $\alpha^n \approx \pi^V$ in each real embedding separately, two size conditions (and signs); on $R/U$, $|N(\alpha)|^n \approx 2^V$ and $n\log|\sigma_1(\alpha)/\sigma_2(\alpha)| \approx 0$ modulo $2\log\varepsilon$, two conditions, of which the second is automatic for rational $\alpha$.
+
+## 10. The general theorems across the rings
+
+### 10.1 Trivial and unit cycles
+
+In every ring with finite $U$ and every literal run, the number of trivial cycles was at most $|U|$, and for commuting Collatz maps it equalled $|U|/\mathrm{ord}(\varepsilon)$ with $\varepsilon = S^p(1)$: 12 cases in Z[√-2], 22 in Z[θ] (both primes), 16 in Z[φ], 12 in Z[ω], no mismatch (`MISMATCH` never occurs in `logs/rings_*_literal_*.txt`). Mixed trivial cycles (units and non-units) occurred only with $S(1)$ not a unit (T5). Non-commuting Collatz maps had counts 1 or 2 in the rings with two units.
+
+### 10.2 Respects associates iff commutes
+
+Pair tests in Z[√-2] ($\pi$, $\pi^3$, $\pi^4$), Z[θ] ($\theta^2$, $\theta^3$), Z[φ] (2, 4), Z[ω] (4), Z[√2] ($\pi$ to $\pi^4$, four units): no non-commuting pair passed; every commuting pair passed. The proof of A8 needs only a multiplicative norm with $|N| = 1$ exactly on units, so it covers all these rings, including the split one ($v_\theta$ in place of the exponent of $\pi$, $N(\theta) = 2$) and Z[√2] with $|N|$.
+
+### 10.3 Forced fixed points (Barina-type)
+
+Every multiplier with a unit $\varepsilon\pi^v - \alpha$ ($v \ge k$; $\varepsilon = 1$ for every map, any $\varepsilon$ for commuting maps) failed in every table run, in every ring; and the multipliers so forced account for the empty rows: norm 9 at $\pi^3$ and 5 at $\pi^4$ in Z[√-2], $3 + \theta$ at $\theta^3$, 5 at 4 and 9 at 8 in Z[φ], 21 and 25 at 4 in Z[ω], 5 at $\pi^4$ in Z[√2]. The Z[i] gap at $(1+i)^3$ is of this kind: all multipliers there are forced (K3), while in Z[√-2] the norm-11 multipliers at the threshold are not.
+
+### 10.4 Forced fixed classes for Collatz-type maps
+
+Lemma (new, paper): let $S_F$ be a Collatz-type map at $\pi^k$, $\eta = \varepsilon\pi^v - \alpha$ a unit for some unit $\varepsilon$ and $v \ge k$, and $c$ an odd class. If $z = \eta^{-1}d(c)$ is a non-unit lying in $F$, then $[z]$ is a fixed class other than $[1]$. Proof: $\eta \equiv -\alpha \pmod{\pi^k}$ and $d(c) \equiv -\alpha c$, so $z \equiv c$ and the digit of $z$ is $d(c) = \eta z$; then $\alpha z + d(c) = \varepsilon\pi^v z$, so $S_F(z) = \mathrm{rep}_F(\varepsilon z) = z$. Unlike K2 the conclusion needs $z \in F$, so only part of the classes are forced, and any unit $\varepsilon$ may be used without commuting. This explains why forced multipliers keep some Collatz-type maps. Check (`ringfdforced.py`, `logs/rings_Z_fdforced.txt`): in six searches (Z[√-2] R and H at $\pi^3$, Z[ω] S at 4, Z[φ] R at 4, Z[i] Q and C at $(1+i)^3$), no table predicted to fail passed, and the lemma predicts most failures (232 of 256 tables for each norm-9 multiplier of Z[√-2]; 9212 of 9216 for 5 in Z[φ]).
+
+### 10.5 Rotated and mirrored maps
+
+The one-step identities held without mismatch in every ring (over 300,000 checks in all). With $\eta = 1$ (Z[φ], Z[ω], and Z with $\sigma = 1$) the mirror of every table, commuting or not, had the verdict of the original in every group tested; with $\eta = -1$ (Z[√-2]) the mirror differed for about a third to two thirds of the non-commuting groups with a passing variant; with no $\eta$ (Z[θ]) the mirror is a map of the other family and the relation is the conjugacy of Section 6.5. Rotations of non-commuting tables differed in verdict in most groups, in every ring; for commuting tables rotations and mirror always agreed.
+
+### 10.6 Arithmetic and geometric fundamental domains
+
+At $k \ge \kappa + 1$, P reproduced the Barina-type count exactly in each of the eight comparisons made (Z[√-2] at $\pi^3$, $\pi^4$; Z[θ] at $\theta^2$, $\theta^3$, $\theta^4$; Z[φ] at 4; Z[ω] at 4). Geometric domains had Collatz-type maps at the first modulus with multipliers in every ring (Z[√-2] on R, not on H; Z[θ] on both half-planes; Z[φ] on both; Z[ω] on both sectors; Z[√2] on $E$), and at multipliers where no Barina-type map exists (norm 9 in Z[√-2], norm 21 in Z[ω], 3 and 5 in Z[θ]). Domains closed under conjugation on odd elements (R in Z[√-2]) give equal counts for conjugate multipliers; the others (H, Q, S, T, $E$) need not.
+
+## 11. The cycle equation and the multiplier 5
+
+For a cycle of $n$ odd steps with total exponent $V$ and $S^n(z_0) = \varepsilon z_0$, the cycle equation (M2) $z_0(\varepsilon\pi^V - \alpha^n) = \sum_j d_j\alpha^{n-1-j}\pi^{V - s_j}$ makes large cycles need $\alpha^n \approx \varepsilon\pi^V$. The number of real conditions:
+
+| ring | literal cycles ($\varepsilon = 1$) | cycles up to units | rational $\alpha$ |
+|---|---|---|---|
+| Z | size, sign | size | one |
+| Z[i] | size, angle ($\arg\pi = 45^\circ$) | size, angle mod $90^\circ$ | one (angle by a congruence on $V$) |
+| Z[√-2] | size, angle ($90^\circ$) | size, angle mod $180^\circ$ | one ($V$ even) |
+| Z[θ] | size, angle ($69.30^\circ$, irrational) | size, angle mod $180^\circ$ | two |
+| Z[φ], Z[ω] | size, angle ($\pi = 2$) | size, angle mod $180^\circ$, $60^\circ$ | one |
+| Z[√2] | size in each embedding | $|N|$, embedding ratio mod $\varepsilon^2$ | one |
+
+The prediction that rational multipliers carry more cycles except in Z[θ] was tested with $\alpha = 5$, which fails in every search in every ring except Z[θ] (`ringfive.py`, Python census on $R/U$ to norm $2\cdot 10^4$, smallest tables; `logs/rings_five.txt`). In Z[i], Z[√-2], Z[ω], Z[φ] and Z[√2] the census finds 16 to 170 cycles, mostly of 3 odd steps ($5^3 = 125 \approx 2^7$ with $\pi^{14}$, respectively $2^7$, real up to a unit), and 16 to 130 unresolved starts. In Z[θ] the same table has three cycles, all fixed classes (from K1 at norm 2), and no unresolved start; $\theta^{14}$ has argument $70.1^\circ$ modulo $180^\circ$, so no 3-cycle is favoured, and 5 is also not forced there ($\pm\theta^v - 5$ is never a unit). Accordingly 5 has 10 and 7 Collatz-type maps on the half-planes at $\theta^4$ and 2 Barina-type maps, and nowhere else. The same two mechanisms (forced points and the cycle equation) are absent for Z[θ] for the same reason: no power of $\theta$ is a rational integer up to a unit.
+
+## 12. Verdicts
+
+### 12.1 The attributions of `collatz-rings.md` Section 5
+
+1. Whether a modulus carries multipliers depends on which odd numbers are norms: confirmed in every ring, with new empty moduli inside the range ($\pi^2$ of Z[√-2], $\sqrt2$ of Z[√2] with the empty $\sqrt2$ and the near-empty $\sqrt2^3$, where only 9 occurs) and the contrast Z[φ] (modulus 2 carries 5) against Z[ω] (5 not a norm). Change needed in the split ring: the principle is about norms of odd elements, which can be even (Z[θ] at $\theta^3$: 14).
+2. The exponent of the window depends on $q$: confirmed, now with a direct test in a second $q = 4$ ring (Section 7.2). Change needed for real rings: for residue-class maps the window is a condition in each real embedding (Section 9.2); on $R/U$ the $|N|$ window stands.
+3. Commuting maps exist exactly from $k = \kappa + 1$, and smallest digits commute where classes have unique least elements: confirmed in all rings with finite $U$ (free action from $\kappa + 1$; ties in Z[√-2] at $\pi^3$, $\pi^4$, Z[φ] at 8, 16, Z[ω] at 8 halve or quarter the commuting tables; no ties in Z[θ]). Refined: what the first commuting Collatz map needs beyond $\kappa + 1$ is multipliers at that modulus that are not forced (Section 10.3). For Z[√2] confirmed in the negative form (no modulus for $U$; from $\pi^3$ for $\pm 1$).
+4. For commuting maps the number of trivial cycles divides $|U|$: confirmed in every case, with the exact count $|U|/\mathrm{ord}(\varepsilon)$. For an infinite unit group the statement has no content and its literal analogue fails (Section 9.3).
+5. A non-commuting map is related to its mirror only when the automorphism fixes $\pi$: confirmed with "fixes" read as $\sigma(\pi) = \pi$ exactly. Z[φ] ($\eta = 1$) always agrees, Z[√-2] ($\eta = -1$, the prime ideal fixed) loses the relation, so fixing the ideal is not enough. In the split ring the automorphism moves the prime, and the relation is a conjugacy between two families (O2).
+
+### 12.2 The ring predictions
+
+O1, Z[√-2]. Maps of the shape of 3x+1 at $\pi$ inside the window: confirmed. Whether they are Collatz maps on the whole ring: yes for $1 - \sqrt{-2}$ and $-1 - \sqrt{-2}$ with digits $\pm 1$, no for the two multipliers with $\pi - \alpha$ a unit, which fail exactly as Z3 predicts (forced unit digits, then longer cycles): confirmed, with the analogue of Z3 as the test. Commuting maps from $\pi^3$: confirmed. "If the delay of commuting Collatz maps in Z[i] is caused by ramification, it should recur here with two units": refuted as stated. The delay from the first modulus with multipliers to the threshold recurs (it is $\kappa$), but the Z[i] delay beyond the threshold does not: $3 \pm \sqrt{-2}$ at $\pi^3$ is a commuting Collatz map with smallest digits. The counterexample places that delay on forced fixed points. Mirror with $(-1)^v$ losing the relation after one step: confirmed.
+
+O2, Z[(1+√-7)/2]. A map and its conjugate are conjugate maps of two families, one per prime above 2: confirmed (exact conjugacy, equal counts). Needs a change to the framework: "odd" must be defined relative to the chosen prime, multipliers and digits of even norm are allowed and occur in Collatz maps ($1 + 3\theta$, norm 22, smallest digits), and the cycle equation gains a condition for rational multipliers. The two choices of prime differ only by this conjugacy, so testing both gave identical results.
+
+O3, Z[(1+√-11)/2]. "If a commuting Collatz map appears at the first modulus with multipliers, the early appearance in Z[ω] is due to $q$ and $\kappa$": the first modulus with commuting maps is 4, where a commuting Collatz map exists ($4 + \phi$), so confirmed in this form. Two qualifications: the first modulus with multipliers is 2 here, below the threshold, which Z[ω] could not show; and the smallest table fails at 4, so the Z[ω] success with smallest digits is not reproduced, which points to the available norms (19 against 23) rather than to the units. At most two trivial cycles: confirmed.
+
+O4, Z[√2]. Needs a change to the framework, as predicted, and the change is now specific: (a) for Barina-type maps on $R$ the window must hold in each real embedding, and the $|N|$ window admits divergent maps; (b) no Barina-type map is a map on $R/U$, by A8 with $|N|$ and the nontrivial kernel; (c) trivial cycles on $R$ are unbounded in number; (d) on $R/U$, with the cone $E$, Collatz-type maps and the $|N|$ window work as in the imaginary rings, from the first modulus with multipliers; (e) the transfer theorem A4 fails in the direction from $R/U$ to $R$ (lifts with $S(1) = \varepsilon$). The expected "divergence along invariant lines" was not what we saw: the divergence observed is along the expanding real embedding, for every start, for multipliers whose associates are all unbalanced; for the balanced 5, 26 starts escaped and were not examined further.
+
+O6 (the framing in the catalog) is confirmed for (1) to (5) with the readings above; (2) and (4) need the real-embedding forms for Z[√2].
+
+## 13. Status
+
+Proved on paper here: the generalization of Proposition 4.4 of `fundamental-domain.md` to any ring with finite $U$ (Section 2.3); the lemma of Section 10.4; the statements of Sections 5.2 (odd norms of Z[√-2] are $1, 3 \bmod 8$), 6.1, 6.5 (exact conjugacy $\sigma S_\theta\sigma = S_{\bar\theta}$ follows from $\sigma(\theta) = \bar\theta$ and $\sigma$ mapping classes modulo $\theta^k$ to classes modulo $\bar\theta^k$), 9.1 (the cone $E$, no arithmetic domain), 9.3 (no Barina-type map respects associates, from A8 with $|N|$), 9.4 (lifts with $u = \pm\varepsilon^m$, $m \ne 0$, have no periodic unit), and the angle irrationality of Section 6.5. Computed: everything else, to $10^5$ (full classification) and the first examples to $10^6$ (drop below start, `logs/rings_confirm.txt`); sampled counts are marked as such. Nothing here is in Lean. Not done, and natural next steps: the 5+2i-style long verification of the first maps of Z[√-2] ($3 + \sqrt{-2}$ at $\pi^3$ and $1 + \sqrt{-2}$ on R at $\pi$) and of the Z[φ] map $4 + \phi$ (slow, drift $-0.14$); the census of cycles for the balanced Barina-type maps of Z[√2]; the escapes of 5 in Z[√2]; full rather than sampled searches at modulus 8 in Z[ω] and Z[φ]; and the multiplier-5 map on N to a larger bound.

@@ -1,0 +1,31 @@
+# forced fixed points in Zw at pi^2: units eta = eps pi^v - alpha, v = k..k+4 (K1, K2). eps = 1 applies to every map; eps != 1 only to maps commuting with the units
+alpha=5+2w (N 19): none
+alpha=-3-5w (N 19): none
+alpha=-5-2w (N 19): none
+alpha=2-3w (N 19): none
+alpha=-2+3w (N 19): none
+alpha=3+5w (N 19): none
+alpha=5+3w (N 19): none
+alpha=-2-5w (N 19): none
+alpha=-5-3w (N 19): none
+alpha=3-2w (N 19): none
+alpha=-3+2w (N 19): none
+alpha=2+5w (N 19): none
+alpha=5+4w (N 21): eps=1+w v=2 eta=-1
+alpha=-1-5w (N 21): eps=-w v=2 eta=1+w
+alpha=-5-4w (N 21): eps=-1-w v=2 eta=1
+alpha=4-w (N 21): eps=1 v=2 eta=w
+alpha=-4+w (N 21): eps=-1 v=2 eta=-w
+alpha=1+5w (N 21): eps=w v=2 eta=-1-w
+alpha=5+w (N 21): eps=1 v=2 eta=-1-w
+alpha=-4-5w (N 21): eps=-1-w v=2 eta=w
+alpha=-5-w (N 21): eps=-1 v=2 eta=1+w
+alpha=1-4w (N 21): eps=-w v=2 eta=-1
+alpha=-1+4w (N 21): eps=w v=2 eta=1
+alpha=4+5w (N 21): eps=1+w v=2 eta=-w
+alpha=5 (N 25): eps=1 v=2 eta=-1
+alpha=-5-5w (N 25): eps=-1-w v=2 eta=1+w
+alpha=-5 (N 25): eps=-1 v=2 eta=1
+alpha=-5w (N 25): eps=-w v=2 eta=w
+alpha=5w (N 25): eps=w v=2 eta=-w
+alpha=5+5w (N 25): eps=1+w v=2 eta=-1-w

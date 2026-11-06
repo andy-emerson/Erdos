@@ -1,0 +1,17 @@
+# ring Zr2: t=0 n=-2 (tau^2 = t tau - n), pi = r, q = 2
+factorization of 2: 2 = (1) pi^2, ramified, e = 2, f = 1
+units: +-(1+r)^n, infinite; v_pi(-1 - 1) = 2, so maps commuting with +-1 need k > 2
+  K=1: eps^1 = 1 mod pi^K (eps^1 = 1+r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=2: eps^2 = 1 mod pi^K (eps^2 = 3+2r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=3: eps^4 = 1 mod pi^K (eps^4 = 17+12r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=4: eps^4 = 1 mod pi^K (eps^4 = 17+12r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=5: eps^4 = 1 mod pi^K (eps^4 = 17+12r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=6: eps^8 = 1 mod pi^K (eps^8 = 577+408r); kernel of U -> (R/pi^K)^x is nontrivial
+  K=7: eps^8 = 1 mod pi^K (eps^8 = 577+408r); kernel of U -> (R/pi^K)^x is nontrivial
+conjugation: sigma(pi) = -r; sigma(pi) = eta pi with eta = -1
+lattice (Minkowski, sigma1, sigma2): digits ordered by a^2 + 2b^2 = (sigma1^2 + sigma2^2)/2, the lattice of Z[sqrt-2] up to scale
+smallest digits by modulus: K, odd classes, tied classes (size: count), smallest tables, commuting smallest tables, orbits of U
+  K=1: 1 odd classes, 1 tied {(1, 2): 1}, 2 smallest tables, 0 commuting, - orbits; least elements [1]
+  K=2: 2 odd classes, 2 tied {(1, 2): 1, (3, 4): 1}, 8 smallest tables, 0 commuting, - orbits; least elements [1, 3]
+  K=3: 4 odd classes, 2 tied {(3, 2): 2}, 4 smallest tables, 0 commuting, - orbits; least elements [1, 3]
+  K=4: 8 odd classes, 2 tied {(9, 2): 2}, 4 smallest tables, 0 commuting, - orbits; least elements [1, 3, 9]

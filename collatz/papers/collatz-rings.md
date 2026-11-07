@@ -44,7 +44,7 @@ If successive values of $v$ behave like independent samples, averaging over $v$ 
 
 $$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
 
-on average. We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
+per odd step. We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
 The drift argument is not a proof. It assumes that successive values of $v$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 

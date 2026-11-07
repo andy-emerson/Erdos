@@ -16,7 +16,7 @@ $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{c
 
 The **orbit** of $n$ is the sequence $n, C(n), C^2(n), \ldots$, where $C^k$ is the $k$-fold iterate of $C$, and a **cycle** is an orbit that returns to its starting point. The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into the orbit of $1$. The question is whether for every $n \in \mathbb{N}$ there is a $k \geq 0$ with $C^k(n) = 1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
-As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ for odd $n$. Therefore, every odd step is followed by at least one halving. However, an odd step and the halving that always follows it increase $n$: $C^2(n) > n$ for every odd $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. For any odd $n$, let $v(n)$ be the largest integer with $2^{v(n)} \mid 3n + 1$. The odd step and the $v(n)$ halvings that follow it together take $n$ to
+As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ for odd $n$. Therefore, every odd step is followed by at least one halving. However, an odd step and the halving that always follows it increase $n$, since $C^2(n) > n$ for every odd $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. For any odd $n$, let $v(n)$ be the largest integer with $2^{v(n)} \mid 3n + 1$. The odd step and the $v(n)$ halvings that follow it together take $n$ to
 
 $$\frac{3n + 1}{2^{v(n)}}.$$
 
@@ -24,7 +24,7 @@ The value of $v(n)$ depends only on the residue of $n$ modulo a power of $2$. Fo
 
 $$v(n) \begin{cases} = 1, & n \equiv 3 \pmod{4}, \\ > 1, & n \equiv 1 \pmod{4}, \end{cases}$$
 
-since $3n + 1 \equiv 2 \pmod 4$ when $n \equiv 3 \pmod 4$, and $4 \mid 3n + 1$ when $n \equiv 1 \pmod 4$. More generally, for $j \geq 1$, let $r_j$ be the odd residue modulo $2^j$ with $2^j \mid 3r_j + 1$. It exists and is unique because $3$ is invertible modulo $2^j$, and $r_2 = 1$, $r_3 = 5$. The odd $n$ with $v(n) \geq j$ are those with $n \equiv r_j \pmod{2^j}$, and modulo $2^{j+1}$ they split into two classes:
+since $3n + 1 \equiv 2 \pmod 4$ when $n \equiv 3 \pmod 4$, and $4 \mid 3n + 1$ when $n \equiv 1 \pmod 4$. More generally, for $j \geq 1$, let $r_j$ be the odd residue modulo $2^j$ with $2^j \mid 3r_j + 1$. It exists and is unique because $3$ is invertible modulo $2^j$, and $r_2 = 1$, $r_3 = 5$. The odd $n$ with $v(n) \geq j$ are those with $n \equiv r_j \pmod{2^j}$, and modulo $2^{j+1}$ they split into the two classes
 
 $$v(n) \;\begin{cases} = j, & n \equiv r_{j+1} + 2^j \pmod{2^{j+1}}, \\ > j, & n \equiv r_{j+1} \pmod{2^{j+1}}. \end{cases}$$
 
@@ -51,9 +51,9 @@ so the odd step and its halvings change the approximate number of binary digits,
 
 $$E\big(\log_2 3 - v(n)\big) = \log_2 3 - E(v(n)) = \log_2 3 - 2 \approx -0.415 < 0.$$
 
-We call this mean the **drift**; the observation behind it was made independently by Terras and by Everett [Terras 1976; Everett 1977; Lagarias 2010]. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
+We call this mean the **drift**. The observation behind it was made independently by Terras and by Everett [Terras 1976; Everett 1977; Lagarias 2010]. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
-The drift argument is not a proof. It assumes that successive values of $v(n)$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
+The drift argument is not a proof. It assumes that successive values of $v(n)$ are independent, and a negative drift describes typical orbits only, so it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\
@@ -87,13 +87,13 @@ An example of an odd map of this kind is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-It was introduced by Barina [Barina 2018], who conjectured that every positive orbit reaches $1$ and noted that the orbit of $-n$ is the negative of the orbit of $n$. The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Therefore, every odd step is followed by at least two halvings. However, an odd step and the two halvings that always follow it increase $n$: $B^3(n) > n$ for every odd $n$. For odd $n$, let $v_B(n)$ be the largest integer with $2^{v_B(n)} \mid B(n)$. Writing $n = 4m + 1$ gives $B(n) = 4(7m + 2)$, and writing $n = 4m + 3$ gives $B(n) = 4(7m + 5)$. Since $m \mapsto 7m + c$ permutes the residues modulo every power of $2$, the extra exponent $v_B(n) - 2$ has the distribution of $v(n) - 1$ for $C$, so
+It was introduced by Barina [Barina 2018], who conjectured that every positive orbit reaches $1$ and noted that the orbit of $-n$ is the negative of the orbit of $n$. The digits are chosen so that $4$ divides the result, with $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$ and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Therefore, every odd step is followed by at least two halvings. However, an odd step and the two halvings that always follow it increase $n$, since $B^3(n) > n$ for every odd $n$. For odd $n$, let $v(n)$ now be the largest integer with $2^{v(n)} \mid B(n)$, the number of halvings after the odd step of $B$. Writing $n = 4m + 1$ gives $B(n) = 4(7m + 2)$, and writing $n = 4m + 3$ gives $B(n) = 4(7m + 5)$. Since $m \mapsto 7m + c$ permutes the residues modulo every power of $2$, the extra exponent $v(n) - 2$ has the distribution that $v(n) - 1$ had for $C$, so
 
-$$E(v_B(n)) = 2 + \Big(\tfrac{1}{4} + 2 \cdot \tfrac{1}{8} + 3 \cdot \tfrac{1}{16} + \cdots\Big) = 3.$$
+$$E(v(n)) = 2 + \Big(\tfrac{1}{4} + 2 \cdot \tfrac{1}{8} + 3 \cdot \tfrac{1}{16} + \cdots\Big) = 3.$$
 
 By the argument for $C$, the drift of $B$ is
 
-$$E\big(\log_2 7 - v_B(n)\big) = \log_2 7 - E(v_B(n)) = \log_2 7 - 3 \approx -0.193 < 0.$$
+$$E\big(\log_2 7 - v(n)\big) = \log_2 7 - E(v(n)) = \log_2 7 - 3 \approx -0.193 < 0.$$
 
 Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. For example, the orbit of $-5$ is the negative of the orbit of $5$,
 
@@ -104,17 +104,17 @@ $$\begin{aligned}
 
 and the conjecture that every nonzero orbit reaches $\pm 1$ is equivalent to the conjecture on $\mathbb{N}$. Barina verified the conjecture on $\mathbb{N}$ below $10^{15}$ [Barina 2022].
 
-The same construction can be applied to the multiplier $3$:
+The same construction can be applied to the multiplier $3$, giving
 
 $$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \pmod 4, \\ 3n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case, so every odd step is followed by at least two halvings. But here the odd step and those two halvings decrease $n$: $C_{\pm 1}^3(n) < n$ for every odd $n > 1$. So every orbit decreases to $1$, and the problem is trivial. In general, if the digits of a map with multiplier $m$ make $2^k$ divide $mn + d$, the odd step and its $k$ guaranteed halvings can increase $n$ only if $m > 2^k$, and the same argument as for $C$ gives the drift $\log_2 m - (k + 1)$, which is negative only if $m < 2^{k+1}$. So the problem is of interest exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$: $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
+For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case, so every odd step is followed by at least two halvings. But here the odd step and those two halvings decrease $n$, since $C_{\pm 1}^3(n) < n$ for every odd $n > 1$. So every orbit decreases to $1$, and the problem is trivial. In general, if the digits of a map with multiplier $m$ make $2^k$ divide $mn + d$, the odd step and its $k$ guaranteed halvings can increase $n$ only if $m > 2^k$, and the same argument as for $C$ gives the drift $\log_2 m - (k + 1)$, which is negative only if $m < 2^{k+1}$. So the problem is of interest exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$. The map $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
-The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of classes $\{n, -n\}$ under this action, not a quotient ring:
+The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of classes $\{n, -n\}$ under this action, not a quotient ring, so that
 
 $$\mathbb{Z}/\{\pm 1\} = \{\{0\}, \{\pm 1\}, \{\pm 2\}, \{\pm 3\}, \ldots\}.$$
 
-The class $\{0\}$ plays no part. Every map of this kind fixes $0$, and if it sends odd $n$ to $mn + d$ with $|d| < |m|$, as $C$ and $B$ do, it maps no nonzero integer to $0$: halving a nonzero integer gives a nonzero integer, and for odd $n$, $|mn| \geq |m| > |d|$, so $mn + d \neq 0$. For $C$, with $m = 3$ and $d = 1$, this says that $3n + 1$ is never $0$. The condition is needed, since the map sending odd $n$ to $3n - 3$ sends $1$ to $0$. Such maps therefore send the nonzero integers to themselves, and the remaining classes are the positive integers, each named by its positive member. A map on $\mathbb{Z}$ induces a map on $\mathbb{Z}/\{\pm 1\}$ exactly when it sends $n$ and $-n$ into one class, and $B$ does; on the nonzero classes the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on $\mathbb{Z}/\{\pm 1\}$, since $16$ and $-14$ lie in different classes.
+The class $\{0\}$ plays no part. Every map of this kind fixes $0$, and if it sends odd $n$ to $mn + d$ with $|d| < |m|$, as $C$ and $B$ do, it maps no nonzero integer to $0$, because halving a nonzero integer gives a nonzero integer, and for odd $n$, $|mn| \geq |m| > |d|$, so $mn + d \neq 0$. For $C$, with $m = 3$ and $d = 1$, this says that $3n + 1$ is never $0$. The condition is needed, since the map sending odd $n$ to $3n - 3$ sends $1$ to $0$. Such maps therefore send the nonzero integers to themselves, and the remaining classes are the positive integers, each named by its positive member. A map on $\mathbb{Z}$ induces a map on $\mathbb{Z}/\{\pm 1\}$ exactly when it sends $n$ and $-n$ into one class, and $B$ does. On the nonzero classes the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on $\mathbb{Z}/\{\pm 1\}$, since $16$ and $-14$ lie in different classes.
 
 ### 1.2 Two kinds of map
 

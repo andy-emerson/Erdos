@@ -32,13 +32,13 @@ The case $j = 1$ is the example above. For $j = 2$,
 
 $$v(n) \begin{cases} = 2, & n \equiv 1 \pmod{8}, \\ > 2, & n \equiv 5 \pmod{8}. \end{cases}$$
 
-In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, and the mean of $v$ is
+In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, and the mean of $v(n)$ is
 
-$$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
+$$E(v(n)) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-Each halving is equivalent to removing exactly one binary digit. Therefore, to see whether orbits grow or shrink on average, measure the size of $n$ by its number of binary digits. An integer with $2^k \leq n < 2^{k+1}$ has 
+Each halving is equivalent to removing exactly one binary digit. Therefore, to see whether orbits grow or shrink on average, measure the size of $n$ by its number of binary digits. An integer with $2^k \leq n < 2^{k+1}$ has exactly
 
-$$k + 1 = \lfloor \log_2 n \rfloor + 1 \approx \log_2 n$$
+$$k + 1 = \lfloor \log_2 n \rfloor + 1$$
 
 binary digits, which differs from $\log_2 n$ by less than $1$. The odd step and its $v(n)$ halvings are $v(n) + 1$ steps of $C$, and
 
@@ -51,13 +51,13 @@ $$
 \end{aligned}
 $$
 
-so the odd step and its halvings change $\log_2 n$ by about $\log_2 3 - v(n)$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
+so the odd step and its halvings change the approximate number of binary digits, $\log_2 n$, by about $\log_2 3 - v(n)$, and along an orbit these changes add up. If successive values of $v(n)$ behave like independent samples, the mean change per odd step is
 
-$$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
+$$E\big(\log_2 3 - v(n)\big) = \log_2 3 - E(v(n)) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
 
-We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
+We call this mean the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
-The drift argument is not a proof. It assumes that successive values of $v$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
+The drift argument is not a proof. It assumes that successive values of $v(n)$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\

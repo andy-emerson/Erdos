@@ -36,18 +36,22 @@ In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) =
 
 $$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-To see whether orbits grow or shrink on balance, measure the size of $n$ by its number of binary digits. Each halving removes exactly one binary digit, and multiplying by $3$ adds about $\log_2 3 \approx 1.58$, so this measure counts the two operations on the same scale. An integer with $2^k \leq n < 2^{k+1}$ has $k + 1$ binary digits, and since $\log_2 2^k = k$, this is $\lfloor \log_2 n \rfloor + 1$; we use $\log_2 n$ itself. After the odd step and its $v(n)$ halvings, that is, after $v(n) + 1$ steps of $C$,
+Each halving is equivalent to removing exactly one binary digit. Therefore, to see whether orbits grow or shrink on average, measure the size of $n$ by its number of binary digits. An integer with $2^k \leq n < 2^{k+1}$ has 
+
+$$k + 1 = \lfloor \log_2 n \rfloor + 1 \approx \log_2 n$$
+
+binary digits, which differs from $\log_2 n$ by less than $1$. The odd step and its $v(n)$ halvings are $v(n) + 1$ steps of $C$, and
 
 $$
 \begin{aligned}
 \log_2 C^{v(n)+1}(n) &= \log_2 \frac{3n + 1}{2^{v(n)}} \\
-&= \log_2 (3n + 1) - v(n) \\
+&= \log_2 (3n + 1) - \log_2 2^{v(n)} \\
 &= \log_2 n + \log_2\left(3 + \frac{1}{n}\right) - v(n) \\
 &\approx \log_2 n + \log_2 3 - v(n),
 \end{aligned}
 $$
 
-so each odd step adds about $\log_2 3 - v(n)$ to $\log_2 n$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
+so the odd step and its halvings change $\log_2 n$ by about $\log_2 3 - v(n)$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
 
 $$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
 

@@ -53,11 +53,11 @@ $$
 
 so the odd step and its halvings change the approximate number of binary digits, $\log_2 n$, by about $\log_2 3 - v(n)$, and along an orbit these changes add up. If successive values of $v(n)$ behave like independent samples, the mean change per odd step is
 
-$$E\big(\log_2 3 - v(n)\big) = \log_2 3 - E(v(n)) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
+$$E\big(\log_2 3 - v(n)\big) = \log_2 3 - E(v(n)) = \log_2 3 - 2 \approx -0.415 < 0.$$
 
 We call this mean the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
-The drift argument is not a proof. It assumes that successive values of $v(n)$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
+The drift argument is not a proof. It assumes that successive values of $v(n)$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\

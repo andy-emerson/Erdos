@@ -14,6 +14,8 @@ $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{c
 
 The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into that cycle. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
+Orbits of $C$ can grow. For odd $n$, $3n + 1$ is even, so every odd step is followed by at least one halving, and by two on average if the parities that follow are distributed like those of a random integer. An odd step together with the halvings after it therefore multiplies by roughly $3/2$ at worst and $3/4$ on average. Orbits shrink on average but can grow for a long time first, which is why some orbits are long.
+
 The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
@@ -48,6 +50,8 @@ Barina's map is odd [Barina 2018]. It is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
+The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Every odd step is therefore followed by at least two halvings, and by three on average, so it multiplies by roughly $7/4$ at worst and $7/8$ on average, the same balance as for $C$.
+
 Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. For example, the orbit of $-5$ is the negative of the orbit of $5$,
 
 $$\begin{aligned}
@@ -61,7 +65,7 @@ The same construction can be applied to the multiplier $3$:
 
 $$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \pmod 4, \\ 3n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-For the same reason as $B$, $C_{\pm 1}$ is odd. But every odd step of $C_{\pm 1}$ is followed by at least two halvings, and $(3n \pm 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. For an odd step at modulus $4$ to expand in the worst case and contract on average, the multiplier must lie between $4$ and $8$ (Section 3). Of the two candidates, $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
+For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case. But then an odd step followed by its two halvings multiplies by at most about $3/4$, and indeed $(3n \pm 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. In general, a map whose digits make $2^k$ divide $mn + d$ grows in the worst case and shrinks on average exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$: $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
 The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of orbits of this action, not a quotient ring:
 

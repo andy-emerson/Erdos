@@ -8,7 +8,7 @@
 
 ## 1. Introduction
 
-This introduction contains no new results. It reviews only the parts of the Collatz literature that later sections build on, and fixes the notation used throughout.
+The introduction through Section 1.1 contains no new results. It reviews only the parts of the Collatz literature that later sections build on, and fixes the notation used throughout. It is accessible to readers who know elementary number theory, and readers who know Barina's work on $7x \pm 1$ will find nothing in it they have not seen. Sections 1.2 to 1.5 introduce our vocabulary and summarize the new results.
 
 The Collatz map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
@@ -40,9 +40,9 @@ If successive values of $v$ behave like independent samples, an odd step changes
 
 $$\log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
 
-on average. We call this average the **drift**. Orbits can grow for a long time, but under this assumption they shrink on average, at a rate set by the drift.
+on average. We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
-By contrast, the nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not always reach $1$. On $\mathbb{N}$ it has the three cycles
+The drift argument is not a proof. It assumes that successive values of $v$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\
@@ -50,7 +50,7 @@ $$\begin{aligned}
 &17 \to 50 \to 25 \to 74 \to 37 \to \cdots \to 136 \to 68 \to 34 \to 17,
 \end{aligned}$$
 
-the last of length $18$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985].
+the last of length $18$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985]. No orbit that meets the second or third cycle reaches $1$.
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 

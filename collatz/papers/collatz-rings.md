@@ -8,19 +8,21 @@
 
 ## 1. Introduction
 
-The $3x+1$ map $C \colon \mathbb{N} \to \mathbb{N}$ is
+For the reader's awareness, nothing in this introduction is new, and it is not a survey of the Collatz literature. It introduces the vocabulary and notation used throughout the paper by reviewing the results, and only the results, on which the new material of the later sections builds.
+
+The Collatz map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
 $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
 
-The **orbit** of $n$ is the sequence $n, C(n), C(C(n)), \ldots$, and a **cycle** is an orbit that returns to its starting point. The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into that cycle. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
+The **orbit** of $n$ is the sequence $n, C(n), C^2(n), \ldots$, where $C^k$ is the $k$-fold iterate of $C$, and a **cycle** is an orbit that returns to its starting point. The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into the orbit of $1$. The question is whether for every $n \in \mathbb{N}$ there is a $k \geq 0$ with $C^k(n) = 1$. The question was posed by Collatz in the 1930s, who conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
-As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ for odd $n$. Therefore, every odd step is followed by at least one halving. Nevertheless, $\frac{3n + 1}{2} > n$, so an odd step and a single halving increase $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. For odd $n$, let $v(n)$ be the exponent of $2$ in $3n + 1$, so that an odd step and its halvings send
+As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ for odd $n$. Therefore, every odd step is followed by at least one halving. Nevertheless, $\frac{3n + 1}{2} > n$, so an odd step and the halving that always follows it increase $n$: $C^2(n) > n$ for every odd $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. For any odd $n$, let $v(n)$ be the largest integer with $2^{v(n)} \mid 3n + 1$. The odd step and the $v(n)$ halvings that follow it together take $n$ to
 
-$$n \mapsto \frac{3n + 1}{2^{v(n)}}.$$
+$$\frac{3n + 1}{2^{v(n)}}.$$
 
-Half of all odd $n$ have $v(n) = 1$ (those with $n \equiv 3 \pmod 4$), a quarter have $v(n) = 2$ (those with $n \equiv 1 \pmod 8$), and in general $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, because $n \mapsto 3n + 1$ maps the odd residues modulo $2^{j+1}$ one to one onto the even residues. The mean of $v$ is therefore
+The value of $v(n)$ is determined by the residue of $n$ modulo a power of $2$. Every odd $n$ satisfies $n \equiv 3$ or $n \equiv 1 \pmod 4$. If $n \equiv 3 \pmod 4$, then $3n + 1 \equiv 2 \pmod 4$, so $v(n) = 1$. If $n \equiv 1 \pmod 4$, then $n \equiv 1$ or $n \equiv 5 \pmod 8$. If $n \equiv 1 \pmod 8$, then $3n + 1 \equiv 4 \pmod 8$, so $v(n) = 2$; if $n \equiv 5 \pmod 8$, then $8 \mid 3n + 1$, so $v(n) \geq 3$. The process continues: at each modulus $2^{j+1}$, the odd $n$ with $v(n) \geq j$ fall into two residue classes, one with $v(n) = j$ and one with $v(n) > j$. So $v(n) = j$ for exactly a proportion $2^{-j}$ of odd $n$, and the mean of $v$ is
 
-$$1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = 2.$$
+$$\sum_{j \geq 1} j \, 2^{-j} = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = 2.$$
 
 If successive values of $v$ behave like independent samples, an odd step changes $\log_2 n$ by
 

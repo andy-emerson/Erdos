@@ -36,15 +36,15 @@ In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) =
 
 $$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-Taking logarithms, the odd step and its halvings change $\log_2 n$ by
+To see whether orbits grow or shrink on balance, measure the size of $n$ by $\log_2 n$, roughly its number of binary digits. The odd step and its halvings multiply $n$ by a factor,
 
-$$\log_2 \frac{3n + 1}{2^{v(n)}} - \log_2 n = \log_2\!\Big(3 + \frac{1}{n}\Big) - v(n) \approx \log_2 3 - v(n).$$
+$$\frac{3n + 1}{2^{v(n)}} = n \cdot \frac{3 + 1/n}{2^{v(n)}},$$
 
-If successive values of $v$ behave like independent samples, averaging over $v$ gives a change of
+so they add $\log_2(3 + 1/n) - v(n) \approx \log_2 3 - v(n)$ to $\log_2 n$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
 
-$$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
+$$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
 
-per odd step. We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
+We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
 The drift argument is not a proof. It assumes that successive values of $v$ are independent, and a negative drift describes typical orbits only: it rules out neither cycles other than the one through $1$ nor a sparse set of orbits that grow without bound. The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, has the same drift as $C$, $\log_2 \tfrac{3}{4}$, and yet does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 

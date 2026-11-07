@@ -12,15 +12,23 @@ The $3x+1$ map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
 $$C(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \text{ odd}. \end{cases}$$
 
-The orbit of $n$ is the sequence $n, C(n), C(C(n)), \ldots$, and a cycle is an orbit that returns to its starting point. The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into that cycle. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
+The **orbit** of $n$ is the sequence $n, C(n), C(C(n)), \ldots$, and a **cycle** is an orbit that returns to its starting point. The orbit of $1$ is the cycle $1 \to 4 \to 2 \to 1$. The orbit of $5$ is $5 \to 16 \to 8 \to 4 \to 2 \to 1$, which falls into that cycle. The question is whether every orbit reaches $1$. Collatz posed the question in the 1930s and conjectured an affirmative answer [Lagarias 1985; Collatz 1986]. The conjecture has been verified for all $n$ below $2^{71} \approx 2.36 \cdot 10^{21}$ [Barina 2025] and remains open.
 
-Orbits of $C$ can grow. For odd $n$, $2 \mid 3n + 1$, so every odd step is followed by at least one halving, but $(3n + 1)/2 > n$, so an odd step and a single halving increase $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. Let $v(n)$ be the exponent of $2$ in $3n + 1$, so that an odd step and its halvings send $n$ to $(3n + 1)/2^{v(n)}$. Since $n \mapsto 3n + 1$ maps the odd residues modulo $2^{j+1}$ onto the even ones, $v(n) = j$ for exactly a proportion $2^{-j}$ of odd $n$, for each $j \geq 1$, and the mean of $v$ is $\sum_{j \geq 1} j\, 2^{-j} = 2$. If successive values of $v$ behave like independent samples, an odd step changes $\log_2 n$ by
+As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ for odd $n$. Therefore, every odd step is followed by at least one halving. Nevertheless, $\frac{3n + 1}{2} > n$, so an odd step and a single halving increase $n$. Orbits decrease only because $3n + 1$ is sometimes divisible by a higher power of $2$. For odd $n$, let $v(n)$ be the exponent of $2$ in $3n + 1$, so that an odd step and its halvings send
+
+$$n \mapsto \frac{3n + 1}{2^{v(n)}}.$$
+
+Half of all odd $n$ have $v(n) = 1$ (those with $n \equiv 3 \pmod 4$), a quarter have $v(n) = 2$ (those with $n \equiv 1 \pmod 8$), and in general $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, because $n \mapsto 3n + 1$ maps the odd residues modulo $2^{j+1}$ one to one onto the even residues. The mean of $v$ is therefore
+
+$$1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = 2.$$
+
+If successive values of $v$ behave like independent samples, an odd step changes $\log_2 n$ by
 
 $$\log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
 
 on average. We call this average the **drift**. Orbits can grow for a long time, but under this assumption they shrink on average, at a rate set by the drift.
 
-The nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not share this property. On $\mathbb{N}$ it has the three cycles
+By contrast, the nearby map $C_{-1}$, with $3n - 1$ in place of $3n + 1$, does not always reach $1$. On $\mathbb{N}$ it has the three cycles
 
 $$\begin{aligned}
 &1 \to 2 \to 1, \\
@@ -28,7 +36,7 @@ $$\begin{aligned}
 &17 \to 50 \to 25 \to 74 \to 37 \to \cdots \to 136 \to 68 \to 34 \to 17,
 \end{aligned}$$
 
-the last of length $18$, and these are conjectured to be all [Lagarias 1985].
+the last of length $18$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 

@@ -65,7 +65,7 @@ the last of length $18$. These are conjectured to be its only cycles, with every
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-The formula for $C$ also defines a map on $\mathbb{Z}$. It fixes $0$, since $0/2 = 0$, as does every map considered here, so statements about orbits on $\mathbb{Z}$ concern the nonzero starts. On the negative integers it has the three cycles
+Maps of this kind also define maps on $\mathbb{Z}$, where they fix $0$, since $0/2 = 0$, so statements about their orbits concern the nonzero starts. The formula for $C$, for example, defines a map on $\mathbb{Z}$, and on the negative integers it has the three cycles
 
 $$\begin{aligned}
 &{-1} \to -2 \to -1, \\
@@ -83,11 +83,11 @@ $$C(-n) = -C_{-1}(n) \quad \text{for all } n \in \mathbb{Z}.$$
 
 Since $C_{-1}(n) \neq C(n)$ for odd $n$, $C(-n) \neq -C(n)$ for odd $n$, and therefore $C$ is not an odd function.
 
-Barina's map is odd [Barina 2018]. It is
+An example of an odd map of this kind is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Therefore, every odd step is followed by at least two halvings. However, an odd step and the two halvings that always follow it increase $n$: $B^3(n) > n$ for every odd $n$. For odd $n$, let $v_B(n)$ be the largest integer with $2^{v_B(n)} \mid B(n)$. Writing $n = 4m + 1$ gives $B(n) = 4(7m + 2)$, and writing $n = 4m + 3$ gives $B(n) = 4(7m + 5)$. Since $m \mapsto 7m + c$ permutes the residues modulo every power of $2$, the extra exponent $v_B(n) - 2$ has the distribution of $v(n) - 1$ for $C$, so
+It was introduced by Barina [Barina 2018], who conjectured that every positive orbit reaches $1$ and noted that the orbit of $-n$ is the negative of the orbit of $n$. The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Therefore, every odd step is followed by at least two halvings. However, an odd step and the two halvings that always follow it increase $n$: $B^3(n) > n$ for every odd $n$. For odd $n$, let $v_B(n)$ be the largest integer with $2^{v_B(n)} \mid B(n)$. Writing $n = 4m + 1$ gives $B(n) = 4(7m + 2)$, and writing $n = 4m + 3$ gives $B(n) = 4(7m + 5)$. Since $m \mapsto 7m + c$ permutes the residues modulo every power of $2$, the extra exponent $v_B(n) - 2$ has the distribution of $v(n) - 1$ for $C$, so
 
 $$E(v_B(n)) = 2 + \Big(\tfrac{1}{4} + 2 \cdot \tfrac{1}{8} + 3 \cdot \tfrac{1}{16} + \cdots\Big) = 3.$$
 

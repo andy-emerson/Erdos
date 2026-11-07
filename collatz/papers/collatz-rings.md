@@ -62,7 +62,9 @@ Barina's map is odd [Barina 2018]. It is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Every odd step is therefore followed by at least two halvings, and by three on average, so it multiplies by roughly $7/4$ at worst and $7/8$ on average, the same balance as for $C$.
+The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Every odd step is therefore followed by at least two halvings. Nevertheless, $\frac{7n \pm 1}{4} > n$, so orbits of $B$ can grow. As for $C$, the exponent of $2$ in $7n \pm 1$ is $j$ for a proportion $2^{-(j-1)}$ of odd $n$, for each $j \geq 2$, so its mean is $3$, and the drift is
+
+$$\log_2 7 - 3 = \log_2 \tfrac{7}{8} \approx -0.193 < 0.$$
 
 Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. For example, the orbit of $-5$ is the negative of the orbit of $5$,
 

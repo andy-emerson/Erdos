@@ -36,11 +36,17 @@ In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) =
 
 $$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-To see whether orbits grow or shrink on balance, measure the size of $n$ by $\log_2 n$, roughly its number of binary digits. The odd step and its halvings multiply $n$ by a factor,
+To see whether orbits grow or shrink on balance, measure the size of $n$ by $\log_2 n$, roughly its number of binary digits. After the odd step and its halvings,
 
-$$\frac{3n + 1}{2^{v(n)}} = n \cdot \frac{3 + 1/n}{2^{v(n)}},$$
+$$
+\begin{aligned}
+\log_2 \frac{3n + 1}{2^{v(n)}} &= \log_2 (3n + 1) - v(n) \\
+&= \log_2 n + \log_2\left(3 + \frac{1}{n}\right) - v(n) \\
+&\approx \log_2 n + \log_2 3 - v(n),
+\end{aligned}
+$$
 
-so they add $\log_2(3 + 1/n) - v(n) \approx \log_2 3 - v(n)$ to $\log_2 n$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
+so each odd step adds about $\log_2 3 - v(n)$ to $\log_2 n$, and along an orbit these changes add up. If successive values of $v$ behave like independent samples, the average change per odd step is
 
 $$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0.$$
 
@@ -54,7 +60,7 @@ $$\begin{aligned}
 &17 \to 50 \to 25 \to 74 \to 37 \to \cdots \to 136 \to 68 \to 34 \to 17,
 \end{aligned}$$
 
-the last of length $18$. No orbit that meets a cycle other than the one through $1$ can reach $1$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985].
+the last of length $18$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985]. Whether or not the conjecture holds, no orbit that meets a cycle other than the one through $1$ can reach $1$.
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 

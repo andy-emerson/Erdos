@@ -63,11 +63,11 @@ $$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \p
 
 For the same reason as $B$, $C_{\pm 1}$ is odd. But every odd step of $C_{\pm 1}$ is followed by at least two halvings, and $(3n \pm 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. For an odd step at modulus $4$ to expand in the worst case and contract on average, the multiplier must lie between $4$ and $8$ (Section 3). Of the two candidates, $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
-The identity $B(-n) = -B(n)$ has a cleaner reading. The positive integers are the nonzero integers modulo the units,
+The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of orbits of this action, not a quotient ring:
 
-$$\mathbb{N} = (\mathbb{Z} \setminus \{0\})/\{\pm 1\},$$
+$$\mathbb{Z}/\{\pm 1\} = \{\{0\}, \{\pm 1\}, \{\pm 2\}, \{\pm 3\}, \ldots\}.$$
 
-each class $\{n, -n\}$ represented by its positive member. A map on $\mathbb{Z}$ induces a map on this quotient exactly when it sends $n$ and $-n$ into one class, and $B$ does; the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on the quotient, since $16$ and $-14$ lie in different classes.
+The class $\{0\}$ is fixed by every map considered here, and the remaining classes are the positive integers, each named by its positive member. A map on $\mathbb{Z}$ induces a map on $\mathbb{Z}/\{\pm 1\}$ exactly when it sends $n$ and $-n$ into one class, and $B$ does; on the nonzero classes the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on $\mathbb{Z}/\{\pm 1\}$, since $16$ and $-14$ lie in different classes.
 
 ### 1.2 Two kinds of map
 

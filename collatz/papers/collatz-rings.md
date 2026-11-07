@@ -8,7 +8,7 @@
 
 ## 1. Introduction
 
-For the reader's awareness, nothing in this introduction is new, and it is not a survey of the Collatz literature. It introduces the vocabulary and notation used throughout the paper by reviewing the results, and only the results, on which the new material of the later sections builds.
+This introduction contains no new results. It reviews only the parts of the Collatz literature that later sections build on, and fixes the notation used throughout.
 
 The Collatz map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
@@ -20,7 +20,11 @@ As $C(5) = 16$ shows, orbits of $C$ can grow. More generally, $2 \mid 3n + 1$ fo
 
 $$\frac{3n + 1}{2^{v(n)}}.$$
 
-The value of $v(n)$ is determined by the residue of $n$ modulo a power of $2$. Every odd $n$ satisfies $n \equiv 3$ or $n \equiv 1 \pmod 4$. If $n \equiv 3 \pmod 4$, then $3n + 1 \equiv 2 \pmod 4$, so $v(n) = 1$. If $n \equiv 1 \pmod 4$, then $n \equiv 1$ or $n \equiv 5 \pmod 8$. If $n \equiv 1 \pmod 8$, then $3n + 1 \equiv 4 \pmod 8$, so $v(n) = 2$; if $n \equiv 5 \pmod 8$, then $8 \mid 3n + 1$, so $v(n) \geq 3$. The process continues: at each modulus $2^{j+1}$, the odd $n$ with $v(n) \geq j$ fall into two residue classes, one with $v(n) = j$ and one with $v(n) > j$. So $v(n) = j$ for exactly a proportion $2^{-j}$ of odd $n$, and the mean of $v$ is
+The value of $v(n)$ depends only on the residue of $n$ modulo a power of $2$. For $j \geq 1$, let $r_j$ be the odd residue modulo $2^j$ with $2^j \mid 3r_j + 1$; it exists and is unique because $3$ is invertible modulo $2^j$, and $r_2 = 1$, $r_3 = 5$. The odd $n$ with $v(n) \geq j$ are those with $n \equiv r_j \pmod{2^j}$, and modulo $2^{j+1}$ they split into two classes:
+
+$$v(n) \;\begin{cases} = j, & n \equiv r_{j+1} + 2^j \pmod{2^{j+1}}, \\ > j, & n \equiv r_{j+1} \pmod{2^{j+1}}. \end{cases}$$
+
+For $j = 1$ this gives $v(n) = 1$ for $n \equiv 3 \pmod 4$ and $v(n) > 1$ for $n \equiv 1 \pmod 4$; for $j = 2$, $v(n) = 2$ for $n \equiv 1 \pmod 8$ and $v(n) > 2$ for $n \equiv 5 \pmod 8$. Each step halves the remaining class, so $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, and the mean of $v$ is
 
 $$\sum_{j \geq 1} j \, 2^{-j} = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = 2.$$
 

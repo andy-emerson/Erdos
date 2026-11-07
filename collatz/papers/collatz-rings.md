@@ -8,7 +8,7 @@
 
 ## 1. Introduction
 
-The introduction through Section 1.1 contains no new results. It reviews only the parts of the Collatz literature that later sections build on, and fixes the notation used throughout. It is accessible to readers who know elementary number theory, and readers who know Barina's work on $7x \pm 1$ will find nothing in it they have not seen. Sections 1.2 to 1.5 introduce our vocabulary and summarize the new results.
+The introduction is accessible to readers who know elementary number theory but not the Collatz literature. It reviews only the parts of that literature that later sections build on, fixes our notation, introduces our vocabulary, and summarizes the new results. Readers familiar with the literature may skip the review and start where our vocabulary is introduced.
 
 The Collatz map $C \colon \mathbb{N} \to \mathbb{N}$ is
 

@@ -28,11 +28,7 @@ since $3n + 1 \equiv 2 \pmod 4$ when $n \equiv 3 \pmod 4$, and $4 \mid 3n + 1$ w
 
 $$v(n) \;\begin{cases} = j, & n \equiv r_{j+1} + 2^j \pmod{2^{j+1}}, \\ > j, & n \equiv r_{j+1} \pmod{2^{j+1}}. \end{cases}$$
 
-The case $j = 1$ is the example above. For $j = 2$,
-
-$$v(n) \begin{cases} = 2, & n \equiv 1 \pmod{8}, \\ > 2, & n \equiv 5 \pmod{8}. \end{cases}$$
-
-In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, and the mean of $v(n)$ is
+The case $j = 1$ is the example above. In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) = j$ for a proportion $2^{-j}$ of odd $n$, and the mean of $v(n)$ is
 
 $$E(v(n)) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 

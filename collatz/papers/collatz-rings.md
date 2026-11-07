@@ -65,7 +65,7 @@ the last of length $18$. These are conjectured to be its only cycles, with every
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 
-Maps of this kind also define maps on $\mathbb{Z}$, where they fix $0$, since $0/2 = 0$, so statements about their orbits concern the nonzero starts. The formula for $C$, for example, defines a map on $\mathbb{Z}$, and on the negative integers it has the three cycles
+Maps of this kind also define maps on $\mathbb{Z}$. The formula for $C$, for example, defines a map on $\mathbb{Z}$, and on the negative integers it has the three cycles
 
 $$\begin{aligned}
 &{-1} \to -2 \to -1, \\
@@ -81,7 +81,7 @@ and halving commutes with negation, which gives the identity
 
 $$C(-n) = -C_{-1}(n) \quad \text{for all } n \in \mathbb{Z}.$$
 
-Since $C_{-1}(n) \neq C(n)$ for odd $n$, $C(-n) \neq -C(n)$ for odd $n$, and therefore $C$ is not an odd function.
+Since $C_{-1}(n) \neq C(n)$ for odd $n$, $C(-n) \neq -C(n)$ for odd $n$, and therefore $C$ is not an odd map.
 
 An example of an odd map of this kind is
 
@@ -110,11 +110,11 @@ $$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \p
 
 For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case, so every odd step is followed by at least two halvings. But here the odd step and those two halvings decrease $n$: $C_{\pm 1}^3(n) < n$ for every odd $n > 1$. So every orbit decreases to $1$, and the problem is trivial. In general, if the digits of a map with multiplier $m$ make $2^k$ divide $mn + d$, the odd step and its $k$ guaranteed halvings can increase $n$ only if $m > 2^k$, and the same argument as for $C$ gives the drift $\log_2 m - (k + 1)$, which is negative only if $m < 2^{k+1}$. So the problem is of interest exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$: $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
-The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of orbits of this action, not a quotient ring:
+The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of classes $\{n, -n\}$ under this action, not a quotient ring:
 
 $$\mathbb{Z}/\{\pm 1\} = \{\{0\}, \{\pm 1\}, \{\pm 2\}, \{\pm 3\}, \ldots\}.$$
 
-The class $\{0\}$ is fixed by every map considered here, and the remaining classes are the positive integers, each named by its positive member. A map on $\mathbb{Z}$ induces a map on $\mathbb{Z}/\{\pm 1\}$ exactly when it sends $n$ and $-n$ into one class, and $B$ does; on the nonzero classes the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on $\mathbb{Z}/\{\pm 1\}$, since $16$ and $-14$ lie in different classes.
+The class $\{0\}$ plays no part. Every map of this kind fixes $0$, and if it sends odd $n$ to $mn + d$ with $|d| < |m|$, as $C$ and $B$ do, it maps no nonzero integer to $0$: halving a nonzero integer gives a nonzero integer, and for odd $n$, $|mn| \geq |m| > |d|$, so $mn + d \neq 0$. For $C$, with $m = 3$ and $d = 1$, this says that $3n + 1$ is never $0$. The condition is needed, since the map sending odd $n$ to $3n - 3$ sends $1$ to $0$. Such maps therefore send the nonzero integers to themselves, and the remaining classes are the positive integers, each named by its positive member. A map on $\mathbb{Z}$ induces a map on $\mathbb{Z}/\{\pm 1\}$ exactly when it sends $n$ and $-n$ into one class, and $B$ does; on the nonzero classes the induced map is $B$ on $\mathbb{N}$. The map $C$ on $\mathbb{Z}$ induces no map on $\mathbb{Z}/\{\pm 1\}$, since $16$ and $-14$ lie in different classes.
 
 ### 1.2 Two kinds of map
 

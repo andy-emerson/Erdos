@@ -8,7 +8,7 @@
 
 ## 1. Introduction
 
-The introduction is accessible to readers who know elementary number theory but not the Collatz literature. It reviews only the parts of that literature that later sections build on, fixes our notation, introduces our vocabulary, and summarizes the new results. Readers familiar with the literature may skip the review and start where our vocabulary is introduced.
+This introduction assumes elementary number theory but no familiarity with the Collatz literature. It reviews only the parts of the literature that later sections build on, introduces our vocabulary, fixes our notation, and summarizes the new results. Readers already familiar with the literature may skip the review and start where our vocabulary is introduced.
 
 The Collatz map $C \colon \mathbb{N} \to \mathbb{N}$ is
 
@@ -36,11 +36,12 @@ In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) =
 
 $$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-To see whether orbits grow or shrink on balance, measure the size of $n$ by $\log_2 n$, roughly its number of binary digits. After the odd step and its halvings,
+To see whether orbits grow or shrink on balance, measure the size of $n$ by its number of binary digits. Each halving removes exactly one binary digit, and multiplying by $3$ adds about $\log_2 3 \approx 1.58$, so this measure counts the two operations on the same scale. An integer with $2^k \leq n < 2^{k+1}$ has $k + 1$ binary digits, and since $\log_2 2^k = k$, this is $\lfloor \log_2 n \rfloor + 1$; we use $\log_2 n$ itself. After the odd step and its $v(n)$ halvings, that is, after $v(n) + 1$ steps of $C$,
 
 $$
 \begin{aligned}
-\log_2 \frac{3n + 1}{2^{v(n)}} &= \log_2 (3n + 1) - v(n) \\
+\log_2 C^{v(n)+1}(n) &= \log_2 \frac{3n + 1}{2^{v(n)}} \\
+&= \log_2 (3n + 1) - v(n) \\
 &= \log_2 n + \log_2\left(3 + \frac{1}{n}\right) - v(n) \\
 &\approx \log_2 n + \log_2 3 - v(n),
 \end{aligned}

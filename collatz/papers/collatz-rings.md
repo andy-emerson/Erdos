@@ -36,9 +36,13 @@ In this way, each increase of $j$ halves the remaining class. Therefore, $v(n) =
 
 $$E(v) = 1 \cdot \tfrac{1}{2} + 2 \cdot \tfrac{1}{4} + 3 \cdot \tfrac{1}{8} + \cdots = \sum_{j \geq 1} j\frac{1}{2^{j}} = 2.$$
 
-If successive values of $v$ behave like independent samples, an odd step changes $\log_2 n$ by
+Taking logarithms, the odd step and its halvings change $\log_2 n$ by
 
-$$\log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
+$$\log_2 \frac{3n + 1}{2^{v(n)}} - \log_2 n = \log_2\!\Big(3 + \frac{1}{n}\Big) - v(n) \approx \log_2 3 - v(n).$$
+
+If successive values of $v$ behave like independent samples, averaging over $v$ gives a change of
+
+$$\log_2 3 - E(v) = \log_2 3 - 2 = \log_2 \tfrac{3}{4} \approx -0.415 < 0$$
 
 on average. We call this average the **drift**. Orbits can grow for a long time, but under this heuristic they shrink on average, at a rate set by the drift.
 
@@ -50,7 +54,7 @@ $$\begin{aligned}
 &17 \to 50 \to 25 \to 74 \to 37 \to \cdots \to 136 \to 68 \to 34 \to 17,
 \end{aligned}$$
 
-the last of length $18$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985]. No orbit that meets the second or third cycle reaches $1$.
+the last of length $18$. No orbit that meets a cycle other than the one through $1$ can reach $1$. These are conjectured to be its only cycles, with every orbit of $C_{-1}$ falling into one of them [Lagarias 1985].
 
 ### 1.1 From $\mathbb{N}$ to $\mathbb{Z}$
 

@@ -91,9 +91,13 @@ Barina's map is odd [Barina 2018]. It is
 
 $$B(n) = \begin{cases} n/2, & n \text{ even}, \\ 7n + 1, & n \equiv 1 \pmod 4, \\ 7n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Every odd step is therefore followed by at least two halvings. Nevertheless, $\frac{7n \pm 1}{4} > n$, so orbits of $B$ can grow. As for $C$, the exponent of $2$ in $7n \pm 1$ is $j$ for a proportion $2^{-(j-1)}$ of odd $n$, for each $j \geq 2$, so its mean is $3$, and the drift is
+The digits are chosen so that $4$ divides the result: $4 \mid 7n + 1$ when $n \equiv 1 \pmod 4$, and $4 \mid 7n - 1$ when $n \equiv 3 \pmod 4$. Therefore, every odd step is followed by at least two halvings. However, an odd step and the two halvings that always follow it increase $n$: $B^3(n) > n$ for every odd $n$. For odd $n$, let $v_B(n)$ be the largest integer with $2^{v_B(n)} \mid B(n)$. Writing $n = 4m + 1$ gives $B(n) = 4(7m + 2)$, and writing $n = 4m + 3$ gives $B(n) = 4(7m + 5)$. Since $m \mapsto 7m + c$ permutes the residues modulo every power of $2$, the extra exponent $v_B(n) - 2$ has the distribution of $v(n) - 1$ for $C$, so
 
-$$\log_2 7 - 3 = \log_2 \tfrac{7}{8} \approx -0.193 < 0.$$
+$$E(v_B(n)) = 2 + \Big(\tfrac{1}{4} + 2 \cdot \tfrac{1}{8} + 3 \cdot \tfrac{1}{16} + \cdots\Big) = 3.$$
+
+By the argument for $C$, the drift of $B$ is
+
+$$E\big(\log_2 7 - v_B(n)\big) = \log_2 7 - E(v_B(n)) = \log_2 7 - 3 \approx -0.193 < 0.$$
 
 Since $-n \equiv 3 \pmod 4$ exactly when $n \equiv 1 \pmod 4$, the digit changes sign with $n$, and $B(-n) = -B(n)$ for every $n$. For example, the orbit of $-5$ is the negative of the orbit of $5$,
 
@@ -108,7 +112,7 @@ The same construction can be applied to the multiplier $3$:
 
 $$C_{\pm 1}(n) = \begin{cases} n/2, & n \text{ even}, \\ 3n + 1, & n \equiv 1 \pmod 4, \\ 3n - 1, & n \equiv 3 \pmod 4. \end{cases}$$
 
-For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case. But then an odd step followed by its two halvings multiplies by at most about $3/4$, and indeed $(3n \pm 1)/4 < n$ for $n > 1$, so every orbit decreases to $1$ and the problem is trivial. In general, a map whose digits make $2^k$ divide $mn + d$ grows in the worst case and shrinks on average exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$: $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
+For the same reason as $B$, $C_{\pm 1}$ is odd, and $4$ divides $3n \pm 1$ in each case, so every odd step is followed by at least two halvings. But here the odd step and those two halvings decrease $n$: $C_{\pm 1}^3(n) < n$ for every odd $n > 1$. So every orbit decreases to $1$, and the problem is trivial. In general, if the digits of a map with multiplier $m$ make $2^k$ divide $mn + d$, the odd step and its $k$ guaranteed halvings can increase $n$ only if $m > 2^k$, and the same argument as for $C$ gives the drift $\log_2 m - (k + 1)$, which is negative only if $m < 2^{k+1}$. So the problem is of interest exactly when $2^k < m < 2^{k+1}$ (Section 3). At modulus $4$ the candidates are $5$ and $7$: $5x \pm 1$ has a second cycle, $7 \to 9 \to 11 \to 7$ in its odd terms, and $7x \pm 1$ is Barina's map.
 
 The identity $B(-n) = -B(n)$ has a cleaner reading. Let $\{\pm 1\}$ act on $\mathbb{Z}$ by multiplication, and write $\mathbb{Z}/\{\pm 1\}$ for the set of orbits of this action, not a quotient ring:
 
